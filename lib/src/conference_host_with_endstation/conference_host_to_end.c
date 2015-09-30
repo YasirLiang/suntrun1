@@ -169,13 +169,11 @@ int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_
 	ndata = set_data(phost->data, hdata, phost->data_len);
 	//设置校验crc
 	if(set_frame_crc(phost, ndata) == -1)
-		fprintf(stdout, "bad set crc\n");		
+		DEBUG_INFO( "bad set crc " );		
 
-test_conf_printf( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh,  CONFERENCE_DATA_MSG);
 	//将设置好的命令格式复制到发送负载上,设置发送负载的长度
 	cfc_dlgh = conference_host_to_end_frame_write(phost, frame->payload + \
 							CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, 0, data_len , sizeof(frame->payload));
-test_conf_printf( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh,  CONFERENCE_DATA_MSG);
 
 	// 设置拷贝协议的数据，并设置到负载上
 	memcpy( phost->deal_backups, frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh );
