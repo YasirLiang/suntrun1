@@ -5,7 +5,7 @@
 #include "host_controller_debug.h"
 
 #define CONFERENCE_TYPE 0xAB
-#define DATAMAXLENGTH 256
+#define DATAMAXLENGTH 64
 
 //协议头部长度
 #define CONFERENCE_COMMON_HEADER_LEN 4
