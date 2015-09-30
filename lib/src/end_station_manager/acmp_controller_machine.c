@@ -9,7 +9,7 @@ static inflight_plist acmp_inflight_guard = NULL;
 static solid_pdblist acmp_solid_guard = NULL;
 static desc_pdblist acmp_desc_guard = NULL;
 struct background_inflight_cmd acmp_connect_state_update;
-
+/*
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard )
 {
 	assert( guard && head && desc_guard );
@@ -19,6 +19,7 @@ void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblis
 	acmp_connect_state_update.background_inflight_cmd_type = INPUT_OUTPUT_STREAM_DESCRIPTOR;
 	background_inflight_timer_start( (uint32_t)2*1500, &acmp_connect_state_update);// send the comand 2s later
 }
+*/
 
 void acmp_frame_init( void )
 {
@@ -26,12 +27,12 @@ void acmp_frame_init( void )
         memcpy( acmp_frame.src_address.value, net.m_my_mac, 6 );
 }
 
+
 void acmp_frame_init_2( struct jdksavdecc_frame *frame )
 {
         jdksavdecc_frame_init( frame );
         memcpy( frame->src_address.value, net.m_my_mac, 6 );
 }
-
 
 void acmp_disconnect_avail( uint8_t output_id[8], uint16_t talker_unique_id, uint8_t input_id[8] , uint16_t listener_unique_id, uint16_t connection_count, uint16_t sequence_id)
 {
@@ -67,14 +68,14 @@ void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8
 
 void acmp_rx_state_avail( uint64_t listener_entity_id, uint16_t listener_unique_id )
 {
-        struct jdksavdecc_acmpdu acmp_cmd_get_rx_state;
+    struct jdksavdecc_acmpdu acmp_cmd_get_rx_state;
 	struct jdksavdecc_frame frame;
 	acmp_frame_init_2( &frame );
 	
-        jdksavdecc_eui64_init(&acmp_cmd_get_rx_state.talker_entity_id);
-        jdksavdecc_uint64_write(listener_entity_id, &acmp_cmd_get_rx_state.listener_entity_id, 0, sizeof(uint64_t));
-        acmp_cmd_get_rx_state.listener_unique_id = listener_unique_id;
-        jdksavdecc_eui48_init(&acmp_cmd_get_rx_state.stream_dest_mac);
+    jdksavdecc_eui64_init(&acmp_cmd_get_rx_state.talker_entity_id);
+    jdksavdecc_uint64_write(listener_entity_id, &acmp_cmd_get_rx_state.listener_entity_id, 0, sizeof(uint64_t));
+    acmp_cmd_get_rx_state.listener_unique_id = listener_unique_id;
+    jdksavdecc_eui48_init(&acmp_cmd_get_rx_state.stream_dest_mac);
 
 	acmp_form_msg( &frame, &acmp_cmd_get_rx_state,  JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_COMMAND, \
 		acmp_sequence_id++,  acmp_cmd_get_rx_state.talker_entity_id, 0, acmp_cmd_get_rx_state.listener_entity_id, listener_unique_id,\
