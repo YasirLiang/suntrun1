@@ -9,7 +9,7 @@ static inflight_plist acmp_inflight_guard = NULL;
 static solid_pdblist acmp_solid_guard = NULL;
 static desc_pdblist acmp_desc_guard = NULL;
 struct background_inflight_cmd acmp_connect_state_update;
-/*
+
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard )
 {
 	assert( guard && head && desc_guard );
@@ -19,7 +19,7 @@ void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblis
 	acmp_connect_state_update.background_inflight_cmd_type = INPUT_OUTPUT_STREAM_DESCRIPTOR;
 	background_inflight_timer_start( (uint32_t)2*1500, &acmp_connect_state_update);// send the comand 2s later
 }
-*/
+
 
 void acmp_frame_init( void )
 {
