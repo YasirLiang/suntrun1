@@ -16,4 +16,13 @@ void init_terminal_address_list( void )
 	}
 }
 
+uint16_t ternminal_send( void *buf, uint16_t length )
+{
+	struct host_to_endstation *send_buf = (struct host_to_endstation*)buf;
+	struct jdksavdecc_frame send_frame;
+
+	memcpy( send_buf->deal_backups, buf, length);
+	conference_host_to_end_form_msg_cha( &send_frame,send_buf, (ssize_t)send_buf->data_len );
+	
+}
 
