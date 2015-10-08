@@ -21,7 +21,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	inflight_plist inflight_station = NULL;
 	uint16_t cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
         cmd_type &= 0x7FFF;
-	if( cmd_type == JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR )
+	if( (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND) &&(cmd_type == JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR) )
 		timeout = 750;	// 750 ms timeout (1722.1 timeout is 250ms)
 	if(!resp )	// not a response data 
 	{
@@ -62,7 +62,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 		else
 		{
-			uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id( frame, 0);
+			uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id( frame, ZERO_OFFSET_IN_PAYLOAD);
 			inflight_station = search_node_inflight_from_dblist( guard, seq_id , msg_type);
 			if( inflight_station != NULL ) // already search it
 			{

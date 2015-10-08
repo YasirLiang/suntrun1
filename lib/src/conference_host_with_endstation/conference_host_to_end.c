@@ -224,7 +224,7 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 							                   struct jdksavdecc_aecpdu_aem *aemdu,
 							                   struct jdksavdecc_eui48 destination_mac,
 							                   struct jdksavdecc_eui64 target_entity_id,
-							                   int cfc_dlgh )
+							                   uint16_t cfc_dlgh )
 {
 	//ÉèÖÃ1722¿ØÖÆÍ·
 	frame->dest_address = destination_mac;

@@ -28,7 +28,5 @@ const char * aem_cmd_value_to_name(uint16_t cmd_value);
 const char *  aem_desc_value_to_name(uint16_t desc_value);
 const char * aem_cmd_status_value_to_name(uint32_t aem_cmd_status_value);
 
-
-
 #endif
 

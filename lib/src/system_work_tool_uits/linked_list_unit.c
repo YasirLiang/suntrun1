@@ -551,3 +551,141 @@ int get_desc_dblist_length( desc_pdblist head )
 	return 0;
 }
 
+/*=====================================
+*
+*以下函数用于操作会议终端的的信息链表
+*======================================*/
+tmnl_pdblist create_terminal_dblist_node( tmnl_pdblist* node )
+{
+	assert( node );
+	*node = (tmnl_pdblist)malloc( sizeof(tmnl_dblist) );
+	if( *node != NULL )
+		return *node;
+	else
+	{
+		DEBUG_INFO( "there is no space for malloc descptor node!" );
+		return NULL;
+	}
+
+	return NULL;
+}
+
+// 初始化文件描述符的信息链表为双向循环链表
+void init_terminal_dblist( tmnl_pdblist *guard )
+{
+	assert( guard );
+
+	*guard = create_terminal_dblist_node(guard);
+	if( NULL != *guard )
+	{
+		(*guard)->next = (*guard)->prior = *guard;
+	}
+	else
+	{
+		DEBUG_INFO( "init terminal info list error!" );
+	}
+}
+
+// 初始化文件描述符的信息链表节点
+void init_terminal_dblist_node_info( tmnl_pdblist node )
+{
+	assert( node );
+	memset(node, 0, sizeof(tmnl_pdblist));
+}
+
+// 摧毁指定节点
+void destroy_terminal_dblist_node( tmnl_pdblist* node_dstry )
+{
+	if( NULL != *node_dstry )
+	{
+		free( *node_dstry );
+		*node_dstry = NULL;
+	}
+	else
+	{
+		DEBUG_INFO("NULL destroy Node!");
+		assert(NULL != *node_dstry);
+	}
+}
+
+// 将新节点插入链表中
+void insert_terminal_dblist_trail( tmnl_pdblist head, tmnl_pdblist new_node )
+{
+	assert( head && new_node );
+	
+	new_node->prior = head->prior;
+	head->prior->next = new_node;
+	new_node->next = head;
+	head->prior = new_node;
+}
+
+// 获取terminal链表的长度
+int get_terminal_dblist_length( tmnl_pdblist head )
+{
+	assert( NULL != head );
+	
+	int i = 0;
+	tmnl_pdblist pnode = head->next;
+	if( NULL != pnode)
+	{
+		for( ; pnode != head; pnode = pnode->next, ++i );
+		return i;
+	}
+	else
+	{
+		DEBUG_INFO("bad desc_dblist for system:this is not a loop double list!" );
+		assert( NULL != pnode );
+	}
+
+	return 0;
+}
+
+// 删除节点
+void delect_terminal_dblist_node( tmnl_pdblist *free_node )
+{
+	assert( *free_node );
+	tmnl_pdblist *p = free_node;
+	(*p)->next->prior = (*p)->prior;
+	(*p)->prior->next = (*p)->next;
+	destroy_terminal_dblist_node( p );
+}
+
+// 寻找ID为entity_id 的描述符信息节点
+tmnl_pdblist search_terminal_dblist_entity_id_node( uint64_t entity_id, tmnl_pdblist guard )
+{
+	assert( guard );
+	tmnl_pdblist pnode = guard->next;
+
+	SEARCH_FOR_TERMINAL_LIST_RIGHT_ENTITY_NODE( guard, pnode, entity_id );
+	if( pnode != guard )
+	{
+		return pnode;
+	}
+	else
+	{
+		DEBUG_INFO( "no such terminal entity id  0x%016llx node",entity_id );
+		return NULL;
+	}
+}
+
+// 寻找地址为address 的描述符信息节点
+tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblist guard )
+{
+	assert( guard );
+	tmnl_pdblist pnode = guard->next;
+
+	SEARCH_FOR_TERMINAL_LIST_RIGHT_ADDRESS_NODE( guard, pnode, address );
+	if( pnode != guard )
+	{
+		return pnode;
+	}
+	else
+	{
+		DEBUG_INFO( "no such terminal address %d node",address );
+		return NULL;
+	}
+}
+/*===============================================================
+*					end terminal double list
+*================================================================/
+

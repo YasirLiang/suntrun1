@@ -8,11 +8,13 @@
 #include "entity.h"
 #include "inflight.h"
 #include "descriptor.h"
+#include "terminal_pro.h"
 
 #define HEAP_RAW_RECV_BUF_SIZE 2048	// 原始套接字接收缓冲区的大小
 // 寻找ID为entity_id的终端节点,head是链表的哨兵
 #define SEARCH_ENTITY_ID_ENDPOINT_NODE( head, pnode, entity_id )\
 	for( ; (pnode != head) && (pnode->solid.entity_id != entity_id ); pnode = pnode->next )
+		
 inline uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target );
 inline const struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target);
 inline void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target);
@@ -51,10 +53,11 @@ inflight_plist search_node_inflight_from_dblist(inflight_plist head, uint16_t  s
 void delect_inflight_dblist_node( inflight_plist *free_node );
 
 
-
+/*{@以下函数用于操作会议终端的的信息链表@}*/
 #define SEARCH_FOR_DESCPTOT_LIST_RIGHT_ENTITY_NODE( head, pnode, entity_id )\
 	for( ; pnode != head; pnode = pnode->next )\
 		if( pnode->endpoint_desc.entity_id == entity_id)break
+			
 desc_pdblist search_desc_dblist_node( uint64_t entity_id, desc_pdblist guard );
 int get_desc_dblist_length( desc_pdblist head );
 void delect_descptor_dblist_node( desc_pdblist *free_node );
@@ -64,6 +67,28 @@ void destroy_descptor_dblist_node( desc_pdblist *node_dstry );
 void init_descptor_dblist_node_info( desc_pdblist node );
 void init_descptor_dblist( desc_pdblist *guard );
 desc_pdblist create_descptor_dblist_node( desc_pdblist* node );
+/*{@@}*/
+
+/*=====================================
+*
+*以下函数用于操作会议终端的的信息链表
+*======================================*/
+#define SEARCH_FOR_TERMINAL_LIST_RIGHT_ENTITY_NODE(head, pnode, entity_id )\
+		for( ; pnode != head; pnode = pnode->next )\
+			if( pnode->tmnl_dev.entity_id == entity_id)break
+#define SEARCH_FOR_TERMINAL_LIST_RIGHT_ADDRESS_NODE( guard, pnode, address )\
+		for( ; pnode != head; pnode = pnode->next )\
+			if( pnode->tmnl_dev.addr == address)break
+				
+tmnl_pdblist create_terminal_dblist_node( tmnl_pdblist* node );
+void init_terminal_dblist( tmnl_pdblist *guard );
+void init_terminal_dblist_node_info( tmnl_pdblist node );
+void destroy_terminal_dblist_node( tmnl_pdblist* node_dstry );
+void insert_terminal_dblist_trail( tmnl_pdblist head, tmnl_pdblist new_node );
+int get_terminal_dblist_length( tmnl_pdblist head );
+void delect_terminal_dblist_node( tmnl_pdblist *free_node );
+tmnl_pdblist search_terminal_dblist_node( uint64_t entity_id, tmnl_pdblist guard );
+tmnl_pdblist search_terminal_dblist_node( uint16_t  address, tmnl_pdblist guard );
 
 
 #endif
