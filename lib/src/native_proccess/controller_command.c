@@ -639,11 +639,87 @@ void terminal_cmd_query_vote_result_proccess( const char*opt )
 }
 void terminal_cmd_limit_spk_time_proccess(const char *opt)
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
+	uint8_t spk_time  = 0;
 	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 2 )
+		{
+			spk_time = (uint8_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time);
+	terminal_limit_spk_time( convert_eui64_to_uint64_return(entity_id.value), addr, (tmnl_limit_spk_time)spk_time);
 }
-void terminal_cmd_host_send_state_proccess()
+void terminal_cmd_host_send_state_proccess(const char *opt)
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
 	
+	tmnl_main_state_send state_send;
+	uint8_t spk_time  = 0;
+	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 2 )
+		{
+			spk_time = (uint8_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), );
+	terminal_host_send_state( convert_eui64_to_uint64_return(entity_id.value), (tmnl_limit_spk_time)spk_time);
 }
 void terminal_cmd_send_end_lcd_proccess()
 {
