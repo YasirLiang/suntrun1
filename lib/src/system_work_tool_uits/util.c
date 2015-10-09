@@ -595,6 +595,17 @@ void convert_str_to_eui64( char *in, uint8_t output[8] )	// p 的格式如0x00112233
 	jdksavdecc_util_parse_byte( &output[7], p[14], p[15] );
 }
 
+void convert_str_to_eui32( char *in, uint8_t output[4] )	// p 的格式如0x00112233
+{
+	char *p = in + 2;
+	
+	jdksavdecc_util_parse_byte( &output[0], p[0], p[1] );
+	jdksavdecc_util_parse_byte( &output[1], p[2], p[3] );
+	jdksavdecc_util_parse_byte( &output[2], p[4], p[5] );
+	jdksavdecc_util_parse_byte( &output[3], p[6], p[7] ); 
+}
+
+
 // compare two mac address 
 bool is_mac_equal( const uint8_t mac_value1[6], const uint8_t mac_value2[6] )
 {

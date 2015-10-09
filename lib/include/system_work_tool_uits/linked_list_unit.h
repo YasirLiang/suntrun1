@@ -77,7 +77,7 @@ desc_pdblist create_descptor_dblist_node( desc_pdblist* node );
 		for( ; pnode != head; pnode = pnode->next )\
 			if( pnode->tmnl_dev.entity_id == entity_id)break
 #define SEARCH_FOR_TERMINAL_LIST_RIGHT_ADDRESS_NODE( guard, pnode, address )\
-		for( ; pnode != head; pnode = pnode->next )\
+		for( ; pnode != guard; pnode = pnode->next )\
 			if( pnode->tmnl_dev.addr == address)break
 				
 tmnl_pdblist create_terminal_dblist_node( tmnl_pdblist* node );
@@ -88,7 +88,7 @@ void insert_terminal_dblist_trail( tmnl_pdblist head, tmnl_pdblist new_node );
 int get_terminal_dblist_length( tmnl_pdblist head );
 void delect_terminal_dblist_node( tmnl_pdblist *free_node );
 tmnl_pdblist search_terminal_dblist_node( uint64_t entity_id, tmnl_pdblist guard );
-tmnl_pdblist search_terminal_dblist_node( uint16_t  address, tmnl_pdblist guard );
+tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblist guard );
 
 
 #endif

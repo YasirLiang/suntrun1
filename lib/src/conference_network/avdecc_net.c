@@ -30,6 +30,8 @@ int recv_udp_packet( int fd, void *pout, int length, struct sockaddr_in *sin, so
 		DEBUG_ERR("receive udp packet error!");
 		assert( get_len >= 0 );
 	}
+
+	return get_len;
 }
 
 int conference_host_raw_receive( int sockfd, uint16_t *ethertype, uint8_t src_mac[6], uint8_t dest_mac[6], void *payload_buf, ssize_t payload_buf_max_size  )
@@ -74,7 +76,6 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 	int ret;
 	struct ifreq ifr;
 	struct sockaddr_in sin;
-	int i = 0;
 	char ip[32] = {0};
 	
 	fd = socket( AF_INET,  SOCK_DGRAM, 0 );

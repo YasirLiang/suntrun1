@@ -3,6 +3,7 @@
 
 #include "jdksavdecc_pdu.h"
 #include "jdksavdecc_aecp_aem.h"
+#include "conference.h"
 
 #define CONFERENCE_DATA_MSG "Conference Data:"
 #define CONFERENCE_CONTROL_DATA_MSG "Conference Control Header:"
@@ -16,7 +17,7 @@ bool conference_host_to_end_address_device_set(uint16_t *endaddr, uint16_t *seta
 bool conference_host_to_end_address_allbroadcast_set(uint16_t *endaddr,	uint16_t type_broadcast,bool resp,uint8_t num, uint8_t windflag);
 inline void conference_host_to_end_datalen_set(ssize_t* data_len, uint8_t dlgh);
 void  conference_host_to_end_data_set(uint8_t *datum, uint8_t tmpdat[]);
-int conference_1722_control_form_info( struct jdksavdecc_frame *frame, struct jdksavdecc_aecpdu_aem *aemdu,uint16_t sequence_id,struct jdksavdecc_eui48 destination_mac, struct jdksavdecc_eui64 target_entity_id,int cfc_dlgh );
+int conference_1722_control_form_info( struct jdksavdecc_frame *frame, struct jdksavdecc_aecpdu_aem *aemdu, struct jdksavdecc_eui48 destination_mac, struct jdksavdecc_eui64 target_entity_id,uint16_t cfc_dlgh );
 
 #endif
 

@@ -161,7 +161,7 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			break;
 			case TRANSMIT_TYPE_AECP:	// 这里包含了主机与终端通信的协议
 			{
-				if( subtype == JDKSAVDECC_SUBTYPE_AECP )
+				if( subtype == JDKSAVDECC_SUBTYPE_AECP ) 
 					transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp );
 				else
 				{

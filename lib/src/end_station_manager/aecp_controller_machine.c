@@ -16,6 +16,14 @@ void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_gua
 
 int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp )
 {
+#if 0
+	int k = 0;
+	printf("aecp before change frame1:\t");
+	for( ;k < frame_len; k++)
+		printf("%02x ", frame[k]);
+	printf("\n");
+#endif
+
 	uint8_t msg_type = jdksavdecc_subtype_data_get_subtype( frame, 0);
 	uint32_t timeout = 200;// 临时的值，后面在修改
 	inflight_plist inflight_station = NULL;
@@ -36,12 +44,14 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			memset(inflight_station, 0, sizeof(inflight_list));
 			
 			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &inflight_station->host_tx.inflight_frame.frame );
+			memset(inflight_station->host_tx.inflight_frame.frame, 0, TRANSMIT_DATA_BUFFER_SIZE);
 			if( NULL != inflight_station->host_tx.inflight_frame.frame )
 			{
 				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
 				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
 				inflight_station->host_tx.inflight_frame.data_type = msg_type; 	//协议aecp acmp adp udpclient udpserver 
 				inflight_station->host_tx.inflight_frame.seq_id = aecp_seq_id;	// 初始为零
+				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, inflight_station->host_tx.inflight_frame.frame, 0 );
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, frame, 0 );
 				inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;
 				memcpy( &inflight_station->host_tx.inflight_frame.raw_dest, dest_mac , 6 );
@@ -53,6 +63,10 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
+#if 0
+				uint16_t frame_seq_id = jdksavdecc_aecpdu_common_get_sequence_id( inflight_station->host_tx.inflight_frame.frame, ZERO_OFFSET_IN_PAYLOAD);
+				DEBUG_INFO( "seq_id = %d frame_seq_id = %d",  inflight_station->host_tx.inflight_frame.seq_id, frame_seq_id);
+#endif
 			}
 			else
 			{
@@ -64,6 +78,12 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		{
 			uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id( frame, ZERO_OFFSET_IN_PAYLOAD);
 			inflight_station = search_node_inflight_from_dblist( guard, seq_id , msg_type);
+			
+#if 0
+			int inflight_len = get_inflight_dblist_length(guard);
+			DEBUG_INFO( "inflight len = %d", inflight_len );
+#endif
+			
 			if( inflight_station != NULL ) // already search it
 			{
 				inflight_station->host_tx.flags.resend = true;
@@ -78,6 +98,10 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 	}
 	
+#if 0
+	DEBUG_SEND(frame, frame_len, "aecp send frame");
+#endif
+
 	// ready to send
 	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
 	if( send_len < 0 )
@@ -102,6 +126,13 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		is_retried = is_inflight_cmds_retried( aecp_pstation );
 		frame = aecp_pstation->host_tx.inflight_frame.frame;
 		frame_len = aecp_pstation->host_tx.inflight_frame.inflight_frame_len;
+#if 0
+		int k = 0;
+		printf("aecp timeouts frame:\t");
+		for( ;k < frame_len; k++)
+		printf("%02x ", frame[k]);
+		printf("\n");
+#endif
 	}
 	else 
 	{

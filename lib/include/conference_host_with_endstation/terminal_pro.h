@@ -70,5 +70,45 @@ typedef struct _tterminal_led_show_stype // 设置终端 led 显示方式
 	uint8_t stop_time:4;
 }tmnl_led_state_show_set;
 
+typedef struct _tterminal_vote_result	// 投票表决结果
+{
+	uint16_t total;	// 参加表决的总票数
+	uint16_t abs;	// 弃权票数
+	uint16_t neg;	// 反对的票数
+	uint16_t aff;	// 赞成的票数
+}tmnl_vote_result;
+
+typedef struct _tterminal_limit_spk_time
+{
+	uint8_t :2;
+	uint8_t limit_time:6;
+}tmnl_limit_spk_time;
+
+typedef struct _ttmerminal_main_state_send // 主机发送状态
+{
+	uint16_t unit;	// 接入主机的终端总数
+	
+	uint8_t conference_stype:4;
+	uint8_t :2;
+	uint8_t chm_first:1;
+	uint8_t camera_follow:1;		// 模式设置
+	
+	uint8_t limit;			// 代表机开启量上限
+	uint8_t apply_set;		// 申请人数上限
+	uint8_t spk_num;		// 发言人数
+	uint8_t apply;			// 申请人数
+}tmnl_main_state_send;
+
+typedef struct _tterminal_send_end_lcd_display
+{
+	uint8_t opt;	// 操作指示 
+	uint8_t num;  // 屏号
+}tmnl_send_end_lcd_display;
+
+
+uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id );
+void init_terminal_address_list( void );
+
+
 #endif
 

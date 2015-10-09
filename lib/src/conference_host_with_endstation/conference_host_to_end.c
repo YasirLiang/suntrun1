@@ -150,7 +150,6 @@ int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_
 										uint16_t end_addr,
 										uint8_t hdata[])
 {
-	int r = 0;
 	ssize_t ndata = -1;
 	size_t cfc_dlgh = 0;
 
@@ -177,39 +176,6 @@ int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_
 
 	// 设置拷贝协议的数据，并设置到负载上
 	memcpy( phost->deal_backups, frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh );
-	memcpy( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + cfc_dlgh, phost->deal_backups, cfc_dlgh);
-	cfc_dlgh += cfc_dlgh;
-	frame->length = ( uint16_t )cfc_dlgh + 24;
-
-	test_conf_printf( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh,  CONFERENCE_DATA_MSG);
-
-	 return ( int )cfc_dlgh;
-}
-
-/***
-*函数功能:主机下发命令命令格式的设置
-*函数参数:
-*	msg_type:具体的命令
-*	data_len:具体命令中数据部分的长度
-*	end_addr:终端地址
-*	hdata:发送的数据
-*返回值: 
-*	cfc_dlgh:协议在发送负载上的长度，是双份协议长度之和
-*/
-int conference_host_to_end_form_msg_cha(struct jdksavdecc_frame *frame, struct host_to_endstation *phost, ssize_t data_len )
-{
-	ssize_t ndata = -1;
-	size_t cfc_dlgh = 0;
-
-	//设置发送数据的目标地址
-	frame->dest_address = jdksavdecc_multicast_adp_acmp; 
-	//设置发送以太网协议类型
-	 frame->ethertype = JDKSAVDECC_AVTP_ETHERTYPE;	
-
-	//将设置好的命令格式复制到发送负载上,设置发送负载的长度
-	cfc_dlgh = conference_host_to_end_frame_write(phost, frame->payload + \
-							CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, 0, data_len , sizeof(frame->payload));
-	// 设置拷贝协议的数据，并设置到负载上
 	memcpy( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + cfc_dlgh, phost->deal_backups, cfc_dlgh);
 	cfc_dlgh += cfc_dlgh;
 	frame->length = ( uint16_t )cfc_dlgh + 24;
@@ -250,6 +216,8 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 
 	aemdu->command_type = cfc_dlgh;
 	aemdu->aecpdu_header.header.target_entity_id = target_entity_id;
+	aemdu->aecpdu_header.sequence_id = 0;
+
 
 	frame->length = jdksavdecc_aecpdu_aem_write( aemdu, frame->payload, 0, sizeof( frame->payload ) ) + cfc_dlgh;
 

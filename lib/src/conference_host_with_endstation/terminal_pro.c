@@ -1,6 +1,9 @@
 #include "terminal_pro.h"
-#include "linked_list_uint.h"
+#include "linked_list_unit.h"
 #include "host_controller_debug.h"
+#include "conference_host_to_end.h"
+#include "system_packet_tx.h"
+#include "inflight.h"
 
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
@@ -22,17 +25,17 @@ void init_terminal_address_list( void )
 
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
 {
-	struct host_to_endstation *send_buf = (struct host_to_endstation*)buf;
+	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
+	struct host_to_endstation fill_send_buf;
 	struct jdksavdecc_frame send_frame;
 	struct jdksavdecc_aecpdu_aem aemdu;
 	struct jdksavdecc_eui64 target_id;
 	convert_uint64_to_eui64( target_id.value, uint64_target_id);
-	uint16_t all_length = length * 2; // 协议数据的总长度(包括备份的)
 	int send_len = 0;
-
-	memcpy( send_buf->deal_backups, buf, length);
-	conference_host_to_end_form_msg_cha( &send_frame, send_buf, (ssize_t)send_buf->data_len );
-	send_len = conference_1722_control_form_info( &send_frame, &aemdu, jdksavdecc_multicast_adp_acmp, target_id, all_length );
+	int cnf_data_len = 0;
+	
+	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data);
+	send_len = conference_1722_control_form_info( &send_frame, &aemdu, jdksavdecc_multicast_adp_acmp, target_id, cnf_data_len );
 	if( send_len < 0 )
 	{
 		DEBUG_INFO( "send len is bad! send_len = %d", send_len );
