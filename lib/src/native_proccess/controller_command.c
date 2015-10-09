@@ -5,6 +5,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "terminal_pro.h"
+#include "terminal_command.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -105,7 +106,7 @@ void cmd_adp_proccess( const char *opt )
 {
 	const char *p = opt + 4;	// the num of 'adp' and one blank character
 	char entity_str_id[32] = {0};
-	uint64_t entity_entity_id = 0;
+	//uint64_t entity_entity_id = 0;
 	char entity_str_msg[32] = {0};
 	uint16_t msg_type = 0;
 	struct jdksavdecc_eui64 discover_entity_id;
@@ -344,14 +345,14 @@ void terminal_cmd_set_state_proccess( const char*opt )
 		{
 			memcpy( tmnl_state_str, first, copy_num );
 			convert_str_to_eui64( tmnl_state_str, array_state );
-			memcpy(&tmnl_state, array_state);
+			memcpy(&tmnl_state, array_state, 4 );
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx addr = %d state = 0x%08llx" ,convert_eui64_to_uint64_return(entity_id.value), addr, tmnl_state);
-	terminal_state_set(tmnl_state, addr, convert_eui64_to_uint64_return(entity_id.value))
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d " , convert_eui64_to_uint64_return(entity_id.value), addr );
+	terminal_state_set(tmnl_state, addr, convert_eui64_to_uint64_return(entity_id.value));
 }
 void terminal_cmd_set_mic_proccess( const char*opt )
 {
@@ -643,6 +644,7 @@ void terminal_cmd_limit_spk_time_proccess(const char *opt)
 	char entity_id_str[32] = {0};
 	struct jdksavdecc_eui64 entity_id;
 	uint8_t spk_time  = 0;
+	tmnl_limit_spk_time spk_time_set;
 	
 	const char *p = opt;
 	const char *first = opt;
@@ -670,13 +672,14 @@ void terminal_cmd_limit_spk_time_proccess(const char *opt)
 		else if( input_flag == 2 )
 		{
 			spk_time = (uint8_t)atoi(&first[0]);
+			spk_time_set.limit_time = spk_time;
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time);
-	terminal_limit_spk_time( convert_eui64_to_uint64_return(entity_id.value), addr, (tmnl_limit_spk_time)spk_time);
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set.limit_time);
+	terminal_limit_spk_time( convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set);
 }
 void terminal_cmd_host_send_state_proccess(const char *opt)
 {
@@ -685,7 +688,11 @@ void terminal_cmd_host_send_state_proccess(const char *opt)
 	struct jdksavdecc_eui64 entity_id;
 	
 	tmnl_main_state_send state_send;
-	uint8_t spk_time  = 0;
+	state_send.apply = 10;
+	state_send.apply_set = 10;
+	state_send.spk_num = 4;
+	state_send.limit = 10;
+	state_send.conference_stype = 3;
 	
 	const char *p = opt;
 	const char *first = opt;
@@ -712,38 +719,244 @@ void terminal_cmd_host_send_state_proccess(const char *opt)
 		}
 		else if( input_flag == 2 )
 		{
-			spk_time = (uint8_t)atoi(&first[0]);
+			state_send.unit = (uint8_t)atoi(&first[0]); // 接入终端的总数
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), );
-	terminal_host_send_state( convert_eui64_to_uint64_return(entity_id.value), (tmnl_limit_spk_time)spk_time);
+	DEBUG_INFO( "query entity id = 0x%016llx  conference_stype= %d" , convert_eui64_to_uint64_return(entity_id.value), state_send.conference_stype );
+	terminal_host_send_state( convert_eui64_to_uint64_return(entity_id.value), state_send);
 }
-void terminal_cmd_send_end_lcd_proccess()
+void terminal_cmd_send_end_lcd_proccess(const char *opt)
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
+	tmnl_send_end_lcd_display lcd_dis;
+	uint8_t lcd_opt = 0;
+	uint8_t lcd_num = 0;
 	
-}
-void terminal_cmd_option_endpoint_proccess()
-{
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 2 )
+		{
+			lcd_opt = (uint8_t)atoi(&first[0]);
+			lcd_dis.opt = lcd_opt;
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 3 )
+		{
+			lcd_num = (uint8_t)atoi(&first[0]);
+			lcd_dis.num = lcd_num;
+			p++;
+			input_flag++;
+		}
+	}
 	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, lcd_num = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, lcd_dis.num);
+	terminal_send_end_lcd_display( convert_eui64_to_uint64_return(entity_id.value), addr, lcd_dis);
 }
-void terminal_cmd_special_event_reply_proccess()
+void terminal_cmd_option_endpoint_proccess( const char *opt )
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
+	uint8_t end_opt = 0;
+	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 2 )
+		{
+			end_opt = (uint8_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, end_opt = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, end_opt);
+	terminal_option_endpoint( convert_eui64_to_uint64_return(entity_id.value), addr, end_opt);
+}
+void terminal_cmd_special_event_reply_proccess( const char *opt )
+{
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
+	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
 
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr);
+	terminal_endstation_special_event_reply( convert_eui64_to_uint64_return(entity_id.value), addr );
 }
-void terminal_cmd_tnmt_cmpt_msg_proccess()
+void terminal_cmd_tnmt_cmpt_msg_proccess( const char *opt )
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
+	uint8_t cmpt_msg[8] = {1, 3, 3, 3, 3, 3, 3, 3 };
+	uint16_t msg_len = 8;
 	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, cmpt_msg type = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, cmpt_msg[0]);
+	terminal_transmit_upper_cmpt_message( convert_eui64_to_uint64_return(entity_id.value), addr, cmpt_msg, msg_len );
 }
-void terminal_cmd_reply_end_message_proccess()
+void terminal_cmd_reply_end_message_proccess(const char *opt )
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
 	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr);
+	terminal_reply_end_message_command( convert_eui64_to_uint64_return(entity_id.value), addr);
 }
-void terminal_cmd_query_vote_sign_proccess()
+void terminal_cmd_query_vote_sign_proccess(const char *opt)
 {
+	uint16_t addr = 0;
+	char entity_id_str[32] = {0};
+	struct jdksavdecc_eui64 entity_id;
 	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( entity_id_str, first, copy_num );
+			convert_str_to_eui64( entity_id_str, entity_id.value );
+			p++;
+			input_flag++;
+		}
+		else if( input_flag == 1 )
+		{
+			addr = (uint16_t)atoi(&first[0]);
+			p++;
+			input_flag++;
+		}
+	}
+	
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d " ,convert_eui64_to_uint64_return(entity_id.value), addr );
+	terminal_query_vote_sign_result( convert_eui64_to_uint64_return(entity_id.value), addr );
 }
 
 void cmd_terminal_proccess( const char *opt )
@@ -793,82 +1006,82 @@ void cmd_terminal_proccess( const char *opt )
 		}
 		else if( strncmp(cmd_buf, "setState", 8) == 0 )
 		{
-			terminal_cmd_set_state_proccess();
+			terminal_cmd_set_state_proccess(&cmd_buf[9]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "setMic", 6) == 0 )
 		{
-			terminal_cmd_set_mic_proccess();
+			terminal_cmd_set_mic_proccess(&cmd_buf[7]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "setIndicator", 12) == 0 )
 		{
-			terminal_cmd_set_indicator_proccess();
+			terminal_cmd_set_indicator_proccess(&cmd_buf[12]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "newAllot", 8) == 0 )
 		{
-			terminal_cmd_new_allot_proccess();
+			terminal_cmd_new_allot_proccess(&cmd_buf[9]);
 			break;
 		}
 		else if( strncmp(cmd_buf, "setLcd", 6) == 0 )
 		{
-			terminal_cmd_set_lcd_proccess();
+			terminal_cmd_set_lcd_proccess(&cmd_buf[7]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "setled", 6) == 0 )
 		{
-			terminal_cmd_set_led_proccess();
+			terminal_cmd_set_led_proccess(&cmd_buf[7]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "chairManControl", 15 ) == 0 )
 		{
-			terminal_cmd_chairman_control_proccess();
+			terminal_cmd_chairman_control_proccess(&cmd_buf[16]);
 			break;
 		}
 		else if( strncmp(cmd_buf, "voteResult", 10) == 0 )
 		{
-			terminal_cmd_query_vote_result_proccess();
+			terminal_cmd_query_vote_result_proccess(&cmd_buf[11]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "limitSpkTime", 12) == 0 )
 		{
-			terminal_cmd_limit_spk_time_proccess();
+			terminal_cmd_limit_spk_time_proccess(&cmd_buf[13]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "hostSendState", 13) == 0 )
 		{
-			terminal_cmd_host_send_state_proccess();
+			terminal_cmd_host_send_state_proccess(&cmd_buf[14]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "sendEndLcd", 15) == 0 )
 		{
-			terminal_cmd_send_end_lcd_proccess();
+			terminal_cmd_send_end_lcd_proccess(&cmd_buf[16]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "optionEndpoint", 14) == 0 )
 		{
-			terminal_cmd_option_endpoint_proccess();
+			terminal_cmd_option_endpoint_proccess(&cmd_buf[15]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "specialEventReply", 17) == 0 )
 		{
-			terminal_cmd_special_event_reply_proccess();
+			terminal_cmd_special_event_reply_proccess(&cmd_buf[18]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "tnmtCmptMsg", 11) == 0 )
 		{
-			terminal_cmd_tnmt_cmpt_msg_proccess();
+			terminal_cmd_tnmt_cmpt_msg_proccess(&cmd_buf[12]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "replyEndMessage", 15) == 0 )
 		{
-			terminal_cmd_reply_end_message_proccess();
+			terminal_cmd_reply_end_message_proccess(&cmd_buf[16]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "queryVoteSign", 13) == 0 )
 		{
-			terminal_cmd_query_vote_sign_proccess();
+			terminal_cmd_query_vote_sign_proccess(&cmd_buf[14]);
 			continue;
 		}
 		else if(!isspace(cmd_buf[0]))

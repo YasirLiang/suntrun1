@@ -290,3 +290,4 @@ void terminal_query_vote_sign_result( uint64_t target_id, uint16_t addr )
 
 	ternminal_send( &askbuf, asklen, target_id );
 }
+

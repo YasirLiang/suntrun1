@@ -86,17 +86,17 @@ typedef struct _tterminal_limit_spk_time
 
 typedef struct _ttmerminal_main_state_send // 主机发送状态
 {
-	uint16_t unit;	// 接入主机的终端总数
+	uint16_t unit;				// 接入主机的终端总数
 	
 	uint8_t conference_stype:4;
 	uint8_t :2;
 	uint8_t chm_first:1;
 	uint8_t camera_follow:1;		// 模式设置
 	
-	uint8_t limit;			// 代表机开启量上限
-	uint8_t apply_set;		// 申请人数上限
-	uint8_t spk_num;		// 发言人数
-	uint8_t apply;			// 申请人数
+	uint8_t limit;				// 代表机开启量上限
+	uint8_t apply_set;			// 申请人数上限
+	uint8_t spk_num;			// 发言人数
+	uint8_t apply;				// 申请人数
 }tmnl_main_state_send;
 
 typedef struct _tterminal_send_end_lcd_display
