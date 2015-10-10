@@ -2,6 +2,7 @@
 #define __TERMINAL_PRO_H__
 
 #include "jdksavdecc_world.h"
+#include "conference.h"
 
 #define SYSTEM_TMNL_MAX_NUM 450	// 系统中终端最大的数量
 
@@ -105,8 +106,9 @@ typedef struct _tterminal_send_end_lcd_display
 	uint8_t num;  // 屏号
 }tmnl_send_end_lcd_display;
 
-
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id );
+void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
+
 void init_terminal_address_list( void );
 
 

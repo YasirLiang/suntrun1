@@ -48,6 +48,11 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
 	return (uint16_t)send_len;
 }
 
+void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
+{
+	DEBUG_RECV( conference_frame->payload , conference_frame->payload_len, "Conference Data" );
+}
+
 void host_reply_terminal()
 {
 	

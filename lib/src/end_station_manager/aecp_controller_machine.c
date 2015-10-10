@@ -1,5 +1,6 @@
 #include "aecp_controller_machine.h"
 #include "aecp.h"
+#include "conference_end_to_host.h"
 
 static uint16_t aecp_seq_id = 0;
 static solid_pdblist aecp_solid_guard = NULL;
@@ -205,6 +206,26 @@ int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, 
 	return 0;
 }
 
+int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uint8_t *frame, size_t frame_len)
+{
+	assert(frame);
+	struct jdksavdecc_frame jdk_frame;
+	memcpy( jdk_frame.payload, frame, frame_len);
+
+	switch( msg_type )
+	{
+		case JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND:
+		case JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE:  // connferece deal uses
+			aecp_state_rcvd_resp( &jdk_frame);
+		break;
+		default:
+			DEBUG_INFO( "LOGGING_LEVEL_ERROR: Invalid message type");
+			return -1;
+	}
+
+	return 0;
+}
+
 int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct jdksavdecc_frame *cmd_frame)
 {
 	switch (msg_type)
@@ -274,102 +295,105 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
         uint16_t desc_type = 0;
         uint16_t desc_index = 0;
 
-        switch(cmd_type)
-        {
-	        case JDKSAVDECC_AEM_COMMAND_ACQUIRE_ENTITY:
-	            desc_type = jdksavdecc_aem_command_acquire_entity_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_acquire_entity_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+	if( (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) || (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE))
+	{
+	        switch(cmd_type)
+	        {
+		        case JDKSAVDECC_AEM_COMMAND_ACQUIRE_ENTITY:
+		            desc_type = jdksavdecc_aem_command_acquire_entity_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_acquire_entity_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_LOCK_ENTITY:
-	            desc_type = jdksavdecc_aem_command_lock_entity_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_lock_entity_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_LOCK_ENTITY:
+		            desc_type = jdksavdecc_aem_command_lock_entity_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_lock_entity_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_ENTITY_AVAILABLE:
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_ENTITY_AVAILABLE:
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_CONTROLLER_AVAILABLE:
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_CONTROLLER_AVAILABLE:
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR:
-	            desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR:
+		            desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_SET_STREAM_FORMAT:
-	            desc_type = jdksavdecc_aem_command_set_stream_format_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_set_stream_format_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_SET_STREAM_FORMAT:
+		            desc_type = jdksavdecc_aem_command_set_stream_format_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_set_stream_format_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_GET_STREAM_FORMAT:
-	            desc_type = jdksavdecc_aem_command_get_stream_format_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_stream_format_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_GET_STREAM_FORMAT:
+		            desc_type = jdksavdecc_aem_command_get_stream_format_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_stream_format_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_SET_STREAM_INFO:
-	            desc_type = jdksavdecc_aem_command_set_stream_info_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_set_stream_info_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_SET_STREAM_INFO:
+		            desc_type = jdksavdecc_aem_command_set_stream_info_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_set_stream_info_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_GET_STREAM_INFO:
-	            desc_type = jdksavdecc_aem_command_get_stream_info_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_stream_info_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_GET_STREAM_INFO:
+		            desc_type = jdksavdecc_aem_command_get_stream_info_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_stream_info_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_SET_NAME:
-	            desc_type = jdksavdecc_aem_command_set_name_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_set_name_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_SET_NAME:
+		            desc_type = jdksavdecc_aem_command_set_name_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_set_name_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_GET_NAME:
-	            desc_type = jdksavdecc_aem_command_get_name_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_name_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_GET_NAME:
+		            desc_type = jdksavdecc_aem_command_get_name_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_name_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_SET_SAMPLING_RATE:
-	            desc_type = jdksavdecc_aem_command_set_sampling_rate_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_set_sampling_rate_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_SET_SAMPLING_RATE:
+		            desc_type = jdksavdecc_aem_command_set_sampling_rate_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_set_sampling_rate_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_GET_SAMPLING_RATE:
-	            desc_type = jdksavdecc_aem_command_get_sampling_rate_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_sampling_rate_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_GET_SAMPLING_RATE:
+		            desc_type = jdksavdecc_aem_command_get_sampling_rate_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_sampling_rate_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_SET_CLOCK_SOURCE:
-	            desc_type = jdksavdecc_aem_command_set_clock_source_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_set_clock_source_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_SET_CLOCK_SOURCE:
+		            desc_type = jdksavdecc_aem_command_set_clock_source_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_set_clock_source_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_GET_CLOCK_SOURCE:
-	            desc_type = jdksavdecc_aem_command_get_clock_source_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_clock_source_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_GET_CLOCK_SOURCE:
+		            desc_type = jdksavdecc_aem_command_get_clock_source_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_clock_source_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_START_STREAMING:
-	            desc_type = jdksavdecc_aem_command_start_streaming_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_start_streaming_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_START_STREAMING:
+		            desc_type = jdksavdecc_aem_command_start_streaming_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_start_streaming_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
 
-	        case JDKSAVDECC_AEM_COMMAND_STOP_STREAMING:
-	            desc_type = jdksavdecc_aem_command_stop_streaming_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_stop_streaming_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
-	        
-	        case JDKSAVDECC_AEM_COMMAND_GET_COUNTERS:
-	            desc_type = jdksavdecc_aem_command_get_counters_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            desc_index = jdksavdecc_aem_command_get_counters_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-	            break;
-	        
-	        case JDKSAVDECC_AEM_COMMAND_REGISTER_UNSOLICITED_NOTIFICATION:
-	            break;
+		        case JDKSAVDECC_AEM_COMMAND_STOP_STREAMING:
+		            desc_type = jdksavdecc_aem_command_stop_streaming_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_stop_streaming_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
+		        
+		        case JDKSAVDECC_AEM_COMMAND_GET_COUNTERS:
+		            desc_type = jdksavdecc_aem_command_get_counters_response_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            desc_index = jdksavdecc_aem_command_get_counters_response_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
+		            break;
+		        
+		        case JDKSAVDECC_AEM_COMMAND_REGISTER_UNSOLICITED_NOTIFICATION:
+		            break;
 
-	        default:
-	           DEBUG_INFO("LOGGING_LEVEL_DEBUG:NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
-	            break;
-        }
-
+		        default:
+		           DEBUG_INFO("LOGGING_LEVEL_DEBUG:NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
+		            break;
+	        }
+	}
+	
         struct jdksavdecc_eui64 id = jdksavdecc_common_control_header_get_stream_id(frame, ZERO_OFFSET_IN_PAYLOAD);
         if((notification_flag == CMD_WITH_NOTIFICATION) &&
             ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_RESPONSE) ||
@@ -427,6 +451,38 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
                                           jdksavdecc_aecpdu_common_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD),
                                           aem_cmd_status_value_to_name(status));
             }
+        }
+	else  if((notification_flag == CMD_WITH_NOTIFICATION) &&
+            ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) ||
+            (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE)))
+        {
+        	uint8_t addr[2] ={0};
+        	uint16_t conference_data_len = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		uint8_t conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
+		addr[0] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 2 );
+		addr[1] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 3 );
+		uint8_t data_len = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 4 );
+		DEBUG_ONINFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %d) ]",
+						jdksavdecc_uint64_get(&id, 0),
+						conference_cmd,
+						addr[0],
+						addr[1],
+						data_len,
+						conference_data_len,
+	                                        status);
+
+           	if(status != AEM_STATUS_SUCCESS)
+            	{
+                	DEBUG_INFO( "LOGGING_LEVEL_ERROR,RESPONSE_RECEIVED, 0x%016llx, %s, %s, %d, %d, %s",
+                                          jdksavdecc_uint64_get(&id, 0),
+                                          aem_cmd_value_to_name(cmd_type),
+                                          aem_desc_value_to_name(desc_type),
+                                          desc_index,
+                                          jdksavdecc_aecpdu_common_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD),
+                                          aem_cmd_status_value_to_name(status));
+
+			DEBUG_INFO( " [  UNIQUE_COMMAND ERROR: 0x%llx, %s ( data len = %d )  ]", jdksavdecc_uint64_get(&id, 0), get_host_and_end_conference_string_value(conference_cmd), conference_data_len );
+            	}
         }
 
 	return 0;

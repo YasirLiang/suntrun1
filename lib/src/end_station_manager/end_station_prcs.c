@@ -7,69 +7,30 @@
 #include "entity.h"
 #include "linked_list_unit.h"
 #include "util.h"
-#include "conference_host_and_end_handle.h"
 #include "host_controller_debug.h"
 #include "aecp_controller_machine.h"
 #include "configuration_descptor.h"
+#include "terminal_pro.h"
 
-/********************
- *功能:检查校验, 解析会议系统协议数据,处理协议数据
- *参数:
- *	conferenc_payload_len:双份协议的总长度
- *	msg_type:命令类型
- *	frame:1722协议帧
- *返回值:
- *	无
- *********************/ 
-void handle_aecp_message_type_vendor_unique_command_conference( uint16_t conferenc_payload_len,	uint32_t msg_type, const uint8_t *frame )
+void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len )
 {
-	uint16_t cfrc_len = conferenc_payload_len;
-	uint16_t half_cfrc_len = cfrc_len / 2;		// 一份协议的长度
-	uint8_t cfrc_guide_type = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+	assert( frame );
+	uint32_t msg_type;
+	struct terminal_deal_frame conference_frame;
+	uint16_t connference_len = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+	conference_frame.payload_len = connference_len;
 
-	if( (cfrc_len > 0) && (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND ) &&\
-			( cfrc_guide_type == CONFERENCE_TYPE ) )
-	{	
-		// 检查校验，如果校验正确，那么继续处理协议数据(取出协议数据、解析与处理);若校验不正确,那么取出备份的协议数据,检查校验,以下步骤一样
-		if( check_conferece_deal_data_crc( half_cfrc_len, frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET ) )
-		{
-			struct endstation_to_host packet_end_to_host;
-			struct endstation_to_host_special packet_spe_end_to_host;
-			int r = -1;
-
-			// 读取协议数据、解析协议数据
-			r = conference_end_to_host_frame_read( frame,  &packet_end_to_host, &packet_spe_end_to_host, \
-					CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, JDKSAVDECC_FRAME_MAX_PAYLOAD_SIZE );
-
-			// 处理协议数据
-			handle_end_to_host_packet_deal_func( r, &packet_end_to_host,  &packet_spe_end_to_host );				
-		}
-		// 检查备份的协议数据校验,如果校验正确，那么继续处理协议数据(取出协议数据、解析与处理);若校验不正确,那么要求终端重新发送命令
-		else if( check_conferece_deal_data_crc( half_cfrc_len, frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + half_cfrc_len ))
-		{
-			struct endstation_to_host packet_end_to_host;
-			struct endstation_to_host_special packet_spe_end_to_host;
-			int r = -1;
-
-			// 读取协议数据、解析协议数据
-			r = conference_end_to_host_frame_read( frame,  &packet_end_to_host, &packet_spe_end_to_host, \
-					CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + half_cfrc_len , JDKSAVDECC_FRAME_MAX_PAYLOAD_SIZE );
-
-			// 处理协议数据
-			handle_end_to_host_packet_deal_func( r, &packet_end_to_host,  &packet_spe_end_to_host );
-		}	
-		else
-		{
-			//若校验不正确,那么要求终端重新发送命令
-			DEBUG_INFO("double conference deal data recv wrong!client will send command again\n");
-			return;
-		}
-	}
-	else
+	memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
+	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, frame_len-connference_len );
+	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
+	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
+	
+	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len );
+	if( ret == 0)
 	{
-		DEBUG_INFO( "nothings conference data length!or is not conference deal data!\n" );
-		return;
+		terminal_recv_message_pro( &conference_frame );
 	}
+	
 }
 
 int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, int *status )
@@ -117,7 +78,7 @@ void proc_rcvd_aem_resp( const uint8_t *frame, size_t frame_len, int *status )
         uint16_t cmd_type;
         uint16_t desc_type;
         uint16_t desc_index;
-        cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+        cmd_type = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
         cmd_type &= 0x7FFF;
 
         switch(cmd_type)

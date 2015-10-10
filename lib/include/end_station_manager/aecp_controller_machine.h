@@ -19,6 +19,7 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, uint64_t entity_id);
 int aecp_send_read_desc_cmd( uint16_t desc_type, uint16_t desc_index, uint64_t target_entity_id);
 int aecp_read_desc_init(uint16_t desc_type, uint16_t desc_index, uint64_t target_entity_id);
+int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uint8_t *frame, size_t frame_len);
 
 
 

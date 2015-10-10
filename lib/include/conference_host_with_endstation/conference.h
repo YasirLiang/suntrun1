@@ -3,6 +3,7 @@
 
 #include "jdksavdecc_world.h"
 #include "host_controller_debug.h"
+#include "jdksavdecc_aecp_aem.h"
 
 #define CONFERENCE_TYPE 0xAB
 #define DATAMAXLENGTH 64
@@ -207,6 +208,13 @@ struct endstation_to_host_special			// 终端特殊命令格式
 	uint8_t data[DATAMAXLENGTH];
 	uint8_t crc;
 	uint8_t deal_backups[DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN];	// 协议的备份
+};
+
+struct terminal_deal_frame // aecp data conference data frame
+{
+	struct jdksavdecc_aecpdu_aem aecpdu_aem_header;
+	uint16_t payload_len;
+	uint8_t payload[ (DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
 };
 
 inline ssize_t conference_validata_range(size_t bufpos, ssize_t cdata_len,size_t buflen);
