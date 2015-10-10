@@ -30,10 +30,11 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
 	struct jdksavdecc_frame send_frame;
 	struct jdksavdecc_aecpdu_aem aemdu;
 	struct jdksavdecc_eui64 target_id;
-	convert_uint64_to_eui64( target_id.value, uint64_target_id);
 	int send_len = 0;
 	int cnf_data_len = 0;
-	
+
+	memcpy(send_frame.src_address.value, net.m_my_mac, 6);
+	convert_uint64_to_eui64( target_id.value, uint64_target_id);
 	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data);
 	send_len = conference_1722_control_form_info( &send_frame, &aemdu, jdksavdecc_multicast_adp_acmp, target_id, cnf_data_len );
 	if( send_len < 0 )

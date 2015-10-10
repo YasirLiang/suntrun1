@@ -125,7 +125,7 @@ void terminal_set_lcd_play_stype( uint64_t target_id, uint16_t addr, uint8_t lcd
 }
 
 // 设置终端LED显示方式(0x0B)
-void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_state_show_set lcd_stype )
+void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_state_show_set led_stype )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
@@ -134,8 +134,9 @@ void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_st
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_END_LED;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint16_t );
-	memcpy( askbuf.data, &lcd_stype, sizeof( uint16_t ));// 高位 位于低字节
-
+	askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
+	askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
+	
 	ternminal_send( &askbuf, asklen, target_id );
 }
 

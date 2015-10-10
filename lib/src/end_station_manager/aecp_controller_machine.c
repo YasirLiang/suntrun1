@@ -16,14 +16,6 @@ void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_gua
 
 int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp )
 {
-#if 0
-	int k = 0;
-	printf("aecp before change frame1:\t");
-	for( ;k < frame_len; k++)
-		printf("%02x ", frame[k]);
-	printf("\n");
-#endif
-
 	uint8_t msg_type = jdksavdecc_subtype_data_get_subtype( frame, 0);
 	uint32_t timeout = 200;// 临时的值，后面在修改
 	inflight_plist inflight_station = NULL;
@@ -51,8 +43,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
 				inflight_station->host_tx.inflight_frame.data_type = msg_type; 	//协议aecp acmp adp udpclient udpserver 
 				inflight_station->host_tx.inflight_frame.seq_id = aecp_seq_id;	// 初始为零
-				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, inflight_station->host_tx.inflight_frame.frame, 0 );
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, frame, 0 );
+				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id-1, inflight_station->host_tx.inflight_frame.frame, 0 );
 				inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;
 				memcpy( &inflight_station->host_tx.inflight_frame.raw_dest, dest_mac , 6 );
 				
@@ -98,8 +90,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 	}
 	
-#if 0
-	DEBUG_SEND(frame, frame_len, "aecp send frame");
+#if 1
+	DEBUG_SEND( frame, frame_len, "aecp send frame");
 #endif
 
 	// ready to send
@@ -126,13 +118,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		is_retried = is_inflight_cmds_retried( aecp_pstation );
 		frame = aecp_pstation->host_tx.inflight_frame.frame;
 		frame_len = aecp_pstation->host_tx.inflight_frame.inflight_frame_len;
-#if 0
-		int k = 0;
-		printf("aecp timeouts frame:\t");
-		for( ;k < frame_len; k++)
-		printf("%02x ", frame[k]);
-		printf("\n");
-#endif
 	}
 	else 
 	{
@@ -268,7 +253,12 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 	}
 	else
 	{
-		DEBUG_INFO( "no such inflight cmd aecp node!");
+#if 0
+		int inflight_len = 0;
+		inflight_len = get_inflight_dblist_length( aecp_inflight_guard );
+		DEBUG_INFO( " inflight_len = %d", inflight_len );
+#endif
+		DEBUG_INFO( " no such inflight cmd aecp node:msg_tyep = %02x, seq_id = %d", subtype,seq_id);
 		return -1;
 	}
 

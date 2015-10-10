@@ -539,13 +539,13 @@ void terminal_cmd_set_led_proccess(const char*opt)
 		else if( input_flag == 2 )
 		{
 			set_led = (uint16_t)atoi(&first[0]);
-			memcpy( &led_stype, &set_led,2);
+			memcpy( &led_stype, &set_led,2); // 从低位开始拷贝，拷贝到对应的低位
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, led_stype = %02x" ,convert_eui64_to_uint64_return(entity_id.value), addr, set_led);
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, [led_stype = %04x ( stop_time = %02x, speed_roll = %02x, page_show_state = %02x, bright_lv = %02x, blink = %02x )]" ,convert_eui64_to_uint64_return(entity_id.value), addr, set_led, led_stype.stop_time,led_stype.speed_roll,led_stype.page_show_state,led_stype.bright_lv,led_stype.blink);
 	terminal_set_led_play_stype( convert_eui64_to_uint64_return(entity_id.value), addr, led_stype);
 }
 void terminal_cmd_chairman_control_proccess( const char*opt )
@@ -842,7 +842,7 @@ void terminal_cmd_special_event_reply_proccess( const char *opt )
 			convert_str_to_eui64( entity_id_str, entity_id.value );
 			p++;
 			input_flag++;
-		}
+		} 
 		else if( input_flag == 1 )
 		{
 			addr = (uint16_t)atoi(&first[0]);
@@ -1016,20 +1016,20 @@ void cmd_terminal_proccess( const char *opt )
 		}
 		else if( strncmp(cmd_buf, "setIndicator", 12) == 0 )
 		{
-			terminal_cmd_set_indicator_proccess(&cmd_buf[12]);
+			terminal_cmd_set_indicator_proccess(&cmd_buf[13]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "newAllot", 8) == 0 )
 		{
 			terminal_cmd_new_allot_proccess(&cmd_buf[9]);
-			break;
+			continue;
 		}
 		else if( strncmp(cmd_buf, "setLcd", 6) == 0 )
 		{
 			terminal_cmd_set_lcd_proccess(&cmd_buf[7]);
 			continue;
 		}
-		else if( strncmp(cmd_buf, "setled", 6) == 0 )
+		else if( strncmp(cmd_buf, "setLed", 6) == 0 )
 		{
 			terminal_cmd_set_led_proccess(&cmd_buf[7]);
 			continue;
@@ -1037,7 +1037,7 @@ void cmd_terminal_proccess( const char *opt )
 		else if( strncmp(cmd_buf, "chairManControl", 15 ) == 0 )
 		{
 			terminal_cmd_chairman_control_proccess(&cmd_buf[16]);
-			break;
+			continue;
 		}
 		else if( strncmp(cmd_buf, "voteResult", 10) == 0 )
 		{

@@ -63,11 +63,11 @@ typedef struct _tterminal_state_set // 终端状态的设置
 
 typedef struct _tterminal_led_show_stype // 设置终端 led 显示方式
 {
-	uint8_t blink:1;
-	uint8_t bright_lv:4;
-	uint8_t page_show_state:3;
-	uint8_t speed_roll:4;
 	uint8_t stop_time:4;
+	uint8_t speed_roll:4;
+	uint8_t page_show_state:3;
+	uint8_t bright_lv:4;
+	uint8_t blink:1;
 }tmnl_led_state_show_set;
 
 typedef struct _tterminal_vote_result	// 投票表决结果
