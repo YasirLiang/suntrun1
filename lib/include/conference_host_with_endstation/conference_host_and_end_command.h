@@ -1,5 +1,0 @@
-#ifndef __CONFERENCE_HOST_AND_END_HANDLE_H__
-#define __CONFERENCE_HOST_AND_END_HANDLE_H__
-
-#endif
-
