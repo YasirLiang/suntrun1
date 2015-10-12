@@ -261,7 +261,7 @@ void cmd_list_proccess( void )
 		else 
 			connect_ch = 'D';
 
-		desc_entity_node = search_desc_dblist_node( end_id, descptor_guard);
+		desc_entity_node = search_desc_dblist_node_no_printf_info( end_id, descptor_guard);
 		if( NULL != desc_entity_node )
 		{
 			memcpy( firmware, desc_entity_node->endpoint_desc.firmware_version.value, sizeof(struct jdksavdecc_string));
@@ -970,7 +970,6 @@ void cmd_terminal_proccess( const char *opt )
 {
 	while(1)
 	{
-		DEBUG_LINE();
 		 char* cmd_buf = readline( "$ " );
 		 if ( !cmd_buf )
 	            break;

@@ -59,6 +59,7 @@ void delect_inflight_dblist_node( inflight_plist *free_node );
 		if( pnode->endpoint_desc.entity_id == entity_id)break
 			
 desc_pdblist search_desc_dblist_node( uint64_t entity_id, desc_pdblist guard );
+desc_pdblist search_desc_dblist_node_no_printf_info( uint64_t entity_id, desc_pdblist guard );
 int get_desc_dblist_length( desc_pdblist head );
 void delect_descptor_dblist_node( desc_pdblist *free_node );
 int get_descptor_dblist_length( desc_pdblist head );

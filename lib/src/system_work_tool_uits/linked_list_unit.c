@@ -532,6 +532,23 @@ desc_pdblist search_desc_dblist_node( uint64_t entity_id, desc_pdblist guard )
 	}
 }
 
+// 寻找ID为entity_id 的描述符信息节点
+desc_pdblist search_desc_dblist_node_no_printf_info( uint64_t entity_id, desc_pdblist guard )
+{
+	assert( guard );
+	desc_pdblist pnode = guard->next;
+
+	SEARCH_FOR_DESCPTOT_LIST_RIGHT_ENTITY_NODE( guard, pnode, entity_id );
+	if( pnode != guard )
+	{
+		return pnode;
+	}
+	else
+	{
+		return NULL;
+	}
+}
+
 int get_desc_dblist_length( desc_pdblist head )
 {
 	assert( NULL != head );
