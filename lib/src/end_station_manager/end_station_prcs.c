@@ -12,20 +12,20 @@
 #include "configuration_descptor.h"
 #include "terminal_pro.h"
 
-void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len )
+void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len, int *status )
 {
-	assert( frame );
+	assert( frame && status );
 	uint32_t msg_type;
 	struct terminal_deal_frame conference_frame;
 	uint16_t connference_len = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 	conference_frame.payload_len = connference_len;
 
 	memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
-	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, frame_len-connference_len );
+	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, frame_len - connference_len );
 	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
 	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
 	
-	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len );
+	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
 	if( ret == 0)
 	{
 		terminal_recv_message_pro( &conference_frame );
@@ -33,7 +33,7 @@ void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *fra
 	
 }
 
-int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, int *status )
+int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, int *status  )
 {
 	uint16_t desc_index = 0;
 	

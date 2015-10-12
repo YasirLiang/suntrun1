@@ -286,12 +286,14 @@ void terminal_cmd_query_proccess( const char*opt )
 		if( input_flag == 0 )
 		{
 			memcpy( entity_id_str, first, copy_num );
+			//printf( "str = %s", entity_id_str);
 			convert_str_to_eui64( entity_id_str, entity_id.value );
 			p++;
 			input_flag++;
 		}
 		else if( input_flag == 1 )
 		{
+			DEBUG_LINE();
 			addr = (uint16_t)atoi(&first[0]);
 			p++;
 			input_flag++;
@@ -683,11 +685,11 @@ void terminal_cmd_limit_spk_time_proccess(const char *opt)
 }
 void terminal_cmd_host_send_state_proccess(const char *opt)
 {
-	uint16_t addr = 0;
 	char entity_id_str[32] = {0};
 	struct jdksavdecc_eui64 entity_id;
 	
 	tmnl_main_state_send state_send;
+	memset( &state_send, 0, sizeof(tmnl_main_state_send));
 	state_send.apply = 10;
 	state_send.apply_set = 10;
 	state_send.spk_num = 4;
@@ -713,19 +715,13 @@ void terminal_cmd_host_send_state_proccess(const char *opt)
 		}
 		else if( input_flag == 1 )
 		{
-			addr = (uint16_t)atoi(&first[0]);
-			p++;
-			input_flag++;
-		}
-		else if( input_flag == 2 )
-		{
 			state_send.unit = (uint8_t)atoi(&first[0]); // 接入终端的总数
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx  conference_stype= %d" , convert_eui64_to_uint64_return(entity_id.value), state_send.conference_stype );
+	DEBUG_INFO( "query entity id = 0x%016llx  conference_stype = %d" , convert_eui64_to_uint64_return(entity_id.value), state_send.conference_stype );
 	terminal_host_send_state( convert_eui64_to_uint64_return(entity_id.value), state_send);
 }
 void terminal_cmd_send_end_lcd_proccess(const char *opt)

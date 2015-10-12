@@ -434,6 +434,14 @@ const char * aem_cmd_status_value_to_name(uint32_t aem_cmd_status_value)
 	return "UNKNOWN";
 }
 
+const char* aecp_vendor_unique_status_value_to_name( uint32_t vendor_statue_value )
+{
+	if( vendor_statue_value <= JDKSAVDECC_AECP_VENDOR_STATUS_NOT_IMPLEMENTED)
+		return jdksavdecc_aecp_vendor_print_status[vendor_statue_value].name;
+	else 
+		return "UNKNOWN";
+}
+
 const char * acmp_cmd_value_to_name( uint32_t cmd_value )
 {
 	if(cmd_value < TOTAL_NUM_OF_ACMP_CMDS)

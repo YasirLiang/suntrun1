@@ -140,13 +140,13 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			if((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) || 
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_CONNECTION_RESPONSE))
 			{
-				entity_entity_id = jdksavdecc_acmpdu_get_talker_entity_id( frame, 0 );
+				entity_entity_id = jdksavdecc_acmpdu_get_talker_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
 			}
 			else if((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) ||
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE) ||
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE))
 			{
-				entity_entity_id = jdksavdecc_acmpdu_get_listener_entity_id( frame, 0 );
+				entity_entity_id = jdksavdecc_acmpdu_get_listener_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
 			}
 
 			// listerner 在系统中
@@ -214,8 +214,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			DEBUG_INFO( " msg_type =%d isfound =%d ", msg_type, found_aecp_in_end_station);
 			if( ( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )  )
 			{
-				if( found_aecp_in_end_station)
-					proc_aecp_message_type_vendor_unique_command_conference( frame, frame_len );
+				if( found_aecp_in_end_station )
+					proc_aecp_message_type_vendor_unique_command_conference( frame, frame_len, status );
 			}
 			else
 			{

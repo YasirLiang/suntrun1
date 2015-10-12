@@ -4,6 +4,7 @@
 #include "conference_host_to_end.h"
 #include "system_packet_tx.h"
 #include "inflight.h"
+#include "aecp_controller_machine.h"
 
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
@@ -44,13 +45,15 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
 	}
 
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, false );
-
+	aecp_callback( CMD_WITH_NOTIFICATION, send_frame.payload);
+	
 	return (uint16_t)send_len;
 }
 
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 {
-	DEBUG_RECV( conference_frame->payload , conference_frame->payload_len, "Conference Data" );
+	assert( NULL != conference_frame );
+	DEBUG_RECV( conference_frame->payload , conference_frame->payload_len, "Conference Data Recv" );
 }
 
 void host_reply_terminal()

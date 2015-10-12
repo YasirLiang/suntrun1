@@ -5,6 +5,8 @@
 #include "host_controller_debug.h"
 #include "enum.h"
 #include "jdksavdecc_print.h"
+#include "jdksavdecc_aecp_vendor.h"
+#include "jdksavdecc_aecp_print.h"
 
 uint32_t get_udp_client_timeout_table(uint8_t msg_type );
 void convert_eui48_to_uint64(const uint8_t value[6], uint64_t *new_value);
@@ -27,6 +29,7 @@ void convert_uint64_to_eui64( uint8_t dest_out[8], const uint64_t in );
 const char * aem_cmd_value_to_name(uint16_t cmd_value);
 const char *  aem_desc_value_to_name(uint16_t desc_value);
 const char * aem_cmd_status_value_to_name(uint32_t aem_cmd_status_value);
+const char* aecp_vendor_unique_status_value_to_name( uint32_t vendor_statue_value );
 
 #endif
 

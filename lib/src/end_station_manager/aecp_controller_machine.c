@@ -206,11 +206,12 @@ int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, 
 	return 0;
 }
 
-int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uint8_t *frame, size_t frame_len)
+int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uint8_t *frame, size_t frame_len, int *status )
 {
-	assert(frame);
+	assert( frame && status );
 	struct jdksavdecc_frame jdk_frame;
-	memcpy( jdk_frame.payload, frame, frame_len);
+	memcpy( jdk_frame.payload, frame, frame_len );
+	*status = jdksavdecc_common_control_header_get_status( frame, ZERO_OFFSET_IN_PAYLOAD );
 
 	switch( msg_type )
 	{
@@ -223,7 +224,10 @@ int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uin
 			return -1;
 	}
 
-	return 0;
+	if( *status ==  JDKSAVDECC_AECP_VENDOR_STATUS_SUCCESS)
+		return 0;
+	else 
+		return -1;
 }
 
 int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct jdksavdecc_frame *cmd_frame)
@@ -295,7 +299,7 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
         uint16_t desc_type = 0;
         uint16_t desc_index = 0;
 
-	if( (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) || (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE))
+	if( (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) && (msg_type !=  JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE))
 	{
 	        switch(cmd_type)
 	        {
@@ -427,6 +431,37 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
                                       desc_index,
                                       jdksavdecc_aecpdu_common_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD));
         }
+	else  if((notification_flag == CMD_WITH_NOTIFICATION) &&
+            ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) ||
+            (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE)))
+        {
+        	uint8_t addr[2] ={0};
+        	uint16_t conference_data_len = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+		uint8_t conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
+		addr[0] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 2 );
+		addr[1] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 3 );
+		uint8_t data_len = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 4 );
+		DEBUG_ONINFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %s) ]",
+						jdksavdecc_uint64_get(&id, 0),
+						conference_cmd,
+						addr[0],
+						addr[1],
+						data_len,
+						conference_data_len,
+	                                        aecp_vendor_unique_status_value_to_name(status));
+
+           	if( status != JDKSAVDECC_AECP_VENDOR_STATUS_SUCCESS )
+            	{
+                	DEBUG_INFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %s) ]",
+						jdksavdecc_uint64_get(&id, 0),
+						conference_cmd,
+						addr[0],
+						addr[1],
+						data_len,
+						conference_data_len,
+	                                        aecp_vendor_unique_status_value_to_name(status));
+            	}
+        }
         else if((notification_flag == CMD_WITHOUT_NOTIFICATION) &&
                 ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_RESPONSE) ||
                 (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_ADDRESS_ACCESS_RESPONSE)))
@@ -452,39 +487,7 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
                                           aem_cmd_status_value_to_name(status));
             }
         }
-	else  if((notification_flag == CMD_WITH_NOTIFICATION) &&
-            ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND) ||
-            (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE)))
-        {
-        	uint8_t addr[2] ={0};
-        	uint16_t conference_data_len = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
-		uint8_t conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
-		addr[0] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 2 );
-		addr[1] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 3 );
-		uint8_t data_len = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 4 );
-		DEBUG_ONINFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %d) ]",
-						jdksavdecc_uint64_get(&id, 0),
-						conference_cmd,
-						addr[0],
-						addr[1],
-						data_len,
-						conference_data_len,
-	                                        status);
-
-           	if(status != AEM_STATUS_SUCCESS)
-            	{
-                	DEBUG_INFO( "LOGGING_LEVEL_ERROR,RESPONSE_RECEIVED, 0x%016llx, %s, %s, %d, %d, %s",
-                                          jdksavdecc_uint64_get(&id, 0),
-                                          aem_cmd_value_to_name(cmd_type),
-                                          aem_desc_value_to_name(desc_type),
-                                          desc_index,
-                                          jdksavdecc_aecpdu_common_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD),
-                                          aem_cmd_status_value_to_name(status));
-
-			DEBUG_INFO( " [  UNIQUE_COMMAND ERROR: 0x%llx, %s ( data len = %d )  ]", jdksavdecc_uint64_get(&id, 0), get_host_and_end_conference_string_value(conference_cmd), conference_data_len );
-            	}
-        }
-
+		
 	return 0;
 }
 
