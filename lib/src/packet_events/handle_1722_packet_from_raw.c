@@ -211,7 +211,6 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			}
 			
 			// 主机与终端的协议号,在1722中未被使用,此时命令类型即为会议系统协议数据负载的长度，包括备份的协议数据长度
-			DEBUG_INFO( " msg_type =%d isfound =%d ", msg_type, found_aecp_in_end_station);
 			if( ( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )  )
 			{
 				if( found_aecp_in_end_station )
