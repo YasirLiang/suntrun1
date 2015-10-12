@@ -75,7 +75,7 @@ void  adp_entity_timeout( solid_pdblist adp_node )
 	}
 }
 
-solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_entity, const struct jdksavdecc_adpdu *src_du,const int list_len )
+solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_entity, const struct jdksavdecc_adpdu *src_du, const int list_len )
 {
 	const struct jdksavdecc_adpdu *adp_du = src_du;
 	uint64_t entity_entity_id = 0; 
@@ -90,8 +90,9 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 		(*success_node).solid.entity_id = entity_entity_id;
 		adp_entity_time_start( (timetype)adp_du->header.valid_time * 2 * 1000, success_node);// 2s到61s之间
 		(*success_node).solid.connect_flag = CONNECT;
-		memcpy( &success_node->solid.adpdu, adp_du, sizeof(struct jdksavdecc_adpdu));
 		(*success_node).solid.entity_index = list_len; 		//索引从零开始 
+		(*success_node).solid.available_index = adp_du->available_index;
+		memcpy(&(*success_node).solid.entity_model_id, &adp_du->entity_model_id, sizeof(struct jdksavdecc_eui64));
 		insert_endpoint_dblist_trail(guard,success_node);
 	
 		DEBUG_INFO( "list lenght = %d", list_len + 1 );// 新创建节点插入到链表前链表长度为原来的长度

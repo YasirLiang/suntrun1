@@ -58,7 +58,10 @@ int conference_host_raw_receive( int sockfd, uint16_t *ethertype, uint8_t src_ma
 			r = buf_len - 14;
 		}
 
-		DEBUG_RECV( buf, buf_len, "RECV RAW");
+		if( buf[14] != 0xfa)
+		{
+			DEBUG_RECV( buf, buf_len, "RECV RAW");
+		}
 	}
 	else
 	{

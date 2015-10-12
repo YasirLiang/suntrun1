@@ -11,6 +11,7 @@
 #include "aecp_controller_machine.h"
 #include "configuration_descptor.h"
 #include "terminal_pro.h"
+#include "jdksavdecc_pdu.h"
 
 void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len, int *status )
 {
@@ -18,13 +19,13 @@ void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *fra
 	uint32_t msg_type;
 	struct terminal_deal_frame conference_frame;
 	uint16_t connference_len = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
-	conference_frame.payload_len = connference_len;
-
+	
 	memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
-	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, frame_len - connference_len );
+	conference_frame.payload_len = connference_len;
+	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, JDKSAVDECC_COMMON_CONTROL_HEADER_LEN + 12);
 	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
 	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
-	
+
 	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
 	if( ret == 0)
 	{
@@ -431,7 +432,6 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
                 case JDKSAVDECC_DESCRIPTOR_CONFIGURATION:
                     if( found_descptor_endstation && descptor_info->endpoint_desc.conf_desc.descriptor_counts_count == 0)
                     {
-                    	DEBUG_LINE();
                         store_descriptor = true;
                     }
                     break;
@@ -452,31 +452,35 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
                     case JDKSAVDECC_DESCRIPTOR_ENTITY:
                         if ( !found_descptor_endstation )	// create descptor double list node to store the descptor information
                         {
-                       	 	DEBUG_LINE();
-                        	descptor_info = create_descptor_dblist_node( &descptor_info);
+                        	descptor_info = create_descptor_dblist_node( &descptor_info );
 				if( NULL == descptor_info )
 				{
 					DEBUG_INFO( "create new descptor endstation failed!system init descptor information failed, you must be attention for it!" );
-					assert( NULL != descptor_info);
+					assert( NULL != descptor_info );
 				}
-				init_descptor_dblist_node_info(descptor_info);
+				init_descptor_dblist_node_info( descptor_info );
 				
 				// init entity descptor information
 				if( target_entity_id != 0)
+				{
 					descptor_info->endpoint_desc.entity_id = target_entity_id;
-				
-				descptor_info->endpoint_desc.entity_desc.configurations_count = entity_desc.configurations_count;
-				descptor_info->endpoint_desc.entity_desc.current_configuration = entity_desc.current_configuration;
- 				descptor_info->endpoint_desc.entity_desc.descriptor_type = entity_desc.descriptor_type;
-				descptor_info->endpoint_desc.entity_desc.descriptor_index = entity_desc.descriptor_index;
-				descptor_info->endpoint_desc.is_entity_desc_exist = true;
+					descptor_info->endpoint_desc.entity_desc.configurations_count = entity_desc.configurations_count;
+					descptor_info->endpoint_desc.entity_desc.current_configuration = entity_desc.current_configuration;
+ 					descptor_info->endpoint_desc.entity_desc.descriptor_type = entity_desc.descriptor_type;
+					descptor_info->endpoint_desc.entity_desc.descriptor_index = entity_desc.descriptor_index;
+					descptor_info->endpoint_desc.is_entity_desc_exist = true;
+					memcpy(&descptor_info->endpoint_desc.entity_name,  &entity_desc.entity_name, sizeof(struct jdksavdecc_string ));
+					memcpy(&descptor_info->endpoint_desc.firmware_version,  &entity_desc.firmware_version, sizeof(struct jdksavdecc_string ));
+				}
 				insert_descptor_dblist_trail( descptor_guard, descptor_info);
                         }
                         break;
 
                     case JDKSAVDECC_DESCRIPTOR_CONFIGURATION:
 			if( found_descptor_endstation )
+			{
                         	store_config_desc( frame, read_desc_offset, frame_len, descptor_info);
+			}
                         break;
 
                     case JDKSAVDECC_DESCRIPTOR_AUDIO_UNIT:
@@ -581,12 +585,12 @@ void background_read_deduce_next( desc_pdblist cd, uint16_t desc_type, void *fra
 	uint16_t total_num_of_desc = 0;
 	uint16_t desc_index;
 	uint64_t target_id = cd->endpoint_desc.entity_id;
-	//DEBUG_INFO("[background_read_deduce_next target id: 0x%016llx (desc_tyep = %d) ]", target_id, desc_type );
-
+	
 	bool have_index = desc_index_from_frame(desc_type, frame, read_desc_offset, &desc_index);
 	if (!have_index)
 		desc_index = 0;
-
+	
+	//DEBUG_INFO("[background_read_deduce_next target id: 0x%016llx (desc_tyep = %d), con_is_exist = %d ]", target_id, desc_type, cd->endpoint_desc.is_configuration_desc_exist);
 	if ((desc_type != JDKSAVDECC_DESCRIPTOR_ENTITY) && (!cd->endpoint_desc.is_configuration_desc_exist))
 	{
 		DEBUG_INFO("LOGGING_LEVEL_ERROR:Invalid configuration_descriptor passed to background_read_deduce_next()");

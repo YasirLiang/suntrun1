@@ -44,6 +44,8 @@ typedef struct _configuration_descriptor
 struct endpoint_decriptor 						// 实体的描述符，可在后面添加其它的描述符类型
 {
 	uint64_t entity_id;							// 实体ID
+	struct jdksavdecc_string entity_name;			// 实体名字
+	struct jdksavdecc_string firmware_version;		// 实体的固件版本
 	bool is_entity_desc_exist;
 	bool is_configuration_desc_exist;
 	bool is_input_stream_desc_exist;

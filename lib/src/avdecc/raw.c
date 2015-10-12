@@ -299,7 +299,6 @@ ssize_t raw_send( struct raw_context *self, const uint8_t dest_mac[6], const voi
     eh->h_proto = htons( self->m_ethertype );
     memcpy( data, payload, payload_len );
 
-	
     do
     {
         sent_len
@@ -309,9 +308,8 @@ ssize_t raw_send( struct raw_context *self, const uint8_t dest_mac[6], const voi
     {
         r = sent_len - 14;
     }
-    // DEBUG_SEND( buffer, sent_len, "RAW SEND");
-
-
+   DEBUG_SEND( buffer, sent_len, "RAW SEND");
+   
     return r;
 #elif defined( __APPLE__ ) || defined( _WIN32 )
     int r = 0;

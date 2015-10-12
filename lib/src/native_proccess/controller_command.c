@@ -6,6 +6,7 @@
 #include <readline/history.h>
 #include "terminal_pro.h"
 #include "terminal_command.h"
+#include "descriptor.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -243,8 +244,11 @@ void cmd_list_proccess( void )
 	uint64_t end_mac = 0;
 	bool connect_flag = false;
 	solid_pdblist end_list_node = end_list_guard->next;
+	desc_pdblist desc_entity_node = NULL;
+	uint8_t firmware[64] = "UNKNOWN";
+	uint8_t entity_name[64] = "UNKNOWN";
 	
-	MSGINFO( "\nEnd Station    |  Entity ID\t\t|  Mac\t\n-------------------------------------------------------------------------------" );
+	MSGINFO( "\nEnd Station    |  Name\t\t  |  Entity ID\t      |  Firmware    |  Mac\t\n--------------------------------------------------------------------------------------" );
 	for( ; end_list_node != end_list_guard; end_list_node = end_list_node->next )
 	{
 		char connect_ch = 'D';
@@ -256,8 +260,15 @@ void cmd_list_proccess( void )
 			connect_ch = 'C';
 		else 
 			connect_ch = 'D';
-		
-		MSGINFO( "%c\t%d      |  0x%016llx\t | %012llx", connect_ch, end_num, end_id, end_mac );
+
+		desc_entity_node = search_desc_dblist_node( end_id, descptor_guard);
+		if( NULL != desc_entity_node )
+		{
+			memcpy( firmware, desc_entity_node->endpoint_desc.firmware_version.value, sizeof(struct jdksavdecc_string));
+			memcpy( entity_name, desc_entity_node->endpoint_desc.entity_name.value, sizeof(struct jdksavdecc_string));
+		}
+			
+		MSGINFO( "%c\t%d      |  %s    |  0x%016llx    |  %s\t     |  %012llx", connect_ch,  end_num, entity_name, end_id, firmware, end_mac );
 	}
 
 	MSGINFO( "\r\nC  End Station connect\nD  End Stastion disconnect\r\n\r\n" );

@@ -24,7 +24,9 @@ struct entity
 	struct entity_timeout time;		// 实体的超时信息
 	uint32_t entity_index;			// 实体索引(这里由系统分配, 且从 0 开始)
 	uint64_t entity_id;				// 实体ID
-	struct jdksavdecc_adpdu adpdu;	// 实体的详细信息
+	uint32_t available_index;
+	struct jdksavdecc_eui64 entity_model_id;
+	//struct jdksavdecc_adpdu adpdu;
 };
 
 typedef struct entities				// 实体节点，存在于系统中
