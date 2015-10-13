@@ -3,6 +3,7 @@
 #include "acmp_controller_machine.h"
 #include "adp_controller_machine.h"
 #include "aecp_controller_machine.h"
+#include "terminal_pro.h"
 
 void init_system( void )
 {
@@ -16,6 +17,8 @@ void init_system( void )
 	acmp_endstation_init( command_send_guard, endpoint_list, descptor_guard );
 	aecp_controller_init(endpoint_list, descptor_guard,command_send_guard );
 	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
+
+	init_terminal_proccess_system();
 }
 
 void get_system_information( void )

@@ -20,9 +20,7 @@
 #include "time_event.h"
 
 struct epoll_priv;
-
 typedef int (* handler_fn) (struct epoll_priv * priv);
-
 
 struct epoll_priv
 {

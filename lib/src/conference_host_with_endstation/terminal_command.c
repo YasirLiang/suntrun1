@@ -1,3 +1,9 @@
+/**
+*terminal_command.c
+*
+*conference protocol command proccess
+*/
+
 #include "terminal_command.h"
 
 // 查询终端, addr是未注册的但是终端已分配了的地址
@@ -35,11 +41,6 @@ void terminal_reallot_address( void )
 	struct host_to_endstation askbuf; 
 	uint16_t  asklen = 0;
 	uint64_t  target_zero = 0;
-
-	allot_addr_pro.addr_start = 0;
-	allot_addr_pro.index = 0;
-	allot_addr_pro.renew_flag= 0;
-	init_terminal_address_list();
 	
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_REALLOCATION;
@@ -88,7 +89,7 @@ void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_ENDLIGHT;
 	askbuf.cchdr.address = addr;
-	askbuf.data_len = sizeof( uint16_t );
+	askbuf.data_len = sizeof( uint16_t ); // data lenght of the conference deal is 2
 	askbuf.data[0] = (uint8_t)((data & 0xff00) >> 8);// 高八位在低字节
 	askbuf.data[1] = (uint8_t)((data & 0x00ff) >> 0);
 
@@ -104,7 +105,7 @@ void terminal_new_endstation_allot_address( uint64_t target_id )
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_NEW_ALLOCATION;
 	askbuf.cchdr.address = 0x8000;
-	askbuf.data_len = 0;
+	askbuf.data_len = 0; // data lenght of the conference deal is 0
 
 	ternminal_send( &askbuf, asklen, target_id );
 }
@@ -118,7 +119,7 @@ void terminal_set_lcd_play_stype( uint64_t target_id, uint16_t addr, uint8_t lcd
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_END_LCD;
 	askbuf.cchdr.address = addr;
-	askbuf.data_len = sizeof( uint8_t );
+	askbuf.data_len = sizeof( uint8_t ); // data lenght of the conference deal is 1
 	askbuf.data[0] = lcd_stype;
 
 	ternminal_send( &askbuf, asklen, target_id );
@@ -133,7 +134,7 @@ void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_st
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_END_LED;
 	askbuf.cchdr.address = addr;
-	askbuf.data_len = sizeof( uint16_t );
+	askbuf.data_len = sizeof( uint16_t ); // data lenght of the conference deal is 2
 	askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
 	askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
 	
@@ -150,7 +151,7 @@ void terminal_chairman_control_meeting( uint64_t target_id, uint16_t addr, uint8
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_PRESIDENT_CONTROL|COMMAND_TMN_REPLY;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint8_t );
-	askbuf.data[0] = data;
+	askbuf.data[0] = data;	// oo nomal; 11 未签到
 
 	ternminal_send( &askbuf, asklen, target_id );
 }
@@ -164,8 +165,8 @@ void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_res
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SEND_VOTE_RESULT;
 	askbuf.cchdr.address = addr;
-	askbuf.data_len = sizeof( tmnl_vote_result );
-	memcpy( askbuf.data, &vote_rslt, sizeof( tmnl_vote_result ));
+	askbuf.data_len = sizeof( tmnl_vote_result ); // data lenght of the conference deal is 8
+	memcpy( askbuf.data, &vote_rslt, sizeof( tmnl_vote_result ));// it will copy from low bit of one data
 	
 	ternminal_send( &askbuf, asklen, target_id );
 }
@@ -194,7 +195,7 @@ void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_sen
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_HOST_SEND_STATUS;
 	askbuf.cchdr.address = 0x8000;
-	askbuf.data_len = sizeof( tmnl_main_state_send ) - 1;
+	askbuf.data_len = sizeof( tmnl_main_state_send ) - 1; // data length is 7 based on conference deal
 	askbuf.data[0] = ( uint8_t )((main_send.unit & 0x00ff) >> 0);
 	askbuf.data[1] = ( uint8_t )((main_send.unit & 0xff00) >> 8);
 	askbuf.data[2] = ((uint8_t)(main_send.conference_stype & 0xf)) |((uint8_t)((main_send.chm_first & 0x1) << 6))\

@@ -26,6 +26,7 @@ void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *fra
 	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
 	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
 
+	// update aecp inflight command in the controller system
 	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
 	if( ret == 0)
 	{

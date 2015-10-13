@@ -297,21 +297,19 @@ void terminal_cmd_query_proccess( const char*opt )
 		if( input_flag == 0 )
 		{
 			memcpy( entity_id_str, first, copy_num );
-			//printf( "str = %s", entity_id_str);
 			convert_str_to_eui64( entity_id_str, entity_id.value );
 			p++;
 			input_flag++;
 		}
 		else if( input_flag == 1 )
 		{
-			DEBUG_LINE();
 			addr = (uint16_t)atoi(&first[0]);
 			p++;
 			input_flag++;
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx addr = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr);
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %04x" ,convert_eui64_to_uint64_return(entity_id.value), addr);
 	terminal_query_endstation( addr, convert_eui64_to_uint64_return(entity_id.value));
 }
 void terminal_cmd_allot_proccess( void )
@@ -638,11 +636,11 @@ void terminal_cmd_query_vote_result_proccess( const char*opt )
 		else if( input_flag == 2 )
 		{
 			memcpy( vote_re_tmp_str, first, copy_num );
-			convert_str_to_eui64( entity_id_str, vote_re_tmp );
-			vote_rslt.total = (((uint16_t)vote_re_tmp[1]) << 8) |(((uint16_t)vote_re_tmp[0]) << 0);
-			vote_rslt.abs = (((uint16_t)vote_re_tmp[3]) << 8) |(((uint16_t)vote_re_tmp[2]) << 0);
-			vote_rslt.neg = (((uint16_t)vote_re_tmp[5]) << 8) |(((uint16_t)vote_re_tmp[4]) << 0);
-			vote_rslt.aff = (((uint16_t)vote_re_tmp[7]) << 8) |(((uint16_t)vote_re_tmp[6]) << 0);
+			convert_str_to_eui64( vote_re_tmp_str, vote_re_tmp );
+			vote_rslt.total = (((uint16_t)vote_re_tmp[0]) << 8) |(((uint16_t)vote_re_tmp[1]) << 0);
+			vote_rslt.abs = (((uint16_t)vote_re_tmp[2]) << 8) |(((uint16_t)vote_re_tmp[3]) << 0);
+			vote_rslt.neg = (((uint16_t)vote_re_tmp[4]) << 8) |(((uint16_t)vote_re_tmp[5]) << 0);
+			vote_rslt.aff = (((uint16_t)vote_re_tmp[6]) << 8) |(((uint16_t)vote_re_tmp[7]) << 0);
 			p++;
 			input_flag++;
 		}
@@ -997,7 +995,6 @@ void cmd_terminal_proccess( const char *opt )
 		else if( strncmp(cmd_buf, "query", 5 ) == 0 )
 		{
 			terminal_cmd_query_proccess(&cmd_buf[6]);
-			DEBUG_LINE();
 			continue;
 		}
 		else if( strncmp(cmd_buf, "allot", 5 ) == 0 )
@@ -1160,13 +1157,13 @@ void controller_proccess( void )
 			cmd_terminal_proccess(cmd_buf);
 			continue;
 		}
-		else if((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0))
+		else if(((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)))
 		{
 			exit(1);
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nlist\nupdate\nq\nquit\nshow\n");
+			MSGINFO( "adp\nclear\nconnect\ndisconnect\nlist\nupdate\nq\nquit\nshow\nterminal\n");
 			continue;
 		}
 

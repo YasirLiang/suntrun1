@@ -41,7 +41,7 @@ inline static void  conference_common_header_read(struct conference_common_heade
 	uint8_t *p = ((uint8_t *)base) + offset;
 	hdr->byte_guide = p[0];
 	hdr->command_control = p[1];
-	hdr->address = ((p[2] & 0x00ff) << 8) | ((p[3] & 0x00ff) << 0);
+	hdr->address = ((p[2] & 0x00ff) << 0) | ((p[3] & 0x00ff) << 8);// 地址在负载中低字节在前
 }
 
 inline static ssize_t conference_end_to_host_spe_data_len_read(uint8_t *d, const void *base, const size_t offset)

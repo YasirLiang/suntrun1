@@ -81,8 +81,8 @@ void conference_common_header_write(const struct conference_common_header phdr, 
 	uint8_t *p = ((uint8_t *)base) + offset;
 	p[0] = phdr.byte_guide;
 	p[1] = phdr.command_control;
-	p[2] = (0xff00 & phdr.address) >> 8;//地址高八位
-	p[3] = (0x00ff & phdr.address) >> 0;//地址低八位
+	p[2] = (0x00ff & phdr.address) >> 0;//地址低八位(低字节在前)
+	p[3] = (0xff00 & phdr.address) >> 8;//地址高八位(高字节在后)
 }
 
 //写入会议协议的数据长度

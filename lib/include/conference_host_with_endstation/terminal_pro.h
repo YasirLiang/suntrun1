@@ -89,7 +89,7 @@ typedef struct _ttmerminal_main_state_send // 主机发送状态
 {
 	uint16_t unit;				// 接入主机的终端总数
 	
-	uint8_t conference_stype:4;
+	uint8_t conference_stype:4; // 会议模式
 	uint8_t :2;
 	uint8_t chm_first:1;
 	uint8_t camera_follow:1;		// 模式设置
@@ -100,7 +100,7 @@ typedef struct _ttmerminal_main_state_send // 主机发送状态
 	uint8_t apply;				// 申请人数
 }tmnl_main_state_send;
 
-typedef struct _tterminal_send_end_lcd_display
+typedef struct  _tterminal_send_end_lcd_display
 {
 	uint8_t opt;	// 操作指示 
 	uint8_t num;  // 屏号
@@ -108,9 +108,8 @@ typedef struct _tterminal_send_end_lcd_display
 
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id );
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
-
 void init_terminal_address_list( void );
-
+void init_terminal_proccess_system( void );
 
 #endif
 
