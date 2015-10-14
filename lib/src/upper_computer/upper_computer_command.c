@@ -23,7 +23,7 @@ void upper_cmpt_command_examine_application()
 	
 }
 
-int upper_cmpt_command_conference_permission()
+void upper_cmpt_command_conference_permission()
 {
 	
 }
