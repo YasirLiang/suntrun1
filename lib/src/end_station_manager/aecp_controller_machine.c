@@ -269,13 +269,14 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 {
 	assert(cmd_frame);
 	uint8_t subtype = jdksavdecc_common_control_header_get_subtype( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
-	uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id(cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD);
+	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
+	uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id(cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint32_t notification_flag = 0;
 	inflight_plist inflight_aecp = NULL;
 	uint8_t conference_cmd = 0;
 	uint16_t terminal_address = 0;
 
-	if( subtype == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
+	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{
 		conference_cmd = conference_command_type_read( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		terminal_address = conferenc_terminal_read_address_data( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
@@ -292,14 +293,14 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			}
 			else
 			{
-				DEBUG_INFO( " no such right address inflight cmd aecp node:msg_type = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
+				DEBUG_INFO( " no such right address inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
 					subtype, conference_cmd, terminal_address, inflight_aecp->host_tx.inflight_frame.data_type,\
 					inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.conference_command, inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address );
 			}
 		}
 		else
 		{
-			DEBUG_INFO( " no such inflight cmd aecp node:msg_type = %02x, conference_cmd = %d terminal_address = %04x", subtype, conference_cmd, terminal_address );
+			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x", subtype, conference_cmd, terminal_address );
 			return -1;
 		}
 	}
@@ -321,7 +322,7 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			inflight_len = get_inflight_dblist_length( aecp_inflight_guard );
 			DEBUG_INFO( " inflight_len = %d", inflight_len );
 #endif
-			DEBUG_INFO( " no such inflight cmd aecp node:msg_type = %02x, seq_id = %d", subtype,seq_id);
+			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
 			return -1;
 		}
 	}

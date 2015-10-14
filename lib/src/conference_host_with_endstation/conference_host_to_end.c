@@ -6,9 +6,9 @@ void test_conf_printf(const void *pri_load, size_t load_len, char *msg)
 	uint8_t *p = ( uint8_t * )pri_load;
 	int i = 0;
 
-	fprintf( stdout, "%s \t ",  msg);
+	fprintf( stdout, "%s  ",  msg);
 	for( ; i < ( int )load_len; i++ )
-		fprintf( stdout, "%02x  ", *(p + i) );
+		fprintf( stdout, "%02x ", *(p + i) );
 	fprintf( stdout, "\n " );
 }
 
@@ -180,8 +180,9 @@ int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_
 	cfc_dlgh += cfc_dlgh;
 	frame->length = ( uint16_t )cfc_dlgh + 24;
 
+#ifdef __DEBUG__
 	test_conf_printf( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh,  CONFERENCE_DATA_MSG);
-
+#endif
 	 return ( int )cfc_dlgh;
 }
 
@@ -220,9 +221,6 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 
 
 	frame->length = jdksavdecc_aecpdu_aem_write( aemdu, frame->payload, 0, sizeof( frame->payload ) ) + cfc_dlgh;
-
-	test_conf_printf( frame->payload , frame->length - cfc_dlgh,  CONFERENCE_CONTROL_DATA_MSG);
-	test_conf_printf( frame->payload , frame->length ,  READY_SEND_FRAME_DATA);
 
 	return ( int )frame->length;
 }

@@ -12,7 +12,7 @@ int thread_pipe_fn( void *pgm )
 		{
 			tx_data tnt;
 			int result = read_pipe_tx( &tnt, sizeof(tx_data) );
-			DEBUG_INFO( "RECV pipe data: [ frame_len = %d ]", tnt.frame_len );
+			//DEBUG_INFO( "RECV pipe data: [ frame_len = %d ]", tnt.frame_len );
 			
 			if( result > 0 )
 			{
