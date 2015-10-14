@@ -17,7 +17,7 @@ void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 	
-	ternminal_send( &askbuf, asklen, entity_id );
+	ternminal_send( &askbuf, asklen, entity_id, false );
 }
 
 // 终端分配地址
@@ -32,7 +32,7 @@ void terminal_allot_address( void )
 	askbuf.cchdr.address = 0x8000; // 全广播
 	askbuf.data_len = 0;
 
-	ternminal_send( &askbuf, asklen, target_zero);
+	ternminal_send( &askbuf, asklen, target_zero, false );
 }
 
 // 重新分配地址
@@ -47,7 +47,7 @@ void terminal_reallot_address( void )
 	askbuf.cchdr.address = 0x8000; // 全广播
 	askbuf.data_len = 0;
 
-	ternminal_send( &askbuf, asklen, target_zero );
+	ternminal_send( &askbuf, asklen, target_zero, false );
 }
 
 // 终端状态设置
@@ -62,7 +62,7 @@ void terminal_state_set( tmnl_state_set tmnlstate, uint16_t addr,  uint64_t  tar
 	askbuf.data_len = sizeof( tmnl_state_set );
 	memcpy( askbuf.data, &tmnlstate, sizeof( tmnl_state_set)); 
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 设置话筒状态(0x13)
@@ -77,7 +77,7 @@ void terminal_set_mic_status( uint8_t data, uint16_t addr,  uint64_t  target_id 
 	askbuf.data_len = sizeof( uint8_t );
 	askbuf.data[0] = data;
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 设置终端指示灯
@@ -93,7 +93,7 @@ void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_
 	askbuf.data[0] = (uint8_t)((data & 0xff00) >> 8);// 高八位在低字节
 	askbuf.data[1] = (uint8_t)((data & 0x00ff) >> 0);
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 新增终端分配地址（0x07）
@@ -107,7 +107,7 @@ void terminal_new_endstation_allot_address( uint64_t target_id )
 	askbuf.cchdr.address = 0x8000;
 	askbuf.data_len = 0; // data lenght of the conference deal is 0
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 设置终端的LCD显示方式(0x09)
@@ -122,7 +122,7 @@ void terminal_set_lcd_play_stype( uint64_t target_id, uint16_t addr, uint8_t lcd
 	askbuf.data_len = sizeof( uint8_t ); // data lenght of the conference deal is 1
 	askbuf.data[0] = lcd_stype;
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 设置终端LED显示方式(0x0B)
@@ -138,7 +138,7 @@ void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_st
 	askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
 	askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 主席机控制会议（0x0D）是响应终端的主席控制命令
@@ -153,7 +153,7 @@ void terminal_chairman_control_meeting( uint64_t target_id, uint16_t addr, uint8
 	askbuf.data_len = sizeof( uint8_t );
 	askbuf.data[0] = data;	// oo nomal; 11 未签到
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, true );
 }
 
 // 发送表决结果（0x0E）
@@ -168,7 +168,7 @@ void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_res
 	askbuf.data_len = sizeof( tmnl_vote_result ); // data lenght of the conference deal is 8
 	memcpy( askbuf.data, &vote_rslt, sizeof( tmnl_vote_result ));// it will copy from low bit of one data
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 发言限制时长（0x0F）
@@ -183,7 +183,7 @@ void terminal_limit_spk_time( uint64_t target_id, uint16_t addr, tmnl_limit_spk_
 	askbuf.data_len = sizeof( uint8_t );
 	memcpy(&askbuf.data[0], &spk_time, sizeof( uint8_t));
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 主机发送状态0x10
@@ -202,7 +202,7 @@ void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_sen
 				| ((uint8_t)((main_send.camera_follow & 0x1) << 7));
 	memcpy( &askbuf.data[3], &main_send.limit, askbuf.data_len - 3 );
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 发送终端LCD显示屏号（0x11）
@@ -218,7 +218,7 @@ void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send
 	askbuf.data[0] = lcd_dis.opt;
 	askbuf.data[1] = lcd_dis.num;
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 操作终端
@@ -233,7 +233,7 @@ void terminal_option_endpoint( uint64_t target_id, uint16_t addr, uint8_t opt )
 	askbuf.data_len = sizeof( uint8_t ); // 1
 	askbuf.data[0] = opt;
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 终端特殊事件（0x14）响应(主机)
@@ -247,7 +247,7 @@ void terminal_endstation_special_event_reply( uint64_t target_id, uint16_t addr 
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, true );
 }
 
 // 转发上位机短消息（0x1E）
@@ -262,7 +262,7 @@ void terminal_transmit_upper_cmpt_message( uint64_t target_id, uint16_t addr, ui
 	askbuf.data_len = msg_len;
 	memcpy( askbuf.data, msg, msg_len );
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
 // 转发终端短消息（0x1F）主机响应
@@ -276,7 +276,7 @@ void terminal_reply_end_message_command( uint64_t target_id, uint16_t addr )
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 	
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, true );
 }
 
 // 查询终端签到表决结果(0x16)
@@ -290,6 +290,6 @@ void terminal_query_vote_sign_result( uint64_t target_id, uint16_t addr )
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 
-	ternminal_send( &askbuf, asklen, target_id );
+	ternminal_send( &askbuf, asklen, target_id, false );
 }
 

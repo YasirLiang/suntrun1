@@ -1,6 +1,7 @@
 #include "aecp_controller_machine.h"
 #include "aecp.h"
 #include "conference_end_to_host.h"
+#include "terminal_command.h"
 
 static uint16_t aecp_seq_id = 0;
 static solid_pdblist aecp_solid_guard = NULL;
@@ -17,13 +18,24 @@ void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_gua
 
 int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp )
 {
-	uint8_t msg_type = jdksavdecc_subtype_data_get_subtype( frame, 0);
+	uint8_t subtype = jdksavdecc_subtype_data_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD ); // msg_type in there is sbu
+	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t timeout = 200;// 临时的值，后面在修改
 	inflight_plist inflight_station = NULL;
-	uint16_t cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, ZERO_OFFSET_IN_PAYLOAD);
+	uint16_t cmd_type = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
         cmd_type &= 0x7FFF;
+	uint8_t conference_cmd = 0;
+	uint16_t terminal_address = 0;
+		
 	if( (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND) &&(cmd_type == JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR) )
 		timeout = 750;	// 750 ms timeout (1722.1 timeout is 250ms)
+		
+	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// conference data in this subtype data payload
+	{
+		conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+	}
+	
 	if(!resp )	// not a response data 
 	{
 		if( !resend )	// data first send
@@ -34,15 +46,16 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				DEBUG_INFO("inflight station node create failed!");
 				return -1;
 			}
-			memset(inflight_station, 0, sizeof(inflight_list));
 			
+			memset(inflight_station, 0, sizeof(inflight_list));
 			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &inflight_station->host_tx.inflight_frame.frame );
 			memset(inflight_station->host_tx.inflight_frame.frame, 0, TRANSMIT_DATA_BUFFER_SIZE);
 			if( NULL != inflight_station->host_tx.inflight_frame.frame )
 			{
+				
 				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
 				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
-				inflight_station->host_tx.inflight_frame.data_type = msg_type; 	//协议aecp acmp adp udpclient udpserver 
+				inflight_station->host_tx.inflight_frame.data_type = subtype; 	//协议aecp acmp adp udpclient udpserver (fb fc fa ac )
 				inflight_station->host_tx.inflight_frame.seq_id = aecp_seq_id;	// 初始为零
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, frame, 0 );
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id-1, inflight_station->host_tx.inflight_frame.frame, 0 );
@@ -54,12 +67,14 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				inflight_station->host_tx.flags.resend = false;
 				inflight_timer_start(timeout, inflight_station );
 
+				if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND ) // 会议数据的特殊识别方法(在这里已经不是在1722协议层处理数据)
+				{
+					inflight_station->host_tx.inflight_frame.conference_data_recgnize.conference_command = conference_cmd;
+					inflight_station->host_tx.inflight_frame.conference_data_recgnize.address = terminal_address;
+				}
+
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
-#if 0
-				uint16_t frame_seq_id = jdksavdecc_aecpdu_common_get_sequence_id( inflight_station->host_tx.inflight_frame.frame, ZERO_OFFSET_IN_PAYLOAD);
-				DEBUG_INFO( "seq_id = %d frame_seq_id = %d",  inflight_station->host_tx.inflight_frame.seq_id, frame_seq_id);
-#endif
 			}
 			else
 			{
@@ -70,12 +85,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		else
 		{
 			uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id( frame, ZERO_OFFSET_IN_PAYLOAD);
-			inflight_station = search_node_inflight_from_dblist( guard, seq_id , msg_type);
-			
-#if 0
-			int inflight_len = get_inflight_dblist_length(guard);
-			DEBUG_INFO( "inflight len = %d", inflight_len );
-#endif
+			inflight_station = search_node_inflight_from_dblist( guard, seq_id , subtype);
 			
 			if( inflight_station != NULL ) // already search it
 			{
@@ -85,7 +95,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			}
 			else
 			{
-				DEBUG_INFO( "nothing to be resend: msg_type = 0x%02x, seq_id = %d ", msg_type, seq_id );
+				DEBUG_INFO( "nothing to be resend: subtype = 0x%02x, seq_id = %d ", subtype, seq_id );
 				assert(inflight_station != NULL);
 			}
 		}
@@ -152,7 +162,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	else
 	{
 		DEBUG_INFO( "aecp data resended " );
-		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false);
+		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false );
 	}
 }
 
@@ -262,25 +272,58 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 	uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id(cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t notification_flag = 0;
 	inflight_plist inflight_aecp = NULL;
+	uint8_t conference_cmd = 0;
+	uint16_t terminal_address = 0;
 
-	inflight_aecp = search_node_inflight_from_dblist( aecp_inflight_guard, seq_id, subtype );	// found?
-	if( NULL != inflight_aecp )
+	if( subtype == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{
-		notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
-		aecp_callback( notification_flag, cmd_frame->payload );
-		DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
-		release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
-		delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
+		conference_cmd = conference_command_type_read( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		terminal_address = conferenc_terminal_read_address_data( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		
+		inflight_aecp = search_for_conference_inflight_dblist_node( aecp_inflight_guard, subtype, conference_cmd );
+		if( inflight_aecp != NULL )
+		{
+			if( (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address == CONFERENCE_BROADCAST_ADDRESS) || (terminal_address == inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address) )
+			{
+				notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
+				aecp_callback( notification_flag, cmd_frame->payload );
+				release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
+				delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
+			}
+			else
+			{
+				DEBUG_INFO( " no such right address inflight cmd aecp node:msg_type = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
+					subtype, conference_cmd, terminal_address, inflight_aecp->host_tx.inflight_frame.data_type,\
+					inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.conference_command, inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address );
+			}
+		}
+		else
+		{
+			DEBUG_INFO( " no such inflight cmd aecp node:msg_type = %02x, conference_cmd = %d terminal_address = %04x", subtype, conference_cmd, terminal_address );
+			return -1;
+		}
 	}
 	else
 	{
+		inflight_aecp = search_node_inflight_from_dblist( aecp_inflight_guard, seq_id, subtype );	// found?
+		if( NULL != inflight_aecp )
+		{
+			notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
+			aecp_callback( notification_flag, cmd_frame->payload );
+			//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
+			release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
+			delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
+		}
+	        else
+		{
 #if 0
-		int inflight_len = 0;
-		inflight_len = get_inflight_dblist_length( aecp_inflight_guard );
-		DEBUG_INFO( " inflight_len = %d", inflight_len );
+			int inflight_len = 0;
+			inflight_len = get_inflight_dblist_length( aecp_inflight_guard );
+			DEBUG_INFO( " inflight_len = %d", inflight_len );
 #endif
-		DEBUG_INFO( " no such inflight cmd aecp node:msg_tyep = %02x, seq_id = %d", subtype,seq_id);
-		return -1;
+			DEBUG_INFO( " no such inflight cmd aecp node:msg_type = %02x, seq_id = %d", subtype,seq_id);
+			return -1;
+		}
 	}
 
 	return -1;
@@ -440,8 +483,8 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 		DEBUG_ONINFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %s) ]",
 						jdksavdecc_uint64_get(&id, 0),
 						conference_cmd,
-						addr[0],
 						addr[1],
+						addr[0],
 						data_len,
 						conference_data_len,
 	                                        aecp_vendor_unique_status_value_to_name(status));

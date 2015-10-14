@@ -1057,9 +1057,9 @@ void cmd_terminal_proccess( const char *opt )
 			terminal_cmd_host_send_state_proccess(&cmd_buf[14]);
 			continue;
 		}
-		else if( strncmp(cmd_buf, "sendEndLcd", 15) == 0 )
+		else if( strncmp(cmd_buf, "sendEndLcd", 10) == 0 )
 		{
-			terminal_cmd_send_end_lcd_proccess(&cmd_buf[16]);
+			terminal_cmd_send_end_lcd_proccess(&cmd_buf[11]);
 			continue;
 		}
 		else if( strncmp(cmd_buf, "optionEndpoint", 14) == 0 )

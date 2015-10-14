@@ -498,6 +498,12 @@ uint8_t conference_command_type_read( void *base, uint16_t offerset )
 	return (p[1]&0xff);	//位8 
 }
 
+uint16_t conferenc_terminal_read_address_data( void *base, uint16_t offerset )
+{
+	uint8_t *p = ((uint8_t *)base) + offerset;
+	return ((uint16_t)((p[2]&0xff) << 0))|((uint16_t)((p[3]&0xff) << 8));	// 地址是在负载中低字节在前
+}
+
 bool is_conference_deal_data_response_type( void *base, uint16_t offset )
 {
 	uint8_t *p = ((uint8_t *)base) + offset;

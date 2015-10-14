@@ -55,13 +55,22 @@ struct background_inflight_cmd
 	struct inflight_timeout timeouts;
 };
 
+// 在1722协议中传输的会议系统的协议数据特殊的识别方法，通过非广播(0x8000)的终端应用地址与会议协议命令来识别, 
+//若主机发送的是广播地址(inflight中)，则先检查命令是否对，若正确则清除inflight命令
+struct conference_data_in_aecp_payload_recgnize 
+{
+	uint8_t conference_command;
+	uint16_t address;
+};
+
 // seq_id发送序列，为acmp与aecp负载中的序列号，acmp与aecp命令的识别条件之一，另一个是data_type。而udp之通过data_type与seq_id，seq_id则作为其的协议的命令类型，此时seq_id的意义已不同
 struct _inflight_frame
 {
 	bool notification_flag;				// 发送标志
 	uint8_t data_type;					// 发送数据类型，为负载数据中的类型
 	uint8_t *frame;					// 网络数据保存区
-	uint16_t seq_id;					// seq_id发送序列
+	struct conference_data_in_aecp_payload_recgnize conference_data_recgnize;// 会议系统协议数据的响应识别
+	uint16_t seq_id;					// seq_id发送序列(这里用于1722协议数据的传输(除了在aecp负载 的会议协议协议))或协议的命令(这里用于udp传输数据中)
 	uint16_t inflight_frame_len;			// 网络数据的长度
 	struct jdksavdecc_eui48 raw_dest;		// 只用于原始数据包的目标地址
 	struct sockaddr_in sin_in;			// 用于udp数据包
@@ -75,7 +84,7 @@ struct inflight_flag
 
 struct inflight
 {
-	uint32_t command_type;				// 主机发送数据的数据类型，有acmp、aecp、udp client、udp serverinflight_command_type
+	uint32_t command_type;				// 主机发送数据的数据类型，有acmp、aecp、udp client、udp server inflight_command_type
 	struct inflight_flag flags;				// inflight 命令的参数
 	struct inflight_timeout timeout;		// inflight 命令的超时信息
 	struct _inflight_frame inflight_frame;	// 网络数据参数

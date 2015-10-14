@@ -401,7 +401,20 @@ inflight_plist search_node_inflight_from_dblist( inflight_plist head, uint16_t  
 		return ptr;
 	else
 	{
-		DEBUG_INFO("inflight station: seq_id = %d, subtype = %02x", seq_id, subtype );
+		return NULL;
+	}
+}
+
+inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd )
+{
+	assert( head );
+	inflight_plist ptr = head->next;
+
+	SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, ptr, cfr_cmd, subtype );
+	if( ptr != head )
+		return ptr;
+	else
+	{
 		return NULL;
 	}
 }

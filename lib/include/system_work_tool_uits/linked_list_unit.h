@@ -19,10 +19,8 @@ inline uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target )
 inline const struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target);
 inline void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target);
 uint8_t *allot_heap_space( int size, uint8_t ** pout);
-//void release_heap_space( uint8_t *p );
 void release_heap_space( uint8_t **p );
 solid_pdblist  create_endpoint_new_node( solid_pdblist* node_new );
-//void destroy_endpoint_node( solid_pdblist node_dstry );
 void destroy_endpoint_node( solid_pdblist* node_dstry );
 solid_pdblist  init_endpoint_dblist( struct entities **head );
 void insert_endpoint_dblist_trail( solid_pdblist head, solid_pdblist new_node );
@@ -41,16 +39,18 @@ void endpoint_dblist_show( const solid_pdblist head );
 #define SEARCH_INFLIGHT_SEQ_TYPE_NODE( head, pnode, sequeue, subtype )\
 	for( ; pnode != head; pnode = pnode->next )\
 		if((pnode->host_tx.inflight_frame.data_type == subtype) && (pnode->host_tx.inflight_frame.seq_id == sequeue))break
+#define SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, pnode, cmd, subtype )\
+	for( ; pnode != head; pnode = pnode->next )\
+		if((pnode->host_tx.inflight_frame.data_type == subtype) && (pnode->host_tx.inflight_frame.conference_data_recgnize.conference_command == cmd))break
 
 inflight_plist create_inflight_dblist_new_node( inflight_plist *new_node );
-//void destroy_inflight_node( inflight_plist node_dstry );
 void destroy_inflight_node( inflight_plist *node_dstry );
 inflight_plist init_inflight_dblist( inflight_plist *guard );
 void insert_inflight_dblist_trail( inflight_plist head, inflight_plist new_node );
 int get_inflight_dblist_length( inflight_plist head );
 inflight_plist search_node_inflight_from_dblist(inflight_plist head, uint16_t  seq_id, uint8_t subtype );
-//void delect_inflight_dblist_node( inflight_plist free_node );
 void delect_inflight_dblist_node( inflight_plist *free_node );
+inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd );
 
 
 /*{@以下函数用于操作会议终端的的信息链表@}*/

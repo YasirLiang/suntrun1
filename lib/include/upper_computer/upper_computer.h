@@ -3,7 +3,7 @@
 
 #include "jdksavdecc_world.h"
 
-#define DATA_PAYLOAD_LEN_MAX 512
+#define DATA_PAYLOAD_LEN_MAX 256
 #define OTHER_DATA_LENGHT 6
 #define UPPER_COMPUTER_DATA_LOADER 0xac
 

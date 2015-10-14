@@ -106,7 +106,7 @@ typedef struct  _tterminal_send_end_lcd_display
 	uint8_t num;  // фа╨е
 }tmnl_send_end_lcd_display;
 
-uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id );
+uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data );
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
 void init_terminal_address_list( void );
 void init_terminal_proccess_system( void );

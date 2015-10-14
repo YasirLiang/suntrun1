@@ -5,6 +5,18 @@
 #include "udp_server_controller_machine.h"
 #include "udp_client_controller_machine.h"
 
+/************************************************
+*Name:	system_raw_packet_tx
+*Function:	to send a frame data to system unnamed pipe	
+*parameters:
+*		dest_mac:	destination of sending data 
+*		frame:	sending data
+*		frame_len:	sending date len
+*		notification: decide data whether send
+*		data_type: type of data sending 
+*		isresp:  ture:response data of host controller;false: 
+*return value:none
+**************************************************/
 void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
 {
 	assert( dest_mac && frame);

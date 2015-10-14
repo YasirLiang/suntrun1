@@ -30,7 +30,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 			{
 				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
 				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
-				inflight_station->host_tx.inflight_frame.data_type = cfc_type; //协议类型
+				inflight_station->host_tx.inflight_frame.data_type = cfc_type; //协议类型(ac)
 				inflight_station->host_tx.inflight_frame.seq_id = cfc_cmd;	// 协议命令
 				inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;
 				memcpy(inflight_station->host_tx.inflight_frame.raw_dest.value, dest_mac , 6 );

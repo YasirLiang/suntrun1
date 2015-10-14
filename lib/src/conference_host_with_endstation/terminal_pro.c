@@ -42,7 +42,7 @@ void init_terminal_proccess_system( void )
 }
 
 // send terminal conference deal message in 1722 frame payload by pipe
-uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
+uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data )
 {
 	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
 	struct host_to_endstation fill_send_buf;
@@ -62,7 +62,7 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id )
 		assert( send_len >= 0 );
 	}
 
-	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, false );
+	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	aecp_callback( CMD_WITH_NOTIFICATION, send_frame.payload );
 	
 	return (uint16_t)send_len;
