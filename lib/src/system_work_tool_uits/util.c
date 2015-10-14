@@ -495,7 +495,7 @@ uint32_t get_acmp_timeout( uint8_t msg_type )
 uint8_t conference_command_type_read( void *base, uint16_t offerset )
 {
 	uint8_t *p = ((uint8_t *)base) + offerset;
-	return (p[1]&0x1f);	// 低五位是命令
+	return (p[1]&0xff);// 读8位
 }
 
 uint16_t conferenc_terminal_read_address_data( void *base, uint16_t offerset )

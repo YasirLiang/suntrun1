@@ -146,12 +146,12 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		{
            		uint16_t desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
             		uint16_t desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-			DEBUG_INFO( " [ COMMAND TIMEOUT: 0x%llx, %s, %s, %d  ]", dest_id, get_aem_command_string(cmd_type),get_aem_desc_command_string( desc_type ), desc_index);
+			MSGINFO( " [ COMMAND TIMEOUT: 0x%llx, %s, %s, %d  ]", dest_id, get_aem_command_string(cmd_type),get_aem_desc_command_string( desc_type ), desc_index);
 		}
 		else
 		{
 			uint8_t cfc_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
-			DEBUG_INFO( " [ COMMAND TIMEOUT: 0x%llx, %s ( data len = %d )  ]", dest_id, get_host_and_end_conference_string_value(cfc_cmd), cmd_type );
+			MSGINFO( " [ COMMAND TIMEOUT: 0x%llx, %s ( data len = %d )  ]", dest_id, get_host_and_end_conference_string_value(cfc_cmd), cmd_type );
 		}
 
 		// free inflight command node in the system
@@ -161,7 +161,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else
 	{
-		DEBUG_INFO( "aecp data resended " );
 		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false );
 	}
 }
@@ -279,6 +278,7 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{
 		conference_cmd = conference_command_type_read( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		conference_cmd &=0x1f;// ÃüÁîÎ»ÓÚµÍ°ËÎ»
 		terminal_address = conferenc_terminal_read_address_data( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		
 		inflight_aecp = search_for_conference_inflight_dblist_node( aecp_inflight_guard, subtype, conference_cmd );
@@ -317,11 +317,6 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 		}
 	        else
 		{
-#if 0
-			int inflight_len = 0;
-			inflight_len = get_inflight_dblist_length( aecp_inflight_guard );
-			DEBUG_INFO( " inflight_len = %d", inflight_len );
-#endif
 			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
 			return -1;
 		}

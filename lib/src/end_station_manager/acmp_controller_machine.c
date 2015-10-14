@@ -290,7 +290,8 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 					"NULL",
 					 acmp_pstation->host_tx.inflight_frame.seq_id);
 
-		// free inflight command node in the system 
+		// free inflight command node in the system
+		release_heap_space( &acmp_pstation->host_tx.inflight_frame.frame);
 		delect_inflight_dblist_node( &acmp_pstation );
 	}
 	else
@@ -312,7 +313,8 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	{
 		notification_flag = inflight_est->host_tx.inflight_frame.notification_flag;
 		acmp_callback( notification_flag, cmd_frame->payload);
-		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node
+		release_heap_space( &inflight_est->host_tx.inflight_frame.frame);// it must delect
+		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node must delect date frame
 	}
 	else
 	{
