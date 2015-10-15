@@ -59,16 +59,31 @@ void system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 	}
 }
 
-void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type, int fd )
+/**************************
+*writer:YasirLiang
+*change data: 2015/10/15
+*change cotent: delect the last param "int fd"
+*	before change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type, int fd )
+*	after change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
+*
+*/
+void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
 {
 	assert( sin && frame);
 	
 	if( notification )
-		system_udp_queue_tx( frame, frame_len, data_type, fd, sin );
+		system_udp_queue_tx( frame, frame_len, data_type, sin );
 }
 
-// data_type是enum transmit_data_type中的类型
-void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,int write_fd,  const struct sockaddr_in *sin )
+/**************************
+*writer:YasirLiang
+*change data: 2015/10/15
+*change cotent: delect the last param "int write_fd"
+*	before change:void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,int write_fd,  const struct sockaddr_in *sin )
+*	after change:void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
+*
+*/
+void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
 {
 	assert( sin && frame);
 	
@@ -182,12 +197,12 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 				}
 			}
 			break;
-			case TRANSMIT_TYPE_UDP_SVR:
+			case TRANSMIT_TYPE_UDP_SVR: // send data to udp server
 			{
 				transmit_udp_packet_server( server_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
 			}
 			break;
-			case TRANSMIT_TYPE_UDP_CLT:
+			case TRANSMIT_TYPE_UDP_CLT: // send data to udp client
 			{
 				transmit_udp_client_packet( client_fd, frame, frame_len, guard, false, &sin_event, resp );
 			}

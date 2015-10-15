@@ -217,8 +217,6 @@ struct terminal_deal_frame // aecp data conference data frame
 	uint8_t payload[ (DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
 };
 
-inline ssize_t conference_validata_range(size_t bufpos, ssize_t cdata_len,size_t buflen);
-
 #endif
 
 

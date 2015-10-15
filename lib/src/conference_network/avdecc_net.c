@@ -5,7 +5,7 @@ int send_udp_frame(int fd, void *pout, int length, const struct sockaddr_in *sin
 	assert( sin && pout );
 	
 	int send_len = 0;
-	send_len = sendto( fd, pout, length, 0, (struct sockaddr*)sin, sizeof(struct sockaddr));
+	send_len = sendto( fd, pout, length, 0, (struct sockaddr*)sin, sizeof(struct sockaddr_in));
 	if( send_len < 0)
 	{
 		DEBUG_ERR("udp send failed!");

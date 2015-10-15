@@ -85,6 +85,7 @@ int udp_server_fn(struct epoll_priv *priv )
 		upper_udp_client.c_fd = priv->fd;
 		memcpy( &upper_udp_client.cltaddr, &sin_in, sizeof(struct sockaddr_in) );
 		upper_udp_client.cltlen = sin_len;
+		is_upper_udp_client_connect = true;
 		set_UDP_parameter( &recv_frame, &sin_in, recv_len );
 
 		// 处理接收的上位机发送过来的数据包
@@ -128,22 +129,22 @@ int thread_fn(void *pgm)
 	epollfd = epoll_create( POLL_COUNT );
 
 	//注册新的fd与处理函数到ev中
-	prep_evt_desc(timerfd_create(CLOCK_MONOTONIC, 0), &fn_timer_cb, &fd_fns[0],  &ev);
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[0].fd, &ev);
+	prep_evt_desc( timerfd_create( CLOCK_MONOTONIC, 0 ), &fn_timer_cb, &fd_fns[0],  &ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[0].fd, &ev );
 
-	prep_evt_desc(fn_fds->raw_fd, &fn_netif_cb, &fd_fns[1], &ev);
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[1].fd, &ev);
+	prep_evt_desc( fn_fds->raw_fd, &fn_netif_cb, &fd_fns[1], &ev );
+	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[1].fd, &ev );
 
-	prep_evt_desc(fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[2],
-			&ev);
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev);
+	prep_evt_desc( fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[2],
+			&ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
-	prep_evt_desc(fn_fds->udp_server_fd, &udp_client_fn, &fd_fns[3],
-			&ev);
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev);
+	prep_evt_desc( fn_fds->udp_server_fd, &udp_client_fn, &fd_fns[3],
+			&ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
 
-	fcntl(fd_fns[0].fd, F_SETFL, O_NONBLOCK);
-	timer_start_interval(fd_fns[0].fd);
+	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
+	timer_start_interval( fd_fns[0].fd );
 
 	//开始循环
 	do

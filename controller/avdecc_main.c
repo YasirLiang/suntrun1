@@ -6,13 +6,11 @@
 #include "controller_command.h"
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
-struct udp_client upper_udp_client;		// 上位机的通信信息
 struct raw_context net;				// 原始套接字
 struct udp_server pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
 solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 inflight_plist command_send_guard;	// 系统中发送网络数据命令链表哨兵节点
 desc_pdblist descptor_guard;			// 系统中描述符链表哨兵节点
-
 
 int main( int argc, char *argv[] )
 {

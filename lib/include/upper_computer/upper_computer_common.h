@@ -4,12 +4,12 @@
 #include "jdksavdecc_world.h"
 
 /*{@上位机与主机协议的报文类型*/ 
-#define CMPT_MSG_TYPE_RESPONSE	0x80 	// 响应
-#define CMPT_MSG_TYPE_CPT_DIS		0x01 	// 主机菜单正在操作,上位机被屏蔽
+#define CMPT_MSG_TYPE_RESPONSE	0x80 	 // 响应
+#define CMPT_MSG_TYPE_CPT_DIS		0x01 	 // 主机菜单正在操作,上位机被屏蔽
 #define CMPT_MSG_TYPE_MARK        	0x60 	 // 类型掩码
 #define CMPT_MSG_TYPE_QUERY        	0x00 	 // 查询
-#define CMPT_MSG_TYPE_SET             	0x20 		  // 设置
-#define CMPT_MSG_TYPE_REPORT      	0x40 	  // 上报
+#define CMPT_MSG_TYPE_SET             	0x20 	 // 设置
+#define CMPT_MSG_TYPE_REPORT      	0x40 	 // 上报
 /*@}*/
 
 /*{@ discuss parameter */
