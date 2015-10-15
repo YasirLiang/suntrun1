@@ -173,7 +173,7 @@ typedef enum _tterminal_discuss_mode 	// 会讨模式
 /*@}*/
 
 /*{@*/
-enum
+enum // 界面显示
 {
 	CHM_APPROVE_APPLY_INTERFACE,
 	VOID_VOTE_INTERFACE,
