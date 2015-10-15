@@ -3,8 +3,9 @@
 
 #include "jdksavdecc_world.h"
 
-#define DATA_PAYLOAD_LEN_MAX 256
+#define DATA_PAYLOAD_LEN_MAX 128
 #define OTHER_DATA_LENGHT 6
+#define UPPER_PAYLOAD_DATA_MAX_LEN ( DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT)
 #define UPPER_COMPUTER_DATA_LOADER 0xac
 
 #define HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH 5
@@ -60,8 +61,8 @@ struct host_upper_cmpt_frame		// 接受udp数据的信息结构体
 {
 	uint8_t dest_address[32];	 			// 目的ip地址
 	int dest_port;							// 目的端口号
-	uint8_t payload[DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT]; //接收负载
 	int payload_len;
+	uint8_t payload[DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT]; //接收负载
 };
 
 #endif

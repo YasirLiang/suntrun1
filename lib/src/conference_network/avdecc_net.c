@@ -2,7 +2,7 @@
 
 int send_udp_frame(int fd, void *pout, int length, const struct sockaddr_in *sin)
 {
-	assert( sin );
+	assert( sin && pout );
 	
 	int send_len = 0;
 	send_len = sendto( fd, pout, length, 0, (struct sockaddr*)sin, sizeof(struct sockaddr));
@@ -17,6 +17,8 @@ int send_udp_frame(int fd, void *pout, int length, const struct sockaddr_in *sin
 
 int recv_udp_packet( int fd, void *pout, int length, struct sockaddr_in *sin, socklen_t *sin_length )
 {
+	assert( pout && sin && sin_length );
+	
 	int get_len = 0;
 	get_len = recvfrom( fd, pout, length, 0, ( struct sockaddr * )sin, sin_length );
 	if( get_len >= 0 )
