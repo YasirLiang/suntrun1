@@ -32,7 +32,7 @@
 #define SRV_IP "192.168.0.102"
 #define SRV_PORT 7012
 #define CLT_IP "192.168.0.102"
-#define CLT_PORT 9998
+#define CLT_PORT 7990
 
 #define ETHER_HDR_SIZE 14
 #define ZERO_OFFSET_IN_PAYLOAD 0

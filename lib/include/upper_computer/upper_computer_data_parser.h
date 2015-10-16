@@ -18,6 +18,7 @@ void unpack_payload_from_udp_client( struct host_upper_cmpt*outpack, const void*
 inline uint8_t get_host_upper_cmpt_command_type(void *base, size_t pos);
 inline uint8_t get_host_upper_cmpt_guide_type(const void *base, size_t pos);
 void  unpack_payload_from_udp_client( struct host_upper_cmpt*outpack, const void* inpack, int pack_len, size_t pos );
+inline uint16_t get_host_upper_cmpt_data_len( const void *base, size_t pos );
 
 
 #endif

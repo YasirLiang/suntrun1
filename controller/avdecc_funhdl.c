@@ -7,7 +7,7 @@ void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *
 	strcpy( (char*)frame->dest_address, (char*)inet_ntoa( sin->sin_addr ) );
 	frame->dest_port = ntohs( sin->sin_port );
 
-	DEBUG_INFO("dest address = %s:%d", frame->dest_address, frame->dest_port);
+	//DEBUG_INFO("dest address = %s:%d", frame->dest_address, frame->dest_port);
 }
 
 // 设置新的超时时间, 并开始定时器
@@ -71,13 +71,14 @@ int fn_netif_cb( struct epoll_priv *priv )
 // host controller as a server
 int udp_server_fn(struct epoll_priv *priv )
 {
+
 	struct sockaddr_in sin_in;
 	socklen_t sin_len = sizeof( struct sockaddr_in );	// (特别注意)调用者应该在调用之前初始化与struct sockaddr_in相关的缓冲区的大小
 	struct host_upper_cmpt_frame recv_frame;
 	int recv_len = 0;
 	memset( &recv_frame, -1, sizeof( struct host_upper_cmpt_frame ) );
 	memset( &sin_in, 0, sin_len );
-
+	
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
 	if( recv_len > 0)
 	{
@@ -96,7 +97,7 @@ int udp_server_fn(struct epoll_priv *priv )
 		DEBUG_INFO("recv UDP packet len is zero or recv error!");
 		assert( recv_len >= 0);
 	}
-	
+
 	return 0;
 }
 

@@ -9,7 +9,7 @@
 
 extern struct udp_client upper_udp_client;		    // 上位机的通信信息
 
-
+void init_udp_client_controller_endstation( int fd, struct sockaddr_in *sin );
 int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, struct sockaddr_in* sin, bool resp );
 void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inflight_plist guard );
 

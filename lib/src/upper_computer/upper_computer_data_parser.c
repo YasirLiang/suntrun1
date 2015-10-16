@@ -16,12 +16,20 @@ inline uint8_t get_host_upper_cmpt_deal_type( const void *base, size_t pos )
 	return (p[1]&0xff);
 }
 
+// 获取数据长度
+inline uint16_t get_host_upper_cmpt_data_len( const void *base, size_t pos )
+{
+	uint8_t *p = ((uint8_t*)base) + pos;
+
+	return ((((uint16_t)p[3] && 0x00ff)<< 0) |(((uint16_t)p[4] && 0x00ff)<< 8));
+}
+
 // 获取协议命令
 inline uint8_t get_host_upper_cmpt_command_type(void *base, size_t pos)
 {
 	uint8_t *p = ((uint8_t*)base) + pos;
 
-	return (p[0]&0xff);
+	return (p[2]&0xff);
 }
 
 // 检查是否指令是上位机主动发出

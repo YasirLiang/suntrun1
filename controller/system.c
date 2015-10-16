@@ -4,6 +4,7 @@
 #include "adp_controller_machine.h"
 #include "aecp_controller_machine.h"
 #include "terminal_pro.h"
+#include "udp_client_controller_machine.h"
 
 void init_system( void )
 {

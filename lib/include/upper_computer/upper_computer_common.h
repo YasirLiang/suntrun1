@@ -66,7 +66,6 @@ typedef struct _type_upper_computer_data_mic_status
 {
 	struct application_common_address addr;
 	uint8_t switch_flag;
-	// ?
 }tcmpt_data_mic_status;
 /*@}*/
 
@@ -315,7 +314,8 @@ typedef struct _type_set_camara_switch
 }tcmp_set_camara_switch;
 /*@}*/
 
-extern int upper_computer_send( void* data_send, bool is_resp );
+extern int upper_computer_send( void* data_send );
+extern void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len );
 
 
 #endif

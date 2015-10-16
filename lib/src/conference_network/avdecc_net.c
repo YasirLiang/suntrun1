@@ -18,13 +18,13 @@ int send_udp_frame(int fd, void *pout, int length, const struct sockaddr_in *sin
 int recv_udp_packet( int fd, void *pout, int length, struct sockaddr_in *sin, socklen_t *sin_length )
 {
 	assert( pout && sin && sin_length );
-	
+
 	int get_len = 0;
 	get_len = recvfrom( fd, pout, length, 0, ( struct sockaddr * )sin, sin_length );
 	if( get_len >= 0 )
 	{
-		DEBUG_INFO("Dest address = %s:%d", inet_ntoa( sin->sin_addr ), ntohs( sin->sin_port ));
-		DEBUG_RECV( (uint8_t*)pout, get_len,"UDP PACKET" );
+		//DEBUG_INFO("Dest address = %s:%d", inet_ntoa( sin->sin_addr ), ntohs( sin->sin_port ));
+		//DEBUG_RECV( (uint8_t*)pout, get_len,"UDP PACKET" );
 		return get_len;
 	}
 	else
@@ -141,8 +141,8 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 void build_socket( struct fds *all_fds, struct raw_context *self, const char *network_port, struct udp_context *both )
 {
 	all_fds->raw_fd = raw_socket( self, JDKSAVDECC_AVTP_ETHERTYPE, network_port, jdksavdecc_multicast_adp_acmp.value );
-	all_fds->udp_server_fd = udp_socket( both, SRV_PORT, 1,  network_port );
-	all_fds->udp_client_fd = udp_socket( both, CLT_PORT, 0, network_port );
+	all_fds->udp_server_fd = udp_socket( both, SRV_PORT, true,  network_port );
+	all_fds->udp_client_fd = udp_socket( both, CLT_PORT, false, network_port );
 		
 	return;
 }

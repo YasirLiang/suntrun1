@@ -1,4 +1,5 @@
 #include "upper_computer_data_handle.h"
+#include "upper_computer_common.h"
 
 int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 {
@@ -35,28 +36,17 @@ int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe )
 {
 	struct host_upper_cmpt_frame cpy_frame;
-	struct host_upper_cmpt deal_unpack;
-	
+	int frame_len = pframe->payload_len;
 	memset( &cpy_frame, 0, sizeof( struct host_upper_cmpt_frame ));
-	strcpy( (char*)cpy_frame.dest_address, (char*)pframe->dest_address );
-	cpy_frame.dest_port = pframe->dest_port;
+	
+	cpy_frame.payload_len = frame_len;
 	memcpy( cpy_frame.payload, pframe->payload, pframe->payload_len );
 
-	// 检查校验
-	if( check_crc( cpy_frame.payload, cpy_frame.payload_len ) )
-	{
-		// 解包
-		unpack_payload_from_udp_client( &deal_unpack, cpy_frame.payload, cpy_frame.payload_len, 0 );
-
-		// 处理接收到的数据
-		handle_pack_event( &deal_unpack );
-	}
-	else	// 不响应客户端
-	{
-		return -1;
-	}
+	if( check_crc( cpy_frame.payload, frame_len))
+		return;
+	
+	proccess_udp_client_msg_recv( cpy_frame.payload, cpy_frame.payload_len );
 	
 	return 0;
 }
-
 

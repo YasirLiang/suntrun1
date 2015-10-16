@@ -116,14 +116,15 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	assert( frame && inflight_station != NULL );
 	if( is_retried )
 	{
-		uint8_t upper_cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD + 2);
-        	uint8_t  upper_cmpt_deal_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+		uint8_t upper_cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+        	uint8_t upper_cmpt_deal_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+		uint16_t data_len = get_host_upper_cmpt_data_len( frame, ZERO_OFFSET_IN_PAYLOAD );
 			
-		DEBUG_INFO( " [ COMMAND TIMEOUT: %s, %s, %s, %d ]", 
+		DEBUG_ONINFO( " [ COMMAND TIMEOUT: %s, %s, %s, %d (data len = %d )]", 
 					upper_cmpt_cmd_value_to_string_name( upper_cmpt_cmd ),
 					upper_cmpt_cmd_value_to_string_name( udp_client_pstation->host_tx.inflight_frame.seq_id ),
 					"NULL",
-					upper_cmpt_deal_type );
+					upper_cmpt_deal_type, data_len );
 
 		// free inflight command node in the system
 		release_heap_space( &udp_client_pstation->host_tx.inflight_frame.frame);
@@ -135,5 +136,15 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		// udp data sending is not response
 		transmit_udp_client_packet( server_fd.s_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false );
 	}
+}
+
+void udp_client_update_inflight_comand()
+{
+	
+}
+
+int udp_client_proc_resp(  )
+{
+	
 }
 
