@@ -2,6 +2,12 @@
 #define __UPPER_COMPUTER_COMMON_H__
 
 #include "jdksavdecc_world.h"
+#include "upper_computer.h"
+#include "inflight.h"
+#include "host_controller_debug.h"
+#include "system_packet_tx.h"
+#include "upper_computer_data_form.h"
+
 
 /*{@上位机与主机协议的报文类型*/ 
 #define CMPT_MSG_TYPE_RESPONSE	0x80 	 // 响应
@@ -308,6 +314,9 @@ typedef struct _type_set_camara_switch
 	uint8_t switch_command_cotent[UPPER_SWICH_COMMAN_COTENT_MAX_LEN];
 }tcmp_set_camara_switch;
 /*@}*/
+
+extern int upper_computer_send( void* data_send, bool is_resp );
+
 
 #endif
 

@@ -31,6 +31,7 @@ const char *  aem_desc_value_to_name(uint16_t desc_value);
 const char * aem_cmd_status_value_to_name(uint32_t aem_cmd_status_value);
 const char* aecp_vendor_unique_status_value_to_name( uint32_t vendor_statue_value );
 uint16_t conferenc_terminal_read_address_data( void *base, uint16_t offerset );
+const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value );
 
 
 #endif

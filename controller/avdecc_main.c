@@ -33,7 +33,7 @@ int main( int argc, char *argv[] )
 	pthread_handle_pipe( &p_thread, &net_fd );
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
-	get_system_information();
+	set_system_information( net_fd, &udp_net );
 
 	controller_proccess();
 	

@@ -10,7 +10,7 @@
 
 #define HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH 5
 
-/*{@主机与上位机协议的具体命令@}*/
+/*{@主机与上位机协议的具体命令 27 个@}*/
 #define HOST_UPPER_COMPUTER_COMMAND_TYPE_CONFERENCE_DISCUSSION_PARAMETER 0x01	// 会讨参数			 
 #define HOST_UPPER_COMPUTER_COMMAND_TYPE_MISCROPHONE_SWITCH 0x02 				// 麦克风开关
 #define HOST_UPPER_COMPUTER_COMMAND_TYPE_MISCROPHONE_STATUS 0x03 					// 麦克风状态
@@ -66,7 +66,7 @@ struct host_upper_cmpt_frame		// 接受udp数据的信息结构体
 	uint8_t payload[DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT]; //接收负载
 };
 
-extern bool  is_upper_udp_client_connect = false;
+extern bool  is_upper_udp_client_connect;
 
 #endif
 

@@ -10,6 +10,7 @@
 
 inline bool isupper_active_send( uint8_t subtype );
 bool check_crc( uint8_t *payload, int payload_len );
+inline uint8_t get_host_upper_cmpt_deal_type( const void *base, size_t pos );
 inline uint16_t get_host_upper_cmpt_common_header( struct host_upper_cmpt_common *hdr, const void *base, size_t pos );
 inline void get_host_upper_cmpt_data( uint8_t *data, const void *base, size_t pos, uint16_t data_len );
 inline void get_host_upper_cmpt_crc( uint8_t *crc, const void *base, size_t pos );

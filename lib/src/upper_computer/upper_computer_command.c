@@ -1,5 +1,7 @@
 #include "upper_computer_command.h"
 #include "host_controller_debug.h"
+#include "upper_computer.h"
+#include "upper_computer_common.h"
 
 void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal_type, uint8_t command, void *data, ssize_t data_len )
 {
@@ -30,11 +32,11 @@ void upper_computer_discussion_parameter( uint8_t protocol_type, tcmpt_discuss_p
 	
 	if( (protocol_type & CMPT_MSG_TYPE_RESPONSE) == CMPT_MSG_TYPE_QUERY )
 	{
-		upper_cmpt_command_askbuf_set( &askbuf, protocol_type, &disc_param, HOST_UPPER_COMPUTER_COMMAND_TYPE_CONFERENCE_DISCUSSION_PARAMETER, data_len );
+		upper_cmpt_command_askbuf_set( &askbuf, protocol_type, DISCUSSION_PARAMETER, &disc_param,  data_len );
 	}
 	else
 	{
-		upper_cmpt_command_askbuf_set( &askbuf, protocol_type, NULL, HOST_UPPER_COMPUTER_COMMAND_TYPE_CONFERENCE_DISCUSSION_PARAMETER, 0 ); 
+		upper_cmpt_command_askbuf_set( &askbuf, protocol_type, DISCUSSION_PARAMETER, NULL,  0 ); 
 	}
 
 	upper_computer_send( &askbuf, is_resp );
@@ -163,7 +165,7 @@ void upper_computer_report_endstation_message()
 	
 }
 
-int upper_computer_hign_definition_switch_set()
+void upper_computer_hign_definition_switch_set()
 {
 	
 }

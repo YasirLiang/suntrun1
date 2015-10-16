@@ -20,7 +20,7 @@ void set_upper_cmpt_check( struct host_upper_cmpt *p )
 }
 
 // 写主机与上位机协议公共头部
-void host_upper_cmpt_common_header_write( const struct host_upper_cmpt_common common_header, void* base, ssize_t pos )
+void host_upper_cmpt_common_header_write( const struct host_upper_cmpt_common *common_header, void* base, ssize_t pos )
 {
 	uint8_t *p = ((uint8_t *)base + pos);
 
@@ -32,7 +32,7 @@ void host_upper_cmpt_common_header_write( const struct host_upper_cmpt_common co
 }
 
 // 写入数据
-void host_upper_cmpt_data_write( const uint8_t *pdata, void* base, ssize_t pos, uint16_t data_len )
+void host_upper_cmpt_data_write( const uint8_t *pdata, void* base, ssize_t pos, const uint16_t data_len )
 {
 	uint8_t *p = ((uint8_t *)base + pos);
 	int i = 0;
@@ -57,12 +57,12 @@ void host_upper_cmpt_end_crc_write( const uint8_t crc, void* base, ssize_t pos )
 /***
 *主机上发上位机命令写入发送负载,写头,数据长度，数据，校验和
 */
-size_t  conference_host_to_upper_computer_frame_write( void *base, struct host_upper_cmpt *p, uint16_t data_len, size_t pos, size_t len )
+size_t  conference_host_to_upper_computer_frame_write( void *base, struct host_upper_cmpt *p, const uint16_t data_len, size_t pos, size_t len )
 {
 	ssize_t r = jdksavdecc_validate_range( pos, data_len + OTHER_DATA_LENGHT, UPPER_PAYLOAD_DATA_MAX_LEN );
 	if(r >= 0)
 	{
-		host_upper_cmpt_common_header_write( p->common_header, base, pos );
+		host_upper_cmpt_common_header_write( &p->common_header, base, pos );
 		host_upper_cmpt_data_write( p->data_payload, base, pos + HOST_UPPER_COMPUTER_COMMON_LEN, data_len);
 		host_upper_cmpt_end_crc_write( p->deal_crc, base, pos + HOST_UPPER_COMPUTER_COMMON_LEN + data_len);
 	}
@@ -76,16 +76,12 @@ size_t  conference_host_to_upper_computer_frame_write( void *base, struct host_u
 */
 int conference_host_to_upper_computer_form_msg( struct host_upper_cmpt_frame *frame,  struct host_upper_cmpt *phost )
 {
-	int upper_data_len = phost->common_header.data_len; // 除了公共头数据的长度，不包括检验位
-	size_t cfc_lgh = 0;
+	const uint16_t upper_data_len = phost->common_header.data_len; // 除了公共头数据的长度，不包括检验位
 
 	// 计算并设置校验
 	set_upper_cmpt_check( phost );
-
-	// 把协议数据写入负载
-	cfc_lgh = conference_host_to_upper_computer_frame_write( frame->payload, phost, phost->common_header.data_len, 0, UPPER_PAYLOAD_DATA_MAX_LEN );
-
-	return (int)cfc_lgh;
+	// 把协议数据写入负载,并返回
+	return (int)conference_host_to_upper_computer_frame_write( frame->payload, phost, upper_data_len, 0, UPPER_PAYLOAD_DATA_MAX_LEN );
 }
 
 

@@ -333,7 +333,7 @@ struct udp_upper_cmpt_command_and_timeout
 
 struct udp_upper_cmpt_command_and_timeout udp_upper_cmpt_command_and_timeout_table[] =
 {
-	{CONFERENCE_DISCUSSION_PARAMETER, CONFERENCE_DISCUSSION_PARAMETER_TIMEOUTS},
+	{DISCUSSION_PARAMETER, CONFERENCE_DISCUSSION_PARAMETER_TIMEOUTS},
 	{MISCROPHONE_SWITCH,MISCROPHONE_SWITCH_TIMEOUTS},
 	{MISCROPHONE_STATUS,MISCROPHONE_STATUS_TIMEOUTS},
 	{SELECT_PROPOSER,SELECT_PROPOSER_TIMEOUTS},
@@ -359,8 +359,47 @@ struct udp_upper_cmpt_command_and_timeout udp_upper_cmpt_command_and_timeout_tab
 	{TRANSMIT_TO_ENDSTATION,TRANSMIT_TO_ENDSTATION_TIMEOUTS},
 	{REPORT_ENDSTATION_MESSAGE,REPORT_ENDSTATION_MESSAGE_TIMEOUTS},
 	{HIGH_DEFINITION_SWITCH_SET,HIGH_DEFINITION_SWITCH_SET_TIMEOUTS},
-	{UDP_CMD_ERROR,0xffff}
+	{HOST_AND_UPPER_CMPT_CMD_ERROR,0xffff}
 };
+
+struct udp_upper_cmpt_command_strings_value
+{
+	uint32_t cmd;
+	const char* strings_value;
+};
+
+struct udp_upper_cmpt_command_strings_value udp_upper_cmpt_command_table[] =
+{
+	{ DISCUSSION_PARAMETER, "DISCUSSION_PARAMETER" },
+	{ MISCROPHONE_SWITCH, "MISCROPHONE_SWITCH"},
+	{ MISCROPHONE_STATUS, "MISCROPHONE_STATUS" },
+	{ SELECT_PROPOSER, "SELECT_PROPOSER" },
+	{ EXAMINE_APPLICATION, "EXAMINE_APPLICATION" },
+	{ CONFERENCE_PERMISSION, "CONFERENCE_PERMISSION" },
+	{ SENDDOWN_MESSAGE, "SENDDOWN_MESSAGE" },
+	{ TABLE_TABLET_STANDS_MANAGER, "TABLE_TABLET_STANDS_MANAGER" },
+	{ BEGIN_SIGN, "BEGIN_SIGN" },
+	{ SIGN_SITUATION, "SIGN_SITUATION" },
+	{ END_OF_SIGN, "END_OF_SIGN" },
+	{ ENDSTATION_ALLOCATION_APPLICATION_ADDRESS, "ENDSTATION_ALLOCATION_APPLICATION_ADDRESS" },
+	{ ENDSTATION_REGISTER_STATUS, "ENDSTATION_REGISTER_STATUS" },
+	{ CURRENT_VIDICON, "CURRENT_VIDICON" },
+	{ ENDSTATION_ADDRESS_UNDETERMINED_ALLOCATION, "ENDSTATION_ADDRESS_UNDETERMINED_ALLOCATION" },
+	{ VIDICON_CONTROL, "VIDICON_CONTROL" },
+	{ VIDICON_PRERATION_SET, "VIDICON_PRERATION_SET" },
+	{ VIDICON_LOCK, "VIDICON_LOCK" },
+	{ VIDICON_OUTPUT, "VIDICON_OUTPUT" },
+	{ BEGIN_VOTE, "BEGIN_VOTE" },
+	{ PAUSE_VOTE, "PAUSE_VOTE" },
+	{ REGAIN_VOTE, "REGAIN_VOTE" },
+	{ END_VOTE, "END_VOTE" },
+	{ RESULT_VOTE, "RESULT_VOTE" },
+	{ TRANSMIT_TO_ENDSTATION, "TRANSMIT_TO_ENDSTATION" },
+	{ REPORT_ENDSTATION_MESSAGE, "REPORT_ENDSTATION_MESSAGE" },
+	{ HIGH_DEFINITION_SWITCH_SET, "HIGH_DEFINITION_SWITCH_SET" },
+	{ HOST_AND_UPPER_CMPT_CMD_ERROR, "UNKNOW" },
+};
+
 
  struct acmp_command_and_timeout
  {
@@ -466,7 +505,7 @@ uint32_t get_udp_client_timeout_table( uint8_t msg_type )
 {
 	struct udp_upper_cmpt_command_and_timeout *p = &udp_upper_cmpt_command_and_timeout_table[0];
 
-	while(p->cmd != UDP_CMD_ERROR)
+	while(p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
 	{
 		if( p->cmd == msg_type )
 			return p->timeout_ms;
@@ -475,6 +514,20 @@ uint32_t get_udp_client_timeout_table( uint8_t msg_type )
 	}
 
 	return (uint32_t)0xffff;
+}
+
+const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value )
+{
+	struct udp_upper_cmpt_command_strings_value *p = &udp_upper_cmpt_command_table[0];
+
+	while( p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
+	{
+		if( p->cmd == cmd_value )
+			return p->strings_value;
+		p++;
+	}
+
+	return "UNKNOW";
 }
 
 uint32_t get_acmp_timeout( uint8_t msg_type )

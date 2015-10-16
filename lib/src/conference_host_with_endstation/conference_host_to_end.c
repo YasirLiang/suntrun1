@@ -123,16 +123,13 @@ static size_t  conference_host_to_end_frame_write(struct host_to_endstation *p,
 											ssize_t data_len,
 											size_t len)
 {
-	ssize_t r = conference_validata_range(pos, data_len + HOST_COMMON_TO_END_EXDATA_LEN, len);
-	if(r > 0)
-	{
-		conference_common_header_write(p->cchdr, base, pos);
-		conference_host_to_end_datalen_write(p->data_len, base, pos + CONFERENCE_COMMON_HEADER_LEN);
-		conference_host_to_end_data_write(p->data, base, pos + CONFERENCE_COMMON_HEADER_LEN + 1, data_len);
-		conference_host_to_end_crc_write(p->crc, base, pos + CONFERENCE_COMMON_HEADER_LEN + 1 + data_len);
-	}
 
-	return (size_t)r;
+	conference_common_header_write(p->cchdr, base, pos);
+	conference_host_to_end_datalen_write(p->data_len, base, pos + CONFERENCE_COMMON_HEADER_LEN);
+	conference_host_to_end_data_write(p->data, base, pos + CONFERENCE_COMMON_HEADER_LEN + 1, data_len);
+	conference_host_to_end_crc_write(p->crc, base, pos + CONFERENCE_COMMON_HEADER_LEN + 1 + data_len);
+
+	return (size_t)(data_len + HOST_COMMON_TO_END_EXDATA_LEN);
 }
 
 /***

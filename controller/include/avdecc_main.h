@@ -34,7 +34,6 @@ struct udp_server
 	int s_fd;
 	struct sockaddr_in srvaddr;
 	socklen_t srvlen;
-	
 };
 
 struct udp_client

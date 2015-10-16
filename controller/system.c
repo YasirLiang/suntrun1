@@ -21,11 +21,13 @@ void init_system( void )
 	init_terminal_proccess_system();
 }
 
-void get_system_information( void )
+void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 {
+	assert( p_udp_net );
 	struct jdksavdecc_eui64 zero;
 	bzero( &zero, sizeof(struct jdksavdecc_eui64));
 
+	init_udp_client_controller_endstation( net_fd.udp_server_fd,  &p_udp_net->udp_srv.srvaddr );
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER);
 }

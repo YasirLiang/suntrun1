@@ -8,6 +8,14 @@ inline uint8_t get_host_upper_cmpt_guide_type( const void *base, size_t pos)
 	return (p[0]&0xff);
 }
 
+// 获取报文类型
+inline uint8_t get_host_upper_cmpt_deal_type( const void *base, size_t pos )
+{
+	uint8_t *p = ((uint8_t*)base) + pos;
+
+	return (p[1]&0xff);
+}
+
 // 获取协议命令
 inline uint8_t get_host_upper_cmpt_command_type(void *base, size_t pos)
 {

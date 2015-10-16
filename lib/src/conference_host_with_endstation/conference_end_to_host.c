@@ -77,13 +77,13 @@ static bool isnot_special_recv_command(const void *base,const size_t offset)
 *	1:正常的上发命令格式
 *	0:特殊的上发命令格式
 */
-int conference_end_to_host_frame_read(const uint8_t *payload, struct endstation_to_host *phost, struct endstation_to_host_special *spephost,size_t pos, size_t buflen)
+int conference_end_to_host_frame_read(const void *v_payload, struct endstation_to_host *phost, struct endstation_to_host_special *spephost,size_t pos, size_t buflen)
 {
-	assert( payload && phost && spephost );
+	assert( v_payload && phost && spephost );
+	const uint8_t* payload = (uint8_t*)v_payload;
 	
 	ssize_t datalen = 0;
-	ssize_t r = conference_validata_range(pos, END_TO_HOST_CMD_LEN , buflen);
-	if((r > 0) &&  ((uint8_t)payload[0] == CONFERENCE_TYPE) && ( isnot_special_recv_command(payload, pos) ) )
+	if(((uint8_t)payload[0] == CONFERENCE_TYPE) && ( isnot_special_recv_command(payload, pos) ) )
 	{
 		conference_common_header_read( &phost->cchdr, payload, pos );
 		conference_common_end_to_host_data_read( &phost->data, payload , pos + CONFERENCE_COMMON_HEADER_LEN);
@@ -91,7 +91,7 @@ int conference_end_to_host_frame_read(const uint8_t *payload, struct endstation_
 
 		return 1;
 	}
-	else if( r > 0 &&  ((uint8_t)payload[0] == CONFERENCE_TYPE) && (!isnot_special_recv_command(payload, pos)))//接收到特殊的命令0x1f
+	else if( ((uint8_t)payload[0] == CONFERENCE_TYPE) && (!isnot_special_recv_command(payload, pos)))//接收到特殊的命令0x1f
 	{
 		//获取特殊命令中的数据长度中的大小(即数据位的长度)
 		 conference_common_header_read( &spephost->cchdr, payload, pos );
@@ -104,8 +104,8 @@ int conference_end_to_host_frame_read(const uint8_t *payload, struct endstation_
 
 		 return 0;
 	}
-	else 
-		return -1;
+
+	return -1;
 }
 
 //读终端地址
