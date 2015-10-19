@@ -243,7 +243,7 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 		case JDKSAVDECC_AECP_MESSAGE_TYPE_ADDRESS_ACCESS_RESPONSE: // Fallthrough intentional
 		if (u_field)
 		{
-			aecp_state_rcvd_resp( cmd_frame ;
+			aecp_state_rcvd_resp( cmd_frame );
 		}
 		else
 		{

@@ -129,7 +129,7 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 				self->udp_clt.cltlen);
 		if( ret == -1 )
 		{
-			DEBUG_ERR( "udp server:" );
+			DEBUG_ERR( "udp client:" );
 			DEBUG_ONINFO( "erro udp bind" );
 			assert( ret != -1);
 		}

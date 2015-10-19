@@ -1,8 +1,29 @@
 #include "upper_computer_common.h"
 #include "upper_computer_data_parser.h"
+#include "udp_client_controller_machine.h"
 
 struct udp_client upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;
+
+void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
+{
+	assert( askbuf );
+	askbuf->common_header.state_loader = UPPER_COMPUTER_DATA_LOADER;
+	askbuf->common_header.deal_type = deal_type;
+	askbuf->common_header.command = command;
+	askbuf->common_header.data_len = data_len;
+
+	if( (data_len != 0) && (NULL != data))
+	{
+		if( data_len <= DATA_PAYLOAD_LEN_MAX )
+			memcpy( askbuf->data_payload , (uint8_t *)data, data_len );// 这里是从低字节开始拷贝的，所以data必须协议数据传输的顺序一致
+		else
+		{	
+			DEBUG_INFO( "error upper computer trasmit deal data:too length!" );
+			assert( data_len <= DATA_PAYLOAD_LEN_MAX );
+		}
+	}
+}
 
 /****************************
 *writer:YasirLiang
@@ -31,30 +52,32 @@ int upper_computer_send( void* data_send )
 		assert( ret >= 0 );
 	}
 
-	if( is_upper_udp_client_connect ) // 是否有客户端连接上主机
+	if( is_upper_udp_client_connect )
+	{
 		system_udp_packet_tx( &upper_udp_client.cltaddr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );
+		DEBUG_SEND( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data");
+	}
 
 	return upper_send_frame_len;
 }
 
-void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
+/*************************************
+*Writer:	YasirLiang
+*Date: 2015/10/19
+*Name:send_upper_computer_command
+*Func: send upper and host deal command data to upper computer
+*Param:
+*	data: data except common head, while where is not data, data be setted NULL and data len is zero
+*/
+int  send_upper_and_host_deal_command( uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
 {
-	assert( askbuf );
-	askbuf->common_header.state_loader = UPPER_COMPUTER_DATA_LOADER;
-	askbuf->common_header.deal_type = deal_type;
-	askbuf->common_header.command = command;
-	askbuf->common_header.data_len = data_len;
+	struct host_upper_cmpt askbuf;
+	memset( &askbuf, 0, sizeof(struct host_upper_cmpt));
+	
+	upper_cmpt_command_askbuf_set( &askbuf, deal_type, command, data, data_len);
+	upper_computer_send( &askbuf );
 
-	if( (data_len != 0) && (NULL != data))
-	{
-		if( data_len <= DATA_PAYLOAD_LEN_MAX )
-			memcpy( askbuf->data_payload , (uint8_t *)data, data_len );// 这里是从低字节开始拷贝的，所以data必须协议数据传输的顺序一致
-		else
-		{	
-			DEBUG_INFO( "error upper computer trasmit deal data:too length!" );
-			assert( data_len <= DATA_PAYLOAD_LEN_MAX );
-		}
-	}
+	return 0;
 }
 
 /*************************************
@@ -69,6 +92,7 @@ int host_controller_machine_reply_upper_computer( uint8_t deal_type, uint8_t com
 {
 	struct host_upper_cmpt askbuf;
 	memset( &askbuf, 0, sizeof(struct host_upper_cmpt));
+	deal_type |= CMPT_MSG_TYPE_RESPONSE;
 	
 	upper_cmpt_command_askbuf_set( &askbuf, deal_type, command, data, data_len);
 	upper_computer_send( &askbuf );
@@ -89,17 +113,18 @@ int host_controller_machine_reply_upper_computer( uint8_t deal_type, uint8_t com
 **************************************************/
 void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len )
 {
-	uint8_t protocol_type = get_host_upper_cmpt_deal_type( frame, 0 );
-	uint8_t cmpt_cmd = get_host_upper_cmpt_command_type( frame, 0 );
+	uint8_t protocol_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+	uint8_t cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 
 	DEBUG_RECV( frame, frame_len, "Udp client Recv");
 	if(  !(protocol_type & CMPT_MSG_TYPE_RESPONSE) ) // not a response data
 	{
 		// proccess upper computer data 
+		
 	}
 	else // update send data inflight command 
 	{
-		udp_client_update_inflight_comand();
+		udp_client_update_inflight_comand( frame, frame_len );
 	}
 }
 

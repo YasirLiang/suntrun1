@@ -8,6 +8,11 @@
 #include "upper_computer.h"
 #include "upper_computer_common.h"
 
+int send_upper_computer_command( uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
+{
+	return send_upper_and_host_deal_command( deal_type, command, data, data_len );
+}
+
 void upper_computer_discussion_parameter( void )
 {
 

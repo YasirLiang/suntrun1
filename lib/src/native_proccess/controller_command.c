@@ -7,6 +7,8 @@
 #include "terminal_pro.h"
 #include "terminal_command.h"
 #include "descriptor.h"
+#include "jdksavdecc_util.h"
+#include "upper_computer_command.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -21,6 +23,7 @@ static char *commands_list[COMMANDS_MAX_NUM] =
 	"list",
 	"ls",
 	"update" ,
+	"udpClient",
 	"q",
 	"quit",
 	"show",
@@ -1100,6 +1103,120 @@ void cmd_terminal_proccess( const char *opt )
 *Ω· ¯-÷’∂À∑¢ÀÕ√¸¡Ó≤‚ ‘∫Ø ˝
 *====================================*/
 
+/*===================================
+*begin host and udp client command interface testing
+*====================================*/
+void cmd_udp_client_command_avail( const char *opt ) // 4 paramt
+{
+	uint8_t protocol_type = 0;
+	uint32_t cmd_cmd_code = 0;
+	uint32_t data_len = 0;
+	char udp_client_command_str[32] = { 0 };
+	uint8_t udp_client_data_payload[128] = { 0 };
+	bool is_cmd_right = true;
+	
+	const char *p = opt;
+	const char *first = opt;
+	int input_flag = 0;
+	while( *p != '\0')
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( udp_client_command_str, first, copy_num );
+			if( get_upper_cmpt_cmd_value_from_string_name( udp_client_command_str, &cmd_cmd_code) )
+			{
+				p++;
+				input_flag++;
+				is_cmd_right = false;
+			}
+			else
+			{
+				DEBUG_INFO( "Please enter right host and uppper command !");
+				is_cmd_right = false;
+				break;
+			}
+		}
+		else if( input_flag == 1 )
+		{
+			protocol_type = (uint8_t)atoi( &first[0] );
+			p++;
+			input_flag++;
+			is_cmd_right = false;
+		}
+		else if( input_flag == 2 )
+		{
+			data_len = (uint16_t)atoi( &first[0] );
+			p++;	// p pointer to data payload
+			input_flag++;
+			is_cmd_right = true;
+			break;
+		}
+	}
+
+	// parser payload data
+	int i = 0;
+	for ( i = 0; i < data_len; ++i )
+        {
+		if ( !jdksavdecc_util_parse_byte( &udp_client_data_payload[i], p[0], p[1] ) )
+		{
+			DEBUG_INFO( "Bad payload octets ascii form" );
+			is_cmd_right = false;
+			break;
+		}
+		
+		p += 2;
+        }
+
+	if( is_cmd_right )
+	{
+		if( data_len == 0 )
+		{
+			send_upper_computer_command( protocol_type, cmd_cmd_code, NULL, 0 );
+			DEBUG_INFO( "[ cmd code = %02x, type = %02x, data len = %d ]",cmd_cmd_code, protocol_type, data_len );
+		}
+		else
+		{
+			send_upper_computer_command( protocol_type, cmd_cmd_code, udp_client_data_payload, data_len );
+			DEBUG_INFO( "[ cmd = %02x, type = %02x, data len = %d ]",cmd_cmd_code, protocol_type, data_len );
+		}
+
+		
+	}
+}
+
+void cmd_udp_client( void )
+{
+	while(1)
+	{
+		char* cmd_buf = readline( "@ " );
+		 if ( !cmd_buf )
+	            break;
+	         if ( strlen(cmd_buf) == 0 )
+	            continue;
+		else
+		{
+			add_history( cmd_buf );
+		}
+
+		if( ((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
+		{
+			break;
+		}
+		else
+		{
+			cmd_udp_client_command_avail( cmd_buf );
+		}
+	}
+}
+/*===================================
+*end host and udp client command interface testing
+*====================================*/
+
 void controller_proccess( void )
 {
 	end_list_guard = endpoint_list;
@@ -1117,7 +1234,7 @@ void controller_proccess( void )
 			add_history( cmd_buf );
 		}
 		
-		if( strncmp( cmd_buf, "list", 4 ) == 0 || strncmp( cmd_buf, "ls", 2 ) == 0)
+		if( strncmp( cmd_buf, "list", 4 ) == 0 || strncmp( cmd_buf, "ls", 2 ) == 0 )
 		{
 			cmd_list_proccess();
 			continue;
@@ -1142,28 +1259,32 @@ void controller_proccess( void )
 			cmd_connect_and_disconnect_proccess( &cmd_buf[11], false );
 			continue;
 		}
-		else if(strncmp( cmd_buf, "show", 4 ) == 0)	// show endstations connections status
+		else if( strncmp( cmd_buf, "show", 4 ) == 0 )	// show endstations connections status
 		{
 			cmd_show_proccess();
 			continue;
 		}
-		else if(strncmp( cmd_buf, "update", 6 ) == 0)// update system endstations connections
+		else if( strncmp( cmd_buf, "update", 6 ) == 0 )// update system endstations connections
 		{
 			cmd_update_proccess();
 			continue;
 		}
-		else if( strncmp( cmd_buf, "terminal", 8 ) == 0) // endstations commnad test process(≤‚ ‘∑¢ÀÕ÷’∂À√¸¡Ó)
+		else if( strncmp( cmd_buf, "terminal", 8 ) == 0 ) // endstations commnad test process(≤‚ ‘∑¢ÀÕ÷’∂À√¸¡Ó)
 		{
-			cmd_terminal_proccess(cmd_buf);
+			cmd_terminal_proccess( cmd_buf );
 			continue;
 		}
-		else if(((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)))
+		else if( strncmp( cmd_buf, "udpClient", 9) == 0 ) // test procces by sending host and upper computer command to udp client
+		{
+			cmd_udp_client();
+		}
+		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
 			exit(1);
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nlist\nupdate\nq\nquit\nshow\nterminal\n");
+			MSGINFO( "adp\nclear\nconnect\ndisconnect\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\n");
 			continue;
 		}
 

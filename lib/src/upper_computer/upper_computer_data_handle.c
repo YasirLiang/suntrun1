@@ -35,6 +35,8 @@ int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 
 int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe )
 {
+	DEBUG_LINE();
+	
 	struct host_upper_cmpt_frame cpy_frame;
 	int frame_len = pframe->payload_len;
 	memset( &cpy_frame, 0, sizeof( struct host_upper_cmpt_frame ));
@@ -42,7 +44,7 @@ int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe
 	cpy_frame.payload_len = frame_len;
 	memcpy( cpy_frame.payload, pframe->payload, pframe->payload_len );
 
-	if( check_crc( cpy_frame.payload, frame_len))
+	if( !check_crc( cpy_frame.payload, frame_len))
 		return;
 	
 	proccess_udp_client_msg_recv( cpy_frame.payload, cpy_frame.payload_len );

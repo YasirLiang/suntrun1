@@ -2,6 +2,7 @@
 
 bool is_inflight_cmds_retried( inflight_plist station )
 {
+	DEBUG_INFO( "retried = %d",  station->host_tx.flags.retried);
 	return (station->host_tx.flags.retried >= 2); // 只重发送两次
 }
 
@@ -43,13 +44,10 @@ bool inflight_timer_timeout( inflight_plist target)
            	if(elapsed_ms > target->host_tx.timeout.count_time)
             	{
                 	target->host_tx.timeout.elapsed = true;
-			return (target->host_tx.timeout.elapsed);
-            	}
-		else
-			return false;		
+            	}		
 	}
 
-	return false;
+	return target->host_tx.timeout.elapsed;
 }
 
 void background_inflight_timer_start( timetype timeout, struct background_inflight_cmd *binflight_cmd )

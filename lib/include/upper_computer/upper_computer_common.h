@@ -316,7 +316,7 @@ typedef struct _type_set_camara_switch
 
 extern int upper_computer_send( void* data_send );
 extern void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len );
-
+extern int  send_upper_and_host_deal_command( uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len );
 
 #endif
 

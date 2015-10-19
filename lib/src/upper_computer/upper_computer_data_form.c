@@ -1,4 +1,5 @@
 #include "upper_computer_data_form.h"
+#include "host_controller_debug.h"
 
 // 设置校验
 void set_upper_cmpt_check( struct host_upper_cmpt *p )
@@ -57,9 +58,9 @@ void host_upper_cmpt_end_crc_write( const uint8_t crc, void* base, ssize_t pos )
 /***
 *主机上发上位机命令写入发送负载,写头,数据长度，数据，校验和
 */
-size_t  conference_host_to_upper_computer_frame_write( void *base, struct host_upper_cmpt *p, const uint16_t data_len, size_t pos, size_t len )
+size_t  conference_host_to_upper_computer_frame_write( void *base, struct host_upper_cmpt *p, const uint16_t data_len, size_t pos, size_t buflen )
 {
-	ssize_t r = jdksavdecc_validate_range( pos, data_len + OTHER_DATA_LENGHT, UPPER_PAYLOAD_DATA_MAX_LEN );
+	ssize_t r = jdksavdecc_validate_range( pos, buflen, data_len + OTHER_DATA_LENGHT );
 	if(r >= 0)
 	{
 		host_upper_cmpt_common_header_write( &p->common_header, base, pos );
@@ -81,7 +82,7 @@ int conference_host_to_upper_computer_form_msg( struct host_upper_cmpt_frame *fr
 	// 计算并设置校验
 	set_upper_cmpt_check( phost );
 	// 把协议数据写入负载,并返回
-	return (int)conference_host_to_upper_computer_frame_write( frame->payload, phost, upper_data_len, 0, UPPER_PAYLOAD_DATA_MAX_LEN );
+	return (int)conference_host_to_upper_computer_frame_write( frame->payload, phost, upper_data_len, 0, sizeof(frame->payload) );
 }
 
 

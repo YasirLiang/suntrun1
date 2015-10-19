@@ -419,6 +419,24 @@ inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, 
 	}
 }
 
+// 是否只有一个udp client 数据节点
+bool is_exist_udp_client_inflight_type_node( inflight_plist head, uint8_t subtype )
+{
+	assert( head );
+	inflight_plist ptr = head->next;
+
+	for( ; ptr != head; ptr = ptr->next )
+	{
+		if( ptr->host_tx.inflight_frame.data_type == subtype )
+			return true;
+	}
+
+	if( ptr == head )
+		return false;
+
+	return false;
+}
+
 void delect_inflight_dblist_node( inflight_plist *free_node )
 {
 	assert( *free_node );

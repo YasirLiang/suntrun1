@@ -377,7 +377,7 @@ struct udp_upper_cmpt_command_strings_value udp_upper_cmpt_command_table[] =
 	{ EXAMINE_APPLICATION, "EXAMINE_APPLICATION" },
 	{ CONFERENCE_PERMISSION, "CONFERENCE_PERMISSION" },
 	{ SENDDOWN_MESSAGE, "SENDDOWN_MESSAGE" },
-	{ TABLE_TABLET_STANDS_MANAGER, "TABLE_TABLET_STANDS_MANAGER" },
+	{ TABLE_TABLET_STANDS_MANAGER, "TABLE TABLET_STANDS MANAGER" },
 	{ BEGIN_SIGN, "BEGIN_SIGN" },
 	{ SIGN_SITUATION, "SIGN_SITUATION" },
 	{ END_OF_SIGN, "END_OF_SIGN" },
@@ -508,8 +508,10 @@ uint32_t get_udp_client_timeout_table( uint8_t msg_type )
 	while(p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
 	{
 		if( p->cmd == msg_type )
+		{
 			return p->timeout_ms;
-
+		}
+			
 		p++;
 	}
 
@@ -528,6 +530,23 @@ const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value )
 	}
 
 	return "UNKNOW";
+}
+
+bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *msg_code )
+{
+	struct udp_upper_cmpt_command_strings_value *p = &udp_upper_cmpt_command_table[0];
+	while( p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
+	{
+		if( strcmp( msg_str, p->strings_value ) == 0)
+		{
+			*msg_code = p->cmd;
+			return true;
+		}
+		
+		p++;
+	}
+
+	return false;
 }
 
 uint32_t get_acmp_timeout( uint8_t msg_type )
