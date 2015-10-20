@@ -12,19 +12,15 @@
 #include "inflight.h"
 #include "aecp_controller_machine.h"
 
+FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
 tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点
 
 void init_terminal_address_list( void )
 {
-	int i = 0;
-
 	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
-	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )		// 地址初始化为0xff
-	{
-		tmnl_addr_list[i].addr = 0xffff;
-	}
+	terminal_address_list_read_file( addr_file_fd, &tmnl_addr_list );
 }
 
 void init_terminal_proccess_system( void )
@@ -38,6 +34,18 @@ void init_terminal_proccess_system( void )
 	// init terminal system double list
 	init_terminal_dblist( &dev_terminal_list_guard );
 	assert( dev_terminal_list_guard != NULL );
+}
+
+void terminal_init( void )
+{
+	init_terminal_proccess_fd(  &addr_file_fd );
+	if( NULL == addr_file_fd )
+		return;
+
+	if( NULL != addr_file_fd )
+	{
+		init_terminal_address_list();
+	}
 }
 
 // send terminal conference deal message in 1722 frame payload by pipe

@@ -10,6 +10,8 @@
 #include "jdksavdecc_world.h"
 #include "conference.h"
 
+#define ADDRESS_FILE "address.dat"		// 终端地址信息存放的文件
+
 #define COMMAND_TMN_MASK	 	0x1F	//命令掩码,命令内容在低5位
 #define COMMAND_FROM_TMN	 	0x80	//命令方向，
 #define COMMAND_TMN_REPLY	 	0x40	//响应报文标志
