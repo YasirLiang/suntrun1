@@ -4,7 +4,6 @@
 *proccess meeting
 */
 
-
 #include "terminal_pro.h"
 #include "linked_list_unit.h"
 #include "host_controller_debug.h"
@@ -22,9 +21,9 @@ void init_terminal_address_list( void )
 	int i = 0;
 
 	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
-	for( i = 0; i< SYSTEM_TMNL_MAX_NUM; i++ )		// 地址初始化为0xff
+	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )		// 地址初始化为0xff
 	{
-		tmnl_addr_list[i].addr = 0xff;
+		tmnl_addr_list[i].addr = 0xffff;
 	}
 }
 
@@ -72,7 +71,62 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 {
 	assert( NULL != conference_frame );
-	DEBUG_RECV( conference_frame->payload, conference_frame->payload_len, "Conference Data Recv" );
+	uint16_t frame_len = conference_frame->payload_len/2;
+	uint8_t *p_right_data = NULL;
+
+
+	// check the crc of the both data backups,if crc is wrong,return directory
+	if( check_conferece_deal_data_crc( frame_len, conference_frame->payload, ZERO_OFFSET_IN_PAYLOAD))
+	{	
+		p_right_data = conference_frame->payload;
+	}
+	else
+	{
+		if( check_conferece_deal_data_crc( frame_len, conference_frame->payload + frame_len, ZERO_OFFSET_IN_PAYLOAD))
+			p_right_data = conference_frame->payload + frame_len;
+		else	
+			return;
+	}
+	
+	DEBUG_RECV( p_right_data, frame_len, "Recv Right Conference Data" );
+	ttmnl_recv_msg recv_data;
+	ssize_t ret = 0;
+	ret = conference_end_to_host_deal_recv_msg_read( &recv_data, p_right_data, ZERO_OFFSET_IN_PAYLOAD, (TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2, frame_len);
+	if( ret < 0 )
+	{
+		DEBUG_INFO( "Err recv conference data read" );
+		assert( ret >=0 );
+	}
+
+	if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
+	{
+		return; 
+	}
+
+	if( recv_data.cchdr.command_control & COMMAND_TMN_REPLY ) // proccess response data
+	{
+		if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== QUERY_END)
+		{
+			terminal_register( recv_data.cchdr.address, recv_data.data[0] );
+		}
+		else if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== SET_END_STATUS )
+		{
+			terminal_type_save( recv_data.cchdr.address, recv_data.data[0],((recv_data.cchdr.command_control&COMMAND_TMN_CHAIRMAN)?true:false));
+		}
+		else if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == CHECK_END_RESULT )
+		{
+			query_vote_ask( recv_data.cchdr.address, recv_data.data[0]);
+		}
+	}
+
+	if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == TRANSIT_END_MSG ) // 特殊命令特殊处理
+	{
+		terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
+	}
+	else // 处理其它命令
+	{
+		
+	}
 }
 
 void host_reply_terminal()

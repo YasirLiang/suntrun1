@@ -62,8 +62,6 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 
 					// 将新建的inflight命令结点插入链表结尾中
 					insert_inflight_dblist_trail( guard, inflight_station );
-					int inflight_len = get_inflight_dblist_length( guard );
-					DEBUG_INFO( " inflight_len = %d", inflight_len );
 				}
 				else
 				{
@@ -82,11 +80,9 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 			inflight_station = search_node_inflight_from_dblist( guard, cfc_cmd, cfc_type );
 			if( inflight_station != NULL ) //already search it
 			{
-				DEBUG_LINE();
 				inflight_station->host_tx.flags.resend = true;
 				inflight_station->host_tx.flags.retried++ ;
 				inflight_timer_state_avail( timeout, inflight_station );
-				DEBUG_INFO( "retried = %d",  inflight_station->host_tx.flags.retried);
 			}
 			else
 			{
@@ -132,7 +128,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		DEBUG_INFO( "noting to be proccessed by udp client timeout" );
 		return;
 	}
-DEBUG_INFO( "is_retried = %d",  is_retried );
+	
 	assert( frame && inflight_station != NULL );
 	if( is_retried )
 	{

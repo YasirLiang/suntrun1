@@ -32,8 +32,8 @@ typedef  struct _tterminal_state	// 终端的状态，一个终端对应一个状态
 typedef  struct _tterminal
 {
 	uint64_t entity_id;			// 实体ID
-	uint16_t addr;				// 终端地址
-	terminal_state tmnl_status;	// 终端的状态 
+	terminal_address_list addr;      // 终端地址
+	terminal_state tmnl_status;	 // 终端的状态 
 }conference_terminal_device; 
 
 typedef  struct tmnl_list_node		// 终端链表节点 

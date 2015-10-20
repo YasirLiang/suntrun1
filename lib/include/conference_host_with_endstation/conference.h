@@ -7,6 +7,7 @@
 
 #define CONFERENCE_TYPE 0xAB
 #define DATAMAXLENGTH 64
+#define TERMINAL_MESSAGE_MAX_LEN 64
 
 //协议头部长度
 #define CONFERENCE_COMMON_HEADER_LEN 4
@@ -214,8 +215,15 @@ struct terminal_deal_frame // aecp data conference data frame
 {
 	struct jdksavdecc_aecpdu_aem aecpdu_aem_header;
 	uint16_t payload_len;
-	uint8_t payload[ (DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
+	uint8_t payload[ (TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
 };
+
+typedef struct _tterminal_recv_msg // 会讨命令
+{
+	struct conference_common_header cchdr; // 公共头部
+	uint8_t data[TERMINAL_MESSAGE_MAX_LEN];
+	uint8_t data_len; // 数据区的长度
+}ttmnl_recv_msg;
 
 #endif
 

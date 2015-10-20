@@ -14,6 +14,18 @@ inline static void conference_common_end_to_host_data_read(uint8_t *d, const voi
 	*d = p[0];
 }
 
+//读取数据
+inline static void conference_common_end_to_host_data_msg_read(uint8_t *d, const void *base, size_t offset, ssize_t data_len )
+{
+	uint8_t *p = ( ( uint8_t * )base ) + offset;
+
+	int i = 0;
+	for( i = 0; i < data_len; i++)
+	{
+		d[i] = p[i];
+	}
+}
+
 //读取特殊命令响应的数据格式
 inline static void conference_common_end_to_host_spe_data_read(uint8_t *d, const void *base, size_t offset,  ssize_t len_data)
 {
@@ -106,6 +118,38 @@ int conference_end_to_host_frame_read(const void *v_payload, struct endstation_t
 	}
 
 	return -1;
+}
+
+inline static void conference_common_end_to_host_data_len_set( uint8_t *out_data_len, uint8_t input_data_len )
+{
+	*out_data_len = input_data_len;
+}
+
+/********************************
+*write:YasirLiang
+*Date:2015/10/20
+*Func:conference_end_to_host_deal_recv_msg_read
+*param:
+*		p: 会讨命令结构指针
+*		base: read frame
+*		pos: 偏移
+*		buflen: 缓冲区的大小
+*		data_len: 数据帧的长度
+*return value:
+*	-1 or read data lenght
+*/
+ssize_t conference_end_to_host_deal_recv_msg_read( ttmnl_recv_msg *p_tt, const void *base, uint16_t pos, size_t buflen, size_t data_len )
+{
+	assert( p_tt && base );
+	ssize_t r = jdksavdecc_validate_range( pos, buflen, data_len);
+	if( r >= 0 )
+	{
+		conference_common_header_read( &p_tt->cchdr, base, pos );
+		conference_common_end_to_host_data_msg_read( p_tt->data, base , pos + CONFERENCE_COMMON_HEADER_LEN, (data_len -CONFERENCE_COMMON_HEADER_LEN -CONFERENCE_CRC_LEN) );
+		conference_common_end_to_host_data_len_set( &p_tt->data_len, (data_len -CONFERENCE_COMMON_HEADER_LEN -CONFERENCE_CRC_LEN) );
+	}
+
+	return r;
 }
 
 //读终端地址
