@@ -4,6 +4,7 @@
 #include "conference.h"
 #include "jdksavdecc_world.h"
 #include "terminal_pro.h"
+#include "terminal_common.h"
 
 extern terminal_address_list_pro allot_addr_pro;
 

@@ -1,6 +1,8 @@
 #ifndef __TERMINAL_SYSTEM_H__
 #define __TERMINAL_SYSTEM_H__
 
+#include "jdksavdecc_world.h"
+
 #define TMN_RGST_STATE	0x00000001 	 //Ô¶¶Ë±¨µ½
 #define CAMERA_PRESET        (0x00000001<<1) //ÉãÏñÍ·Ô¤ÖÃ
 #define SIGN_STATE          	(0x00000001<<2) //Ç©µ½×´Ì¬

@@ -26,6 +26,6 @@ ALL:
 
 .PHONY:clean
 clean:
-	-rm -rf libavdecc-host.a avdecc_ctl
+	-rm -rf libavdecc-host.a avdecc_ctl address.dat
 	make -C lib clean
 	make -C controller clean

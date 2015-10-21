@@ -79,7 +79,7 @@ desc_pdblist create_descptor_dblist_node( desc_pdblist* node );
 			if( pnode->tmnl_dev.entity_id == entity_id)break
 #define SEARCH_FOR_TERMINAL_LIST_RIGHT_ADDRESS_NODE( guard, pnode, address )\
 		for( ; pnode != guard; pnode = pnode->next )\
-			if( pnode->tmnl_dev.addr == address)break
+			if( pnode->tmnl_dev.address.addr == address)break
 				
 tmnl_pdblist create_terminal_dblist_node( tmnl_pdblist* node );
 void init_terminal_dblist( tmnl_pdblist *guard );

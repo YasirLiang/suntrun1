@@ -13,7 +13,7 @@ bool set_terminal_system_state( uint8_t value )
 	if( value & 0xff )
 	{
 		gsystem_state_pre = gsystem_state;
-		gsystem_state = value;
+		gsystem_state.host_state = value;
 		return true;
 	}
 

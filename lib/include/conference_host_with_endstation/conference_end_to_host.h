@@ -12,6 +12,7 @@ bool is_end_to_host_cmd_send( uint8_t cmd );
 bool is_initiative_send( uint8_t cmd );
 bool is_president_send( uint8_t cmd );
 bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos);
+ssize_t conference_end_to_host_deal_recv_msg_read( ttmnl_recv_msg *p_tt, const void *base, uint16_t pos, size_t buflen, size_t data_len );
 
 #endif
 

@@ -11,134 +11,127 @@
 #include "system_packet_tx.h"
 #include "inflight.h"
 #include "aecp_controller_machine.h"
+#include "file_util.h"
 
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
 tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点
+bool reallot_flag = false; // 重新分配标志
 
-void init_terminal_address_list( void )
+
+void init_terminal_proccess_fd( FILE ** fd )
 {
-	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
-	terminal_address_list_read_file( addr_file_fd, &tmnl_addr_list );
+	*fd = Fopen( ADDRESS_FILE, "ab+" );
+	if( NULL == *fd )
+	{
+		DEBUG_ERR( "init terminal addr fd Err!" );
+		assert( NULL != *fd );
+	}
 }
 
-void init_terminal_proccess_system( void )
+/***
+* 初始化终端地址列表
+*/
+int init_terminal_address_list( void )
 {
-	// init terminal address list
+	int i = 0;
+	int ret = 0;
+	
+	// 初始化全局变量tmnl_addr_list
+	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
+	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
+	{
+		tmnl_addr_list[i].addr = INIT_ADDRESS;
+		tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
+	}
+
+	// 读终端地址信息到tmnl_addr_list, 若读取失败，则系统需要重新分配终端地址
+	ret = terminal_address_list_read_file( addr_file_fd, tmnl_addr_list );
+	if( ret == -1 )
+	{
+		DEBUG_INFO( "init tmnl_addr_list from address file!need to reallot terminal address");
+		reallot_flag = true;
+	}
+
+	return ret;
+}
+
+inline void init_terminal_allot_address( void )
+{
 	allot_addr_pro.addr_start = 0;
 	allot_addr_pro.index = 0;
 	allot_addr_pro.renew_flag= 0;
-	init_terminal_address_list();
+}
 
+inline void init_terminal_device_double_list()
+{
 	// init terminal system double list
 	init_terminal_dblist( &dev_terminal_list_guard );
 	assert( dev_terminal_list_guard != NULL );
 }
 
-void terminal_init( void )
+#ifdef __DEBUG__  // 模拟终端信息
+#define WRITE_ADDR_NUM 10
+// 测试接口的格式:test_interface_ + 实际会用到的接口
+void 	test_interface_terminal_address_list_write_file( FILE** fd )
 {
+	Fclose( *fd );
+	*fd = Fopen( ADDRESS_FILE, "wb+" );
+	if( *fd == NULL )
+	{
+		DEBUG_ERR( "init terminal addr fd Err!" );
+		assert( NULL != *fd );
+	}
+
+	// write info
+	int i = 0;
+	for( ; i < WRITE_ADDR_NUM; i++ )
+	{
+		terminal_address_list tmp_addr;
+		tmp_addr.addr = i;
+		tmp_addr.tmn_type = 0;
+		terminal_address_list_write_file( *fd, &tmp_addr, 1 );
+	}
+}
+
+void print_out_terminal_addr_infomation( terminal_address_list* p, int num)
+{
+	int i = 0;
+
+	printf( "Addr Info:\n" );
+	for( ; i < num; i++ )
+	{
+		printf( "[ (addr-type)-> (%d -%d) ]\n", p[i].addr, p[i].tmn_type );
+	}
+}
+
+#endif
+
+void init_terminal_proccess_system( void )
+{
+	int tmnl_count = 0;
 	init_terminal_proccess_fd(  &addr_file_fd );
 	if( NULL == addr_file_fd )
 		return;
+	
+#ifdef __DEBUG__ // 模拟终端信息数据
+	test_interface_terminal_address_list_write_file( &addr_file_fd );
+#endif
+
 
 	if( NULL != addr_file_fd )
 	{
-		init_terminal_address_list();
-	}
-}
-
-// send terminal conference deal message in 1722 frame payload by pipe
-uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data )
-{
-	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
-	struct host_to_endstation fill_send_buf;
-	struct jdksavdecc_frame send_frame;
-	struct jdksavdecc_aecpdu_aem aemdu;
-	struct jdksavdecc_eui64 target_id;
-	int send_len = 0;
-	int cnf_data_len = 0;
-
-	memcpy( send_frame.src_address.value, net.m_my_mac, 6 );
-	convert_uint64_to_eui64( target_id.value, uint64_target_id );
-	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data );
-	send_len = conference_1722_control_form_info( &send_frame, &aemdu, jdksavdecc_multicast_adp_acmp, target_id, cnf_data_len );
-	if( send_len < 0 )
-	{
-		DEBUG_INFO( "send len is bad! send_len = %d", send_len );
-		assert( send_len >= 0 );
-	}
-
-	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
-	aecp_callback( CMD_WITH_NOTIFICATION, send_frame.payload );
-	
-	return (uint16_t)send_len;
-}
-
-// proccess recv conference deal message from raw network
-void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
-{
-	assert( NULL != conference_frame );
-	uint16_t frame_len = conference_frame->payload_len/2;
-	uint8_t *p_right_data = NULL;
-
-
-	// check the crc of the both data backups,if crc is wrong,return directory
-	if( check_conferece_deal_data_crc( frame_len, conference_frame->payload, ZERO_OFFSET_IN_PAYLOAD))
-	{	
-		p_right_data = conference_frame->payload;
-	}
-	else
-	{
-		if( check_conferece_deal_data_crc( frame_len, conference_frame->payload + frame_len, ZERO_OFFSET_IN_PAYLOAD))
-			p_right_data = conference_frame->payload + frame_len;
-		else	
-			return;
+		tmnl_count = init_terminal_address_list();
+		if( tmnl_count != -1)
+			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 	}
 	
-	DEBUG_RECV( p_right_data, frame_len, "Recv Right Conference Data" );
-	ttmnl_recv_msg recv_data;
-	ssize_t ret = 0;
-	ret = conference_end_to_host_deal_recv_msg_read( &recv_data, p_right_data, ZERO_OFFSET_IN_PAYLOAD, (TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2, frame_len);
-	if( ret < 0 )
-	{
-		DEBUG_INFO( "Err recv conference data read" );
-		assert( ret >=0 );
-	}
+#ifdef __DEBUG__ // 输出模拟终端信息的数据
+	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
+#endif
 
-	if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
-	{
-		return; 
-	}
-
-	if( recv_data.cchdr.command_control & COMMAND_TMN_REPLY ) // proccess response data
-	{
-		if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== QUERY_END)
-		{
-			terminal_register( recv_data.cchdr.address, recv_data.data[0] );
-		}
-		else if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== SET_END_STATUS )
-		{
-			terminal_type_save( recv_data.cchdr.address, recv_data.data[0],((recv_data.cchdr.command_control&COMMAND_TMN_CHAIRMAN)?true:false));
-		}
-		else if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == CHECK_END_RESULT )
-		{
-			query_vote_ask( recv_data.cchdr.address, recv_data.data[0]);
-		}
-	}
-
-	if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == TRANSIT_END_MSG ) // 特殊命令特殊处理
-	{
-		terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
-	}
-	else // 处理其它命令
-	{
-		
-	}
-}
-
-void host_reply_terminal()
-{
+	init_terminal_allot_address();
+	init_terminal_device_double_list();
 	
 }
-
