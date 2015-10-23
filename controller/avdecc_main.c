@@ -16,30 +16,27 @@ int main( int argc, char *argv[] )
 {
 	struct udp_context udp_net;
 
-	// 初始化系统，包括系统管理终端链表,inflight命令链表
-	init_system();
+	init_system();	// 初始化系统，包括系统管理终端链表,inflight命令链表
 	
-	// 建立raw, udp server, udp client socket
-	build_socket( &net_fd, &net, NETWORT_INTERFACE, &udp_net );
-	// 创建无名管道
-	build_pipe( net_fd.tx_pipe );
+	build_socket( &net_fd, &net, NETWORT_INTERFACE, &udp_net ); // 建立raw, udp server, udp client socket
+	build_pipe( net_fd.tx_pipe );	// 创建无名管道
 
-	// 创建接收数据处理线程
 	pthread_t h_thread;
-	pthread_handle_create( &h_thread, &net_fd );
+	pthread_handle_create( &h_thread, &net_fd ); // 创建接收数据处理线程
 
-	// 创建管道读线程
 	pthread_t p_thread;
-	pthread_handle_pipe( &p_thread, &net_fd );
+	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
+
+	// 分离主线程与次线程
+	pthread_detach( h_thread );
+	pthread_detach( p_thread );
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
-	pthread_detach( h_thread );
-	pthread_detach( p_thread );
-
 	controller_proccess();
-	
+
+	// 主线程退出
 	pthread_exit( NULL );
 	
 	return 0;

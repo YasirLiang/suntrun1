@@ -20,17 +20,20 @@
 	uint8_t *p = (uint8_t*)buf;\
 	fprintf( stdout,"\033[32m[%s:%d]\033[0m %s:\t",  __func__, __LINE__, arg);\
 	for(;i < n; i++)\
-	fprintf(stdout, "%02x ", p[i] );\
+		fprintf(stdout, "%02x ", p[i] );\
 	fprintf(stdout,"\n");
 #define DEBUG_SEND( buf, n, arg )\
 	int i = 0;\
 	uint8_t *p = (uint8_t*)buf;\
 	fprintf( stdout,"\033[32m[%s:%d]\033[0m %s:\t",  __func__, __LINE__, arg);\
 	for(;i < n; i++)\
-	fprintf(stdout, "%02x ", p[i] );\
+		fprintf(stdout, "%02x ", p[i] );\
 	fprintf(stdout,"\n");
 
-#define MSGINFO(fmt, args...) fprintf(  stdout,""fmt"\n", ##args)
+#define MSGINFO(fmt, args...) \
+	fprintf(  stdout,""fmt"\n", ##args)
+#define DABORT( cond ) { if( !cond ) \ // 条件不成立，结束进程
+		{ fprintf( stdout, "Aborting at line %d in source file %s\n",__LINE__,__FILE__); abort(); }}
 
 #else				// 发行版本,不打印任何信息
 #define NDEBUG 		// 断言开关，若定义则程序中的断言不会被执行
@@ -43,6 +46,7 @@
 #define DEBUG_SEND( buf, n, arg )
 #define DEBUG_MSGINFO(fmt, args...) 
 #define MSGINFO(fmt, args...) fprintf(  stdout,""fmt"\n", ##args)
+#define DABORT( cond )
 #endif
 
 #endif

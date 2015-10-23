@@ -119,7 +119,6 @@ void init_terminal_proccess_system( void )
 	test_interface_terminal_address_list_write_file( &addr_file_fd );
 #endif
 
-
 	if( NULL != addr_file_fd )
 	{
 		tmnl_count = init_terminal_address_list();
@@ -129,6 +128,8 @@ void init_terminal_proccess_system( void )
 	
 #ifdef __DEBUG__ // 输出模拟终端信息的数据
 	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
+	if( tmnl_count != -1)
+			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 #endif
 
 	init_terminal_allot_address();
