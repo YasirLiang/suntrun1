@@ -32,8 +32,8 @@
 
 #define MSGINFO(fmt, args...) \
 	fprintf(  stdout,""fmt"\n", ##args)
-#define DABORT( cond ) { if( !cond ) \ // 条件不成立，结束进程
-		{ fprintf( stdout, "Aborting at line %d in source file %s\n",__LINE__,__FILE__); abort(); }}
+	
+#define DABORT( cond ) if( !cond ){ fprintf( stdout, "Aborting at line %d in source file %s\n",__LINE__,__FILE__); abort(); }
 
 #else				// 发行版本,不打印任何信息
 #define NDEBUG 		// 断言开关，若定义则程序中的断言不会被执行

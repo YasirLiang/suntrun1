@@ -13,20 +13,17 @@
 #define __COMMON_H__
 
 #include "jdksavdecc_world.h"
+#include "control_data.h"
+#include "circular_link_queue.h"
 
-#define SUB_DATA_TYPE_SIZE 256
+
+#define SUB_DATA_TYPE_SIZE 512
 
 typedef struct data_element		// 数据元素
 {
 	uint32_t data_len;
 	uint8_t data_buf[SUB_DATA_TYPE_SIZE];
 }data_element_type;
-
-typedef struct func_cmd_work_queue 	// 会议命令处理函数命令队列的元素的工作节点
-{
-	data_control control;	// 控制数据
-	queue work;			// 工作队列
-}work_queue;
 
 #endif
 

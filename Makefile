@@ -4,7 +4,7 @@ LD = ld
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH)
+CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/avdecc \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -16,7 +16,8 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/native_proccess \
 		   -I$(ROOTPATH)/lib/include/system_work_tool_uits \
 		   -I$(ROOTPATH)/lib/include/upper_computer \
-		   -I$(ROOTPATH)/lib/include/end_station_manager
+		   -I$(ROOTPATH)/lib/include/end_station_manager\
+		   -I$(ROOTPATH)/lib/include/meeting_common
 
 export CFG_INC CFLAGS ROOTPATH
 

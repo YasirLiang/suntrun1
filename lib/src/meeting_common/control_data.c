@@ -4,20 +4,21 @@
 **
 */
 
-#include "controll_data.h"
+#include "control_data.h"
+#include "host_controller_debug.h"
 
 bool controll_activate( data_control* p_controll )
 {
 	DABORT( p_controll );
 	
-	if( pthread_mutex_lock( &p_controll->mutex ) )
+	if( pthread_mutex_lock(&p_controll->mutex) )
 		return false;
-	if( pthread_cond_signal( &p_controll->cond) );
+	if( phread_mutex_unlock(&(p_controll->mutex)) )
 		return false;
-	if( phread_cond_unlock( &p_controll->mutex ) );
+	if( pthread_cond_signal(&p_controll->cond) )
 		return false;
 
-	p_controll->active = true;
+	p_controll->active = 1;
 
 	return true;
 }
@@ -26,14 +27,14 @@ bool controll_deactivate( data_control* p_controll )
 {
 	DABORT( p_controll );
 	
-	if( pthread_mutex_lock( &p_controll->mutex ) )
+	if( pthread_mutex_lock(&p_controll->mutex) )
 		return false;
-	if( pthread_cond_signal( &p_controll->cond) );
+	if( phread_mutex_unlock(&(p_controll->mutex)) )
 		return false;
-	if( phread_cond_unlock( &p_controll->mutex ) );
+	if( pthread_cond_signal(&p_controll->cond) )
 		return false;
 
-	p_controll->active = false;
+	p_controll->active = 0;
 
 	return true;
 }
@@ -47,7 +48,7 @@ bool controll_init( data_control *p_controll )
 	if( pthread_cond_init( &p_controll->cond, NULL ))
 		return false;
 
-	p_controll->active = false;
+	p_controll->active = 0;
 
 	return true;
 }
@@ -56,12 +57,12 @@ bool controll_destroy( data_control *p_controll )
 {
 	DABORT( p_controll );
 	
-	if( pthread_mutex_destroy( &p_controll->mutex ));
+	if( pthread_mutex_destroy( &p_controll->mutex) )
 		return false;
-	if( pthread_mutex_destroy( &p_controll->cond) );
+	if( pthread_cond_destroy( &p_controll->cond) )
 		return false;
 		
-	p_controll = 0;
+	p_controll->active = 1;
 
 	return true;
 }

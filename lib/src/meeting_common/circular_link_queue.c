@@ -4,7 +4,7 @@ queue_node* queue_get( queue *root )
 {
 	queue_node* node_get = root->front;;
 
-	if( !is_queue_empty)
+	if( !is_queue_empty( root ) )
 		root->front = root->front->next;
 
 	return node_get;
