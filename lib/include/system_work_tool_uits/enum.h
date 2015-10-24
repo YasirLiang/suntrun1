@@ -118,6 +118,11 @@ enum udp_upper_cmd_timeout //  upper and host deal timouts
 	HIGH_DEFINITION_SWITCH_SET_TIMEOUTS = 200, 
 };
 
+enum enum_func_link // conferenc command functions command link
+{
+
+	
+};
 enum adp_msg_type_values
 {
 	ADP_MESSAGE_TYPE_ENTITY_AVAILABLE,

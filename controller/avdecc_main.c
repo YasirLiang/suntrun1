@@ -27,6 +27,9 @@ int main( int argc, char *argv[] )
 	pthread_t p_thread;
 	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
 
+	pthread_t f_thread;
+	pthread_handle_cmd_func( &f_thread, proccess_func_link_tables );
+
 	// 分离主线程与次线程
 	pthread_detach( h_thread );
 	pthread_detach( p_thread );
@@ -35,8 +38,7 @@ int main( int argc, char *argv[] )
 	set_system_information( net_fd, &udp_net );
 	
 	controller_proccess();
-
-	// 主线程退出
+	
 	pthread_exit( NULL );
 	
 	return 0;

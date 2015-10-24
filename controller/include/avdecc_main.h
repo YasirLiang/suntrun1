@@ -56,6 +56,6 @@ extern solid_pdblist endpoint_list;				// 系统中终端链表哨兵节点
 extern inflight_plist command_send_guard;		// 系统中发送网络数据命令链表哨兵节点
 extern struct raw_context net;				// 原始套接字
 extern desc_pdblist descptor_guard;			// 系统中描述符链表哨兵节点
-
+const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS]; // 处理函数列表
 
 #endif
