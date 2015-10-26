@@ -15,6 +15,7 @@
 #include "jdksavdecc_world.h"
 #include "control_data.h"
 #include "circular_link_queue.h"
+#include "host_controller_debug.h"
 
 
 #define SUB_DATA_TYPE_SIZE 512

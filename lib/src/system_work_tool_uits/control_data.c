@@ -10,13 +10,18 @@
 bool controll_activate( data_control* p_controll )
 {
 	DABORT( p_controll );
-	
 	if( pthread_mutex_lock(&p_controll->mutex) )
+	{
 		return false;
-	if( phread_mutex_unlock(&(p_controll->mutex)) )
-		return false;
+	}
+	//if( phread_mutex_unlock(&(p_controll->mutex)) )
+	//{
+	//	return false;
+	//}
 	if( pthread_cond_signal(&p_controll->cond) )
+	{
 		return false;
+	}
 
 	p_controll->active = 1;
 
@@ -29,7 +34,7 @@ bool controll_deactivate( data_control* p_controll )
 	
 	if( pthread_mutex_lock(&p_controll->mutex) )
 		return false;
-	if( phread_mutex_unlock(&(p_controll->mutex)) )
+	//if( phread_mutex_unlock(&(p_controll->mutex)) )
 		return false;
 	if( pthread_cond_signal(&p_controll->cond) )
 		return false;

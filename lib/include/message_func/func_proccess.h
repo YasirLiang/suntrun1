@@ -1,12 +1,29 @@
+/*func_proccess.h
+**
+**
+**
+**
+**
+*/
+
+
 #ifndef __FUNC_PROCCESS_H__
 #define __FUNC_PROCCESS_H__
 
 #include "common.h"
+#include "enum.h"
 
-typedef struct func_cmd_queue_data_type      // »áÒéÃüÁî´¦Àíº¯Êı¶ÓÁĞµÄÊı¾İÇø 
+#define MAX_FUNC_MSG_LEN 200
+
+typedef struct func_message_head
 {
 	uint16_t func_index;				// º¯ÊıµÄÆ«ÒÆ
 	uint16_t func_cmd;					// º¯ÊıµÄÃüÁî
+}func_message_head;
+
+typedef struct func_cmd_queue_data_type      // »áÒéÃüÁî´¦Àíº¯Êı¶ÓÁĞµÄÊı¾İÇø 
+{
+	func_message_head func_msg_head;
 	data_element_type meet_msg; 		// »áÒéÏµÍ³ÃüÁîÊı¾İÏûÏ¢
 }fcqueue_data_elem;
 
@@ -19,7 +36,7 @@ typedef struct func_cmd_queue_work_node   // »áÒéÃüÁî´¦Àíº¯ÊıÃüÁî¶ÓÁĞµÄ¹¤×÷½Úµã£
 {
 	queue_node *next; 			// ¹¤×÷¶ÓÁĞ½ÚµãµÄÁ´±íÇø(¼´¶ÓÁĞ½Úµã)
 	fcqueue_data_elem job_data; // º¯ÊıÃüÁî¹¤×÷¶ÓÁĞÊı¾İÇø 
-}fcqueue_wnode;
+}fcqueue_wnode, *p_fcqueue_wnode;
 
 typedef struct func_cmd_work_queue // º¯ÊıÃüÁî¶ÓÁĞ
 {
@@ -41,5 +58,14 @@ typedef struct proccess_func_items
 	int (*cmd_proccess)(uint16_t cmd, void *data, uint32_t data_len);
   	enum_func_link func_cmd_link;
 }proccess_func_items;
+
+extern fcwqueue fcwork_queue;		// º¯ÊıÃüÁîÏûÏ¢¹¤×÷¶ÓÁĞ
+
+extern uint16_t get_sys_state( void );
+extern void init_func_command_work_queue( void );
+extern int func_command_find_and_run( proccess_func_items * func_tables, fcwqueue*  p_func_wq );
+extern bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, const uint8_t *pdata, const uint16_t data_len );
+extern bool use_dis_set( uint8_t  user, bool set );
+
 
 #endif

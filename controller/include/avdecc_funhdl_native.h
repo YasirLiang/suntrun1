@@ -8,6 +8,9 @@
 
 int thread_pipe_fn( void *pgm );
 int pthread_handle_pipe( pthread_t *p_trd, struct fds *kfds );
+int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items );
+int thread_func_fn( void * pgm );
+
 
 #endif
 

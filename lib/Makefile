@@ -3,12 +3,12 @@ SRC_FILE += $(wildcard src/avdecc/*.c) $(wildcard ls src/jdksavdecc/*.c)\
 			$(wildcard src/consultative_encapsulation/*.c) $(wildcard src/packet_events/*.c)\
 			$(wildcard src/native_proccess/*.c) $(wildcard src/system_work_tool_uits/*.c)\
 			$(wildcard src/upper_computer/*.c) $(wildcard src/end_station_manager/*.c)\
-			$(wildcard src/meeting_common/*.c)
+			$(wildcard src/message_func/*.c)
 
 OBJECTS = $(patsubst %.c, %.o, $(SRC_FILE))
 
 %.o:%.c
-	$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
+	$(CC) -c -o $@ $< $(CFLAGS) $(CFG_INC)
 
 libavdecc-host.a:$(OBJECTS)
 	$(AR) rc libavdecc-host.a $(OBJECTS)

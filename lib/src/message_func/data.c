@@ -2,6 +2,7 @@
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
+/*
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
@@ -47,11 +48,13 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
-	{ 0xffffffff, , },
+	{ 0xffffffff, , }
+	*/
 };
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
+/*
 	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},
@@ -96,6 +99,7 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},
-	{ , , , 0},
+	{ , , , 0}
+	*/
 };
 

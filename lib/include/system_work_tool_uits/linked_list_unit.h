@@ -51,6 +51,8 @@ int get_inflight_dblist_length( inflight_plist head );
 inflight_plist search_node_inflight_from_dblist(inflight_plist head, uint16_t  seq_id, uint8_t subtype );
 void delect_inflight_dblist_node( inflight_plist *free_node );
 inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd );
+bool is_exist_udp_client_inflight_type_node( inflight_plist head, uint8_t subtype );
+
 
 
 /*{@以下函数用于操作会议终端的的信息链表@}*/

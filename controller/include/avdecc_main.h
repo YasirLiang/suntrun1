@@ -10,6 +10,8 @@
 #include "entity.h"
 #include "inflight.h"
 #include "descriptor.h"
+#include "func_proccess.h"
+#include "data.h"
 
 #define NETWORT_INTERFACE "eth0"
 

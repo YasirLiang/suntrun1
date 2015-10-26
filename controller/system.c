@@ -20,6 +20,7 @@ void init_system( void )
 	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
 
 	init_terminal_proccess_system();
+	init_func_command_work_queue();
 }
 
 void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )

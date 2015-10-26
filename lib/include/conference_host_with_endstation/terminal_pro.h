@@ -8,8 +8,6 @@
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
-#define SYSTEM_TMNL_MAX_NUM 512	// 系统中终端最大的数量
-#define INIT_ADDRESS 0xffff
 
 void init_terminal_proccess_system( void );
 

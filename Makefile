@@ -17,7 +17,7 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/system_work_tool_uits \
 		   -I$(ROOTPATH)/lib/include/upper_computer \
 		   -I$(ROOTPATH)/lib/include/end_station_manager\
-		   -I$(ROOTPATH)/lib/include/meeting_common
+		   -I$(ROOTPATH)/lib/include/message_func
 
 export CFG_INC CFLAGS ROOTPATH
 

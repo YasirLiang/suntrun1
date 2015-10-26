@@ -45,7 +45,7 @@ int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe
 	memcpy( cpy_frame.payload, pframe->payload, pframe->payload_len );
 
 	if( !check_crc( cpy_frame.payload, frame_len))
-		return;
+		return -1;
 	
 	proccess_udp_client_msg_recv( cpy_frame.payload, cpy_frame.payload_len );
 	

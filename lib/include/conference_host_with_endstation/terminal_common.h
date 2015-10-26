@@ -10,6 +10,8 @@
 #include "jdksavdecc_world.h"
 #include "conference.h"
 
+#define SYSTEM_TMNL_MAX_NUM 512	// 系统中终端最大的数量
+#define INIT_ADDRESS 0xffff
 
 #define COMMAND_TMN_MASK	 	0x1F	//命令掩码,命令内容在低5位
 #define COMMAND_FROM_TMN	 	0x80	//命令方向，
