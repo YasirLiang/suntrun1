@@ -1,6 +1,7 @@
 CC = gcc
 AR = ar
 LD = ld
+DUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
@@ -25,9 +26,10 @@ export CFG_INC CFLAGS ROOTPATH
 ALL:
 	make -C lib
 	make -C controller
+	$(DUMP) -alD avdecc_ctl > avdecc_ctl.txt
 
 .PHONY:clean
 clean:
-	-rm -rf libavdecc-host.a avdecc_ctl address.dat
+	-rm -rf libavdecc-host.a avdecc_ctl avdecc_ctl.txt address.dat
 	make -C lib clean
 	make -C controller clean
