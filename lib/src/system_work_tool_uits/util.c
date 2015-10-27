@@ -582,6 +582,18 @@ bool is_conference_deal_data_response_type( void *base, uint16_t offset )
 	return (p[0]&0x80);	//位8 
 }
 
+bool is_terminal_command( void *base, uint16_t offset )
+{
+	uint8_t *p = ((uint8_t *)base) + offset;
+	return (p[1]&0x80);	//位8 
+}
+
+bool is_terminal_response( void *base, uint16_t offset )
+{
+	uint8_t *p = ((uint8_t *)base) + offset;
+	return (p[1]&0x40);	//位7
+}
+
 // 将48位转换为64位
 void convert_eui48_to_uint64( const uint8_t value[6], uint64_t *new_value )
 {

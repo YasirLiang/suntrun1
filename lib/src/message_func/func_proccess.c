@@ -1,12 +1,13 @@
 #include "func_proccess.h"
 #include "message_queue.h"
 #include "data.h"
+#include "terminal_system.h"
 
-fcwqueue fcwork_queue;		// 函数命令消息工作队列
+fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
-static uint16_t gpermit;  		// 当前系统的状态
-static uint16_t gpermitpre;	// 上一个系统的状态
-uint8_t globle_use_dis;
+static uint16_t gpermit = TMN_RGST_STATE;  	// 当前系统的状态
+static uint16_t gpermitpre;					// 上一个系统的状态
+uint8_t globle_use_dis = TERMINAL_USE; 		// 当前用户
 
 void init_func_command_work_queue( void )
 {
@@ -20,34 +21,6 @@ void init_func_command_work_queue( void )
 	is_su = controll_activate( &fcwork_queue.control );
 	if( !is_su );
 		DABORT( is_su );
-}
-
-int func_command_find_and_run( proccess_func_items * func_tables, fcwqueue*  p_func_wq )
-{
-	assert( func_tables && p_func_wq );
-	fcqueue_wnode *p_msg_wnode = NULL;
-	
-	while( p_func_wq->work.front == NULL && p_func_wq->control.active )
-	{
-		pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
-	}
-
-	p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
-	if( NULL == p_msg_wnode )
-	{
-		DEBUG_INFO( "func work queue no node!" );
-		return -1;
-	}
-
-	// proccess func command queue message
-	uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
-	uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
-	uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
-	uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
-	func_tables[func_index].cmd_proccess( func_cmd, p_data, data_len );
-	free( p_msg_wnode );
-
-	return 0;
 }
 
 /*************************************
@@ -123,6 +96,7 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 	}
 
 	// save message
+	DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
 	if( (index <  MAX_PROCCESS_FUNC) && (proccess_func_link_tables[i].permit & get_sys_state()))
 	{
 		queue_data_elem.func_msg_head.func_index = index;
@@ -140,9 +114,11 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 
 		// thread lock and save data
 		pthread_mutex_lock( &fcwork_queue.control.mutex );
+		
 		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
-		pthread_cond_signal( &fcwork_queue.control.cond);
+		
 		pthread_mutex_unlock( &fcwork_queue.control.mutex );
+		pthread_cond_signal( &fcwork_queue.control.cond);
 	}
 	else
 	{
@@ -154,7 +130,7 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 #endif
 	}
 
-	return false; 
+	return true; 
 }
 
 bool use_dis_set( uint8_t  user, bool set )

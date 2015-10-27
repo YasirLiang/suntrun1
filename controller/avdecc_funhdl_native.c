@@ -46,17 +46,38 @@ int thread_pipe_fn( void *pgm )
 
 int thread_func_fn( void * pgm )
 {
-	assert( pgm );
-
-	proccess_func_items *p_func_items = (proccess_func_items *)pgm;
 	fcwqueue*  p_func_wq = &fcwork_queue;
-	assert( p_func_wq );
+	assert( pgm && p_func_wq );
+	
+	proccess_func_items *p_func_items = (proccess_func_items *)pgm;	
+	fcqueue_wnode *p_msg_wnode = NULL;
 	
 	/* ´¦ÀíÃüÁîº¯Êý */
 	while( 1 )
 	{
 		pthread_mutex_lock( &p_func_wq->control.mutex );
-		func_command_find_and_run( p_func_items, p_func_wq );
+		
+		while( p_func_wq->work.front == NULL && p_func_wq->control.active )
+		{
+			DEBUG_LINE();
+			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
+		}
+		
+		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
+		if( NULL == p_msg_wnode )
+		{
+			DEBUG_INFO( "func work queue no node!" );
+			return -1;
+		}
+
+		// proccess func command queue message
+		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
+		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
+		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
+		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
+		proccess_func_link_tables[func_index].cmd_proccess( func_cmd, p_data, data_len );
+		free( p_msg_wnode );
+
 		pthread_mutex_unlock( &p_func_wq->control.mutex );
 	}
 	
@@ -88,7 +109,7 @@ int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items 
 		DEBUG_INFO(" pthread_handle_cmd_func ERROR; return code from pthread_create() is %d\n", rc);
 		assert( rc == 0 );
 	}
-
+DEBUG_LINE();
 	return 0;
 }
 

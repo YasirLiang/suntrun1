@@ -1,9 +1,11 @@
 #include "data.h"
+#include "terminal_pro.h"
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
+
+	{ 0xffffffff, terminal_func_allot_address, FUNC_TMNL_ALLOT_ADDRESS}
 /*
-	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
@@ -54,9 +56,9 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
-/*
-	{ , , , 0},
-	{ , , , 0},
+
+	{ TERMINAL_USE, ALLOCATION, FUNC_TMNL_ALLOT_ADDRESS, 0}
+/*	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},

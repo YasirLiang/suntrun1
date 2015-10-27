@@ -33,6 +33,7 @@ int main( int argc, char *argv[] )
 	// 分离主线程与次线程
 	pthread_detach( h_thread );
 	pthread_detach( p_thread );
+	pthread_detach( f_thread );
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );

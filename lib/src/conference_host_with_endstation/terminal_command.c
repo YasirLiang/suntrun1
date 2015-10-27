@@ -35,7 +35,7 @@ void terminal_allot_address( void )
 	ternminal_send( &askbuf, asklen, target_zero, false );
 }
 
-// 重新分配地址
+// 重新分配地址，此命令无响应
 void terminal_reallot_address( void )
 {
 	struct host_to_endstation askbuf; 
@@ -47,7 +47,7 @@ void terminal_reallot_address( void )
 	askbuf.cchdr.address = 0x8000; // 全广播
 	askbuf.data_len = 0;
 
-	ternminal_send( &askbuf, asklen, target_zero, false );
+	ternminal_send( &askbuf, asklen, target_zero, true ); 
 }
 
 // 终端状态设置

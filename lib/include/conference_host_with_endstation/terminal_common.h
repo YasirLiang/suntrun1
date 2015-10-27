@@ -10,7 +10,7 @@
 #include "jdksavdecc_world.h"
 #include "conference.h"
 
-#define SYSTEM_TMNL_MAX_NUM 512	// 系统中终端最大的数量
+#define SYSTEM_TMNL_MAX_NUM 256	// 系统中终端最大的数量
 #define INIT_ADDRESS 0xffff
 
 #define COMMAND_TMN_MASK	 	0x1F	//命令掩码,命令内容在低5位
@@ -270,7 +270,7 @@ typedef  struct _tterminal_state	// 终端的状态，一个终端对应一个状态
 typedef  struct _tterminal
 {
 	uint64_t entity_id;			// 实体ID
-	terminal_address_list address;      // 终端地址
+	terminal_address_list address; // 终端地址
 	terminal_state tmnl_status;	 // 终端的状态 
 }conference_terminal_device; 
 
@@ -279,7 +279,6 @@ typedef  struct tmnl_list_node		// 终端链表节点
 	conference_terminal_device tmnl_dev;
 	struct tmnl_list_node *next,*prior;
 }tmnl_dblist, *tmnl_pdblist; 
-
 
 typedef struct _tterminal_state_set // 终端状态的设置
 {
@@ -348,6 +347,8 @@ int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_ad
 int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_addr );
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data );
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
+void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint16_t data_len );
+
 
 
 #endif

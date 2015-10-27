@@ -11,7 +11,6 @@ void inflight_time_tick( inflight_plist guard )
 	{
 		if( inflight_timer_timeout(inflight_station) )
 		{	
-			DEBUG_LINE();
 			uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
 			if( data_type == INFLIGHT_TRANSMIT_TYPE_UDP_CLIENT )
 				udp_client_inflight_station_timeouts( inflight_station, guard ); // host and upper cmpt

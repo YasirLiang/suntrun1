@@ -9,6 +9,7 @@
 #include "descriptor.h"
 #include "jdksavdecc_util.h"
 #include "upper_computer_command.h"
+#include "terminal_system_func.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -49,6 +50,11 @@ static char *commands_list[COMMANDS_MAX_NUM] =
 	"replyEndMessage",
 	"queryVoteSign",
 	// 结束-测试终端命令的命令
+	
+	// 开始-系统功能
+	"hostFunc",
+	"reAllot",
+	// 结束-系统功能
 	
 	NULL
 };
@@ -1205,16 +1211,62 @@ void cmd_udp_client( void )
 
 		if( ((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
+			free(cmd_buf);
 			break;
 		}
 		else
 		{
 			cmd_udp_client_command_avail( cmd_buf );
 		}
+		
+		free(cmd_buf);
 	}
 }
 /*===================================
 *end host and udp client command interface testing
+*====================================*/
+
+/*===================================
+*开始-主机功能
+*====================================*/
+void cmd_host_func_command_reallot( const char *opt ) // no paramt
+{
+	terminal_system_reallot_addr();
+}
+
+void cmd_host_func_proccess( void )
+{
+	while(1)
+	{
+		char* cmd_buf = readline( "F " );
+		 if ( !cmd_buf )
+	            break;
+	         if ( strlen(cmd_buf) == 0 )
+	            continue;
+		else
+		{
+			add_history( cmd_buf );
+		}
+
+		if( strncmp(cmd_buf, "reAllot", 7) == 0)
+		{
+			cmd_host_func_command_reallot( cmd_buf );
+		}
+		else if( ((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
+		{
+			free(cmd_buf);
+			break;
+		}
+		else
+		{
+			MSGINFO( "\nreAllot\n");
+		}
+
+		free(cmd_buf);
+	}
+}
+/*===================================
+*结束-主机功能
 *====================================*/
 
 void controller_proccess( void )
@@ -1237,46 +1289,52 @@ void controller_proccess( void )
 		if( strncmp( cmd_buf, "list", 4 ) == 0 || strncmp( cmd_buf, "ls", 2 ) == 0 )
 		{
 			cmd_list_proccess();
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "adp", 3 ) == 0 )
 		{
 			cmd_adp_proccess( cmd_buf ); // fmt adp [ msg type] [0x----------------]
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "clear", 3 ) == 0 )
 		{
 			system("clear");
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "connect", 7 ) == 0 )
 		{
 			cmd_connect_and_disconnect_proccess( &cmd_buf[8], true ); // 跳过空格 
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "disconnect", 10 ) == 0 )
 		{
 			cmd_connect_and_disconnect_proccess( &cmd_buf[11], false );
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "show", 4 ) == 0 )	// show endstations connections status
 		{
 			cmd_show_proccess();
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "update", 6 ) == 0 )// update system endstations connections
 		{
 			cmd_update_proccess();
-			continue;
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "terminal", 8 ) == 0 ) // endstations commnad test process(测试发送终端命令)
 		{
 			cmd_terminal_proccess( cmd_buf );
-			continue;
+			//continue;
+		}
+		else if( strncmp( cmd_buf, "hostFunc", 8 ) == 0 ) // 控制器功能
+		{
+			cmd_host_func_proccess();
+			//continue;
 		}
 		else if( strncmp( cmd_buf, "udpClient", 9) == 0 ) // test procces by sending host and upper computer command to udp client
 		{
 			cmd_udp_client();
+			//continue;
 		}
 		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
@@ -1284,8 +1342,8 @@ void controller_proccess( void )
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\n");
-			continue;
+			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\n");
+			//continue;
 		}
 
 		free(cmd_buf); // free command

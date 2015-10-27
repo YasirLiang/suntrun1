@@ -8,8 +8,20 @@
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
-
+int init_terminal_address_list( void );
+inline void init_terminal_allot_address( void );
+inline void init_terminal_device_double_list();
+void 	test_interface_terminal_address_list_write_file( FILE** fd );
+void print_out_terminal_addr_infomation( terminal_address_list* p, int num);
 void init_terminal_proccess_system( void );
+bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station );
+uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index);
+int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len );
+
+/*{@*/
+tmnl_pdblist terminal_system_dblist_except_free( void );
+void terminal_open_addr_file_wt_wb( void );
+/*@}*/
 
 #endif
 

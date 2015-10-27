@@ -8,7 +8,7 @@ SRC_FILE += $(wildcard src/avdecc/*.c) $(wildcard ls src/jdksavdecc/*.c)\
 OBJECTS = $(patsubst %.c, %.o, $(SRC_FILE))
 
 %.o:%.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(CFG_INC)
+	$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
 
 libavdecc-host.a:$(OBJECTS)
 	$(AR) rc libavdecc-host.a $(OBJECTS)

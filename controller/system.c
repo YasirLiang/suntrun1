@@ -31,7 +31,9 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 
 	init_udp_client_controller_endstation( net_fd.udp_server_fd,  &p_udp_net->udp_srv.srvaddr );
 	// found all endpoints
-	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER);
+	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
+
+	// ◊¢≤·ª·“È÷’∂À, Œ¨≥÷5s
 }
 
 

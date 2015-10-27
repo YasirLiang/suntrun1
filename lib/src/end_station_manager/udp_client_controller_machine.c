@@ -71,7 +71,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 			}
 			else
 			{
-				DEBUG_INFO(" inflight list has udp client inflight node");
+				DEBUG_INFO(" inflight list already has udp client inflight node");
 				return -1;
 			}
 		}
@@ -108,7 +108,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 *Name:	udp_client_inflight_station_timeouts
 *Func: proccess udp client inflight command timeout
 *state:if data of sending to udp client by host is responsable data, this function will never run 
-*/
+**************************************************************************/
 void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inflight_plist guard )
 {
 	bool is_retried = false;

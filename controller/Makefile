@@ -2,10 +2,10 @@ SRC_FILES += $(wildcard ./*.c)
 OBJS = $(patsubst %.c, %.o, $(SRC_FILES))
 
 %.o:%.c
-	$(CC) -c -o $@ $< $(CFLAGS) $(CFG_INC)
+	$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
 
 avdecc_ctl:$(OBJS) 
-	$(CC) -o avdecc_ctl $(OBJS) $(CFLAGS) 
+	$(CC) $(OBJS) $(CFLAGS) -o avdecc_ctl 
 	mv avdecc_ctl ../
 
 .PHONY:clean

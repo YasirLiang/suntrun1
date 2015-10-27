@@ -640,6 +640,7 @@ void init_terminal_dblist_node_info( tmnl_pdblist node )
 {
 	assert( node );
 	memset(node, 0, sizeof(tmnl_pdblist));
+	node->tmnl_dev.tmnl_status.is_rgst = false;
 }
 
 // 摧毁指定节点
@@ -733,6 +734,25 @@ tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblis
 		DEBUG_INFO( "no such terminal address %d node",address );
 		return NULL;
 	}
+}
+
+// 清除相应的链表,除了头结点, 删除的节点都是头结点的next节点
+tmnl_pdblist terminal_dblist_except_free( tmnl_pdblist guard )
+{
+	assert( guard );
+	tmnl_pdblist p_free = guard->next;
+	
+	for( ; (p_free != guard); p_free = guard->next )
+	{
+		delect_terminal_dblist_node( &p_free );
+	}
+	
+	if( p_free == guard )
+	{	
+		return guard;
+	}
+	
+	return NULL;
 }
 
 /*===============================================================

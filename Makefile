@@ -5,6 +5,7 @@ export CC AR LD
 
 ROOTPATH = $(shell pwd)
 CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
+#CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/avdecc \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \

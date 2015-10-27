@@ -26,13 +26,16 @@ void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *fra
 	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
 	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
 
-	// update aecp inflight command in the controller system
-	int ret = aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
-	if( ret == 0)
+	// if command is response conference command,update aecp inflight command in the controller system
+	if( is_terminal_command( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET ) )
 	{
+		if(is_terminal_response(  frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET ) )
+		{	
+			aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
+		}
+
 		terminal_recv_message_pro( &conference_frame );
 	}
-	
 }
 
 int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, int *status  )

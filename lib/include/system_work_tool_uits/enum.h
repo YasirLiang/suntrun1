@@ -4,9 +4,9 @@
 enum host_and_endstation_commands // commands between host controller and endstations
 {
 	QUERY_END = 0x1,
-	ALLOCATION = 0x02,
+	ALLOCATION = 0x02, // 请求分配地址
 	SET_END_STATUS = 0x03,
-	REALLOCATION = 0x04,
+	REALLOCATION = 0x04, // 重新分配地址
 	KEYPAD_ACTION = 0x05,
 	SET_ENDLIGHT = 0x06,
 	NEW_ALLOCATION = 0x07,
@@ -64,7 +64,7 @@ enum host_and_upper_computer_commands // commands between host controller and up
 enum host_and_endstation_command_timeouts // commands TIMEOUTS between host controller and endstations
 {
 	QUERY_END_TIMEOUTS = 200,
-	ALLOCATION_TIMEOUTS = 200,
+	ALLOCATION_TIMEOUTS = 100,
 	SET_END_STATUS_TIMEOUTS = 200,
 	REALLOCATION_TIMEOUTS = 200,
 	KEYPAD_ACTION_TIMEOUTS = 200,
@@ -120,7 +120,7 @@ enum udp_upper_cmd_timeout //  upper and host deal timouts
 
 typedef enum enum_func_link // conferenc command functions command link
 {
-	FUNC_
+	FUNC_TMNL_ALLOT_ADDRESS = 0
 	
 }enum_func_link;
 enum adp_msg_type_values
