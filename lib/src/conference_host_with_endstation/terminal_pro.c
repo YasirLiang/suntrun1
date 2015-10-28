@@ -31,10 +31,10 @@ void init_terminal_proccess_fd( FILE ** fd )
 	}
 }
 
-/***
-* 初始化终端地址列表
-*/
-int init_terminal_address_list( void )
+/*==============================================
+初始化终端地址列表
+================================================*/
+int init_terminal_address_list_from_file( void )
 {
 	int i = 0;
 	int ret = 0;
@@ -57,6 +57,24 @@ int init_terminal_address_list( void )
 
 	return ret;
 }
+void init_terminal_address_list( void )
+{
+	int i = 0;
+	
+	// 初始化全局变量tmnl_addr_list
+	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
+	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
+	{
+		tmnl_addr_list[i].addr = INIT_ADDRESS;
+		tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
+	}
+}
+
+
+/*==============================================
+结束初始化终端地址列表
+================================================*/
+
 
 inline void init_terminal_allot_address( void )
 {
@@ -122,7 +140,7 @@ void init_terminal_proccess_system( void )
 
 	if( NULL != addr_file_fd )
 	{
-		tmnl_count = init_terminal_address_list();
+		tmnl_count = init_terminal_address_list_from_file();
 		if( tmnl_count != -1)
 			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 		Fclose( addr_file_fd ); // 关闭文件描述符
@@ -153,7 +171,6 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 #endif
 	}
 
-	DEBUG_LINE();
 	if( !p_tmnl_station->tmnl_dev.tmnl_status.is_rgst )
 	{
 		DEBUG_LINE();
@@ -184,9 +201,9 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 	if( current_index >= SYSTEM_TMNL_MAX_NUM || NULL == new_index)
 		return 0xffff;
 
-	if( p_gaddr_list[current_index].addr != 0xffff )
+	if( p_gaddr_list[current_index].addr == 0xffff )
 	{
-		temp_addr = p_gaddr_list[current_index].addr;
+		temp_addr = p_gallot->addr_start + current_index;
 		*new_index = current_index;
 	}
 	else
@@ -195,6 +212,7 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 		temp_addr = p_gaddr_list[i].addr;
 		do
 		{
+			i %= SYSTEM_TMNL_MAX_NUM;
 			if( temp_addr = p_gaddr_list[i].addr == 0xffff)
 				break;
 			i++;

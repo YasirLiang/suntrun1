@@ -1,5 +1,4 @@
 #include "circular_link_queue.h"
-#include "host_controller_debug.h"
 
 queue_node* queue_get( queue *root )
 {

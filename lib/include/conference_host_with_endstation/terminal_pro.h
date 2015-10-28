@@ -8,7 +8,8 @@
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
-int init_terminal_address_list( void );
+int init_terminal_address_list_from_file( void );
+void init_terminal_address_list( void );
 inline void init_terminal_allot_address( void );
 inline void init_terminal_device_double_list();
 void 	test_interface_terminal_address_list_write_file( FILE** fd );

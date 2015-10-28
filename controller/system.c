@@ -5,6 +5,7 @@
 #include "aecp_controller_machine.h"
 #include "terminal_pro.h"
 #include "udp_client_controller_machine.h"
+#include "message_queue.h"
 
 void init_system( void )
 {
@@ -21,6 +22,26 @@ void init_system( void )
 
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
+	
+#ifdef __DEBUG__
+#ifdef __TEST_QUEUE__
+	fcqueue_data_elem queue_data_elem;
+	memset( &queue_data_elem, 0, sizeof(fcqueue_data_elem));
+	
+	pthread_mutex_lock( &fcwork_queue.control.mutex );
+	
+	int i = 0;
+	for( i = 0; i < 100; i++ ) // 目前测试的最大数是100000
+	{
+		queue_data_elem.func_msg_head.func_index = i;
+		queue_data_elem.func_msg_head.func_cmd = i + 2;
+		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
+	}
+		
+	pthread_mutex_unlock( &fcwork_queue.control.mutex );
+#endif
+#endif
+
 }
 
 void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )

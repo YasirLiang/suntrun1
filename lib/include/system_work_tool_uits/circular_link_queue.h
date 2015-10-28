@@ -7,6 +7,11 @@
 #define __CIRCULAR_LINK_QUEUE_H__
 
 #include "jdksavdecc_world.h"
+#include "host_controller_debug.h"
+
+#ifdef __DEBUG__
+//#define __TEST_QUEUE__// 测试循环队列开关
+#endif
 
 typedef struct queue_node // 队列节点
 {

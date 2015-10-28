@@ -315,7 +315,6 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		}
 		else // 处理其它命令
 		{
-			DEBUG_LINE();
 			find_func_command_link( TERMINAL_USE, recv_data.cchdr.command_control & COMMAND_TMN_MASK, 0, data_buf, frame_len );
 		}
 
