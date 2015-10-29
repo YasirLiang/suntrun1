@@ -6,6 +6,7 @@
 #include "terminal_pro.h"
 #include "udp_client_controller_machine.h"
 #include "message_queue.h"
+#include "profile_system.h"
 
 void init_system( void )
 {
@@ -21,6 +22,7 @@ void init_system( void )
 	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
 
 	init_terminal_proccess_system();
+	init_profile_system_file();
 	init_func_command_work_queue();
 	
 #ifdef __DEBUG__

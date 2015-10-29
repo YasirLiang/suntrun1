@@ -33,6 +33,8 @@ const char* aecp_vendor_unique_status_value_to_name( uint32_t vendor_statue_valu
 uint16_t conferenc_terminal_read_address_data( void *base, uint16_t offerset );
 const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value );
 bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *msg_code );
+bool is_terminal_command( void *base, uint16_t offset );
+bool is_terminal_response( void *base, uint16_t offset );
 
 
 #endif

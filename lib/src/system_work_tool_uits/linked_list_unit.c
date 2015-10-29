@@ -641,6 +641,7 @@ void init_terminal_dblist_node_info( tmnl_pdblist node )
 	assert( node );
 	memset(node, 0, sizeof(tmnl_pdblist));
 	node->tmnl_dev.tmnl_status.is_rgst = false;
+	node->tmnl_dev.address.addr = 0xffff;
 }
 
 // 摧毁指定节点

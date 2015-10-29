@@ -19,6 +19,7 @@ terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
 tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点
 bool reallot_flag = false; // 重新分配标志
+tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 
 
 void init_terminal_proccess_fd( FILE ** fd )
@@ -157,6 +158,7 @@ void init_terminal_proccess_system( void )
 	init_terminal_device_double_list();
 }
 
+/*注册*/
 bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station )
 {
 	bool bret = false;
@@ -226,10 +228,13 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 		}
 	}
 
-	DEBUG_INFO( "new addr = %04x",  temp_addr);
+	DEBUG_INFO( "new addr = %04x",  temp_addr );
 	return temp_addr;
 }
 
+/*==================================================
+					开始终端命令函数
+====================================================*/
 /***************************************************
 **Writer:YasirLiang
 **Date: 2015/10/26
@@ -262,6 +267,8 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 		if( p_addr_list[p_allot->index].addr != 0xffff)
 		{
 			p_allot->renew_flag = 1;
+
+			DEBUG_INFO( "man type = 0x%02x ", msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN );
 			if( msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN )
 			{
 				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_CHM_EXCUTE;
@@ -310,6 +317,113 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
+/***************************************************
+**Writer:YasirLiang
+**Date: 2015/10/29
+**Name:terminal_func_key_action
+**Garam:
+**		cmd: func cmd
+**		data: proccess recv data
+**		data_len: recv data length
+**Func: procces conference key_action command data sended by terminal
+******************************************************/
+int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
+{
+	return 0;
+}
+
+/***************************************************
+**Writer:YasirLiang
+**Date: 2015/10/29
+**Name:terminal_func_chairman_control
+**Garam:
+**		cmd: func cmd
+**		data: proccess recv data
+**		data_len: recv data length
+**Func: procces conference chairman control command data sended by terminal
+******************************************************/
+int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len )
+{
+	return 0;
+}
+
+/***************************************************
+**Writer:YasirLiang
+**Date: 2015/10/29
+**Name:terminal_func_send_main_state
+**Garam:
+**		cmd: func cmd
+**		data: proccess recv data
+**		data_len: recv data length
+**Func: procces conference send main state command data sended by terminal
+******************************************************/
+int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len )
+{
+	return 0;
+}
+
+/***************************************************
+**Writer:YasirLiang
+**Date: 2015/10/29
+**Name:terminal_func_cmd_event
+**Garam:
+**		cmd: func cmd
+**		data: proccess recv data
+**		data_len: recv data length
+**Func: procces conference special event command data sended by terminal
+******************************************************/
+int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
+{
+	return 0;
+}
+
+/***************************************************
+**Writer:YasirLiang
+**Date: 2015/10/29
+**Name:terminal_mic_auto_close
+**Garam:
+**		cmd: func cmd
+**		data: proccess recv data
+**		data_len: recv data length
+**Func: procces mic_auto_close system set command
+******************************************************/
+int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
+{
+	FILE* fd = NULL;
+	uint8_t auto_close = 0;
+	int i = 0;
+	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
+	if( NULL == fd )
+	{
+		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+		return -1;
+	}
+
+	if(profile_system_file_read_byte( fd, &auto_close, VAL_AUTO_CLOSE, sizeof(uint8_t)) == -1)
+	{	
+		Fclose( fd ); // fd must be closed
+		return -1;
+	}
+
+	/* 设置终端的麦克风状态*/
+	for( i = 0; i < TMNL_TYPE_NUM; i++)
+	{
+		gtmnl_state_opt[i].auto_close = auto_close?1:0;
+		gtmnl_state_opt[i].MicClose = MIC_CLOSE;
+	}
+
+	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29)*/
+	
+
+	Fclose( fd ); // fd must be closed
+	return 0;
+}
+
+/*==================================================
+					结束终端命令函数
+====================================================*/
+
+
 /*==================================================
 	start reallot address
 ====================================================*/
@@ -328,7 +442,7 @@ void terminal_open_addr_file_wt_wb( void )
 	addr_file_fd = Fopen( ADDRESS_FILE, "wb+");
 	if( addr_file_fd == NULL )
 	{
-		DEBUG_ERR( "terminal_func_allot_address open fd  Err!" );
+		DEBUG_ERR( "terminal_open_addr_file_wt_wb open fd  Err!" );
 		assert( NULL != addr_file_fd );
 	}
 	Fclose( addr_file_fd );	
@@ -336,3 +450,5 @@ void terminal_open_addr_file_wt_wb( void )
 /*===================================================
 end reallot address
 =====================================================*/
+
+

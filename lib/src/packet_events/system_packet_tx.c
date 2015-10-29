@@ -197,14 +197,14 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 				}
 			}
 			break;
-			case TRANSMIT_TYPE_UDP_SVR: // send data to udp server
+			case TRANSMIT_TYPE_UDP_SVR: // host as client send data to udp server using client fd
 			{
-				transmit_udp_packet_server( server_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
+				transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
 			}
 			break;
-			case TRANSMIT_TYPE_UDP_CLT: // send data to udp client
+			case TRANSMIT_TYPE_UDP_CLT: // host as server send data to udp client using server fd
 			{
-				transmit_udp_client_packet( client_fd, frame, frame_len, guard, false, &sin_event, resp );
+				transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp );
 			}
 			break;
 			default:

@@ -52,7 +52,6 @@ FILE * Fopen( const char *file_name, const char* mode )
 	if( NULL == fd )
 	{
 		DEBUG_ERR( "open %s address Err", file_name );
-		assert( NULL != fd );
 	}
 	
 	return fd;

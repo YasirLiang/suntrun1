@@ -55,7 +55,7 @@ typedef  struct func_link_items
 typedef struct proccess_func_items
 {
 	uint32_t permit;				//允许执行的状态位表	
-	int (*cmd_proccess)(uint16_t cmd, void *data, uint32_t data_len);
+	int (*cmd_proccess)( uint16_t cmd, void *data, uint32_t data_len );
   	enum_func_link func_cmd_link;
 }proccess_func_items;
 

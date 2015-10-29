@@ -3,6 +3,8 @@
 
 #include "jdksavdecc_world.h"
 
+#define FILE_MAX_READ_BUF 1024
+
 int read_addr_file_terminal_num( FILE* fd, uint16_t* tmnl_num );
 int read_addr_file_terminal_crc( FILE* fd, uint16_t* tmnl_crc );
 int Fseek( FILE* fd, long offset, int from_where );

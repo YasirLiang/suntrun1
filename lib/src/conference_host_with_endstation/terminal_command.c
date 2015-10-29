@@ -96,7 +96,7 @@ void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_
 	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
-// 新增终端分配地址（0x07）
+// 新增终端分配地址（0x07），只对ID无效的有用,这些ID存在于终端地址列表(即在终端地址文件)中，但不存在终端的注册列表中
 void terminal_new_endstation_allot_address( uint64_t target_id )
 {
 	struct host_to_endstation askbuf;

@@ -18,8 +18,9 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/native_proccess \
 		   -I$(ROOTPATH)/lib/include/system_work_tool_uits \
 		   -I$(ROOTPATH)/lib/include/upper_computer \
-		   -I$(ROOTPATH)/lib/include/end_station_manager\
-		   -I$(ROOTPATH)/lib/include/message_func
+		   -I$(ROOTPATH)/lib/include/end_station_manager \
+		   -I$(ROOTPATH)/lib/include/message_func \
+		   -I$(ROOTPATH)/lib/include/common
 
 export CFG_INC CFLAGS ROOTPATH
 
@@ -30,6 +31,6 @@ ALL:
 
 .PHONY:clean
 clean:
-	-rm -rf libavdecc-host.a avdecc_ctl avdecc_ctl.txt address.dat
+	-rm -rf libavdecc-host.a avdecc_ctl avdecc_ctl.txt address.dat system.dat
 	make -C lib clean
 	make -C controller clean

@@ -117,6 +117,8 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 			DEBUG_ONINFO( "erro udp bind" );
 			assert( ret != -1);
 		}
+		
+		DEBUG_INFO("host server bind-> address = %s:%d sfd =  %d", inet_ntoa( self->udp_srv.srvaddr.sin_addr ), ntohs( self->udp_srv.srvaddr.sin_port ), self->udp_srv.s_fd);
 	}
 	else
 	{
@@ -133,6 +135,8 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 			DEBUG_ONINFO( "erro udp bind" );
 			assert( ret != -1);
 		}
+
+		DEBUG_INFO("host client bind-> address = %s:%d sfd =  %d", inet_ntoa( self->udp_srv.srvaddr.sin_addr ), ntohs( self->udp_clt.cltaddr.sin_port ), self->udp_clt.c_fd);
 	}
 	
 	return fd;

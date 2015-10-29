@@ -73,14 +73,15 @@ inline uint16_t get_host_upper_cmpt_common_header( struct host_upper_cmpt_common
 }
 
 // 获取协议数据区数据
-inline void get_host_upper_cmpt_data( uint8_t *data, const void *base, size_t pos, uint16_t data_len )
+inline void get_host_upper_cmpt_data( void *data, const void *base, size_t pos, uint16_t data_len )
 {
 	uint8_t *p = (( uint8_t * )base) + pos;
+	uint8_t *out = (uint8_t*)data;
 	int i = 0;
 
 	for( ; i < ( int )data_len; i++ )
 	{
-		data[i] = p[i];
+		out[i] = p[i];
 	}
 }
 

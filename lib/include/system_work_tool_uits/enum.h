@@ -4,10 +4,10 @@
 enum host_and_endstation_commands // commands between host controller and endstations
 {
 	QUERY_END = 0x1,
-	ALLOCATION = 0x02, // 请求分配地址
+	ALLOCATION = 0x02, // 请求分配地址 1
 	SET_END_STATUS = 0x03,
 	REALLOCATION = 0x04, // 重新分配地址
-	KEYPAD_ACTION = 0x05,
+	KEYPAD_ACTION = 0x05, // 按键动作 5
 	SET_ENDLIGHT = 0x06,
 	NEW_ALLOCATION = 0x07,
 	END_ASSIGN = 0x08,
@@ -15,14 +15,14 @@ enum host_and_endstation_commands // commands between host controller and endsta
 	COMMON_SEND_END_LCD = 0x0a,
 	SET_END_LED = 0x0b,
 	COMMON_SEND_END_LED = 0x0c,
-	PRESIDENT_CONTROL =  0x0d,
+	PRESIDENT_CONTROL =  0x0d, // 主席控制 2
 	SEND_VOTE_RESULT =0x0e,
 	TALKTIME_LEN = 0x0f,	
-	HOST_SEND_STATUS = 0x10,	
+	HOST_SEND_STATUS = 0x10,	// 主机发送状态 3
 	SEND_END_LCD_DISPLAY = 0x11,
 	OPTITION_END = 0x12,
 	SET_MIS_STATUS = 0x13,
-	END_SPETHING = 0x14,
+	END_SPETHING = 0x14, // 终端特殊事件 4
 	CHECK_END_RESULT = 0x16,
 	TRANSIT_HOST_MSG = 0x1e,
 	TRANSIT_END_MSG = 0x1f,
@@ -31,7 +31,7 @@ enum host_and_endstation_commands // commands between host controller and endsta
 
 enum host_and_upper_computer_commands // commands between host controller and upper computer
 {
-	DISCUSSION_PARAMETER = 0x1,
+	DISCUSSION_PARAMETER = 0x1, // 会讨参数
 	MISCROPHONE_SWITCH = 0x02,
 	MISCROPHONE_STATUS = 0x03,
 	SELECT_PROPOSER = 0x05,
@@ -54,7 +54,7 @@ enum host_and_upper_computer_commands // commands between host controller and up
 	PAUSE_VOTE = 0x18,
 	REGAIN_VOTE = 0x19,
 	END_VOTE = 0x20,
-	RESULT_VOTE = 0x21,
+	RESULT_VOTE = 0x21, // 投票结果
 	TRANSMIT_TO_ENDSTATION = 0x22,
 	REPORT_ENDSTATION_MESSAGE = 0x23,
 	HIGH_DEFINITION_SWITCH_SET = 0x24,
@@ -120,7 +120,13 @@ enum udp_upper_cmd_timeout //  upper and host deal timouts
 
 typedef enum enum_func_link // conferenc command functions command link
 {
-	FUNC_TMNL_ALLOT_ADDRESS = 0
+	FUNC_TMNL_ALLOT_ADDRESS = 0,
+	FUNC_TMNL_KEY_ACTION,
+	FUNC_TMNL_CHAIRMAN_CONTROL,
+	FUNC_TMNL_SEND_MAIN_STATE,
+	FUNC_TMNL_EVENT, // 签到
+	FUNC_CMPT_DISCUSS_PARAMETER,
+	
 	
 }enum_func_link;
 enum adp_msg_type_values

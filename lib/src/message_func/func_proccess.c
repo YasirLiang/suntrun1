@@ -7,7 +7,7 @@ fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
 static uint16_t gpermit = TMN_RGST_STATE;  	// 当前系统的状态
 static uint16_t gpermitpre;					// 上一个系统的状态
-uint8_t globle_use_dis = TERMINAL_USE; 		// 当前用户
+uint8_t globle_use_dis = TERMINAL_USE |COMPUTER_USE; 	// 当前用户
 
 void init_func_command_work_queue( void )
 {
@@ -140,11 +140,11 @@ bool use_dis_set( uint8_t  user, bool set )
 		return false;
 	}
 
-	if(set) // 确定user的设置
+	if(set)
 	{
 		globle_use_dis |= user;
 	}
-	else // 	取消user的设置
+	else 
 	{
 		globle_use_dis &= (~user);
 	}

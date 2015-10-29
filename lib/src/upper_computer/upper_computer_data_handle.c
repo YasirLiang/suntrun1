@@ -35,8 +35,6 @@ int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 
 int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe )
 {
-	DEBUG_LINE();
-	
 	struct host_upper_cmpt_frame cpy_frame;
 	int frame_len = pframe->payload_len;
 	memset( &cpy_frame, 0, sizeof( struct host_upper_cmpt_frame ));

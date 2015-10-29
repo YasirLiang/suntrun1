@@ -30,6 +30,7 @@
 
 /*{@ set terminal status*/
 #define MIC_CLOSE 1
+#define MIC_INVALID 0
 
 
 enum // tmnl sys status
@@ -87,7 +88,8 @@ enum		//terminal type
 	TMNL_TYPE_COMMON_RPRST,
 	TMNL_TYPE_VIP,
 	TMNL_TYPE_CHM_COMMON,
-	TMNL_TYPE_CHM_EXCUTE
+	TMNL_TYPE_CHM_EXCUTE,
+	TMNL_TYPE_NUM
 };
 /*@}*/
 

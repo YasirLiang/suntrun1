@@ -18,6 +18,11 @@
 #define CMPT_MSG_TYPE_REPORT      	0x40 	 // …œ±®
 /*@}*/
 
+/*{@ enable and forbid*/
+#define FORBID_VAL  0
+#define ENABLE_VAL  1
+/*@}*/
+
 /*{@ discuss parameter */
 enum
 {

@@ -1,17 +1,17 @@
 #include "data.h"
 #include "terminal_pro.h"
+#include "upper_computer_pro.h"
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
 
-	{ 0xffffffff, terminal_func_allot_address, FUNC_TMNL_ALLOT_ADDRESS}
-/*
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
+	{ 0xffffffff, terminal_func_allot_address, FUNC_TMNL_ALLOT_ADDRESS},
+	{ 0xffffffff, terminal_func_key_action, FUNC_TMNL_KEY_ACTION},
+	{ 0xffffffff, terminal_func_chairman_control, FUNC_TMNL_CHAIRMAN_CONTROL},
+	{ 0xffffffff, terminal_func_send_main_state, FUNC_TMNL_SEND_MAIN_STATE},
+	{ 0xffffffff, terminal_func_cmd_event, FUNC_TMNL_EVENT},
+	{ 0xffffffff, proccess_upper_cmpt_discussion_parameter, FUNC_CMPT_DISCUSS_PARAMETER }
+/*	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
@@ -57,13 +57,13 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
 
-	{ TERMINAL_USE, ALLOCATION, FUNC_TMNL_ALLOT_ADDRESS, 0}
-/*	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
+	{ TERMINAL_USE, ALLOCATION, FUNC_TMNL_ALLOT_ADDRESS, 0},
+	{ TERMINAL_USE, KEYPAD_ACTION, FUNC_TMNL_KEY_ACTION, 0},
+	{ TERMINAL_USE, PRESIDENT_CONTROL, FUNC_TMNL_CHAIRMAN_CONTROL, 0},
+	{ TERMINAL_USE, HOST_SEND_STATUS, FUNC_TMNL_SEND_MAIN_STATE, 0},
+	{ TERMINAL_USE, END_SPETHING, FUNC_TMNL_EVENT, 0},
+	{ COMPUTER_USE, DISCUSSION_PARAMETER, FUNC_CMPT_DISCUSS_PARAMETER, 0}
+	/*{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},

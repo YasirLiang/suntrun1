@@ -17,11 +17,18 @@ void print_out_terminal_addr_infomation( terminal_address_list* p, int num);
 void init_terminal_proccess_system( void );
 bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station );
 uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index);
-int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len );
-
 /*{@*/
 tmnl_pdblist terminal_system_dblist_except_free( void );
 void terminal_open_addr_file_wt_wb( void );
+/*@}*/
+
+/*{@*/
+int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len );
+
 /*@}*/
 
 #endif

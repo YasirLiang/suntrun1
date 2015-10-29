@@ -100,6 +100,17 @@ int host_controller_machine_reply_upper_computer( uint8_t deal_type, uint8_t com
 	return 0;
 }
 
+// 上报主机错误
+void upper_computer_reply_error( uint8_t *recv_msg )
+{
+	assert( recv_msg );
+	uint8_t deal_type = get_host_upper_cmpt_deal_type( recv_msg, ZERO_OFFSET_IN_PAYLOAD );
+	uint8_t cmpt_cmd = get_host_upper_cmpt_command_type( recv_msg, ZERO_OFFSET_IN_PAYLOAD );
+	deal_type |= (deal_type & CMPT_MSG_TYPE_MARK) | CMPT_MSG_TYPE_CPT_DIS ;
+
+	host_controller_machine_reply_upper_computer( deal_type, cmpt_cmd, NULL, 0);  
+}
+
 /************************************************
 *Writer:	YasirLiang
 *Date: 2015/10/16
@@ -120,7 +131,12 @@ void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len )
 	if(  !(protocol_type & CMPT_MSG_TYPE_RESPONSE) ) // not a response data
 	{
 		// proccess upper computer data 
-		
+		if( find_func_command_link( COMPUTER_USE, cmpt_cmd, protocol_type, frame, (uint16_t)frame_len ) == -1 )
+		{
+			// send proccess err
+			upper_computer_reply_error( frame );
+		}
+
 	}
 	else // update send data inflight command 
 	{
