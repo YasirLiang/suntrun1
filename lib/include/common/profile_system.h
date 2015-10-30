@@ -48,7 +48,7 @@ typedef struct _tthost_system_set
 	uint8_t temp_close;		// ÔİÊ±¹Ø±Õ,Ö÷»úÓëÖÕ¶Ë Ö÷Ï¯ÓÅÏÈÈ¨ÏŞ¡£1¡¢¾²Òô£»0¡¢¹Ø±Õ
 	uint8_t sign_type;		// Ç©µ½ÀàĞÍ
 	uint8_t camara_track;	// ÉãÏñ¸ú×Ù
-	uint8_t current_cmr;	// 
+	uint8_t current_cmr;	// µ±Ç°ÉãÏñ»ú
 	uint8_t menu_language;	// ²Ëµ¥ÓïÑÔ
 }thost_system_set;
 
@@ -61,6 +61,7 @@ typedef struct _thost_system_profile_form // ÏµÍ³ÅäÖÃÎÄ¼şµÄ¸ñÊ½ Á½¸ö×Ö½Ú + ÏµÍ³µ
 int profile_system_file_write( FILE* fd,  const uint8_t save_value,  size_t index );
 int profile_system_file_read( FILE* fd,  thost_system_set* system_set );
 int init_profile_system_file( void );
+int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint16_t read_len );
 
 
 #endif

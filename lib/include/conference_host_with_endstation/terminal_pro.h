@@ -8,6 +8,15 @@
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
+extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
+
+enum
+{
+  REFUSE_APPLY=0,
+  NEXT_APPLY,
+  APPROVE_APPLY
+};
+
 int init_terminal_address_list_from_file( void );
 void init_terminal_address_list( void );
 inline void init_terminal_allot_address( void );

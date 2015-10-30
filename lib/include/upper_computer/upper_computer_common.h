@@ -1,3 +1,9 @@
+/* upper_computer_common.h
+**
+**
+*/
+
+
 #ifndef __UPPER_COMPUTER_COMMON_H__
 #define __UPPER_COMPUTER_COMMON_H__
 
@@ -35,11 +41,12 @@ enum
 
 typedef struct _type_upper_computer_discuss_parameter
 {
-	uint8_t discuss_mode:3;// mode set
-	uint8_t :2;
-	uint8_t auto_close:1;
-	uint8_t chair_music:1;
 	uint8_t chairman_first:1; 
+	uint8_t chair_music:1;
+	uint8_t auto_close:1;
+	uint8_t :2;
+	uint8_t discuss_mode:3;	// mode set
+	
 
 	uint8_t limit_speak_num;
 	uint8_t limit_apply_num;
@@ -58,6 +65,14 @@ struct application_common_address
 	uint8_t low_addr;
 	uint8_t high_addr;
 };
+
+#define ADDR_ONE_FLAG_LEN 3
+
+typedef struct _tupper_computer_data_addr_and_flag // 终端地址+只有一个字节数据类型的参数, 比如下面的数据类型就可以如此简化
+{
+	uint8_t addr_flag[ADDR_ONE_FLAG_LEN];
+}tdata_addr_and_flag;
+
 /*{@ mic state*/
 typedef struct _type_upper_computer_data_mic_switch
 {
@@ -81,7 +96,7 @@ typedef struct _type_upper_computer_data_choose_apply_man
 }tcmpt_data_choose_apply_man;
 /*@}*/
 
-/*{@*/
+/*{@ 审批申请*/
 typedef struct _type_upper_computer_data_examine_apply
 {
 	uint8_t apply_flag;
@@ -98,10 +113,10 @@ typedef struct _type_upper_computer_data_meeting_authority
 
 /*{@*/
 #define UPPER_MSG_MAX_LENGTH 64
-typedef struct _type_upper_computer_data_message
+typedef struct _type_upper_computer_data_message // 上位机消息
 {
 	struct application_common_address addr;
-	uint8_t msg_type;	// 短信息类型 见terminal_command.h
+	uint8_t msg_type;	// 短信息类型 与主机与终端的通信协议类似
 	uint8_t msg_buf[UPPER_MSG_MAX_LENGTH];//身份代表
 }tcmpt_data_message;
 /*@}*/
@@ -145,7 +160,8 @@ typedef struct _type_upper_computer_table_card
 /*{@ sign begin*/
 typedef struct _type_begin_sign_in
 {
-	uint8_t sign_type;
+	uint8_t sign_type:2;
+	uint8_t :6;
 	uint8_t retroactive_timeouts; // 补签的超时时间，单位是分钟
 }tcmpt_begin_sign;
 /*@}*/

@@ -10,7 +10,7 @@
 #include "jdksavdecc_world.h"
 #include "terminal_common.h"
 
-tmnl_pdblist terminal_system_reallot_addr( void );
+void terminal_system_reallot_addr( void );
 
 #endif
 

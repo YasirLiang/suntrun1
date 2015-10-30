@@ -13,6 +13,7 @@
 #include "aecp_controller_machine.h"
 #include "file_util.h"
 #include "conference_end_to_host.h"
+#include "profile_system.h"
 
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
@@ -389,6 +390,7 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 {
+	DEBUG_LINE();
 	FILE* fd = NULL;
 	uint8_t auto_close = 0;
 	int i = 0;
@@ -411,7 +413,7 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 		gtmnl_state_opt[i].auto_close = auto_close?1:0;
 		gtmnl_state_opt[i].MicClose = MIC_CLOSE;
 	}
-
+	
 	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29)*/
 	
 

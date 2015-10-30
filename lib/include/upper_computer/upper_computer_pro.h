@@ -2,9 +2,10 @@
 #define __UPPER_COMPUTER_PRO_H__
 
 #include "jdksavdecc_world.h"
+#include "upper_computer_common.h"
 
 #define CMPT_VOTE_KEY_MARK	0x1F
-#define CMPT_VOTE_EN         	0x80
+#define CMPT_VOTE_EN         		0x80
 #define CMPT_VOTE_SET_FLAG   	0x40
 #define CMPT_WAIT_VOTE_FLAG  	0x20
 

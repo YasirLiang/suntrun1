@@ -195,7 +195,7 @@ int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint1
 		return -1;
 
 	// check the crc(ะฃั้)
-	if( (read_len <= FILE_MAX_READ_BUF ) && (offset <= FILE_MAX_READ_BUF ))
+	if( (read_len <= FILE_MAX_READ_BUF ) && (index <= FILE_MAX_READ_BUF ))
 	{
 		// count the crc of the data and read the file
 		int i = 0;

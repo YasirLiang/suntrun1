@@ -16,7 +16,7 @@
 **		none
 **Func: system reallot all terminal address  
 *****************************************/
-tmnl_pdblist terminal_system_reallot_addr( void )
+void terminal_system_reallot_addr( void )
 {
 	/* 初始化系统分配地址标志 */
 	init_terminal_allot_address();

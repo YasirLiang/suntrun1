@@ -21,7 +21,7 @@ inline uint16_t get_host_upper_cmpt_data_len( const void *base, size_t pos )
 {
 	uint8_t *p = ((uint8_t*)base) + pos;
 
-	return ((((uint16_t)p[3] && 0x00ff)<< 0) |(((uint16_t)p[4] && 0x00ff)<< 8));
+	return ((((uint16_t)p[3] & 0x00ff)<< 0) |(((uint16_t)p[4] & 0x00ff)<< 8));
 }
 
 // 获取协议命令
@@ -67,7 +67,7 @@ inline uint16_t get_host_upper_cmpt_common_header( struct host_upper_cmpt_common
 	hdr->state_loader = p[0] & 0xff;
 	hdr->deal_type = p[1] & 0xff;
 	hdr->command = p[2] & 0xff;
-	hdr->data_len =  ( (p[4] & 0xff) << 8) + ((p[3] & 0xff) << 0);	// 低字节为低地址
+	hdr->data_len =  ((uint16_t)( (p[4] & 0x00ff) << 8) | (uint16_t)((p[3] & 0x00ff) << 0));	// 低字节为低地址
 
 	return hdr->data_len;
 }
@@ -93,7 +93,7 @@ inline void get_host_upper_cmpt_crc( uint8_t *crc, const void *base, size_t pos 
 	*crc = p[0];
 }
 
-// 将接受到的udp客户数据解析为会议系统的协议数据(上位机与会议主机)
+// 将接受到的udp客户数据解析为会议系统的协议数据(上位机与会议主机,有校验的)
 void  unpack_payload_from_udp_client( struct host_upper_cmpt*outpack, const void* inpack, int pack_len, size_t pos )
 {
 	uint16_t data_size = 0;
@@ -104,4 +104,11 @@ void  unpack_payload_from_udp_client( struct host_upper_cmpt*outpack, const void
 							pos + HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH + data_size );
 }
 
+void host_unpack_payload_from_udp_client( thost_upper_msg *outpack, const void *base, size_t pos )
+{
+	uint16_t data_size = 0;
+	data_size = get_host_upper_cmpt_common_header( &outpack->common_header, base, pos );
+	get_host_upper_cmpt_data( outpack->data_payload, base,\
+									pos + HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH, data_size );
+}
 
