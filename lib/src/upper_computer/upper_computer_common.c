@@ -117,23 +117,21 @@ void upper_computer_reply_error( uint8_t *recv_msg )
 *Name:proccess_udp_client_msg_recv
 *Func: proccess data recv from udp client
 *Param:
-*	deal_data:
-*	frame:
-*	frame_len:
+*	frame:receive data buf
+*	frame_len: receive data 
 *return value:
 *		none
 **************************************************/
-void proccess_udp_client_msg_recv( thost_upper_msg* deal_data, uint8_t*frame, uint8_t frame_len )
+void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len )
 {
-	assert( &deal_data );
-	uint8_t protocol_type = deal_data.common_header.deal_type;
-	uint8_t cmpt_cmd = deal_data.common_header.command;
+	uint8_t protocol_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
+	uint8_t cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 
+	DEBUG_RECV( frame, frame_len, "Udp client Recv");
 	if(  !(protocol_type & CMPT_MSG_TYPE_RESPONSE) ) // not a response data
 	{
 		// proccess upper computer data 
-		if( find_func_command_link( COMPUTER_USE, cmpt_cmd, protocol_type,\
-			(uint8_t*)deal_data, sizeof(struct host_upper_cmpt_common) + deal_data->common_header.data_len) == -1)
+		if( find_func_command_link( COMPUTER_USE, cmpt_cmd, protocol_type, frame, (uint16_t)frame_len ) == -1 )
 		{
 			// send proccess err
 			upper_computer_reply_error( frame );
