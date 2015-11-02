@@ -1,4 +1,5 @@
 #include "upper_computer_data_form.h"
+#include "upper_computer_common.h"
 #include "host_controller_debug.h"
 
 // …Ë÷√–£—È

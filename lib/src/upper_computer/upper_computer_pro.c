@@ -13,6 +13,7 @@
 #include "upper_computer_command.h"
 #include "upper_computer_data_parser.h"
 #include "terminal_pro.h"
+#include "terminal_command.h"
 
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
@@ -82,13 +83,15 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				terminal_mic_auto_close( 0, NULL, 0 );
+				terminal_mic_auto_close( 0, NULL, 0 ); // 此函数未完成
 			}
 
 			temp_status = set_dis_para.discuss_mode;
 			if( temp_status != set_sys.discuss_mode )
 			{
-				// 设置系统模式
+				// 设置系统讨论模式
+				terminal_system_discuss_mode_set( temp_status );
+				
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
@@ -269,7 +272,7 @@ int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_
 {
 	assert( data );
 	tcmpt_begin_sign sign_flag;
-	sign_flag.sign_type = (get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET )&0x03; // 低两位 00 按键；01插卡，其它保留
+	sign_flag.sign_type = (get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET )&0x03); // 低两位 00 按键；01插卡，其它保留
 	sign_flag.retroactive_timeouts = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET + 1);
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
@@ -303,7 +306,7 @@ int proccess_upper_cmpt_sign_situation( uint16_t protocal_type, void *data, uint
 			if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && p_tmnl_list->tmnl_dev.tmnl_status.is_rgst ) 
 			{
 				sign_list[sign_num].addr.low_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0x00ff) >> 0); // low addr
-				sign_list[sign_num].addr.high_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0xff00) >> 8); // low addr
+				sign_list[sign_num].addr.high_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0xff00) >> 8); // ligh addr
 				sign_list[sign_num].sign_situation = p_tmnl_list->tmnl_dev.tmnl_status.sign_state;
 				sign_num++;
 			}
@@ -320,12 +323,13 @@ int proccess_upper_cmpt_sign_situation( uint16_t protocal_type, void *data, uint
 	return 0;
 }
 
-int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成10/30。
 {
 	assert( data );
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		/*处理结束签到*/
+		//terminal_end_sign(); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_OF_SIGN, NULL, 0 );
 	}
@@ -337,13 +341,30 @@ int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_
 	return 0;
 }
 
-int proccess_upper_cmpt_endtation_allocation_address( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_endtation_allocation_address( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/2。
 {
+	tcmpt_end_allot_addr allot_flag;
+	allot_flag.allot_type = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET );
+	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		switch( allot_flag.allot_type )
+		{
+			case REALLOT:
+				terminal_reallot_address();
+				break;
+			case NEW_ALLOT:
+				terminal_allot_address();
+				break;
+			case REMOVE_UNREGISTER:
+				terminal_remove_unregitster();
+				break;
+			default:
+				break;
+			
+		}
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, ENDSTATION_ALLOCATION_APPLICATION_ADDRESS, NULL, 0 );
 	}
 	else
 	{
@@ -353,13 +374,50 @@ int proccess_upper_cmpt_endtation_allocation_address( uint16_t protocal_type, vo
 	return 0;
 }
 
-int proccess_upper_cmpt_endstation_register_status( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_endstation_register_status( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/2。
+{
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmnl_list_head = dev_terminal_list_guard;
+	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;
+	tcmpt_end_register regist_list[SYSTEM_TMNL_MAX_NUM];
+	uint16_t register_num = 0;
+	
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_QUERY )
+	{
+		return -1;
+	}
+
+	for( ; p_tmnl_list != tmnl_list_head; p_tmnl_list = p_tmnl_list->next )
+	{
+		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && p_tmnl_list->tmnl_dev.tmnl_status.is_rgst )
+		{
+			uint8_t low_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0x00ff) >> 0);
+			uint8_t high_addr =  (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0xff00) >> 8);
+			uint8_t dev_type = p_tmnl_list->tmnl_dev.tmnl_status.device_type;
+			uint8_t tmnl_type = p_tmnl_list->tmnl_dev.address.tmn_type;
+			regist_list[register_num].addr.low_addr = low_addr;
+			regist_list[register_num].addr.high_addr = high_addr;
+			regist_list[register_num].device_type = dev_type;
+			regist_list[register_num].end_type = tmnl_type;
+			regist_list[register_num].register_flags = (p_tmnl_list->tmnl_dev.tmnl_status.is_rgst ? 1:0);
+
+			register_num++;
+		}
+	}
+
+	if( register_num <= SYSTEM_TMNL_MAX_NUM)
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, ENDSTATION_REGISTER_STATUS, regist_list, register_num * sizeof(tcmpt_end_register));
+	
+	return 0;
+}
+
+int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -369,13 +427,13 @@ int proccess_upper_cmpt_endstation_register_status( uint16_t protocal_type, void
 	return 0;
 }
 
-int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_endstation_address_undetermined_allocation( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -385,13 +443,13 @@ int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uin
 	return 0;
 }
 
-int proccess_upper_cmpt_endstation_address_undetermined_allocation( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -401,13 +459,13 @@ int proccess_upper_cmpt_endstation_address_undetermined_allocation( uint16_t pro
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -417,13 +475,13 @@ int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uin
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_vidicon_lock( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -433,13 +491,13 @@ int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *dat
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_lock( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -449,29 +507,18 @@ int proccess_upper_cmpt_vidicon_lock( uint16_t protocal_type, void *data, uint32
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
-	{
-		//terminal_start_sign_in( sign_flag ); 
-		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
-	}
+	tcmp_vote_start vote_start_flag;
+	uint8_t sign_flag = 0; // 响应的签到标志
+	vote_start_flag.vote_type = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x0f;
+	vote_start_flag.key_effective = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x10;
 	
-	return 0;
-}
-
-int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uint32_t data_len )
-{
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		//terminal_begin_vote( vote_start_flag,  &sign_flag); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
 	}
 	else
 	{
@@ -485,9 +532,9 @@ int proccess_upper_cmpt_pause_vote( uint16_t protocal_type, void *data, uint32_t
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		terminal_pause_vote( 0, NULL, 0 );
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, PAUSE_VOTE, NULL, 0 );
 	}
 	else
 	{
@@ -501,9 +548,9 @@ int proccess_upper_cmpt_regain_vote( uint16_t protocal_type, void *data, uint32_
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		terminal_regain_vote( 0, NULL, 0 );
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, REGAIN_VOTE, NULL, 0 );
 	}
 	else
 	{
@@ -517,9 +564,12 @@ int proccess_upper_cmpt_end_vote( uint16_t protocal_type, void *data, uint32_t d
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		/*设置投票标志*/
+		//terminal_end_vote(); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_VOTE, NULL, 0 );
+
+		/*设置讨论模式的开始标志*/
 	}
 	else
 	{
@@ -537,7 +587,7 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 	tmnl_pdblist p_tmnl_tmp = dev_terminal_list_guard->next;
 	tcmp_vote_result vote_result[SYSTEM_TMNL_MAX_NUM]; // 
 	uint16_t addr_num = 0;
-	uint16_t data_len = 0;
+	uint16_t send_data_len = 0;
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_QUERY )
 	{
@@ -555,15 +605,21 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 		}
 	}
 
-	data_len = sizeof(tcmp_vote_result) * addr_num;
+	send_data_len = sizeof(tcmp_vote_result) * addr_num;
 	DEBUG_INFO( "vote result data len = %d",  data_len );
-	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, RESULT_VOTE, vote_result, data_len );
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_QUERY, RESULT_VOTE, vote_result, send_data_len );
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
+	assert( data );
+	tcmpt_message msg;
+	uint16_t recv_data_len = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
+	get_host_upper_cmpt_data(msg.msg_buf, data, CMPT_DATA_LEN_OFFSET, recv_data_len );
+
+	DEBUG_RECV(msg.msg_buf, data_len, "transmit to end msg:");
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
@@ -578,13 +634,16 @@ int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *da
 	return 0;
 }
 
-int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void *data, uint32_t data_len )
+/*注:此函数用于上报终端短信息，不是对接受命令数据进行处理的函数,data 是命令数据的数据区的指针，data_len 是数据区数据的长度*/
+int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/2。
 {
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
-	{
-		//terminal_start_sign_in( sign_flag ); 
-		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+	assert( data );
+	tcmp_report_terminal_message tmnl_msg;
+	memcpy( &tmnl_msg, data, data_len );
+	
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_REPORT)
+	{	
+		send_upper_computer_command(  CMPT_MSG_TYPE_REPORT, REPORT_ENDSTATION_MESSAGE, &tmnl_msg, data_len );
 	}
 	else
 	{
@@ -594,13 +653,15 @@ int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void 
 	return 0;
 }
 
-int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
+	assert( data );
+	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{

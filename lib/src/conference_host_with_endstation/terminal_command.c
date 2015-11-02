@@ -5,6 +5,7 @@
 */
 
 #include "terminal_command.h"
+#include "terminal_common.h"
 
 // 查询终端, addr是未注册的但是终端已分配了的地址
 void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
@@ -198,8 +199,8 @@ void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_sen
 	askbuf.data_len = sizeof( tmnl_main_state_send ) - 1; // data length is 7 based on conference deal
 	askbuf.data[0] = ( uint8_t )((main_send.unit & 0x00ff) >> 0);
 	askbuf.data[1] = ( uint8_t )((main_send.unit & 0xff00) >> 8);
-	askbuf.data[2] = ((uint8_t)(main_send.conference_stype & 0xf)) |((uint8_t)((main_send.chm_first & 0x1) << 6))\
-				| ((uint8_t)((main_send.camera_follow & 0x1) << 7));
+	askbuf.data[2] = ((uint8_t)(main_send.conference_stype & 0x0f)) |((uint8_t)((main_send.chm_first & 0x01) << 6))\
+				| ((uint8_t)((main_send.camera_follow & 0x01) << 7));
 	memcpy( &askbuf.data[3], &main_send.limit, askbuf.data_len - 3 );
 	
 	ternminal_send( &askbuf, asklen, target_id, false );
@@ -222,7 +223,7 @@ void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send
 }
 
 // 操作终端
-void terminal_option_endpoint( uint64_t target_id, uint16_t addr, uint8_t opt )
+void terminal_option_endpoint( uint64_t target_id, uint16_t addr, eopt_tmnl opt )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
@@ -231,7 +232,7 @@ void terminal_option_endpoint( uint64_t target_id, uint16_t addr, uint8_t opt )
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_OPTITION_END;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint8_t ); // 1
-	askbuf.data[0] = opt;
+	askbuf.data[0] = (uint8_t)opt;
 	
 	ternminal_send( &askbuf, asklen, target_id, false );
 }

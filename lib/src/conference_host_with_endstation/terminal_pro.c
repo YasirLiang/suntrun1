@@ -14,6 +14,7 @@
 #include "file_util.h"
 #include "conference_end_to_host.h"
 #include "profile_system.h"
+#include "terminal_command.h"
 
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
@@ -21,6 +22,9 @@ terminal_address_list_pro allot_addr_pro;
 tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点
 bool reallot_flag = false; // 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
+tsys_discuss_pro gdisc_flags; // 系统讨论参数
+tchairman_control_in gchm_int_ctl; // 主席插话
+ttmnl_register_proccess gregister_tmnl_pro; // 终端报到处理
 
 
 void init_terminal_proccess_fd( FILE ** fd )
@@ -116,7 +120,7 @@ void 	test_interface_terminal_address_list_write_file( FILE** fd )
 	}
 }
 
-void print_out_terminal_addr_infomation( terminal_address_list* p, int num)
+void print_out_terminal_addr_infomation( terminal_address_list* p, int num )
 {
 	int i = 0;
 
@@ -149,7 +153,7 @@ void init_terminal_proccess_system( void )
 	}
 #if 1	
 #ifdef __DEBUG__ // 输出终端信息的数据
-	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count);
+	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
 	if( tmnl_count != -1)
 			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 #endif
@@ -181,7 +185,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 		{
 			if( (address & TMN_ADDR_MASK) == (tmnl_addr_list[i].addr))
 			{
-				DEBUG_INFO( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK,tmnl_addr_list[i].addr, i );
+				DEBUG_INFO( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
 				p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
 				p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
 			        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
@@ -421,6 +425,92 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
+/*主机发送状态*/
+int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data && dev_terminal_list_guard );
+	FILE* fd = NULL;
+	tmnl_main_state_send host_main_state;
+	thost_system_set set_sys; // 系统配置文件的格式
+	uint8_t spk_num = 0;
+	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;
+
+	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
+	if( NULL == fd )
+	{
+		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+		return -1;
+	}
+	if( profile_system_file_read( fd, &set_sys ) == -1)
+	{
+		DEBUG_INFO( "Read profile system Err!" );
+		return -1;
+	}
+
+	host_main_state.unit = gregister_tmnl_pro.tmn_total;
+	host_main_state.camera_follow = set_sys.camara_track ? 1 : 0;
+	host_main_state.chm_first = set_sys.temp_close ? 1 : 0;
+	host_main_state.conference_stype = set_sys.discuss_mode;
+	host_main_state.limit = set_sys.speak_limit; 		// 讲话人数上限
+	host_main_state.apply_set = set_sys.apply_limit;	// 申请人数上限
+	
+	for( ;p_tmnl_list != dev_terminal_list_guard; p_tmnl_list = p_tmnl_list->next )
+	{
+		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && \
+			(p_tmnl_list->tmnl_dev.tmnl_status.mic_state==MIC_OPEN_STATUS))
+			spk_num++;
+	}
+	host_main_state.spk_num = spk_num; // 当前讲话人数
+	host_main_state.apply = gdisc_flags.apply_num;
+
+	terminal_host_send_state( 0, host_main_state ); // target id is 0
+
+	Fclose( fd );
+	return 0;
+}
+
+/*终端发送显示屏号，可以继续完善11/2*/
+int terminal_lcd_display_num_send( uint16_t addr, uint8_t display_opt, uint8_t display_num )
+{
+	tmnl_send_end_lcd_display lcd_dis;
+	lcd_dis.opt = display_opt;
+	lcd_dis.num = display_num;
+
+	terminal_send_end_lcd_display( 0, addr, lcd_dis );
+	
+	return 0;
+}
+
+int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data );
+	terminal_option_endpoint( 0, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_SUSPEND_VOTE );
+
+	return 0;
+}
+
+int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data );
+	terminal_option_endpoint( 0, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_RECOVER_VOTE );
+
+	return 0;
+}
+
+int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
+{
+	uint8_t dis_mode = *((uint8_t*)data);
+	gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
+	gdisc_flags.currect_first_index = 0;
+	gdisc_flags.apply_num = 0;
+	gdisc_flags.speak_limit_num = 0;
+
+	/*关闭所有麦克风*/
+
+	/*发送主机状态*/
+	terminal_main_state_send( 0, NULL, 0 );
+}
+
 /*==================================================
 					结束终端命令函数
 ====================================================*/
@@ -453,4 +543,24 @@ void terminal_open_addr_file_wt_wb( void )
 end reallot address
 =====================================================*/
 
+/*===================================================
+{@终端处理流程
+=====================================================*/
+void terminal_remove_unregitster( void ) // 这里没有清除终端地址文件以及内存终端列表里相应的内容
+{
+	tmnl_pdblist p_node = dev_terminal_list_guard->next;
 
+	for( ; p_node != dev_terminal_list_guard; p_node = p_node->next )
+	{
+		if(  p_node->tmnl_dev.address.addr == 0xffff || !p_node->tmnl_dev.tmnl_status.is_rgst )
+		{
+			delect_terminal_dblist_node( &p_node );
+		}
+	}
+}
+
+
+
+/*===================================================
+终端处理流程@}
+=====================================================*/

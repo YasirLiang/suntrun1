@@ -31,13 +31,13 @@ enum host_and_endstation_commands // commands between host controller and endsta
 
 enum host_and_upper_computer_commands // commands between host controller and upper computer
 {
-	DISCUSSION_PARAMETER = 0x1,	// 会讨参数						// 会讨参数
-	MISCROPHONE_SWITCH = 0x02,	// 麦克风开关						// 麦克风开关
+	DISCUSSION_PARAMETER = 0x1,	// 会讨参数	
+	MISCROPHONE_SWITCH = 0x02,	// 麦克风开关
 	MISCROPHONE_STATUS = 0x03,	// 麦克风状态
 	SELECT_PROPOSER = 0x05, 		// 选择申请人		
 	EXAMINE_APPLICATION = 0x06,	// 审批申请
 	CONFERENCE_PERMISSION = 0x07,	// 会议权限
-	SENDDOWN_MESSAGE = 0x08,		// 会议权限
+	SENDDOWN_MESSAGE = 0x08,		// 下发短消息
 	TABLE_TABLET_STANDS_MANAGER = 0x09, // 桌牌管理, 设置lcd的显示方式
 	BEGIN_SIGN  = 0x0a,			// 开始签到
 	SIGN_SITUATION = 0x0b,			// 签到情况
@@ -125,9 +125,36 @@ typedef enum enum_func_link // conferenc command functions command link
 	FUNC_TMNL_CHAIRMAN_CONTROL,
 	FUNC_TMNL_SEND_MAIN_STATE,
 	FUNC_TMNL_EVENT, // 签到
+	/*{@上位机与主机通信协议命令*/
 	FUNC_CMPT_DISCUSS_PARAMETER,
-	
-	
+	FUNC_CMPT_MISCROPHONE_SWITCH,	// 麦克风开关
+	FUNC_CMPT_MISCROPHONE_STATUS,	// 麦克风状态
+	FUNC_CMPT_SELECT_PROPOSER, 		// 选择申请人		
+	FUNC_CMPT_EXAMINE_APPLICATION,	// 审批申请
+	FUNC_CMPT_CONFERENCE_PERMISSION,	// 会议权限
+	FUNC_CMPT_SENDDOWN_MESSAGE,		// 下发短消息
+	FUNC_CMPT_TABLE_TABLET_STANDS_MANAGER, // 桌牌管理, 设置lcd的显示方式
+	FUNC_CMPT_BEGIN_SIGN,			// 开始签到
+	FUNC_CMPT_SIGN_SITUATION,			// 签到情况
+	FUNC_CMPT_END_OF_SIGN,			// 签到结束
+	FUNC_CMPT_ENDSTATION_ALLOCATION_APPLICATION_ADDRESS, // 终端分配应用地址
+	FUNC_CMPT_ENDSTATION_REGISTER_STATUS, // 终端报到情况
+	FUNC_CMPT_CURRENT_VIDICON,		// 当前摄像机
+	FUNC_CMPT_ENDSTATION_ADDRESS_UNDETERMINED_ALLOCATION,// 待定位的终端应用地址
+	FUNC_CMPT_VIDICON_CONTROL,		// 摄像机控制
+	FUNC_CMPT_VIDICON_PRERATION_SET,	// 摄像预置操作
+	FUNC_CMPT_VIDICON_LOCK,			// 摄像机锁定
+	FUNC_CMPT_VIDICON_OUTPUT,			// 摄像机输出
+	FUNC_CMPT_BEGIN_VOTE,				// 开始表决
+	FUNC_CMPT_PAUSE_VOTE,				// 暂停表决
+	FUNC_CMPT_REGAIN_VOTE,			// 恢复表决
+	FUNC_CMPT_END_VOTE,				// 结束表决
+	FUNC_CMPT_RESULT_VOTE, 			// 投票结果 表决结果
+	FUNC_CMPT_TRANSMIT_TO_ENDSTATION, // 转发给终端
+	FUNC_CMPT_REPORT_ENDSTATION_MESSAGE,// 上报终端短消息
+	FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET,	// 设置高清摄像头切换命令
+	/*@}*/ 
+	FUNC_PROCCESS_NUM
 }enum_func_link;
 enum adp_msg_type_values
 {

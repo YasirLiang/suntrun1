@@ -67,7 +67,7 @@ inline uint16_t get_host_upper_cmpt_common_header( struct host_upper_cmpt_common
 	hdr->state_loader = p[0] & 0xff;
 	hdr->deal_type = p[1] & 0xff;
 	hdr->command = p[2] & 0xff;
-	hdr->data_len =  ((uint16_t)( (p[4] & 0x00ff) << 8) | (uint16_t)((p[3] & 0x00ff) << 0);	// 低字节为低地址
+	hdr->data_len =  ((uint16_t)( (p[4] & 0x00ff) << 8) | (uint16_t)((p[3] & 0x00ff) << 0));	// 低字节为低地址
 
 	return hdr->data_len;
 }

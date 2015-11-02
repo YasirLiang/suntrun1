@@ -22,7 +22,7 @@ void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_res
 void terminal_limit_spk_time( uint64_t target_id, uint16_t addr, tmnl_limit_spk_time spk_time );
 void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_send );
 void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send_end_lcd_display lcd_dis);
-void terminal_option_endpoint( uint64_t target_id, uint16_t addr, uint8_t opt );
+void terminal_option_endpoint( uint64_t target_id, uint16_t addr, eopt_tmnl opt );
 void terminal_endstation_special_event_reply( uint64_t target_id, uint16_t addr );
 void terminal_transmit_upper_cmpt_message( uint64_t target_id, uint16_t addr, uint8_t *msg, uint16_t msg_len);
 void terminal_reply_end_message_command( uint64_t target_id, uint16_t addr );

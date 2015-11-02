@@ -193,25 +193,8 @@ typedef enum _tterminal_discuss_mode 	// 会讨模式
 }ttmnl_discuss_mode;
 /*@}*/
 
-/*{@*/
-enum // 界面显示
-{
-	CHM_APPROVE_APPLY_INTERFACE,
-	VOID_VOTE_INTERFACE,
-	VOTE_INTERFACE,
-	GRADE_1_INTERFACE,
-	GRADE_2_INTERFACE,
-	SLCT_LV_2_INTERFACE,
-	SLCT_LV_3_INTERFACE,
-	SLCT_LV_4_INTERFACE,
-	SLCT_LV_5_INTERFACE,
-	MIC_OPEN_INTERFACE,
-	REPRESEND_APPLY_INTERFACE
-};
-/*@}*/
-
-/*{@ operate  terminal*/
-enum
+/*{@操作终端（0x12）*/
+typedef enum _eoption_terminal
 {
 	OPT_TMNL_REBOOT,
 	OPT_TMNL_SUSPEND_VOTE,
@@ -223,8 +206,8 @@ enum
 	OPT_TMNL_LED_DISPLAY_ROLL_SYNC,
 	OPT_TMNL_ALL_SIGN,
 	OPT_TMNL_ALL_VOTE
-};
-/*@}*/
+}eopt_tmnl;
+/*操作终端（0x12）@}*/
 
 /*{@ trasmit upper computer msg*/
 enum
@@ -339,11 +322,32 @@ typedef struct _ttmerminal_main_state_send // 主机发送状态
 	uint8_t apply;				// 申请人数
 }tmnl_main_state_send;
 
+/*{@ lcd 发送显示屏号*/
+#define LCD_OPTION_DISPLAY 0
+#define LCD_OPTION_CLEAR  1
+
+enum // 界面显示
+{
+	CHM_APPROVE_APPLY_INTERFACE,
+	VOID_VOTE_INTERFACE,
+	VOTE_INTERFACE,
+	GRADE_1_INTERFACE,
+	GRADE_2_INTERFACE,
+	SLCT_LV_2_INTERFACE,
+	SLCT_LV_3_INTERFACE,
+	SLCT_LV_4_INTERFACE,
+	SLCT_LV_5_INTERFACE,
+	MIC_OPEN_INTERFACE,
+	REPRESEND_APPLY_INTERFACE
+};
+
 typedef struct  _tterminal_send_end_lcd_display
 {
 	uint8_t opt;	// 操作指示 
 	uint8_t num;  // 屏号
 }tmnl_send_end_lcd_display;
+
+/*@}*/
 
 int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_addr, const uint16_t write_counts );
 int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_addr );

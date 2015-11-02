@@ -1,5 +1,5 @@
 /* upper_computer_common.h
-**
+**以下是协议数据区的结构体定义
 **
 */
 
@@ -178,6 +178,13 @@ typedef struct _type_sign_situation
 /*@}*/
 
 /*{@*/
+enum ALLOT_FLAG
+{
+	REALLOT,
+	NEW_ALLOT,
+	REMOVE_UNREGISTER
+};
+
 typedef struct _type_end_allot_address // 终端分配应用地址
 {
 	uint8_t allot_type;
@@ -277,27 +284,59 @@ typedef struct _type_camara_output
 /*@}*/
 
 /*{@ begin vote */
-#define NOMAL_SIGN_FLAGS 0
-#define UNSIGN_FLAGS 1
+#define NOMAL_SIGN_FLAGS 0 // 正常
+#define UNSIGN_FLAGS 1 // 未签到
+
+#define LAST_EFFECTIVE 0 // 末次按键有效
+#define FIRST_EFFECTIVE 1 // 首次按键有效
+
+enum _ecmpt_vote_mode// terminal VOTE MODE ,上位机与主机协议的投票模式
+{
+	CVOTE_MODE,
+	CGRADE_MODE,
+	CSLCT_2_1,
+	CSLCT_2_2,
+	CSLCT_3_1,
+	CSLCT_3_2,
+	CSLCT_3_3,
+	CSLCT_4_1,
+	CSLCT_4_2,
+	CSLCT_4_3,
+	CSLCT_4_4,
+	CSLCT_5_1,
+	CSLCT_5_2,
+	CSLCT_5_3,
+	CSLCT_5_4,
+	CSLCT_5_5,
+	CVOTE_MODE_NUM
+};
+
 typedef struct _type_vote_start
 {
-	uint8_t vote_type:4;  // 见terminal_common.h 的terminal VOTE MODE
+	uint8_t vote_type:4;  // 见enum _ecmpt_vote_mode
 	uint8_t key_effective:1;
 	uint8_t :3;
 }tcmp_vote_start;
 /*@}*/
 
-/*{@*/
+/*{@投票结果*/
 typedef struct _type_vote_result
 {
 	struct application_common_address addr;
 	uint8_t key_value:5; // 各个位对应相应终端按键的值
 	uint8_t :3;
 }tcmp_vote_result;
-
 /*@}*/
 
-/*{@*/
+/*{@ 转发给终端( 0x22 )*/
+#define COMPUTER_MESSAGE_LEN_MAX 0xff
+typedef struct _type_computer_message
+{
+	uint8_t msg_buf[COMPUTER_MESSAGE_LEN_MAX];
+}tcmpt_message;
+/*@}*/
+
+/*{@上报终端短消息*/
 #define MESSAGE_DATA_MAX_LENGHT 64
 #define HOST_REPORT_CARD_COTENT 0 // 上报卡的内容
 #define HOST_REPORT_PLUG_CARD_ACTION 1 // 插卡动作上报
