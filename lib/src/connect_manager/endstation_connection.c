@@ -6,6 +6,8 @@
 
 #include "endstation_connection.h"
 #include "connect_table_list.h"
+#include "descriptor.h"
+#include "host_controller_debug.h"
 
 connect_tbl_pdblist cnnt_list_guard = NULL;
 
@@ -31,9 +33,9 @@ bool connect_table_get_information( desc_pdblist desc_guard )
 	for( ; desc_node  != desc_guard; desc_node = desc_node->next )
 	{
 		connect_tbl_pdblist new_node = NULL;
-		if( desc_node.endpoint_desc.is_entity_desc_exist && desc_node.endpoint_desc.is_entity_desc_exist\
-			&& desc_node.endpoint_desc.is_input_stream_desc_exist\
-			&& (desc_node.endpoint_desc.input_stream.num > 0) ) // 通道存在
+		if( desc_node->endpoint_desc.is_entity_desc_exist && desc_node->endpoint_desc.is_entity_desc_exist\
+			&& desc_node->endpoint_desc.is_input_stream_desc_exist\
+			&& (desc_node->endpoint_desc.input_stream.num > 0) ) // 通道存在
 		{
 			// 获取通道0信息
 			new_node = connect_table_dblist_node_create( &new_node );

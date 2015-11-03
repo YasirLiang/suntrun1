@@ -15,7 +15,6 @@
 #include "conference_end_to_host.h"
 #include "profile_system.h"
 #include "terminal_command.h"
-#include <linux/list.h>
 
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
