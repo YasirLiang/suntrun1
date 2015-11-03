@@ -3,7 +3,8 @@ SRC_FILE += $(wildcard src/avdecc/*.c) $(wildcard ls src/jdksavdecc/*.c)\
 			$(wildcard src/consultative_encapsulation/*.c) $(wildcard src/packet_events/*.c)\
 			$(wildcard src/native_proccess/*.c) $(wildcard src/system_work_tool_uits/*.c)\
 			$(wildcard src/upper_computer/*.c) $(wildcard src/end_station_manager/*.c)\
-			$(wildcard src/message_func/*.c) $(wildcard src/common/*.c)
+			$(wildcard src/message_func/*.c) $(wildcard src/common/*.c)\
+			$(wildcard src/connect_manager/*.c)
 
 OBJECTS = $(patsubst %.c, %.o, $(SRC_FILE))
 

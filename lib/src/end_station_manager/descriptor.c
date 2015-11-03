@@ -46,5 +46,3 @@ void descriptor_looking_for_connections( desc_pdblist desc_head )
 	}
 }
 
-
-

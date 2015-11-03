@@ -5,7 +5,7 @@ OBJDUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
+CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib 
 #CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/avdecc \
@@ -20,7 +20,9 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/upper_computer \
 		   -I$(ROOTPATH)/lib/include/end_station_manager \
 		   -I$(ROOTPATH)/lib/include/message_func \
-		   -I$(ROOTPATH)/lib/include/common
+		   -I$(ROOTPATH)/lib/include/common\
+		   -I$(ROOTPATH)/lib/include/connect_manager
+
 
 export CFG_INC CFLAGS ROOTPATH
 

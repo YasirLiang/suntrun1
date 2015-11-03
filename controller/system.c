@@ -53,9 +53,23 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	bzero( &zero, sizeof(struct jdksavdecc_eui64));
 
 	init_udp_client_controller_endstation( net_fd.udp_server_fd,  &p_udp_net->udp_srv.srvaddr );
+	
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
 
+	sleep(5);
+	
+	/*初始化连接表*/ 
+	connect_table_info_init();
+	connect_table_get_information( descptor_guard );
+
+	/*获取系统的终端连接信息*/ 
+	background_read_descriptor_input_output_stream();
+
+	/* 设置连接表*/
+	sleep(2);
+	connect_table_info_set( descptor_guard );
+	
 	// 注册会议终端, 维持5s
 }
 

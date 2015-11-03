@@ -15,6 +15,7 @@
 #include "conference_end_to_host.h"
 #include "profile_system.h"
 #include "terminal_command.h"
+#include <linux/list.h>
 
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
@@ -481,6 +482,7 @@ int terminal_lcd_display_num_send( uint16_t addr, uint8_t display_opt, uint8_t d
 	return 0;
 }
 
+/*暂定投票*/
 int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( data );
@@ -489,6 +491,7 @@ int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
+/*重新投票*/
 int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( data );
@@ -499,13 +502,29 @@ int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 
 int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
 {
+	assert( data && dev_terminal_list_guard );
 	uint8_t dis_mode = *((uint8_t*)data);
+	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
+		
 	gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
 	gdisc_flags.currect_first_index = 0;
 	gdisc_flags.apply_num = 0;
 	gdisc_flags.speak_limit_num = 0;
 
 	/*关闭所有麦克风*/
+	// 1.查看连接表，断开所有的连接(1722.1协议),暂时不考虑同步的问题11/3
+	
+	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
+	{
+		
+		
+		// 2.设置麦克风tarker的状态
+		tmnl_node->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
+
+		// 3.上报麦克风状态
+
+		// 4.设置相应终端的麦克风状态(会议主机与终端协议)
+	}
 
 	/*发送主机状态*/
 	terminal_main_state_send( 0, NULL, 0 );
