@@ -2,7 +2,7 @@
 
 bool is_inflight_cmds_retried( inflight_plist station )
 {
-	DEBUG_INFO( "retried = %d",  station->host_tx.flags.retried);
+	//DEBUG_INFO( "retried = %d",  station->host_tx.flags.retried);
 	return (station->host_tx.flags.retried >= 2); // 只重发送两次
 }
 

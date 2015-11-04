@@ -1,6 +1,7 @@
 #ifndef __TERMINAL_PRO_H__
 #define __TERMINAL_PRO_H__
 
+#include "endstation_connection.h"
 #include "jdksavdecc_world.h"
 #include "conference.h"
 #include "terminal_common.h"
@@ -74,18 +75,41 @@ void print_out_terminal_addr_infomation( terminal_address_list* p, int num);
 void init_terminal_proccess_system( void );
 bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station );
 uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index);
-/*{@*/
-tmnl_pdblist terminal_system_dblist_except_free( void );
-void terminal_open_addr_file_wt_wb( void );
-/*@}*/
 
-/*{@*/
+/*{@命令处理函数，处理协议的命令数据或系统的命令*/
 int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_lcd_display_num_send( uint16_t addr, uint8_t display_opt, uint8_t display_num );
+int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len );// 处理函数有待完善(11/4)
+int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len );
 
+/*@}*/
+
+/*{@会议流程处理函数*/
+void terminal_remove_unregitster( void ); // 这里没有清除终端地址文件以及内存终端列表里相应的内容
+void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node );
+int terminal_mic_speak_limit_time_manager_event( void );
+int terminal_start_discuss( bool mic_flag );
+void terminal_state_set_base_type( uint16_t addr, tmnl_state_set tmnl_state );
+void terminal_chairman_apply_type_set( uint16_t addr );
+bool terminal_led_set_save( uint16_t addr, uint8_t led_id, uint8_t  led_state );
+void fterminal_led_set_send( uint16_t addr );
+
+
+/*@}*/
+
+/*{@*/
+tmnl_pdblist terminal_system_dblist_except_free( void );
+void terminal_open_addr_file_wt_wb( void );
 /*@}*/
 
 #endif

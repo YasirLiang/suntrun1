@@ -18,10 +18,11 @@ struct list_head{
 #define LIST_POISON1  ((void *) 0x00100100 + 0)
 #define LIST_POISON2  ((void *) 0x00200200 + 0)
 
-#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+//#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#define offsetof_my(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER) // 由于在/usr/lib/gcc/i686-linux-gnu/4.7/include/stddef.h:414 已采用了这个宏名，故改
 #define container_of(ptr, type, member) ({			\
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);	\
-	(type *)( (char *)__mptr - offsetof(type,member) );})
+	(type *)( (char *)__mptr - offsetof_my(type,member) );})
 
 
 

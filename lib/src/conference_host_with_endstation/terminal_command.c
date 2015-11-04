@@ -82,7 +82,7 @@ void terminal_set_mic_status( uint8_t data, uint16_t addr,  uint64_t  target_id 
 }
 
 // 设置终端指示灯
-void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_id )
+void terminal_set_indicator_lamp( ttmnl_led_lamp data, uint16_t addr, uint64_t target_id )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
@@ -90,9 +90,9 @@ void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_ENDLIGHT;
 	askbuf.cchdr.address = addr;
-	askbuf.data_len = sizeof( uint16_t ); // data lenght of the conference deal is 2
-	askbuf.data[0] = (uint8_t)((data & 0xff00) >> 8);// 高八位在低字节
-	askbuf.data[1] = (uint8_t)((data & 0x00ff) >> 0);
+	askbuf.data_len = sizeof( ttmnl_led_lamp ); // data lenght of the conference deal is 2
+	askbuf.data[0] = data.data_low;
+	askbuf.data[1] = data.data_high;
 
 	ternminal_send( &askbuf, asklen, target_id, false );
 }
@@ -187,7 +187,7 @@ void terminal_limit_spk_time( uint64_t target_id, uint16_t addr, tmnl_limit_spk_
 	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
-// 主机发送状态0x10
+// 主机发送状态0x10, 此命令无响应(2015/11/4注)
 void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_send )
 {
 	struct host_to_endstation askbuf;
@@ -203,7 +203,7 @@ void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_sen
 				| ((uint8_t)((main_send.camera_follow & 0x01) << 7));
 	memcpy( &askbuf.data[3], &main_send.limit, askbuf.data_len - 3 );
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, true );
 }
 
 // 发送终端LCD显示屏号（0x11）

@@ -12,6 +12,7 @@
 
 #define SYSTEM_TMNL_MAX_NUM 256	// 系统中终端最大的数量
 #define INIT_ADDRESS 0xffff
+#define BRDCST_1722_ALL 0 // 
 
 #define COMMAND_TMN_MASK	 	0x1F	//命令掩码,命令内容在低5位
 #define COMMAND_FROM_TMN	 	0x80	//命令方向，
@@ -150,10 +151,10 @@ typedef struct _tterminal_lcd_data
 enum
 {
 	LED_PAGE_TURN,
-	LEC_PAGE_LEFT_ROLL,
-	LEC_PAGE_RIGHT_ROLL,
-	LEC_PAGE_UP_ROLL,
-	LEC_PAGE_DOWN_ROLL,
+	LED_PAGE_LEFT_ROLL,
+	LED_PAGE_RIGHT_ROLL,
+	LED_PAGE_UP_ROLL,
+	LED_PAGE_DOWN_ROLL,
 };
 
 typedef struct _tterminal_led_data_display
@@ -267,21 +268,21 @@ typedef  struct tmnl_list_node		// 终端链表节点
 
 typedef struct _tterminal_state_set // 终端状态的设置
 {
-	uint8_t :1;
-	uint8_t one_off:1;
-	uint8_t sign_stype:1;
-	uint8_t auto_close:1;
 	uint8_t sys:4;
-	
-	uint8_t :3;
-	uint8_t keydown:5;
+	uint8_t auto_close:1;
+	uint8_t sign_stype:1;	// 签到方式 按键 或插卡
+	uint8_t one_off:1; 		// 首键或末键有效
+	uint8_t :1;
 
+	uint8_t keydown:5;
 	uint8_t :3;
-	uint8_t keyup:5;
 	
-	uint8_t MicClose:1;
-	uint8_t :2;
+	uint8_t keyup:5;
+	uint8_t :3;
+	
 	uint8_t VoteType:5;
+	uint8_t :2;
+	uint8_t MicClose:1;
 }tmnl_state_set;
 
 typedef struct _tterminal_led_show_stype // 设置终端 led 显示方式
@@ -303,8 +304,8 @@ typedef struct _tterminal_vote_result	// 投票表决结果
 
 typedef struct _tterminal_limit_spk_time
 {
-	uint8_t :2;
 	uint8_t limit_time:6;
+	uint8_t :2;
 }tmnl_limit_spk_time;
 
 typedef struct _ttmerminal_main_state_send // 主机发送状态
@@ -346,6 +347,27 @@ typedef struct  _tterminal_send_end_lcd_display
 	uint8_t opt;	// 操作指示 
 	uint8_t num;  // 屏号
 }tmnl_send_end_lcd_display;
+
+/*@}*/
+
+/*{@设置终端指示灯*/
+#define TLED_KEY1       0
+#define TLED_KEY2       1
+#define TLED_KEY3       2
+#define TLED_KEY4       3
+#define TLED_KEY5       4
+#define TLED_MAX_NUM    5
+#define TLED_OFF    0
+#define TLED_SLOW   1
+#define TLED_QUICK  2
+#define TLED_ON     3
+
+typedef struct _tterminal_led_lamp_set
+{
+	uint8_t data_low;
+	uint8_t data_high;
+}ttmnl_led_lamp;
+
 
 /*@}*/
 

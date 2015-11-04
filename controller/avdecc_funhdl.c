@@ -1,5 +1,6 @@
 #include "avdecc_funhdl.h"
 #include "upper_computer.h"
+#include "terminal_pro.h"
 
 void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
 {
@@ -35,6 +36,7 @@ int fn_timer_cb(struct epoll_priv*priv)
 	read(priv->fd, &timer_exp_count, sizeof(timer_exp_count));
 
     	time_tick_event( endpoint_list, command_send_guard);
+	terminal_mic_speak_limit_time_manager_event();
 	
     	return 0;
 }

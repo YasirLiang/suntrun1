@@ -7,6 +7,7 @@
 #ifndef __TERMINAL_SYSTEM_FUNC_H__
 #define __TERMINAL_SYSTEM_FUNC_H__
 
+#include "terminal_pro.h"
 #include "jdksavdecc_world.h"
 #include "terminal_common.h"
 

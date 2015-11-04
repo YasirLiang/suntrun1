@@ -5,7 +5,6 @@
 */	
 
 #include "terminal_system_func.h"
-#include "terminal_pro.h"
 #include "terminal_command.h"
 
 /***************************************

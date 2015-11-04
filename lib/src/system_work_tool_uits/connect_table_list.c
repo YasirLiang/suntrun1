@@ -51,21 +51,54 @@ void connect_table_double_list_move_node_to_tail( connect_tbl_pdblist move_node,
 	list_move_tail( &move_node->list, &guard->list );
 }
 
+// 链表长度
+int connect_table_double_list_length_get( connect_tbl_pdblist guard )
+{
+	int i = 0;
+	struct list_head *list_pos = NULL; 
+	
+	list_for_each( list_pos, &guard->list)
+	{
+		i++;
+	}
+	
+	return i;
+}
+
 // 显示连接表
-void connect_table_double_list_show( connect_tbl_pdblist guard )
+void connect_table_double_list_show_connected( connect_tbl_pdblist guard )
 {
 	assert( guard );
 	connect_tbl_pdblist connect_pnode = NULL;
 	
-	MSGINFO( "\n------------------------------connnect table---------------------------\n");
+	MSGINFO( "\n------------------------------connnect table----------------------------");
 	list_for_each_entry( connect_pnode, &guard->list, list )
 	{
 		if( connect_pnode->connect_elem.listener_connect_flags )
 		{
-			MSGINFO( "\t0x%llx(%d)-->0x%llx(%d)\n",\
+			MSGINFO( "0x%016llx(%d)-->0x%llx(%d)",\
 				connect_pnode->connect_elem.tarker_id, connect_pnode->connect_elem.tarker_index,\
 				connect_pnode->connect_elem.listener_id, connect_pnode->connect_elem.listener_index );
 		}
 	}
+
+	MSGINFO( "--------------------------------end-------------------------------------\n");
+}
+
+// 显示整个连接表
+void connect_table_double_list_show_all( connect_tbl_pdblist guard )
+{
+	assert( guard );
+	connect_tbl_pdblist connect_pnode = NULL;
+	
+	MSGINFO( "\n---------------------------connnect table all----------------------------");
+	list_for_each_entry( connect_pnode, &guard->list, list )
+	{
+		MSGINFO( "0x%016llx(%d)-->0x%llx(%d)",\
+			connect_pnode->connect_elem.tarker_id, connect_pnode->connect_elem.tarker_index,\
+			connect_pnode->connect_elem.listener_id, connect_pnode->connect_elem.listener_index );
+	}
+
+	MSGINFO( "------------------------------end----------------------------------------\n");
 }
 

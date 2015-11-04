@@ -83,36 +83,35 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				terminal_mic_auto_close( 0, NULL, 0 ); // 此函数未完成
+				terminal_mic_auto_close( 0, NULL, 0 ); // 这个函数可以加入命令处理函数
 			}
 
 			temp_status = set_dis_para.discuss_mode;
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				terminal_system_discuss_mode_set( temp_status );
-				
+				terminal_system_discuss_mode_set( 0, &temp_status, 1 );// 这个函数可以加入命令处理函数
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
 			if( temp_status != set_sys.speak_limit )
 			{
-				// 限制发言人数
+				// 设置限制的发言人数
+				terminal_speak_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				
+				terminal_apply_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
+
+			// 限时设置
+			terminal_limit_speak_time_set(0, NULL, 0 );
 			
-
-			// 向终端发送限时消息
-			//terminal_limit_speak_time_set();
-
 			// 设置会议讨论状态
-			
+			terminal_start_discuss( false );
 
 			// 发送响应
 			send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
@@ -673,5 +672,31 @@ int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void
 
 /*==================================================
 					结束终端命令函数
+====================================================*/
+
+/*==================================================
+					上位机处理函数流程
+====================================================*/
+/*上报单个麦克风状态*/
+int upper_cmpt_report_mic_state( uint8_t mic_status, uint16_t addr )
+{
+	tcmpt_data_mic_status mic_endpoint;
+	
+	if( (mic_status == MIC_COLSE_STATUS) || (mic_status == MIC_OPEN_STATUS) ||\
+		(mic_status == MIC_FIRST_APPLY_STATUS) ||(mic_status == MIC_OTHER_APPLY_STATUS) ||\
+		(mic_status == MIC_PRESET_BIT_STATUS) ||(mic_status == MIC_CHM_INTERPOSE_STATUS))
+	{
+		mic_endpoint.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0);
+		mic_endpoint.addr.high_addr = (uint8_t)((addr &0xff00) >> 8);
+		mic_endpoint.switch_flag = mic_status;
+
+		send_upper_computer_command( CMPT_MSG_TYPE_REPORT, \
+		MISCROPHONE_STATUS, &mic_endpoint, sizeof(tcmpt_data_mic_status));
+	}
+	
+	return -1;
+}
+/*==================================================
+					结束上位机处理流程
 ====================================================*/
 

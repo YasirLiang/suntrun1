@@ -13,7 +13,7 @@ void terminal_allot_address( void );
 void terminal_reallot_address( void );
 void terminal_state_set( tmnl_state_set tmnlstate, uint16_t addr,  uint64_t  target_id );
 void terminal_set_mic_status( uint8_t data, uint16_t addr,  uint64_t  target_id );
-void terminal_set_indicator_lamp( uint16_t data, uint16_t addr, uint64_t target_id );
+void terminal_set_indicator_lamp( ttmnl_led_lamp data, uint16_t addr, uint64_t target_id );
 void terminal_new_endstation_allot_address( uint64_t target_id );
 void terminal_set_lcd_play_stype( uint64_t target_id, uint16_t addr, uint8_t lcd_stype );
 void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_state_show_set lcd_stype );

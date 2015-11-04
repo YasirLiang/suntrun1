@@ -68,7 +68,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 
 	/* 设置连接表*/
 	sleep(2);
-	connect_table_info_set( descptor_guard );
+	connect_table_info_set( descptor_guard, true );
 	
 	// 注册会议终端, 维持5s
 }

@@ -43,5 +43,10 @@ int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void
 
 /*@终端命令函数}*/
 
+/*{@上位机处理函数流程}*/
+int upper_cmpt_report_mic_state( uint8_t mic_status, uint16_t addr );
+/*@上位机处理函数流程}*/
+
+
 #endif
 
