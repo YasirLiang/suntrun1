@@ -7,6 +7,8 @@
 #include "udp_client_controller_machine.h"
 #include "message_queue.h"
 #include "profile_system.h"
+#include "send_pthread.h"
+#include "send_work_queue.h"
 
 void init_system( void )
 {
@@ -24,7 +26,9 @@ void init_system( void )
 	init_terminal_proccess_system();
 	init_profile_system_file();
 	init_func_command_work_queue();
-	
+	init_sem_wait_can();
+	init_network_send_queue();
+
 #ifdef __DEBUG__
 #ifdef __TEST_QUEUE__
 	fcqueue_data_elem queue_data_elem;

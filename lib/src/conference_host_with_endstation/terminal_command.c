@@ -7,7 +7,7 @@
 #include "terminal_command.h"
 #include "terminal_common.h"
 
-// 查询终端, addr是未注册的但是终端已分配了的地址
+// 查询终端, addr是未注册的但是终端已分配了的地址(0x1)
 void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
 {
 	struct host_to_endstation askbuf;
@@ -21,7 +21,7 @@ void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
 	ternminal_send( &askbuf, asklen, entity_id, false );
 }
 
-// 终端分配地址
+// 终端分配地址(0x2)
 void terminal_allot_address( void )
 {
 	struct host_to_endstation askbuf; 
@@ -36,7 +36,7 @@ void terminal_allot_address( void )
 	ternminal_send( &askbuf, asklen, target_zero, false );
 }
 
-// 重新分配地址，此命令无响应
+// 重新分配地址，此命令无响应(0x3)
 void terminal_reallot_address( void )
 {
 	struct host_to_endstation askbuf; 
@@ -51,7 +51,7 @@ void terminal_reallot_address( void )
 	ternminal_send( &askbuf, asklen, target_zero, true ); 
 }
 
-// 终端状态设置
+// 终端状态设置(noneed_resp)
 void terminal_state_set( tmnl_state_set tmnlstate, uint16_t addr,  uint64_t  target_id )
 {
 	struct host_to_endstation askbuf;
@@ -63,7 +63,13 @@ void terminal_state_set( tmnl_state_set tmnlstate, uint16_t addr,  uint64_t  tar
 	askbuf.data_len = sizeof( tmnl_state_set );
 	memcpy( askbuf.data, &tmnlstate, sizeof( tmnl_state_set)); 
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
+
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 设置话筒状态(0x13)
@@ -81,7 +87,7 @@ void terminal_set_mic_status( uint8_t data, uint16_t addr,  uint64_t  target_id 
 	ternminal_send( &askbuf, asklen, target_id, false );
 }
 
-// 设置终端指示灯
+// 设置终端指示灯(0x06)
 void terminal_set_indicator_lamp( ttmnl_led_lamp data, uint16_t addr, uint64_t target_id )
 {
 	struct host_to_endstation askbuf;
@@ -94,7 +100,13 @@ void terminal_set_indicator_lamp( ttmnl_led_lamp data, uint16_t addr, uint64_t t
 	askbuf.data[0] = data.data_low;
 	askbuf.data[1] = data.data_high;
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
+	
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 新增终端分配地址（0x07），只对ID无效的有用,这些ID存在于终端地址列表(即在终端地址文件)中，但不存在终端的注册列表中
@@ -179,12 +191,18 @@ void terminal_limit_spk_time( uint64_t target_id, uint16_t addr, tmnl_limit_spk_
 	uint16_t asklen = 0;
 
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
-	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SEND_VOTE_RESULT;
+	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_TALKTIME_LEN;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint8_t );
 	memcpy(&askbuf.data[0], &spk_time, sizeof( uint8_t));
+
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 主机发送状态0x10, 此命令无响应(2015/11/4注)
@@ -218,8 +236,14 @@ void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send
 	askbuf.data_len = sizeof( uint16_t ); // 2
 	askbuf.data[0] = lcd_dis.opt;
 	askbuf.data[1] = lcd_dis.num;
+
+	bool noneed_resp = false;
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;// 不需要响应
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 操作终端

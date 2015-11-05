@@ -123,6 +123,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			{
 				DEBUG_INFO("LOGGING_LEVEL_ERROR:Invalid ADP packet with an entity ID of 0.");
 			}
+
+			//*status = 0;
 		}
 		break;
 

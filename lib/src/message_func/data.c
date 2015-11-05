@@ -10,6 +10,7 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, terminal_func_chairman_control, FUNC_TMNL_CHAIRMAN_CONTROL},
 	{ 0xffffffff, terminal_func_send_main_state, FUNC_TMNL_SEND_MAIN_STATE},
 	{ 0xffffffff, terminal_func_cmd_event, FUNC_TMNL_EVENT},
+	
 	{ 0xffffffff, proccess_upper_cmpt_discussion_parameter, FUNC_CMPT_DISCUSS_PARAMETER },
 	{ 0xffffffff, proccess_upper_cmpt_microphone_switch, FUNC_CMPT_MISCROPHONE_SWITCH},
 	{ 0xffffffff, proccess_upper_cmpt_miscrophone_status, FUNC_CMPT_MISCROPHONE_STATUS},
@@ -36,12 +37,13 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, proccess_upper_cmpt_result_vote, FUNC_CMPT_RESULT_VOTE},
 	{ 0xffffffff, proccess_upper_cmpt_transmit_to_endstation, FUNC_CMPT_TRANSMIT_TO_ENDSTATION},
 	{ 0xffffffff, proccess_upper_cmpt_report_endstation_message, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE},
-	{ 0xffffffff, proccess_upper_cmpt_hign_definition_switch_set, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET}
+	{ 0xffffffff, proccess_upper_cmpt_hign_definition_switch_set, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET},
+	
+	{ 0xffffffff, terminal_mic_auto_close, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
+	{ 0xffffffff, terminal_system_discuss_mode_set, FUNC_MENU_DISC_MODE_SET_CMD },
+	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET },
+	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
 /*	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
@@ -88,13 +90,14 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ COMPUTER_USE, RESULT_VOTE, FUNC_CMPT_RESULT_VOTE, 0},
 	{ COMPUTER_USE, TRANSMIT_TO_ENDSTATION, FUNC_CMPT_TRANSMIT_TO_ENDSTATION, 0},
 	{ COMPUTER_USE, REPORT_ENDSTATION_MESSAGE, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE, 0},
-	{ COMPUTER_USE, HIGH_DEFINITION_SWITCH_SET, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET, 0}
+	{ COMPUTER_USE, HIGH_DEFINITION_SWITCH_SET, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET, 0},
+	
+	{ MENU_USE, MENU_AUTO_CLOSE_CMD, FUNC_MENU_AUTO_CLOSE_CMD, 0},
+	{ MENU_USE, MENU_DISC_MODE_SET_CMD, FUNC_MENU_DISC_MODE_SET_CMD, 0},
+	{ MENU_USE, MENU_SPK_LIMIT_NUM_SET, FUNC_MENU_SPK_LIMIT_NUM_SET, 0},
+	{ MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, FUNC_MUNU_APPLY_LIMIT_NUM_SET, 0}
 	/*{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
+	 {, , , 0},
 	{ , , , 0},
 	{ , , , 0},
 	{ , , , 0},

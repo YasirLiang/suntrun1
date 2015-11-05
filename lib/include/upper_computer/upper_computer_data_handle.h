@@ -7,7 +7,7 @@
 #include "host_controller_debug.h"
 
 int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack);
-int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe );
+int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe, int *status  );
 
 #endif
 

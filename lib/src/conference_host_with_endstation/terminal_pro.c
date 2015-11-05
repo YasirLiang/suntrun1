@@ -622,7 +622,8 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 
 	tmnl_limit_spk_time spk_time;
 	speak_limit_time = spk_time.limit_time = set_sys.spk_limtime;
-	
+
+	DEBUG_INFO( "tmnl spk time = %d ", set_sys.spk_limtime );
 	if( !set_sys.spk_limtime ) // 无限时
 	{
 		terminal_limit_spk_time( 0, BRDCST_ALL, spk_time );
@@ -653,6 +654,7 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 
 		if( nolimit_addr )
 		{
+			DEBUG_LINE();
 			nolimit_spk_time.limit_time = 0;
 			terminal_limit_spk_time( BRDCST_1722_ALL, nolimit_addr, nolimit_spk_time );
 		}
@@ -790,7 +792,6 @@ int terminal_start_discuss( bool mic_flag )
 	{
 		terminal_state_set_base_type( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE,gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);	// 根据终端类型设置终端的状态
 		terminal_lcd_display_num_send( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE, LCD_OPTION_CLEAR, glcd_num );// 发送lcd显示屏号
-
 	}
 
 	/*设置终端指示灯*/

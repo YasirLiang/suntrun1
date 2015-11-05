@@ -72,6 +72,10 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	// 设置保存系统状态值并设置系统状态
 	else if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
+		// 发送响应
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
+			DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
+			
 		get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
 		DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
 
@@ -83,28 +87,32 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				terminal_mic_auto_close( 0, NULL, 0 ); // 这个函数可以加入命令处理函数
+				find_func_command_link(MENU_USE, MENU_AUTO_CLOSE_CMD,0, NULL, 0);
+				//terminal_mic_auto_close(  ); // 这个函数可以加入命令处理函数
 			}
 
 			temp_status = set_dis_para.discuss_mode;
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				terminal_system_discuss_mode_set( 0, &temp_status, 1 );// 这个函数可以加入命令处理函数
+				find_func_command_link(MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
+				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );// 这个函数可以加入命令处理函数
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
-				terminal_speak_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
+				find_func_command_link(MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				//terminal_speak_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				terminal_apply_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
+				find_func_command_link(MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				//terminal_apply_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
 
 			// 限时设置
@@ -112,10 +120,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
-
-			// 发送响应
-			send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
-			DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 		}
 		else
 		{
@@ -130,6 +134,15 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 
 int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, uint32_t data_len )
 {
+	tcmpt_data_mic_switch mic_flag;
+	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
+	get_host_upper_cmpt_data( &mic_flag, data, CMPT_DATA_OFFSET, len_data_get );
+
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET )
+	{
+		return -1;
+	}
+
 	
 	
 	return 0;

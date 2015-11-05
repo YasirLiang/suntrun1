@@ -29,6 +29,8 @@
 #define BRDCST_CHM      0x8800
 #define BRDCST_EXE      0x9000
 
+#define BRDCST_NEED_RESPONSE 0x0100
+
 /*{@ set terminal status*/
 #define MIC_CLOSE 1
 #define MIC_INVALID 0

@@ -146,22 +146,26 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		{
            		uint16_t desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
             		uint16_t desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
-			MSGINFO( " [ COMMAND TIMEOUT: 0x%llx, %s, %s, %d  ]", dest_id, get_aem_command_string(cmd_type),get_aem_desc_command_string( desc_type ), desc_index);
+			MSGINFO( "[ COMMAND TIMEOUT: 0x%llx, %s, %s, %d ]", dest_id, get_aem_command_string(cmd_type),get_aem_desc_command_string( desc_type ), desc_index);
 		}
 		else
 		{
 			uint8_t cfc_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
-			MSGINFO( " [ COMMAND TIMEOUT: 0x%llx, %s ( data len = %d )  ]", dest_id, get_host_and_end_conference_string_value(cfc_cmd), cmd_type );
+			cfc_cmd &= 0x1f;// 命令在低五位
+			MSGINFO( "[ UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx, %s(0x%02x) ( data len = %d ) ]", dest_id, get_host_and_end_conference_string_value(cfc_cmd), cfc_cmd,cmd_type );
 		}
 
 		// free inflight command node in the system
 		//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
-		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
+		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
+
+		is_inflight_timeout = true; // 设置超时
 	}
 	else
 	{
 		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false );
+		is_inflight_timeout = false; // 不是超时
 	}
 }
 
@@ -438,7 +442,7 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
             ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_RESPONSE) ||
             (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_ADDRESS_ACCESS_RESPONSE)))
         {
-        	DEBUG_ONINFO("[  RESPONSE_RECEIVED, 0x%016llx, %d, %d, %d, %d ]",
+        	DEBUG_ONINFO("[ RESPONSE_RECEIVED, 0x%016llx, %d, %d, %d, %d ]",
 						jdksavdecc_uint64_get(&id, 0),
 						cmd_type,
 						desc_type,
@@ -476,8 +480,11 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 		addr[0] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 2 );
 		addr[1] = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 3 );
 		uint8_t data_len = get_conference_guide_type(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 4 );
-		DEBUG_ONINFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %s) ]",
+		conference_cmd &= 0x1f;// 低五位
+		
+		DEBUG_ONINFO("[ UNIQUE CONFENENCE COMMAND, 0x%016llx, %s( %02x ), 0x%02x%02x, %d(data_len), %d(all len), (status = %s) ]",
 						jdksavdecc_uint64_get(&id, 0),
+						get_host_and_end_conference_string_value(conference_cmd),
 						conference_cmd,
 						addr[1],
 						addr[0],
@@ -487,9 +494,10 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 
            	if( status != JDKSAVDECC_AECP_VENDOR_STATUS_SUCCESS )
             	{
-                	DEBUG_INFO("[  UNIQUE_COMMAND, 0x%016llx, %02x, 0x%02x%02x, %d, %d, (status = %s) ]",
+                	DEBUG_INFO("[ UNIQUE CONFENENCE COMMAND ERR, 0x%016llx, %s( %02x ), 0x%02x%02x, %d, %d, (status = %s) ]",
 						jdksavdecc_uint64_get(&id, 0),
-						conference_cmd,
+						get_host_and_end_conference_string_value(conference_cmd),
+						conference_cmd ,
 						addr[0],
 						addr[1],
 						data_len,

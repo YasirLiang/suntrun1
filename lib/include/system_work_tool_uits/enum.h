@@ -154,6 +154,12 @@ typedef enum enum_func_link // conferenc command functions command link
 	FUNC_CMPT_REPORT_ENDSTATION_MESSAGE,// 上报终端短消息
 	FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET,	// 设置高清摄像头切换命令
 	/*@}*/ 
+	
+	FUNC_MENU_AUTO_CLOSE_CMD,
+	FUNC_MENU_DISC_MODE_SET_CMD,
+	FUNC_MENU_SPK_LIMIT_NUM_SET,
+	FUNC_MUNU_APPLY_LIMIT_NUM_SET,
+	
 	FUNC_PROCCESS_NUM
 }enum_func_link;
 enum adp_msg_type_values

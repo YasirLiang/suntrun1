@@ -1,6 +1,10 @@
 #include "avdecc_funhdl.h"
 #include "upper_computer.h"
 #include "terminal_pro.h"
+#include "wait_message.h"
+#include "send_pthread.h"
+
+bool is_inflight_timeout = false;
 
 void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
 {
@@ -37,6 +41,14 @@ int fn_timer_cb(struct epoll_priv*priv)
 
     	time_tick_event( endpoint_list, command_send_guard);
 	terminal_mic_speak_limit_time_manager_event();
+
+	if( is_inflight_timeout && is_wait_messsage_active_state())
+	{
+		set_wait_message_status( WAIT_TIMEOUT );
+		sem_post( &sem_waiting );
+	}
+
+	is_inflight_timeout = false; 
 	
     	return 0;
 }
@@ -65,6 +77,12 @@ int fn_netif_cb( struct epoll_priv *priv )
 	       	bool is_operation_id_valid = false;
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
+
+		if( rx_status == 0 && is_wait_messsage_active_state() )
+		{
+			set_wait_message_status( rx_status );
+			sem_post( &sem_waiting );
+		}
 	}
 	
 	return 0;
@@ -90,9 +108,16 @@ int udp_server_fn(struct epoll_priv *priv )
 		upper_udp_client.cltlen = sin_len;
 		is_upper_udp_client_connect = true;
 		set_UDP_parameter( &recv_frame, &sin_in, recv_len );
-
+		int rx_status = -1;
+		
 		// 处理接收的上位机发送过来的数据包
-		handle_upper_computer_conference_data( &recv_frame );
+		handle_upper_computer_conference_data( &recv_frame, &rx_status );
+
+		if( rx_status && is_wait_messsage_active_state() )
+		{
+			set_wait_message_status( 0 );
+			sem_post( &sem_waiting );
+		}
 	}
 	else
 	{
@@ -106,7 +131,6 @@ int udp_server_fn(struct epoll_priv *priv )
 // host controller as a client
 int udp_client_fn(struct epoll_priv *priv )
 {
-	DEBUG_LINE();
 	return 0;
 }
 

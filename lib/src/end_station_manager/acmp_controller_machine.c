@@ -293,11 +293,14 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		// free inflight command node in the system
 		release_heap_space( &acmp_pstation->host_tx.inflight_frame.frame);
 		delect_inflight_dblist_node( &acmp_pstation );
+
+		is_inflight_timeout = true; // 设置超时
 	}
 	else
 	{
 		DEBUG_INFO( "acmp resended " );
 		transmit_acmp_packet_network( frame, frame_len, hdr, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false);
+		is_inflight_timeout = false; // 不是超时
 	}
 }
 

@@ -122,11 +122,12 @@ void upper_computer_reply_error( uint8_t *recv_msg )
 *return value:
 *		none
 **************************************************/
-void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len )
+void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len, int *status )
 {
 	uint8_t protocol_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 	uint8_t cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
-
+	*status = protocol_type & CMPT_MSG_TYPE_RESPONSE;
+	
 	DEBUG_RECV( frame, frame_len, "Udp client Recv");
 	if(  !(protocol_type & CMPT_MSG_TYPE_RESPONSE) ) // not a response data
 	{

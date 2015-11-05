@@ -4,6 +4,7 @@
 #include "entity.h"
 #include "system.h"
 #include "controller_command.h"
+#include "send_pthread.h"
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
 struct raw_context net;				// 原始套接字
@@ -27,13 +28,17 @@ int main( int argc, char *argv[] )
 	pthread_t p_thread;
 	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
 
-	pthread_t f_thread;
+	pthread_t f_thread;	// 接收命令处理函数
 	pthread_handle_cmd_func( &f_thread, proccess_func_link_tables );
+
+	pthread_t s_thread; // 发送网络数据的线程
+	pthread_send_network_create( &s_thread );
 
 	// 分离主线程与次线程
 	pthread_detach( h_thread );
 	pthread_detach( p_thread );
 	pthread_detach( f_thread );
+	pthread_detach( s_thread );
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );

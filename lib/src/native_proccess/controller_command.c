@@ -703,7 +703,7 @@ void terminal_cmd_limit_spk_time_proccess(const char *opt)
 		}
 	}
 	
-	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set.limit_time);
+	DEBUG_INFO( "query entity id = 0x%016llx addr = %02x, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set.limit_time);
 	terminal_limit_spk_time( convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set);
 }
 void terminal_cmd_host_send_state_proccess(const char *opt)

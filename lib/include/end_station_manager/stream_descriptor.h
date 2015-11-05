@@ -12,6 +12,7 @@ int proc_get_tx_connection_resp( const uint8_t *frame, size_t frame_len, int *st
 int background_read_descriptor_input_output_stream( void );
 void store_stream_output_desc( const uint8_t *frame, int pos, size_t frame_len, desc_pdblist  desc_info_node );
 void store_stream_input_desc( const uint8_t *frame, int pos, size_t frame_len, desc_pdblist  desc_info_node );
+int background_read_descriptor_input_output_stream( void );
 
 
 #endif

@@ -4,6 +4,7 @@
 #include "aecp_controller_machine.h"
 #include "udp_server_controller_machine.h"
 #include "udp_client_controller_machine.h"
+#include "wait_message.h"
 
 /************************************************
 *Name:	system_raw_packet_tx
@@ -93,7 +94,7 @@ void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 	{
 		tx_data tx;
 		uint8_t *tran_buf;
-		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS);// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
+		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
 		memset( tx.raw_dest.value, 0, 6 );
 
 		// heap using later free by reading pipe thread.its space must to be free! 
@@ -188,8 +189,10 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			break;
 			case TRANSMIT_TYPE_AECP:	// 这里包含了主机与终端通信的协议
 			{
-				if( subtype == JDKSAVDECC_SUBTYPE_AECP ) 
+				if( subtype == JDKSAVDECC_SUBTYPE_AECP )
+				{
 					transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp );
+				}
 				else
 				{
 					DEBUG_INFO("Err AECP data!");
@@ -210,6 +213,10 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			default:
 				DEBUG_INFO("NO match transmit data type, Please check!");
 				break;
+		}
+		if( !resp )
+		{
+			set_wait_message_primed_state();
 		}
 	}
 	else

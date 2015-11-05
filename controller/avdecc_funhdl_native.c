@@ -1,7 +1,13 @@
 #include "avdecc_funhdl_native.h"
 #include "message_queue.h"
+#include "send_work_queue.h"
 
-int thread_pipe_fn( void *pgm )
+/* 这是网络原来的发送函数，只是简单的发送数据，没有考虑终端的处理数据需要过程。
+这里不停地发数据没有意义，因此修改如下:1、加入发送队列(使用线程锁与条件变量)。
+2、加入线程同步(使用信号量)。具体参考修改后的发送线程。而这线程不删除，原因是
+此线程可以作为网络数据加入发送队列的线程。即可使用，不用修改网络数据的发送接口
+(见system_packet_tx.c), 但也增加了系统的开销。此函数修改如下；修改时间:2015-11-5
+int thread_pipe_fn( void *pgm ) 
 {
 	struct fds *kfds = ( struct fds* )pgm;
 	struct fds thr_fds;
@@ -43,7 +49,48 @@ int thread_pipe_fn( void *pgm )
 
 	return 0;
 }
+*/
 
+int thread_pipe_fn( void *pgm )
+{
+	struct fds *kfds = ( struct fds* )pgm;
+	struct fds thr_fds;
+	sdpwqueue*  send_wq = &net_send_queue;
+	assert( send_wq );
+
+	memcpy( &thr_fds, kfds, sizeof(struct fds));
+
+	while(1)
+	{
+		if( check_pipe_read_ready( thr_fds.tx_pipe[PIPE_RD]) )
+		{
+			tx_data tnt;
+			int result = read_pipe_tx( &tnt, sizeof(tx_data) );
+			
+			if( result > 0 )
+			{
+				// 加入网络数据发送队列
+				pthread_mutex_lock( &send_wq->control.mutex );
+				
+				send_work_queue_message_save( &tnt );
+				
+				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
+				pthread_cond_signal( &send_wq->control.cond ); // send pthread messag
+			}
+			else 
+			{
+				assert( tnt.frame && (result >= 0) );
+			}
+		}
+		else
+		{
+			DEBUG_INFO( "read pipe is not ready!" );
+			continue;
+		}
+	}
+
+	return 0;
+}
 
 int thread_func_fn( void * pgm )
 {
@@ -91,8 +138,11 @@ int thread_func_fn( void * pgm )
 		if( NULL == p_msg_wnode )
 		{
 			DEBUG_INFO( "func work queue no node!" );
-			return -1;
+			pthread_mutex_unlock( &p_func_wq->control.mutex );
+			continue;
 		}
+
+		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 
 		// proccess func command queue message
 		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
@@ -101,8 +151,6 @@ int thread_func_fn( void * pgm )
 		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
 		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
 		free( p_msg_wnode );
-
-		pthread_mutex_unlock( &p_func_wq->control.mutex );
 #endif	
 	}
 	

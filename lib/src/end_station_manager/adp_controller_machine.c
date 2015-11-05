@@ -133,7 +133,7 @@ void adp_entity_avail( struct jdksavdecc_eui64 discover_entity_id, uint16_t msg_
 
 	if ( adp_form_msg( &frame, &adpdu, msg_type, discover_entity_id ) == 0 )
 	{
-		system_raw_packet_tx( frame.dest_address.value, frame.payload, frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ADP, false);
+		system_raw_packet_tx( frame.dest_address.value, frame.payload, frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ADP,  true);// 暂时不需要响应数据
 	}
 	else
 	{
