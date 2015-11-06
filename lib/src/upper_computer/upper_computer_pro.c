@@ -14,12 +14,14 @@
 #include "upper_computer_data_parser.h"
 #include "terminal_pro.h"
 #include "terminal_command.h"
+#include "util.h"
+#include "upper_computer_data_form.h"
 
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
 {
 	assert( fd && set_dis_para );
-
+	
 	return (( profile_system_file_write( fd, set_dis_para->chairman_first, VAL_CHM_PRIOR_ENUM ) != -1) && \
 	 (profile_system_file_write( fd, set_dis_para->chair_music, VAL_CHM_MUSIC ) != -1) && \
 	 (profile_system_file_write( fd, set_dis_para->auto_close, VAL_AUTO_CLOSE ) != -1) && \
@@ -82,40 +84,43 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		// 保存配置文件
 		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
 		{
+			Fflush( fd ); // 刷新到文件中
+			
 			// 设置系统状态
 			uint8_t temp_status = set_dis_para.auto_close;
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				find_func_command_link(MENU_USE, MENU_AUTO_CLOSE_CMD,0, NULL, 0);
-				//terminal_mic_auto_close(  ); // 这个函数可以加入命令处理函数
+				//DEBUG_INFO( "auto close = %d", temp_status );
+				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
 			temp_status = set_dis_para.discuss_mode;
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				find_func_command_link(MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
-				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );// 这个函数可以加入命令处理函数
+				//DEBUG_INFO( "discuss_mode = %d", temp_status );
+				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
+				//DEBUG_INFO( "limit_speak_num = %d", temp_status );
 				find_func_command_link(MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
-				//terminal_speak_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
+				//DEBUG_INFO( "limit_apply_num = %d", temp_status );
 				find_func_command_link(MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
-				//terminal_apply_limit_num_set( 0, &temp_status, 1 ); // 这个函数可以加入命令处理函数
 			}
 
 			// 限时设置
+			//DEBUG_INFO( " save limit_speak_time = %d", set_dis_para.limit_speak_time );
 			terminal_limit_speak_time_set(0, NULL, 0 );
 			
 			// 设置会议讨论状态
@@ -128,7 +133,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	}
 
 	Fclose( fd );
-
+	
 	return 0;
 }
 
@@ -142,8 +147,6 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 	{
 		return -1;
 	}
-
-	
 	
 	return 0;
 }
@@ -177,8 +180,7 @@ int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, 
 		}
 	}
 
-	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, \
-		MISCROPHONE_STATUS, mic_list, addr_num * sizeof(tdata_addr_and_flag));
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, MISCROPHONE_STATUS, mic_list, addr_num * sizeof(tdata_addr_and_flag) );
 	
 	return 0;
 }
@@ -265,6 +267,7 @@ int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *dat
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
+	
 		conference_host_upper_computer_set_upper_message_form( &table_card, data, CMPT_DATA_LEN_OFFSET, lenght );
 
 		/*管理终端的桌牌*/

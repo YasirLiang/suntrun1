@@ -39,7 +39,7 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, proccess_upper_cmpt_report_endstation_message, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE},
 	{ 0xffffffff, proccess_upper_cmpt_hign_definition_switch_set, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET},
 	
-	{ 0xffffffff, terminal_mic_auto_close, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
+	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },
 	{ 0xffffffff, terminal_system_discuss_mode_set, FUNC_MENU_DISC_MODE_SET_CMD },
 	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET },
 	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET },

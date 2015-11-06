@@ -97,7 +97,7 @@ void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
 		memset( tx.raw_dest.value, 0, 6 );
 
-		// heap using later free by reading pipe thread.its space must to be free! 
+		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
 		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;

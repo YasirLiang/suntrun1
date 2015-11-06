@@ -21,7 +21,7 @@
 FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
-tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点
+tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点，对其正确地操作，必须先注册完终端
 bool reallot_flag = false; // 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 tsys_discuss_pro gdisc_flags; // 系统讨论参数
@@ -400,7 +400,6 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 {
-	DEBUG_LINE();
 	FILE* fd = NULL;
 	uint8_t auto_close = 0;
 	int i = 0;
@@ -430,7 +429,10 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 	{
 		connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id );
-		terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id, true, tmnl_node );
+		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst )
+		{
+			terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id, true, tmnl_node );
+		}
 	}
 
 	/*发送主机状态*/
@@ -538,7 +540,10 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 		connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id );
 		
 		// 2.设置麦克风tarker的状态,上报麦克风状态, 设置相应终端的麦克风状态(会议主机与终端协议)
-		terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id,true, tmnl_node );
+		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst )
+		{
+			terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id,true, tmnl_node );
+		}
 	}
 
 	/*发送主机状态*/
@@ -623,7 +628,6 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	tmnl_limit_spk_time spk_time;
 	speak_limit_time = spk_time.limit_time = set_sys.spk_limtime;
 
-	DEBUG_INFO( "tmnl spk time = %d ", set_sys.spk_limtime );
 	if( !set_sys.spk_limtime ) // 无限时
 	{
 		terminal_limit_spk_time( 0, BRDCST_ALL, spk_time );
@@ -766,7 +770,11 @@ int terminal_start_discuss( bool mic_flag )
 		for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 		{
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id );
-			terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id,true, tmnl_node );
+
+			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst )
+			{
+				terminal_mic_state_set( MIC_COLSE_STATUS, tmnl_node->tmnl_dev.address.addr, tmnl_node->tmnl_dev.entity_id,true, tmnl_node );
+			}
 		}
 	}
 	

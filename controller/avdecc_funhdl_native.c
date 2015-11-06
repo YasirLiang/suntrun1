@@ -130,7 +130,6 @@ int thread_func_fn( void * pgm )
 		
 		while( p_func_wq->work.front == NULL && p_func_wq->control.active )
 		{
-			DEBUG_LINE();
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
 		}
 		

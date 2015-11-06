@@ -36,7 +36,7 @@ int send_work_queue_message_save( tx_data* p_queue_msg )// ×¢:p_queue_msgÖÐµÄfra
 		return -1;
 
 	p_sdpqueue_wnode save_queue_node = NULL;
-	save_queue_node = (p_sdpqueue_wnode)malloc( sizeof(sdpqueue_wnode) );
+	save_queue_node = (p_sdpqueue_wnode)malloc( sizeof(sdpqueue_wnode) ); // free by send thread!
 	if( NULL == save_queue_node )
 	{
 		DEBUG_INFO( "malloc failed: no space!" );

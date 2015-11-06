@@ -28,7 +28,6 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 
 		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
 		{
-			DEBUG_LINE();
 			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
 		}
 
@@ -61,13 +60,11 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 		free( p_send_wnode );
 		p_send_wnode = NULL;
 
-		if( !is_resp_data ) // 发送非响应数据
+		if( !is_resp_data && is_wait_messsage_primed_state() ) // 发送非响应数据
 		{
-			//DEBUG_INFO( "wait status = %d ", wait_msg.emr );
 			int status = set_wait_message_active_state();
 			assert( status == 0 );
 			sem_wait( &sem_waiting );
-			//DEBUG_INFO( "wait status = %d ", wait_msg.emr );
 			status = set_wait_message_idle_state();
 			assert( status == 0 );
 		}
