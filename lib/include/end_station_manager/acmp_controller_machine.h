@@ -24,6 +24,8 @@ void acmp_rx_state_avail( uint64_t listener_entity_id, uint16_t listener_unique_
 int proc_get_tx_state_resp( const uint8_t *frame, size_t frame_len,uint16_t desc_index, int *status);
 int proc_get_rx_state_resp( const uint8_t *frame, size_t frame_len, uint16_t desc_index, int *status);
 void acmp_binflight_cmd_time_tick( void );
+int acmp_disconnect_connect_table( uint8_t tarker_value[8], uint16_t tarker_index, uint8_t listener_value[8], uint16_t listener_index, uint16_t cnnt_count, uint16_t sequence_id, ttcnn_table_call *discnnt_callback_save , int (*disconnect_callback_func)( connect_tbl_pdblist p_cnnt_node ) );
+int acmp_connect_connect_table( uint8_t tarker_value[8], uint16_t tarker_index, uint8_t listener_value[8], uint16_t listener_index, uint16_t cnnt_count, uint16_t sequence_id, ttcnn_table_call *cnnt_callback_save , int (*connect_callback)( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id ) );
 
 #endif
 

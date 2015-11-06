@@ -1,6 +1,7 @@
 #include "acmp_controller_machine.h"
 #include "acmp.h"
 #include "stream_descriptor.h"
+#include "endstation_connection.h"
 
 static struct jdksavdecc_frame acmp_frame;
 static struct jdksavdecc_acmpdu acmpdu;
@@ -9,6 +10,8 @@ static inflight_plist acmp_inflight_guard = NULL;
 static solid_pdblist acmp_solid_guard = NULL;
 static desc_pdblist acmp_desc_guard = NULL;
 struct background_inflight_cmd acmp_connect_state_update;
+ttcnn_table_call connet_table_disconnect_call_info;// 断开回调信息
+ttcnn_table_call connet_table_connect_call_info; // 连接回调信息
 
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard )
 {
@@ -367,11 +370,14 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE) ||
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE)))
 	{
-		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_listener_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
+		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_listener_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
+		struct jdksavdecc_eui64 _tarker_id = jdksavdecc_acmpdu_get_talker_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
+		uint64_t tarker_id = jdksavdecc_uint64_get( &_tarker_id, 0 );
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
-		DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener), %d, %d, %d, %s ]",
+		DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener)-0x%016llx(tarker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,
+						tarker_id,
 						(uint16_t)msg_type + CMD_LOOKUP, 
 						0, 
 						0, 
@@ -381,6 +387,19 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 			((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) || \
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE)))// udpate system descriptor connect list 
 		{
+			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
+			{
+				assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
+				connet_table_connect_call_info.pc_callback( connet_table_disconnect_call_info.p_cnnt_node,\
+					connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.limit_speak_time?true:false,\
+					connet_table_disconnect_call_info.tarker_id );
+			}
+			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
+			{
+				assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
+				connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
+			}
+			
 			acmp_update_endstation_connections_networks();
 		}
 		if( status != ACMP_STATUS_SUCCESS )
@@ -422,4 +441,71 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 
 	return 0;
 }
+
+/**********************************************
+*Date:2015-11-6
+*功能:
+*	用于连接表连接麦克风，回调在接收响应的acmp响应数据调用
+*
+***********************************************/
+int acmp_disconnect_connect_table( uint8_t tarker_value[8], 
+									uint16_t tarker_index, 
+									uint8_t listener_value[8], 
+									uint16_t listener_index, 
+									uint16_t cnnt_count, 
+									uint16_t sequence_id, 
+									ttcnn_table_call *discnnt_callback_save , 
+									int (*disconnect_callback_func)( connect_tbl_pdblist p_cnnt_node ) )
+{
+	assert( disconnect_callback_func && discnnt_callback_save );
+	if( discnnt_callback_save == NULL )
+	{
+		return -1;
+	}
+	else
+	{
+		connet_table_disconnect_call_info.limit_speak_time = discnnt_callback_save->limit_speak_time;
+		connet_table_disconnect_call_info.p_cnnt_node = discnnt_callback_save->p_cnnt_node;
+		connet_table_disconnect_call_info.tarker_id = discnnt_callback_save->tarker_id;
+		connet_table_disconnect_call_info.pdis_callback = disconnect_callback_func;
+		connet_table_disconnect_call_info.pc_callback = NULL;
+		acmp_disconnect_avail( tarker_value, tarker_index, listener_value, listener_index, cnnt_count, sequence_id );
+	}
+
+	return 0;
+}
+
+/**********************************************
+*Date:2015-11-6
+*功能:
+*	用于连接表断开麦克风，回调在接收响应的acmp响应数据调用
+*
+***********************************************/
+int acmp_connect_connect_table( uint8_t tarker_value[8], 
+									uint16_t tarker_index, 
+									uint8_t listener_value[8], 
+									uint16_t listener_index, 
+									uint16_t cnnt_count, 
+									uint16_t sequence_id, 
+									ttcnn_table_call *cnnt_callback_save , 
+									int (*connect_callback)( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id ) )
+{
+	assert( connect_callback && cnnt_callback_save );
+	if( cnnt_callback_save == NULL )
+	{
+		return -1;
+	}
+	else
+	{
+		connet_table_connect_call_info.limit_speak_time = cnnt_callback_save->limit_speak_time;
+		connet_table_connect_call_info.p_cnnt_node = cnnt_callback_save->p_cnnt_node;
+		connet_table_connect_call_info.tarker_id = cnnt_callback_save->tarker_id;
+		connet_table_connect_call_info.pc_callback = connect_callback;
+		connet_table_connect_call_info.pdis_callback = NULL;
+		acmp_connect_avail( tarker_value, tarker_index, listener_value, listener_index, cnnt_count, sequence_id );
+	}
+	
+	return 0;
+}
+
 

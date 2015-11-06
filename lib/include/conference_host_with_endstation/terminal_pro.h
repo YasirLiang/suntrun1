@@ -5,6 +5,8 @@
 #include "jdksavdecc_world.h"
 #include "conference.h"
 #include "terminal_common.h"
+#include "profile_system.h"
+#include "upper_computer_common.h"
 
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
@@ -103,7 +105,8 @@ void terminal_state_set_base_type( uint16_t addr, tmnl_state_set tmnl_state );
 void terminal_chairman_apply_type_set( uint16_t addr );
 bool terminal_led_set_save( uint16_t addr, uint8_t led_id, uint8_t  led_state );
 void fterminal_led_set_send( uint16_t addr );
-
+int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag );
+extern bool terminal_read_profile_file( thost_system_set *set_sys );
 
 /*@}*/
 

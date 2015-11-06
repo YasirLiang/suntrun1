@@ -11,7 +11,6 @@
 #include "upper_computer.h"
 #include "inflight.h"
 #include "host_controller_debug.h"
-#include "system_packet_tx.h"
 
 /*{@上位机与主机协议的报文类型*/ 
 #define CMPT_MSG_TYPE_RESPONSE	0x80 	 // 响应

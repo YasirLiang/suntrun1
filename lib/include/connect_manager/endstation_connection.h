@@ -12,6 +12,8 @@
 #include "jdksavdecc_world.h"
 #include "descriptor.h"
 
+#define CHANNEL_MUX_NUM 10 // 最大的通道数
+
 typedef struct _tterminal_speak_timeouts
 {
 	bool is_limit;					// 超时设定
@@ -37,13 +39,29 @@ typedef struct _tconnect_table_list_node // 连接信息表，双向循环链表
 	struct list_head list; 			
 }connect_tbl_dblist, *connect_tbl_pdblist;
 
+typedef int (*pc_connect_table_callback_func)( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id ); // 连接连接表命令回调函数
+typedef int (*pdis_connect_table_callback_func)( connect_tbl_pdblist p_cnnt_node ); // 断开连接表命令回调函数
+
+typedef struct __ttconnnect_table_callback // 用于回调函数
+{
+	uint32_t limit_speak_time;		// 发言限时时间，若为0表示无限时
+	uint64_t tarker_id;				// 麦克风ID
+	connect_tbl_pdblist p_cnnt_node; // 指向连接表的节点
+	pc_connect_table_callback_func pc_callback; // 连接回调
+	pdis_connect_table_callback_func pdis_callback;// 断开回调
+}ttcnn_table_call;
+
+
 void connect_table_info_init( void );
 bool connect_table_get_information( desc_pdblist desc_guard );
 bool connect_table_info_set( desc_pdblist desc_guard, bool is_show_table );
 void connect_table_tarker_disconnect( const uint64_t utarker_id );
-void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts, bool is_limit_time );
 int connect_table_timeouts_image( void );
 void connect_table_destroy( void );
+int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node );
+int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id );
+connect_tbl_pdblist found_connect_table_available_connect_node( void );
+void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts );
 
 
 #endif

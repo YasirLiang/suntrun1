@@ -93,11 +93,41 @@ inline void init_terminal_allot_address( void )
 	allot_addr_pro.renew_flag= 0;
 }
 
-inline void init_terminal_device_double_list()
+inline void init_terminal_device_double_list( void )
 {
 	// init terminal system double list
 	init_terminal_dblist( &dev_terminal_list_guard );
 	assert( dev_terminal_list_guard != NULL );
+}
+
+/*
+*date:2015-11-6
+*/
+int init_terminal_discuss_param( void ) 
+{
+	FILE* fd = NULL;
+	thost_system_set set_sys; // 系统配置文件的格式
+	
+	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
+	if( NULL == fd )
+	{
+		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+		return -1;
+	}
+
+	if( profile_system_file_read( fd, &set_sys ) == -1)
+	{
+		DEBUG_INFO( "Read profile system Err!" );
+		Fclose( fd );
+		return -1;
+	}
+
+	gdisc_flags.apply_limit = set_sys.apply_limit;
+	gdisc_flags.limit_num = set_sys.speak_limit;
+	gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
+
+	Fclose( fd );
+	return 0;
 }
 
 #ifdef __DEBUG__  // 模拟终端信息
@@ -165,6 +195,7 @@ void init_terminal_proccess_system( void )
 
 	init_terminal_allot_address();
 	init_terminal_device_double_list();
+	init_terminal_discuss_param();
 }
 
 /*注册*/
@@ -635,7 +666,7 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	else
 	{
 		uint16_t nolimit_addr = 0;
-		uint16_t limit_addr = 0;
+		uint16_t limit_addr = BRDCST_MEM; // 限时对所有普通代表有效
 		tmnl_limit_spk_time nolimit_spk_time;
 		
 		if( set_sys.vip_limitime ) // vip 限时
@@ -644,26 +675,26 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 		}
 		else
 		{
-			nolimit_addr |= BRDCST_CHM |BRDCST_EXE;
+			nolimit_addr |= BRDCST_VIP;
 		}
 		
 		if( set_sys.chman_limitime ) // 主席限时
 		{
+			
 			limit_addr |= BRDCST_CHM |BRDCST_EXE;
 		}
 		else
 		{
-			nolimit_addr |= BRDCST_VIP;
+			nolimit_addr |= BRDCST_CHM |BRDCST_EXE;
 		}
 
 		if( nolimit_addr )
 		{
-			DEBUG_LINE();
 			nolimit_spk_time.limit_time = 0;
 			terminal_limit_spk_time( BRDCST_1722_ALL, nolimit_addr, nolimit_spk_time );
 		}
 
-		terminal_limit_spk_time( BRDCST_1722_ALL, nolimit_addr, spk_time );
+		terminal_limit_spk_time( BRDCST_1722_ALL, limit_addr, spk_time );
 	}
 
 	Fclose( fd );
@@ -865,6 +896,100 @@ void fterminal_led_set_send( uint16_t addr )
 	led_lamp.data_low = gled_buf[0];
 	led_lamp.data_high = gled_buf[1];
 	terminal_set_indicator_lamp( led_lamp, addr, BRDCST_1722_ALL );
+}
+
+/*处理上位机对麦克风的操作命令(打开与关闭)*/
+int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
+{
+	uint16_t addr = (((uint16_t)(mic_flag.addr.low_addr << 0)) | ((uint16_t)(mic_flag.addr.high_addr << 0)));
+	uint8_t mic_state_set = mic_flag.switch_flag;
+	ttmnl_discuss_mode dis_mode = gdisc_flags.edis_mode;
+	tmnl_pdblist speak_node = NULL;
+	thost_system_set set_sys;
+	uint8_t limit_time = 0;
+	bool found_node = false;
+	bool read_success = false;
+
+	if( !terminal_read_profile_file( &set_sys ) )
+	{
+		return -1;
+	}
+	else
+	{
+		read_success = true;
+		limit_time = set_sys.spk_limtime;
+	}
+	
+	assert( dev_terminal_list_guard );
+	DEBUG_INFO( " speak addr = %04x ", addr );
+	for( speak_node = dev_terminal_list_guard->next; speak_node != dev_terminal_list_guard; speak_node = speak_node->next )
+	{
+		if( speak_node->tmnl_dev.address.addr == addr && speak_node->tmnl_dev.tmnl_status.is_rgst )
+		{
+			found_node = true;
+			break;
+		}
+	}
+
+	if( read_success && found_node )
+	{
+		if(  )
+		switch( dis_mode )
+		{
+			case FREE_MODE:
+			{
+				break;
+			}
+			case PPT_MODE:
+			{
+				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
+				break;
+			}
+			case LIMIT_MODE:
+			{
+				break;
+			}
+			case FIFO_MODE:
+			{
+				break;
+			}
+			case APPLY_MODE:
+			{
+				break;
+			}
+			default:
+			{
+				DEBUG_INFO( " out of discuss mode bound!" );
+				break;
+			}
+		}
+	}
+	
+	
+	return 0;
+}
+
+bool terminal_read_profile_file( thost_system_set *set_sys )
+{
+	FILE* fd = NULL;
+	
+	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
+	if( NULL == fd )
+	{
+		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+		return false;
+	}
+
+	assert( set_sys );
+	if( profile_system_file_read( fd, set_sys ) == -1)
+	{
+		DEBUG_INFO( "Read profile system Err!" );
+		Fclose( fd );
+		return false;
+	}
+
+	Fclose( fd );
+	return true;
 }
 
 /*===================================================

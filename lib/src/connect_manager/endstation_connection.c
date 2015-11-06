@@ -180,22 +180,40 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id )
 
 	if( found_connected )
 	{
+		ttcnn_table_call call_elem;
+		call_elem.limit_speak_time = 0;
+		call_elem.p_cnnt_node = connect_pnode;
+		call_elem.tarker_id = utarker_id;
 		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
 		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
-		acmp_disconnect_avail( talker_entity_id.value, tarker_index, listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++ );
-
-		// 将释放的通道放入连接表的结尾
-		connect_pnode->connect_elem.tarker_id = 0;
-		connect_pnode->connect_elem.tarker_index = 0;
-		connect_pnode->connect_elem.listener_connect_flags = false;
-		connect_table_double_list_move_node_to_tail( connect_pnode, cnnt_list_guard );
+		acmp_disconnect_connect_table( talker_entity_id.value, tarker_index, \
+			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem , connect_table_disconnect_callback );
 	}
 
 	pthread_mutex_unlock( &cnnt_mutex );
 }
 
-// 连接麦克风 timeouts的单位是分钟
-void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts, bool is_limit_time )
+int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
+{
+	assert( p_cnnt_node );
+
+	if( NULL != p_cnnt_node )
+	{
+		p_cnnt_node->connect_elem.tarker_id = 0;
+		p_cnnt_node->connect_elem.tarker_index = 0;
+		p_cnnt_node->connect_elem.listener_connect_flags = false;
+		connect_table_double_list_move_node_to_tail( p_cnnt_node, cnnt_list_guard );
+	}
+	else
+	{
+		return -1;
+	}
+	
+	return 0;
+}
+
+// 连接麦克风 timeouts的单位是分钟, 连接表发送连接命令可以同过异步回调更新tarker在连接表里的状态
+void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts )
 {
 	connect_tbl_pdblist connect_pnode = NULL;
 	uint64_t ulistener_id = 0;
@@ -220,23 +238,81 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts,
 
 	if( found_listener_avail_first && (connect_pnode!= NULL) ) // connect available
 	{
+		ttcnn_table_call call_elem;
+		call_elem.limit_speak_time = timeouts;
+		call_elem.p_cnnt_node = connect_pnode;
+		call_elem.tarker_id = utarker_id;
+		
 		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
 		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
-		acmp_connect_avail( talker_entity_id.value, tarker_index, listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++ ); // 这里tarker_index = 0;
-
-		connect_pnode->connect_elem.tarker_id = utarker_id;
-		connect_pnode->connect_elem.listener_connect_flags = true;
-
-		if( is_limit_time )
-		{
-			connect_table_timer_start( 1000* timeouts, connect_pnode );
-		}
+		acmp_connect_connect_table( talker_entity_id.value, tarker_index, \
+			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem, connect_table_connect_callback );
 	}
 	
 	pthread_mutex_unlock( &cnnt_mutex );
-
 }
 
+int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id )
+{
+	assert( p_cnnt_node );
+
+	if( NULL != p_cnnt_node )
+	{
+		p_cnnt_node->connect_elem.tarker_id = utarker_id;
+		p_cnnt_node->connect_elem.listener_connect_flags = true;
+
+		if( is_limit_time )
+		{
+			connect_table_timer_start( 1000* timeouts, p_cnnt_node );
+		}
+		else
+		{
+			connect_table_timer_stop( p_cnnt_node );
+		}
+	}
+	else
+	{
+		return -1;
+	}
+
+	return 0;
+}
+
+connect_tbl_pdblist found_connect_table_available_connect_node( void )
+{
+	int occupy_channal_num = 0;
+	connect_tbl_pdblist connect_pnode = NULL;
+	bool found_listener_avail_first = false; // 找到第一个可用的声音通道
+	
+	pthread_mutex_lock( &cnnt_mutex );
+	
+	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+	{
+		if( !connect_pnode->connect_elem.listener_connect_flags &&\
+			connect_pnode->connect_elem.tarker_id == 0 ) // 找到可用通道?
+		{
+			found_listener_avail_first = true;
+			break;
+		}
+		else
+		{
+			occupy_channal_num++;
+		}
+	}
+
+	pthread_mutex_unlock( &cnnt_mutex );
+
+	if( (occupy_channal_num > CHANNEL_MUX_NUM) || !found_listener_avail_first ) // if not found
+	{  
+		connect_pnode = list_entry( cnnt_list_guard->list.next, connect_tbl_dblist, list );// 链表第一个结点
+		if( connect_pnode->connect_elem.listener_connect_flags )
+		{
+			connect_table_tarker_disconnect( connect_pnode->connect_elem.tarker_id );
+		}
+	}
+	
+	return connect_pnode;
+}
 
 /*****************************************************
 *writer:YasirLiang

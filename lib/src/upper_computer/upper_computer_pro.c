@@ -16,6 +16,7 @@
 #include "terminal_command.h"
 #include "util.h"
 #include "upper_computer_data_form.h"
+#include "system_packet_tx.h"
 
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
@@ -121,7 +122,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 
 			// 限时设置
 			//DEBUG_INFO( " save limit_speak_time = %d", set_dis_para.limit_speak_time );
-			terminal_limit_speak_time_set(0, NULL, 0 );
+			terminal_limit_speak_time_set( 0, NULL, 0 );
 			
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
@@ -142,11 +143,22 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 	tcmpt_data_mic_switch mic_flag;
 	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
 	get_host_upper_cmpt_data( &mic_flag, data, CMPT_DATA_OFFSET, len_data_get );
+	bool open_mic =mic_flag.switch_flag?true:false;
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET )
 	{
 		return -1;
 	}
+
+	if( open_mic )
+	{
+		found_connect_table_available_connect_node();
+	}
+
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, MISCROPHONE_SWITCH, NULL, 0 );
+
+	DEBUG_INFO( "mic sw addr = 0x%02x%02x, flag = %d ", mic_flag.addr.high_addr, mic_flag.addr.low_addr, mic_flag.switch_flag );
+	terminal_upper_computer_speak_proccess( mic_flag );
 	
 	return 0;
 }
