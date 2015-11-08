@@ -124,7 +124,12 @@ int init_terminal_discuss_param( void )
 
 	gdisc_flags.apply_limit = set_sys.apply_limit;
 	gdisc_flags.limit_num = set_sys.speak_limit;
+	gdisc_flags.currect_first_index = set_sys.apply_limit;
+	gdisc_flags.apply_num = 0;
+	gdisc_flags.speak_limit_num = 0; // 发言人数
 	gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
+	memset( gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM );
+	memset( gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM );
 
 	Fclose( fd );
 	return 0;
@@ -560,7 +565,7 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
 		
 	gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
-	gdisc_flags.currect_first_index = 0;
+	gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
 	gdisc_flags.apply_num = 0;
 	gdisc_flags.speak_limit_num = 0;
 
@@ -933,38 +938,48 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 
 	if( read_success && found_node )
 	{
-		if(  )
-		switch( dis_mode )
+		if( dis_mode == PPT_MODE ||\
+			(speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP) ||\
+			(speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
+			(speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
 		{
-			case FREE_MODE:
+			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
+			terminal_mic_state_set( mic_state_set, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id,true, speak_node );
+			terminal_main_state_send( 0, NULL, 0 );
+		}
+		else
+		{
+			switch( dis_mode )
 			{
-				break;
-			}
-			case PPT_MODE:
-			{
-				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
-				break;
-			}
-			case LIMIT_MODE:
-			{
-				break;
-			}
-			case FIFO_MODE:
-			{
-				break;
-			}
-			case APPLY_MODE:
-			{
-				break;
-			}
-			default:
-			{
-				DEBUG_INFO( " out of discuss mode bound!" );
-				break;
+				case FREE_MODE:
+				{
+					terminal_free_disccuss_mode_pro( mic_state_set );
+					break;
+				}
+				case LIMIT_MODE:
+				{
+					break;
+				}
+				case FIFO_MODE:
+				{
+					break;
+				}
+				case APPLY_MODE:
+				{
+					break;
+				}
+				default:
+				{
+					DEBUG_INFO( " out of discuss mode bound!" );
+					break;
+				}
 			}
 		}
 	}
-	
+	else if( !found_node)
+	{
+		return -1;
+	}
 	
 	return 0;
 }
@@ -990,6 +1005,33 @@ bool terminal_read_profile_file( thost_system_set *set_sys )
 
 	Fclose( fd );
 	return true;
+}
+
+void terminal_free_disccuss_mode_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node )
+{
+	if( speak_node == NULL )
+	{
+		return;
+	}
+	
+	if( mic_flag ) // 打开麦克风
+	{
+		if( gdisc_flags.speak_limit_num < FREE_MODE_SPEAK_MAX )
+		{
+			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
+			terminal_mic_state_set( mic_flag, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
+			gdisc_flags.speak_limit_num++;
+		}
+	}
+	else
+	{
+		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id );
+		terminal_mic_state_set( mic_flag, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
+		if( gdisc_flags.speak_limit_num > 0 )
+			gdisc_flags.speak_limit_num--;
+	}
+
+	terminal_main_state_send( 0, NULL, 0 );
 }
 
 /*===================================================

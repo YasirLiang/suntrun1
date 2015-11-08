@@ -31,6 +31,8 @@
 
 #define BRDCST_NEED_RESPONSE 0x0100
 
+#define FREE_MODE_SPEAK_MAX 10 // 自由模式最大讲话人数
+
 /*{@ set terminal status*/
 #define MIC_CLOSE 1
 #define MIC_INVALID 0
