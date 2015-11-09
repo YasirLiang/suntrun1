@@ -252,6 +252,7 @@ void terminal_option_endpoint( uint64_t target_id, uint16_t addr, eopt_tmnl opt 
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
 
+	DEBUG_INFO( "option end is %d " , opt );
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_OPTITION_END;
 	askbuf.cchdr.address = addr;

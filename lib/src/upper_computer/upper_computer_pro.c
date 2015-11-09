@@ -150,11 +150,6 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 		return -1;
 	}
 
-	if( open_mic )
-	{
-		found_connect_table_available_connect_node();
-	}
-
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, MISCROPHONE_SWITCH, NULL, 0 );
 
 	DEBUG_INFO( "mic sw addr = 0x%02x%02x, flag = %d ", mic_flag.addr.high_addr, mic_flag.addr.low_addr, mic_flag.switch_flag );
@@ -201,14 +196,14 @@ int proccess_upper_cmpt_select_proposer( uint16_t protocal_type, void *data, uin
 {
 	uint16_t addr = get_uint16_data_from_buf( data, CMPT_DATA_OFFSET );
 	
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET)
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET )
 	{
 		return -1;
 	}
 
 	/*处理选择申请人*/
 	DEBUG_INFO( "select apply = %04x ", addr );
-	//terminal_select_apply( addr );
+	terminal_select_apply( addr ); // 使选择的申请人是首位申请人
 	
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, SELECT_PROPOSER, NULL, 0 );
 	
@@ -225,7 +220,14 @@ int proccess_upper_cmpt_examine_application( uint16_t protocal_type, void *data,
 	
 	/*处理审批申请*/
 	DEBUG_INFO( "examine application value = %d ", exam_value );
-	//terminal_examine_apply( exam_value );
+	if( exam_value )
+	{
+		terminal_examine_apply( APPROVE_APPLY );
+	}
+	else
+	{
+		terminal_examine_apply( REFUSE_APPLY );
+	}
 
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, EXAMINE_APPLICATION, NULL, 0 );
 	
@@ -234,17 +236,18 @@ int proccess_upper_cmpt_examine_application( uint16_t protocal_type, void *data,
 
 int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *data, uint32_t data_len )//函数处理流程未完成10/30。
 {
-	uint16_t address = get_uint16_data_from_buf( data, CMPT_DATA_OFFSET );
-	uint8_t set_value_id = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET + sizeof(uint16_t));
-
+	tcmpt_data_meeting_authority tmnl_type;
+	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
+	get_host_upper_cmpt_data( &tmnl_type, data, CMPT_DATA_OFFSET, len_data_get );
+	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET)
 	{
 		return -1;
 	}
 	
 	/*处理会议权限*/
-	DEBUG_INFO( "examine permit  = %d, addr = %d ", set_value_id, address );
-	//terminal_examine_apply( set_value_id, address );
+	DEBUG_INFO( "examine permit  = %d, addr = 0x%02x%02x ", tmnl_type.identity, tmnl_type.addr.high_addr, tmnl_type.addr.low_addr );
+	terminal_type_set( tmnl_type );
 
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CONFERENCE_PERMISSION, NULL, 0 );
 	return 0;

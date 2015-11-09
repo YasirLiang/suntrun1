@@ -30,12 +30,12 @@ typedef struct _type_tmnl_register_pro
   uint16_t TmnRgsted;
 }ttmnl_register_proccess;
 
-enum
+typedef enum _enum_apply_pro
 {
 	REFUSE_APPLY=0,
 	NEXT_APPLY,
 	APPROVE_APPLY
-};
+}enum_apply_pro;
 
 typedef struct _tsystem_discuccess
 {

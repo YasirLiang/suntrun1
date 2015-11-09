@@ -196,6 +196,7 @@ typedef enum _tterminal_discuss_mode 	// 会讨模式
 	FIFO_MODE,
 	APPLY_MODE		
 }ttmnl_discuss_mode;
+
 /*@}*/
 
 /*{@操作终端（0x12）*/
