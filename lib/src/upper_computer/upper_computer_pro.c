@@ -266,7 +266,7 @@ int proccess_upper_cmpt_senddown_message( uint16_t protocal_type, void *data, ui
 
 	/*主机发送上位机信息*/
 	conference_host_upper_computer_set_upper_message_form( &data_msg, data, CMPT_DATA_OFFSET, lenght );
-	//terminal_send_upper_message( data_msg, address, lenght - sizeof(uint16_t) );
+	terminal_send_upper_message( ((uint8_t*)&data_msg) + sizeof(uint16_t), address, lenght - sizeof(uint16_t) );
 
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, SENDDOWN_MESSAGE, NULL, 0 );
 	
@@ -286,7 +286,7 @@ int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *dat
 		conference_host_upper_computer_set_upper_message_form( &table_card, data, CMPT_DATA_LEN_OFFSET, lenght );
 
 		/*管理终端的桌牌*/
-		//terminal_tablet_stands_manager( table_card, address,  lenght - sizeof(uint16_t) ); // 注:这里不涉及到系统的所有状态的处理
+		terminal_tablet_stands_manager( &table_card, address, lenght - sizeof(uint16_t)); // 注:这里不涉及到系统的所有状态的处理
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, TABLE_TABLET_STANDS_MANAGER, NULL, 0 );
 	}

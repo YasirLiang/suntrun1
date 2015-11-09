@@ -148,8 +148,9 @@ void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_st
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_SET_END_LED;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint16_t ); // data lenght of the conference deal is 2
-	askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
-	askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
+	memcpy( askbuf.data, &led_stype, sizeof(uint16_t));
+	//askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
+	//askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
 	
 	ternminal_send( &askbuf, asklen, target_id, false );
 }

@@ -559,6 +559,13 @@ int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
+int terminal_socroll_synch(void )
+{
+	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_LED_DISPLAY_ROLL_SYNC );
+
+	return 0;
+}
+
 int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( data && dev_terminal_list_guard );
@@ -1689,6 +1696,35 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 
 	Fclose( fd );
 	return 0;
+}
+
+void terminal_send_upper_message( uint8_t *data_msg, uint16_t addr, uint16_t msg_len )
+{
+	assert( data_msg );
+
+	if( msg_len > MAX_UPPER_MSG_LEN )
+	{
+		return;
+	}
+
+	terminal_transmit_upper_cmpt_message( BRDCST_1722_ALL, addr, data_msg, msg_len );
+}
+
+void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr, uint16_t contex_len )// 桌牌管理
+{
+	assert( table_card );
+	uint8_t card_flag = table_card->msg_type;
+	tmnl_led_state_show_set card_opt;
+
+	if( card_flag == 0 )
+	{
+		terminal_socroll_synch();
+	}
+	else if( card_flag == 1 )// 设置led显示方式
+	{
+		memcpy( &card_opt, table_card->msg_buf, sizeof(uint16_t));
+		terminal_set_led_play_stype( BRDCST_1722_ALL, addr, card_opt );// 设置led显示方式
+	}
 }
 
 /*===================================================
