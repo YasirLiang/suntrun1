@@ -14,6 +14,5 @@ extern size_t  conference_host_to_upper_computer_frame_write( void *base, struct
 extern int conference_host_to_upper_computer_form_msg( struct host_upper_cmpt_frame *frame,  struct host_upper_cmpt *phost );
 inline void conference_host_upper_computer_set_upper_message_form( void *data_msg, const void* base, uint16_t offset, uint16_t len );
 
-
 #endif
 

@@ -1,6 +1,7 @@
 #include "upper_computer_common.h"
 #include "upper_computer_data_parser.h"
 #include "udp_client_controller_machine.h"
+#include "upper_computer_data_form.h"
 
 struct udp_client upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;

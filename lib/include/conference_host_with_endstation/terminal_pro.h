@@ -27,7 +27,7 @@ typedef struct _type_tmnl_register_pro
 {
   register_state rgs_state;
   uint16_t tmn_total;
-  uint16_t TmnRgsted;
+  uint16_t tmn_rgsted;
 }ttmnl_register_proccess;
 
 typedef enum _enum_apply_pro
@@ -68,6 +68,7 @@ typedef struct
 	uint16_t 	chmaddr;
 }tchairman_control_in;
 
+int init_terminal_discuss_param( void );
 int init_terminal_address_list_from_file( void );
 void init_terminal_address_list( void );
 inline void init_terminal_allot_address( void );
@@ -107,6 +108,25 @@ bool terminal_led_set_save( uint16_t addr, uint8_t led_id, uint8_t  led_state );
 void fterminal_led_set_send( uint16_t addr );
 int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag );
 extern bool terminal_read_profile_file( thost_system_set *set_sys );
+void terminal_free_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );
+bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );
+bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );
+bool terminal_apply_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );
+bool addr_queue_delete_by_index( uint16_t *addr_queue, uint8_t *queue_len, uint8_t index );
+bool addr_queue_delect_by_value( uint16_t *addr_queue, uint8_t *queue_len, uint16_t value);
+bool addr_queue_find_by_value( uint16_t *addr_queue, uint8_t queue_len, uint16_t value, uint8_t *index);
+tmnl_pdblist found_terminal_dblist_node_by_addr( uint16_t addr );
+void terminal_select_apply( uint16_t addr ); // 使选择的申请人是首位申请人
+bool terminal_examine_apply( enum_apply_pro apply_value );
+void terminal_type_set( tcmpt_data_meeting_authority tmnl_type );
+void terminal_chairman_excute_set( uint16_t addr, bool is_set_excute );
+void terminal_vip_type_set( uint16_t addr, bool is_set_vip );
+int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type );
+void terminal_send_upper_message( uint8_t *data_msg, uint16_t addr, uint16_t msg_len );
+void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr, uint16_t contex_len );// 桌牌管理
+void terminal_chairman_apply_type_clear( uint16_t addr );
+int terminal_socroll_synch(void );
+
 
 /*@}*/
 

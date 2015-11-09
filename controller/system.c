@@ -9,6 +9,7 @@
 #include "profile_system.h"
 #include "send_pthread.h"
 #include "send_work_queue.h"
+#include "stream_descriptor.h"
 
 void init_system( void )
 {
@@ -23,12 +24,11 @@ void init_system( void )
 	aecp_controller_init(endpoint_list, descptor_guard,command_send_guard );
 	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
 
-	init_terminal_proccess_system();
 	init_profile_system_file();
+	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
 	init_network_send_queue();
-
 #ifdef __DEBUG__
 #ifdef __TEST_QUEUE__
 	fcqueue_data_elem queue_data_elem;
@@ -66,6 +66,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	/*初始化连接表*/ 
 	connect_table_info_init();
 	connect_table_get_information( descptor_guard );
+	
 
 	/*获取系统的终端连接信息*/ 
 	background_read_descriptor_input_output_stream();

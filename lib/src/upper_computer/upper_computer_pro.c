@@ -143,7 +143,6 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 	tcmpt_data_mic_switch mic_flag;
 	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
 	get_host_upper_cmpt_data( &mic_flag, data, CMPT_DATA_OFFSET, len_data_get );
-	bool open_mic =mic_flag.switch_flag?true:false;
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET )
 	{

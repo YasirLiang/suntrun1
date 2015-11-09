@@ -62,7 +62,6 @@ int init_terminal_address_list_from_file( void )
 	if( ret == -1 )
 	{
 		DEBUG_INFO( "init tmnl_addr_list from address file!need to reallot terminal address");
-		Fclose( addr_file_fd );
 		reallot_flag = true;
 	}
 
@@ -198,9 +197,8 @@ void init_terminal_proccess_system( void )
 			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 #endif
 #endif
-
 	init_terminal_allot_address();
-	init_terminal_device_double_list();
+	init_terminal_device_double_list();	
 	init_terminal_discuss_param();
 }
 
@@ -1113,7 +1111,7 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 		
 		if( cc_state == MIC_FIRST_APPLY_STATUS || cc_state == MIC_OTHER_APPLY_STATUS )
 		{
-			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, gdisc_flags.apply_num, addr );
+			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr );
 
 			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
 			{
@@ -1137,7 +1135,7 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 
 			if(gdisc_flags.speak_limit_num < gdisc_flags.limit_num && gdisc_flags.apply_num > 0 )// 结束发言,并开始下一个申请终端的发言
 			{
-				if( addr_queue_delete_by_index( gdisc_flags.apply_addr_list, gdisc_flags.apply_num, gdisc_flags.currect_first_index )// 开启下一个申请话筒
+				if( addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index) )// 开启下一个申请话筒
 				{
 					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
 					if( first_speak != NULL )
@@ -1161,7 +1159,7 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 						}
 						else
 						{
-							gdisc_flags.currect_first_index = gdisc_flags.apply_num
+							gdisc_flags.currect_first_index = gdisc_flags.apply_num;
 						}
 					}
 					else
@@ -1224,7 +1222,7 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 					DEBUG_INFO( "fifo not found tmnl list node!");
 				}
 				
-				addr_queue_delete_by_index( gdisc_flags.speak_addr_list, gdisc_flags.speak_limit_num, 0 );// 首位发言删除
+				addr_queue_delete_by_index( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, 0 );// 首位发言删除
 
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time ); 
 				terminal_mic_state_set( MIC_OPEN_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
@@ -1238,7 +1236,7 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 	}
 	else
 	{
-		addr_queue_delect_by_value( gdisc_flags.speak_addr_list, gdisc_flags.speak_limit_num, speak_node->tmnl_dev.address.addr );
+		addr_queue_delect_by_value( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, speak_node->tmnl_dev.address.addr );
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id );
 		terminal_mic_state_set( MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
 		terminal_main_state_send( 0, NULL, 0 );
@@ -1282,7 +1280,7 @@ bool terminal_apply_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 	{
 		
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, gdisc_flags.apply_num, addr ))
+		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr ))
 		{
 			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
 			{
@@ -1303,6 +1301,8 @@ bool terminal_apply_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 		terminal_main_state_send( 0, NULL, 0 );
 		ret = true;
 	}
+
+	return ret;
 }
 
 bool addr_queue_delete_by_index( uint16_t *addr_queue, uint8_t *queue_len, uint8_t index )
@@ -1442,10 +1442,10 @@ void terminal_select_apply( uint16_t addr ) // 使选择的申请人是首位申请人
 
 bool terminal_examine_apply( enum_apply_pro apply_value )
 {
-	uint8_t index = 0;
 	uint16_t addr = 0;
 	tmnl_pdblist apply_first = NULL;
 	thost_system_set set_sys;
+	bool ret = false;
 	
 	if( !terminal_read_profile_file( &set_sys ) )
 	{
@@ -1462,7 +1462,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 	{
 		case REFUSE_APPLY:
 			addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-			if( addr_queue_delect_by_value(gdisc_flags.apply_addr_list, gdisc_flags.apply_num, gdisc_flags.currect_first_index) )
+			if( addr_queue_delect_by_value(gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index) )
 			{
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
@@ -1484,6 +1484,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 				}
 
 				terminal_main_state_send( 0, NULL, 0 );
+				ret = true;
 			}
 			break;
 		case NEXT_APPLY:
@@ -1504,15 +1505,16 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 					}
 					else
 					{
-						DEBUG_INFO( "no found first apply node!" )
+						DEBUG_INFO( "no found first apply node!" );
 					}
 				}
 				else
 				{
-					DEBUG_INFO( "no found first apply node!" )
+					DEBUG_INFO( "no found first apply node!" );
 				}
 
 				terminal_main_state_send( 0, NULL, 0 );
+				ret = true;
 			}
 			break;
 		case APPROVE_APPLY:
@@ -1531,11 +1533,11 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 					gdisc_flags.speak_limit_num++;
 				}
 
-				addr_queue_delete_by_index( gdisc_flags.apply_addr_list, gdisc_flags.apply_num, gdisc_flags.currect_first_index );
+				addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index );
 				if( gdisc_flags.apply_num > 0 )
 				{
 					gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-					apply_first = found_terminal_dblist_node_by_addr(gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index])
+					apply_first = found_terminal_dblist_node_by_addr(gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
 					if( apply_first != NULL )
 					{
 						terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
@@ -1547,11 +1549,14 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 				}
 
 				terminal_main_state_send( 0, NULL, 0 );
+				ret = true;
 			}
 			break;
 		default:
 			break;
 	}
+
+	return ret;
 }
 
 void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
@@ -1597,7 +1602,7 @@ void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
 			tmnl_node->tmnl_dev.address.tmn_type = TMNL_TYPE_COMMON_RPRST;
 		}
 
-		terminal_vip_type_set( tmnl_node, (tmnl_type.identity == TMNL_TYPE_VIP)?true:false )
+		terminal_vip_type_set( tmnl_node->tmnl_dev.address.addr, (tmnl_type.identity == TMNL_TYPE_VIP)?true:false );
 	}
 
 	// 保存到地址文件address.dat
@@ -1606,7 +1611,7 @@ void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
 	{
 		if( tmnl_addr_list[i].addr == addr )
 		{
-			tmnl_addr_list[i].tmn_type = tmnl_type;
+			tmnl_addr_list[i].tmn_type = tmnl_type.identity;
 			break;
 		}
 	}
@@ -1661,7 +1666,7 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 
 	if( i >= SYSTEM_TMNL_MAX_NUM )
 	{
-		DEBUG_INFO( "not found addr in the address profile !" )
+		DEBUG_INFO( "not found addr in the address profile !" );
 		return -1;
 	}
 
