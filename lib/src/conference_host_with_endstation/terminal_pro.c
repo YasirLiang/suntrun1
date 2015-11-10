@@ -18,18 +18,32 @@
 #include "terminal_system.h"
 #include "upper_computer_pro.h"
 
-FILE* addr_file_fd = NULL; 		// 终端地址信息读取文件描述符
+FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
-tmnl_pdblist dev_terminal_list_guard = NULL; // 终端链表表头结点，对其正确地操作，必须先注册完终端
-bool reallot_flag = false; // 重新分配标志
+tmnl_pdblist dev_terminal_list_guard = NULL; 				// 终端链表表头结点，对其正确地操作，必须先注册完终端
+
+bool reallot_flag = false; 									// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
-tsys_discuss_pro gdisc_flags; // 系统讨论参数
-tchairman_control_in gchm_int_ctl; // 主席插话
-ttmnl_register_proccess gregister_tmnl_pro; // 终端报到处理
-uint32_t speak_limit_time = 0; // 发言时长， 0表示无限时；1-63表示限时1-63分钟
-uint8_t glcd_num = 0; // lcd 显示的屏号
-uint8_t gled_buf[2] = {0}; // 终端指示灯
+
+tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
+
+tchairman_control_in gchm_int_ctl; 						// 主席插话
+
+ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
+
+uint32_t speak_limit_time = 0; 							// 发言时长， 0表示无限时；1-63表示限时1-63分钟
+
+uint8_t glcd_num = 0; 									// lcd 显示的屏号
+uint8_t gled_buf[2] = {0}; 								// 终端指示灯
+
+enum_signstate gtmnl_signstate;							// 签到的状态，也可为终端的签到状态
+uint8_t gsign_latetime; 									// 补签的超时时间
+uint8_t gsigned_flag = false;								// 签到标志
+
+evote_state_pro gvote_flag; 								// 投票处理
+bool first_key_flag; 										// 真为投票首键有效
+tevote_type gvote_mode;									// 投票模式
 
 void init_terminal_proccess_fd( FILE ** fd )
 {
@@ -227,6 +241,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 				p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
 				p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
 			        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
+				p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
 				bret = true;
 				break;
 			}
@@ -318,10 +333,12 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 			if( msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN )
 			{
 				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_CHM_EXCUTE;
+				DEBUG_INFO( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
 			}
 			else
 			{
 				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_COMMON_RPRST;
+				DEBUG_INFO( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
 			}
 
 			// save new addr to file
@@ -557,13 +574,6 @@ int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
-int terminal_socroll_synch(void )
-{
-	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_LED_DISPLAY_ROLL_SYNC );
-
-	return 0;
-}
-
 int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( data && dev_terminal_list_guard );
@@ -713,6 +723,25 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
+int terminal_end_sign( uint16_t cmd, void *data, uint32_t data_len )
+{
+	set_terminal_system_state( DISCUSS_STATE, true );
+	gtmnl_signstate = SIGN_IN_BE_LATE;
+
+	// 设置讨论的状态
+	terminal_start_discuss( false );
+	// 开始补签
+
+	return 0;
+}
+
+int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len )
+{
+	gvote_flag = NO_VOTE;// 结束投票
+
+	return 0;
+}
+
 /*==================================================
 					结束终端命令函数
 ====================================================*/
@@ -721,6 +750,14 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 /*===================================================
 {@终端处理流程
 =====================================================*/
+
+int terminal_socroll_synch(void )
+{
+	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_LED_DISPLAY_ROLL_SYNC );
+
+	return 0;
+}
+
 void terminal_remove_unregitster( void ) // 这里没有清除终端地址文件以及内存终端列表里相应的内容
 {
 	tmnl_pdblist p_node = dev_terminal_list_guard->next;
@@ -828,7 +865,7 @@ int terminal_start_discuss( bool mic_flag )
 		gtmnl_state_opt[i].keydown = 0;
 		gtmnl_state_opt[i].keyup = 0;
 		gtmnl_state_opt[i].MicClose = mic_flag?1:0;
-		gtmnl_state_opt[i].sys = DISCUSS_STATE; // 系统模式
+		gtmnl_state_opt[i].sys = TMNL_SYS_STA_DISC; // 系统模式
 	}
 
 	/* 设置终端状态*/
@@ -870,7 +907,7 @@ void terminal_chairman_apply_type_set( uint16_t addr )
 {
 	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].keydown = 0x0e; // 2 3 4键按下有效
 	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].keyup = 0;
-	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].sys = DISCUSS_STATE;
+	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].sys = TMNL_SYS_STA_DISC;
 
 	terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE] );
 	//terminal_lcd_display_num_send( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE, LCD_OPTION_DISPLAY, CHM_APPROVE_APPLY_INTERFACE );// 发送lcd显示屏号
@@ -881,7 +918,7 @@ void terminal_chairman_apply_type_clear( uint16_t addr )
 {
 	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].keydown = 0; 
 	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].keyup = 0;
-	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].sys = DISCUSS_STATE;
+	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].sys = TMNL_SYS_STA_DISC;
 
 	terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE] );
 	terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, CHM_APPROVE_APPLY_INTERFACE );
@@ -957,7 +994,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 	{
 		if( mic_state_set &&  dis_mode != APPLY_MODE )
 		{
-			found_connect_table_available_connect_node();
+			found_connect_table_available_connect_node( speak_node->tmnl_dev.entity_id );
 		}
 		
 		if( dis_mode == PPT_MODE ||\
@@ -965,8 +1002,17 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 			(speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
 			(speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
 		{
-			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
-			terminal_mic_state_set( mic_state_set, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id,true, speak_node );
+			if( mic_state_set )
+			{
+				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time );
+				terminal_mic_state_set( MIC_OPEN_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id,true, speak_node );
+			}
+			else
+			{
+				connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id );
+				terminal_mic_state_set( MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
+			}
+			
 			terminal_main_state_send( 0, NULL, 0 );
 		}
 		else
@@ -1730,6 +1776,194 @@ void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr
 		memcpy( &card_opt, table_card->msg_buf, sizeof(uint16_t));
 		terminal_set_led_play_stype( BRDCST_1722_ALL, addr, card_opt );// 设置led显示方式
 	}
+}
+
+// 开始签到
+void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
+{
+	assert( dev_terminal_list_guard );
+	uint8_t sign_type = sign_flag.sign_type;
+	uint8_t timeouts = sign_flag.retroactive_timeouts;
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	int i = 0;
+
+	set_terminal_system_state( SIGN_STATE, true );
+	gtmnl_signstate = SIGN_IN_ON_TIME;
+	gsign_latetime = timeouts;
+	gsigned_flag = true;
+
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.address.addr != 0xffff && tmp->tmnl_dev.tmnl_status.is_rgst )
+		{
+			tmp->tmnl_dev.tmnl_status.sys_state = TMNL_NO_SIGN_IN;
+		}
+	}
+
+	for( i = 0; i < TMNL_TYPE_NUM; i++)
+	{
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].MicClose = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SIGN;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sign_stype = sign_type? CARD_SIGN_IN : KEY_SIGN_IN; // 1插卡；0按键
+	}
+
+	terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+}
+
+void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
+{
+	assert( sign_flag );
+	first_key_flag = vote_start_flag.key_effective?true:false;
+	uint8_t vote_type = vote_start_flag.vote_type;
+	*sign_flag = gsigned_flag; 
+
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+
+	gvote_mode = (tevote_type)vote_type;
+	if( vote_type ==  VOTE_MODE )
+	{
+		set_terminal_system_state( VOTE_STATE, true );
+	}
+	else if( vote_type ==  GRADE_MODE )
+	{
+		set_terminal_system_state( GRADE_STATE, true );
+	}
+	else
+	{
+		set_terminal_system_state( ELECT_STATE, true );
+	}
+
+	gvote_flag = VOTE_SET;
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.tmnl_status.is_rgst || tmp->tmnl_dev.address.addr )
+		{
+			continue;
+		}
+
+		if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
+		{
+			tmp->tmnl_dev.tmnl_status.vote_state = TWAIT_VOTE_FLAG;
+		}
+		else
+		{
+			tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // 未签到不能投票
+		}
+	}
+
+	terminal_vote_state_set( BRDCST_ALL );
+}
+
+void terminal_vote_state_set( uint16_t addr )
+{
+	tevote_type vote_type = gvote_mode;
+	if( addr == 0xffff )
+		return;
+
+	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].one_off = first_key_flag ? 1 : 0;
+	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].VoteType = vote_type;
+	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].MicClose = 0;
+	switch( vote_type )
+	{
+		case VOTE_MODE:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x0e; // 2 3 4 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_VOTE;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, VOTE_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_OFF );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_OFF );
+			fterminal_led_set_send( addr );
+			break;
+		case GRADE_MODE:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x1f; // 1 2 3 4 5 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_GRADE;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, GRADE_1_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_ON );
+			fterminal_led_set_send( addr );
+			break;
+		case SLCT_2_1:
+		case	SLCT_2_2:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x03;// 1 2 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SELECT;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, SLCT_LV_2_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_OFF );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_OFF );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_OFF );
+			fterminal_led_set_send( addr );
+			break;
+		case SLCT_3_1:
+		case SLCT_3_2:
+		case SLCT_3_3:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x07;// 1 2 3 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SELECT;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, SLCT_LV_3_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_OFF );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_OFF );
+			fterminal_led_set_send( addr );
+			break;
+		case SLCT_4_1:
+		case SLCT_4_2:
+		case SLCT_4_3:
+		case SLCT_4_4:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x0f; // 1 2 3 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SELECT;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, SLCT_LV_4_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_OFF );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_OFF );
+			fterminal_led_set_send( addr );
+			break;
+		case SLCT_5_1:
+		case SLCT_5_2:
+		case SLCT_5_3:
+		case SLCT_5_4:
+		case SLCT_5_5:
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0x1f; // 1 2 3 4 5 键
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_VOTE;
+			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, SLCT_LV_5_INTERFACE );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY4, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY5, TLED_ON );
+			fterminal_led_set_send( addr );
+			break;
+		default:
+			DEBUG_INFO( "out of bround : vote of type!");
+			break;
+	}
+
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_VIP], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_COMMON], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
 }
 
 /*===================================================

@@ -178,6 +178,7 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id )
 		}
 	}
 
+	DEBUG_INFO( "found connected = %d, listener_entity_id = 0x%016llx", found_connected, ulistener_id );
 	if( found_connected )
 	{
 		ttcnn_table_call call_elem;
@@ -227,7 +228,8 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts 
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
 		if( !connect_pnode->connect_elem.listener_connect_flags &&\
-			connect_pnode->connect_elem.tarker_id == 0 ) // 找到可用通道?
+			connect_pnode->connect_elem.tarker_id == 0 &&\
+			connect_pnode->connect_elem.listener_id != utarker_id ) // 找到可用通道? 且不是自身
 		{
 			ulistener_id = connect_pnode->connect_elem.listener_id;
 			listener_index = connect_pnode->connect_elem.listener_index;
@@ -236,12 +238,14 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts 
 		}
 	}
 
+	DEBUG_INFO( "found found_listener_avail_first = %d, listener_entity_id = 0x%016llx", found_listener_avail_first, ulistener_id );
 	if( found_listener_avail_first && (connect_pnode!= NULL) ) // connect available
 	{
 		ttcnn_table_call call_elem;
 		call_elem.limit_speak_time = timeouts;
 		call_elem.p_cnnt_node = connect_pnode;
 		call_elem.tarker_id = utarker_id;
+		call_elem.pc_callback = connect_table_connect_callback;
 		
 		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
 		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
@@ -254,6 +258,7 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts 
 
 int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id )
 {
+	DEBUG_INFO( "timeout = %d, is_limit_time = %d, 0x%016llx", timeouts, is_limit_time, utarker_id );
 	assert( p_cnnt_node );
 
 	if( NULL != p_cnnt_node )
@@ -278,7 +283,7 @@ int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t ti
 	return 0;
 }
 
-connect_tbl_pdblist found_connect_table_available_connect_node( void )
+connect_tbl_pdblist found_connect_table_available_connect_node( const uint64_t utarker_id )
 {
 	int occupy_channal_num = 0;
 	connect_tbl_pdblist connect_pnode = NULL;
@@ -289,7 +294,8 @@ connect_tbl_pdblist found_connect_table_available_connect_node( void )
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
 		if( !connect_pnode->connect_elem.listener_connect_flags &&\
-			connect_pnode->connect_elem.tarker_id == 0 ) // 找到可用通道?
+			connect_pnode->connect_elem.tarker_id == 0 &&\
+			connect_pnode->connect_elem.listener_id != utarker_id ) // 找到可用通道?, 不能连接自己
 		{
 			found_listener_avail_first = true;
 			break;
@@ -305,7 +311,7 @@ connect_tbl_pdblist found_connect_table_available_connect_node( void )
 	if( (occupy_channal_num > CHANNEL_MUX_NUM) || !found_listener_avail_first ) // if not found
 	{  
 		connect_pnode = list_entry( cnnt_list_guard->list.next, connect_tbl_dblist, list );// 链表第一个结点
-		if( connect_pnode->connect_elem.listener_connect_flags )
+		if( connect_pnode->connect_elem.listener_connect_flags && connect_pnode->connect_elem.tarker_id != 0)
 		{
 			connect_table_tarker_disconnect( connect_pnode->connect_elem.tarker_id );
 		}

@@ -60,7 +60,7 @@ int connect_table_timeouts_image( void );
 void connect_table_destroy( void );
 int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node );
 int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id );
-connect_tbl_pdblist found_connect_table_available_connect_node( void );
+connect_tbl_pdblist found_connect_table_available_connect_node( const uint64_t utarker_id );
 void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts );
 
 

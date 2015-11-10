@@ -165,7 +165,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	else
 	{
 		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false );
-		is_inflight_timeout = false; // ²»ÊÇ³¬Ê±
 	}
 }
 

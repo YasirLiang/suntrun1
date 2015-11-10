@@ -72,6 +72,7 @@ int thread_pipe_fn( void *pgm )
 				// 加入网络数据发送队列
 				pthread_mutex_lock( &send_wq->control.mutex );
 				
+				DEBUG_INFO( "frame len = %d ", tnt.frame_len );
 				send_work_queue_message_save( &tnt );
 				
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex

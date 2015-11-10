@@ -16,6 +16,28 @@
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
 
+typedef enum // 签到
+{
+	SIGN_IN_OVER = 0,
+	SIGN_IN_ON_TIME,
+	SIGN_IN_BE_LATE,
+}enum_signstate;
+
+/*{@终端表决标志*/
+#define TVOTE_KEY_MARK	0x1F // 键的掩码
+#define TVOTE_EN         		0x80 // 投票使能位
+#define TVOTE_SET_FLAG   	0x40 // 未签到标志
+#define TWAIT_VOTE_FLAG  	0x20 // 签到允许投票标志
+
+typedef enum _enum_vote_state_pro
+{
+	NO_VOTE=0, 
+	VOTE_SET, // 开始投票
+	VOTE_SET_OVER // 投票完成
+}evote_state_pro;
+
+/*终端表决标志@}*/
+
 typedef enum
 {
 	RGST_IDLE=0,
@@ -49,19 +71,6 @@ typedef struct _tsystem_discuccess
 	uint16_t   apply_addr_list[MAX_LIMIT_APPLY_NUM];	 // 申请地址表
 }tsys_discuss_pro;
 
-typedef enum
-{
-	NO_VOTE=0,
-	VOTE_SET,
-	VOTE_SET_OVER,
-}evote_flag;
-
-typedef struct _type_vote_proccess
-{
-  evote_flag flag;
-  uint16_t index;
-}tvote_pro;
-
 typedef struct
 {
 	bool is_int;
@@ -94,6 +103,8 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len );// 处理函数有待完善(11/4)
 int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_end_sign( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len );
 
 /*@}*/
 
@@ -126,6 +137,9 @@ void terminal_send_upper_message( uint8_t *data_msg, uint16_t addr, uint16_t msg
 void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr, uint16_t contex_len );// 桌牌管理
 void terminal_chairman_apply_type_clear( uint16_t addr );
 int terminal_socroll_synch(void );
+void terminal_start_sign_in( tcmpt_begin_sign sign_flag );
+void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag );
+void terminal_vote_state_set( uint16_t addr );
 
 
 /*@}*/

@@ -55,7 +55,14 @@ enum
 	AUTO_CLOSE_FUNC_OPEN
 };
 
-enum
+enum enum_tmnl_sign_state
+{
+	TMNL_NO_SIGN_IN,	// Î´Ç©µ½0x1
+	TMNL_SIGN_ON_TIME, // ÒÑÇ©µ½0x2
+	TMNL_SIGN_BE_LATE // ²¹Ç©0x3
+};
+
+enum // sign type
 {
 	KEY_SIGN_IN,
 	CARD_SIGN_IN
@@ -67,7 +74,7 @@ enum
 	FIRST_KEY_VALUE
 };
 
-enum // terminal VOTE MODE
+typedef enum _termianl_enum_vote_mode_type// terminal VOTE MODE
 {
 	VOTE_MODE,
 	GRADE_MODE,
@@ -86,7 +93,7 @@ enum // terminal VOTE MODE
 	SLCT_5_4,
 	SLCT_5_5,
 	VOTE_MODE_NUM
-};
+}tevote_type;
 
 enum		//terminal type
 {

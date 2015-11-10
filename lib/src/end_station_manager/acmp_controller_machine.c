@@ -303,7 +303,6 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	{
 		DEBUG_INFO( "acmp resended " );
 		transmit_acmp_packet_network( frame, frame_len, hdr, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false);
-		is_inflight_timeout = false; // 不是超时
 	}
 }
 
@@ -321,6 +320,7 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 		acmp_callback( notification_flag, cmd_frame->payload);
 		release_heap_space( &inflight_est->host_tx.inflight_frame.frame);// it must delect
 		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node must delect date frame
+		//is_inflight_timeout = true; // when receive err, release the sem to send next frame by sending thread, 若想使用，需要线程锁
 	}
 	else
 	{
@@ -374,7 +374,12 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 		struct jdksavdecc_eui64 _tarker_id = jdksavdecc_acmpdu_get_talker_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
 		uint64_t tarker_id = jdksavdecc_uint64_get( &_tarker_id, 0 );
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
-		DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener)-0x%016llx(tarker), %d, %d, %d, %s ]",
+
+		if( (status == ACMP_STATUS_SUCCESS) &&\
+			((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) || \
+			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE)))// udpate system descriptor connect list 
+		{
+			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener)-0x%016llx(tarker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,
 						tarker_id,
@@ -382,26 +387,39 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
-
-		if( (status == ACMP_STATUS_SUCCESS) &&\
-			((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) || \
-			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE)))// udpate system descriptor connect list 
-		{
-			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
+			
+			if( (connet_table_connect_call_info.p_cnnt_node != NULL) && \
+				(connet_table_connect_call_info.pc_callback != NULL || \
+				connet_table_disconnect_call_info.pdis_callback != NULL ) )
 			{
-				assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
-				connet_table_connect_call_info.pc_callback( connet_table_disconnect_call_info.p_cnnt_node,\
-					connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.limit_speak_time?true:false,\
-					connet_table_disconnect_call_info.tarker_id );
-			}
-			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
-			{
-				assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
-				connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
+				DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
+				if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
+				{
+					assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
+					connet_table_connect_call_info.pc_callback( connet_table_connect_call_info.p_cnnt_node,\
+						connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.limit_speak_time?true:false,\
+						connet_table_connect_call_info.tarker_id );
+				}
+				else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
+				{
+					assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
+					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
+				}
 			}
 			
 			acmp_update_endstation_connections_networks();
 		}
+		else
+		{
+			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener), %d, %d, %d, %s ]",
+						RESPONSE_RECEIVED,
+						end_station_entity_id,
+						(uint16_t)msg_type + CMD_LOOKUP, 
+						0, 
+						0, 
+						acmp_cmd_status_value_to_name(status));
+		}
+		
 		if( status != ACMP_STATUS_SUCCESS )
 		{
 			DEBUG_INFO("LOGGING_LEVEL_ERROR: RESPONSE_RECEIVED, 0x%016llx (listener), %s, %s, %s, %s, %d",

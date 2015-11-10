@@ -146,7 +146,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		// free inflight command node in the system
 		release_heap_space( &udp_client_pstation->host_tx.inflight_frame.frame );
 		delect_inflight_dblist_node( &udp_client_pstation );
-
+		
 		is_inflight_timeout = true; // 设置超时
 	}
 	else
@@ -154,7 +154,6 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
 		transmit_udp_client_packet( server_fd.s_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false );
-		is_inflight_timeout = false; // 不是超时
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
 	}

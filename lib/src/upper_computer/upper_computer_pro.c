@@ -17,7 +17,7 @@
 #include "util.h"
 #include "upper_computer_data_form.h"
 #include "system_packet_tx.h"
-
+#include "terminal_system.h"
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
 {
@@ -38,7 +38,7 @@ int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_d
 					开始终端命令函数
 ====================================================*/
 
-int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data, uint32_t data_len ) // 函数处理流程未完成
+int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data, uint32_t data_len ) //后期可能需要修改11/10。
 {
 	FILE* fd = NULL;
 	thost_system_set set_sys; // 系统配置文件的格式
@@ -138,7 +138,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	return 0;
 }
 
-int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	tcmpt_data_mic_switch mic_flag;
 	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
@@ -158,7 +158,7 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 }
 
 /*麦克风状态*/ 
-int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, uint32_t data_len )// 后期可能需要修改10/30。
+int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	assert( data );
 	tmnl_pdblist tmnl_list_head = dev_terminal_list_guard;
@@ -191,7 +191,7 @@ int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, 
 	return 0;
 }
 
-int proccess_upper_cmpt_select_proposer( uint16_t protocal_type, void *data, uint32_t data_len )//函数处理流程未完成10/30。
+int proccess_upper_cmpt_select_proposer( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/9。
 {
 	uint16_t addr = get_uint16_data_from_buf( data, CMPT_DATA_OFFSET );
 	
@@ -208,7 +208,7 @@ int proccess_upper_cmpt_select_proposer( uint16_t protocal_type, void *data, uin
 	
 	return 0;
 }
-int proccess_upper_cmpt_examine_application( uint16_t protocal_type, void *data, uint32_t data_len )//函数处理流程未完成10/30。
+int proccess_upper_cmpt_examine_application( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	uint8_t exam_value = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET );
 
@@ -233,7 +233,7 @@ int proccess_upper_cmpt_examine_application( uint16_t protocal_type, void *data,
 	return 0;
 }
 
-int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *data, uint32_t data_len )//函数处理流程未完成10/30。
+int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	tcmpt_data_meeting_authority tmnl_type;
 	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
@@ -252,7 +252,7 @@ int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *dat
 	return 0;
 }
 
-int proccess_upper_cmpt_senddown_message( uint16_t protocal_type, void *data, uint32_t data_len )//函数处理流程未完成10/30。
+int proccess_upper_cmpt_senddown_message( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	uint16_t address = get_uint16_data_from_buf( data, CMPT_DATA_OFFSET );
 	uint16_t lenght = get_uint16_data_from_buf( data, CMPT_DATA_LEN_OFFSET ); // 数据区长度
@@ -272,7 +272,7 @@ int proccess_upper_cmpt_senddown_message( uint16_t protocal_type, void *data, ui
 	return 0;
 }
 
-int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *data, uint32_t data_len ) // 函数处理流程未完成10/30。
+int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	assert( data );
 	uint16_t address = get_uint16_data_from_buf( data, CMPT_DATA_OFFSET );
@@ -297,7 +297,7 @@ int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *dat
 	return 0;
 }
 
-int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_t data_len ) // 函数处理流程未完成10/30。
+int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_t data_len ) //后期可能需要修改11/10。
 {
 	assert( data );
 	tcmpt_begin_sign sign_flag;
@@ -307,7 +307,7 @@ int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		/*系统开始签到*/
-		//terminal_start_sign_in( sign_flag ); 
+		terminal_start_sign_in( sign_flag ); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
@@ -352,13 +352,13 @@ int proccess_upper_cmpt_sign_situation( uint16_t protocal_type, void *data, uint
 	return 0;
 }
 
-int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成10/30。
+int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	assert( data );
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
 		/*处理结束签到*/
-		//terminal_end_sign(); 
+		terminal_end_sign( 0, NULL, 0 ); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_OF_SIGN, NULL, 0 );
 	}
@@ -536,7 +536,7 @@ int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint
 	return 0;
 }
 
-int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	tcmp_vote_start vote_start_flag;
 	uint8_t sign_flag = 0; // 响应的签到标志
@@ -545,7 +545,7 @@ int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uin
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_begin_vote( vote_start_flag,  &sign_flag); 
+		terminal_begin_vote( vote_start_flag,  &sign_flag); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
 	}
@@ -589,16 +589,17 @@ int proccess_upper_cmpt_regain_vote( uint16_t protocal_type, void *data, uint32_
 	return 0;
 }
 
-int proccess_upper_cmpt_end_vote( uint16_t protocal_type, void *data, uint32_t data_len )
+int proccess_upper_cmpt_end_vote( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		/*设置投票标志*/
-		//terminal_end_vote(); 
-		
+		/*设置结束投票标志*/
+		terminal_end_vote( 0, NULL, 0); 
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_VOTE, NULL, 0 );
 
 		/*设置讨论模式的开始标志*/
+		set_terminal_system_state( DISCUSS_STATE, true );
+		terminal_start_discuss(false);
 	}
 	else
 	{
@@ -609,7 +610,7 @@ int proccess_upper_cmpt_end_vote( uint16_t protocal_type, void *data, uint32_t d
 }
 
 /*表决结果*/ 
-int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改10/30。
+int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmnl_list_head = dev_terminal_list_guard;
@@ -629,7 +630,7 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 		{
 			vote_result[addr_num].addr.low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0); // low addr
 			vote_result[addr_num].addr.high_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8); // hight addr
-			vote_result[addr_num].key_value= p_tmnl_tmp->tmnl_dev.tmnl_status.vote_state & CMPT_VOTE_KEY_MARK;
+			vote_result[addr_num].key_value= p_tmnl_tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK;
 			addr_num++;
 		}
 	}
@@ -641,7 +642,7 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 	return 0;
 }
 
-int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/10。
 {
 	assert( data );
 	tcmpt_message msg;
@@ -649,11 +650,11 @@ int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *da
 	get_host_upper_cmpt_data(msg.msg_buf, data, CMPT_DATA_LEN_OFFSET, recv_data_len );
 
 	DEBUG_RECV(msg.msg_buf, data_len, "transmit to end msg:");
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
 		//terminal_start_sign_in( sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
 	else
 	{
@@ -664,7 +665,7 @@ int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *da
 }
 
 /*注:此函数用于上报终端短信息，不是对接受命令数据进行处理的函数,data 是命令数据的数据区的指针，data_len 是数据区数据的长度*/
-int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/2。
+int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	assert( data );
 	tcmp_report_terminal_message tmnl_msg;
@@ -682,6 +683,7 @@ int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void 
 	return 0;
 }
 
+// 高清摄像头开关设置
 int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
 {
 	assert( data );

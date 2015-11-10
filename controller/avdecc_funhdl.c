@@ -41,7 +41,7 @@ int fn_timer_cb(struct epoll_priv*priv)
 
     	time_tick_event( endpoint_list, command_send_guard);
 	terminal_mic_speak_limit_time_manager_event();
-
+	
 	if( is_inflight_timeout && is_wait_messsage_active_state())
 	{
 		set_wait_message_status( WAIT_TIMEOUT );
@@ -78,7 +78,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
 
-		if( rx_status == 0 && is_wait_messsage_active_state() )
+		if( /*rx_status == 0 &&*/is_wait_messsage_active_state() )
 		{
 			set_wait_message_status( rx_status );
 			sem_post( &sem_waiting );
