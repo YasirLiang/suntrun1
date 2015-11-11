@@ -140,6 +140,8 @@ int terminal_socroll_synch(void );
 void terminal_start_sign_in( tcmpt_begin_sign sign_flag );
 void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag );
 void terminal_vote_state_set( uint16_t addr );
+void terminal_sign_in_special_event( tmnl_pdblist sign_node ); // 终端特殊事件-签到
+void termianl_vote_enable_func_handle( tmnl_pdblist sign_node );
 
 
 /*@}*/

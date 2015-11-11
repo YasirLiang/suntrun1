@@ -438,6 +438,59 @@ int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 {
+	struct endstation_to_host msg;
+	struct endstation_to_host_special spe_msg;
+	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
+	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
+
+	/*reply termianl*/
+	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
+	{
+		return -1;
+	}
+
+	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
+	if( tmp == NULL )
+	{
+		return -1;
+	}
+
+	terminal_endstation_special_event_reply( tmp->tmnl_dev.entity_id, addr);
+	
+	uint8_t special_event = msg.data;
+	if( special_event == SIGN_IN_SPECIAL_EVENT ) // 终端签到
+	{
+		terminal_sign_in_special_event( tmp );
+		thost_sys_state sys_state = get_terminal_system_state();
+		if( DISCUSS_STATE == sys_state.host_state )
+		{
+			uint8_t dis_mode = 0;
+			FILE *fd = NULL;
+			fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
+			if( NULL == fd )
+			{
+				DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+				return -1;
+			}
+
+			if(profile_system_file_read_byte( fd, &dis_mode, VAL_DSCS_MODE, sizeof(uint8_t)) == -1)
+			{	
+				Fclose( fd ); // fd must be closed
+				return -1;
+			}
+			Fclose( fd ); // close fd 
+			
+			if( APPLY_MODE == dis_mode  && (tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
+			{
+				terminal_chairman_apply_type_set( addr );
+			}
+			else
+			{
+				terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -1987,6 +2040,52 @@ void terminal_vote_state_set( uint16_t addr )
 	memcpy( &gtmnl_state_opt[TMNL_TYPE_VIP], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
 	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_COMMON], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
 	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+}
+
+void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签到
+{
+	assert( sign_node );
+
+	if( gtmnl_signstate == SIGN_IN_ON_TIME )// 设置签到标志
+	{
+		sign_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;
+	}
+	else if( gtmnl_signstate == SIGN_IN_BE_LATE && sign_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN )
+	{
+		sign_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;
+	}
+	
+	// 设置投票使能
+	termianl_vote_enable_func_handle( sign_node );
+	// 上报签到情况
+	upper_cmpt_report_sign_in_state( sign_node->tmnl_dev.tmnl_status.sign_state, sign_node->tmnl_dev.address.addr );
+
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	int sign_num = 0;
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.address.addr != 0xffff && \
+			tmp->tmnl_dev.tmnl_status.is_rgst && \
+			tmp->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN )
+		{
+			break;
+		}
+		
+		sign_num++;
+	}
+
+	DEBUG_INFO( "sign num = %d", sign_num );
+	if( sign_num >= SYSTEM_TMNL_MAX_NUM )// all sign in
+	{
+		gtmnl_signstate = SIGN_IN_OVER;
+		terminal_option_endpoint( BRDCST_1722_ALL, BRDCST_EXE, OPT_TMNL_ALL_SIGN );
+	}
+}
+
+void termianl_vote_enable_func_handle( tmnl_pdblist sign_node )
+{
+	sign_node->tmnl_dev.tmnl_status.vote_state |= TVOTE_EN; // TVOTE_SET_FLAG ->TVOTE_EN ->TWAIT_VOTE_FLAG(投票状态流程)
 }
 
 /*===================================================

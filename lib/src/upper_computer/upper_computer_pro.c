@@ -725,8 +725,35 @@ int upper_cmpt_report_mic_state( uint8_t mic_status, uint16_t addr )
 		send_upper_computer_command( CMPT_MSG_TYPE_REPORT, \
 		MISCROPHONE_STATUS, &mic_endpoint, sizeof(tcmpt_data_mic_status));
 	}
-	
-	return -1;
+	else
+	{
+		DEBUG_INFO( "not valid rang mic_status flag!" );
+		return -1;
+	}
+
+	return 0;
+}
+
+/*上报终端签到情况*/
+int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
+{
+	tcmpt_sign_situation sign_flag_station;
+
+	if( TMNL_SIGN_BE_LATE == sign_status ||TMNL_SIGN_BE_LATE == sign_status || TMNL_SIGN_BE_LATE == sign_status )
+	{
+		sign_flag_station.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0);
+		sign_flag_station.addr.high_addr = (uint8_t)((addr &0xff00) >> 8);
+		sign_flag_station.sign_situation = sign_status;
+		send_upper_computer_command( CMPT_MSG_TYPE_REPORT, \
+			SIGN_SITUATION, &sign_flag_station, sizeof(tcmpt_sign_situation));
+	}
+	else
+	{
+		DEBUG_INFO( "not valid rang sign flag!" );
+		return -1;
+	}
+
+	return 0;
 }
 /*==================================================
 					结束上位机处理流程

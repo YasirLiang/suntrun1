@@ -387,6 +387,10 @@ typedef struct _tterminal_led_lamp_set
 
 /*@}*/
 
+/*{@ÖÕ¶ËÌØÊâÊÂ¼ş*/
+#define SIGN_IN_SPECIAL_EVENT 0
+/*@}*/
+
 int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_addr, const uint16_t write_counts );
 int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_addr );
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data );
