@@ -153,8 +153,20 @@ bool connect_table_info_set( desc_pdblist desc_guard, bool is_show_table )
 	return ret;
 }
 
-/*断开对应tarker_id的麦克风,暂时不考虑同步的问题(2015/11/4)*/
-void connect_table_tarker_disconnect( const uint64_t utarker_id )
+/***********************************************************************
+*writer:YasirLiang
+*change data:2015-11-11
+*chang context:
+*		添加用于回调函数用的终端链表节点参数，添加设置麦克风状态的回调函数	的参数，发送主机状态的回调函数参数
+*连接麦克风 timeouts的单位是分钟, 连接表发送连接命令可以同过异步回调更新tarker在连接表里的状态
+//断开对应tarker_id的麦克风,暂时不考虑同步的问题(2015/11/4)
+*************************************************************************/ 
+void connect_table_tarker_disconnect( const uint64_t utarker_id, 
+									tmnl_pdblist connect_node, 
+									bool mic_report, 
+									uint8_t mic_status, 
+									p_mic_state_set_callback p_mic_call, 
+									p_main_state_send_callback p_main_send_call )
 {
 	connect_tbl_pdblist connect_pnode = NULL;
 	uint64_t ulistener_id = 0;
@@ -179,6 +191,9 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id )
 	}
 
 	DEBUG_INFO( "found connected = %d, listener_entity_id = 0x%016llx", found_connected, ulistener_id );
+	assert( connect_node );
+	assert( p_mic_call );
+	assert( p_main_send_call );
 	if( found_connected )
 	{
 		ttcnn_table_call call_elem;
@@ -187,8 +202,21 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id )
 		call_elem.tarker_id = utarker_id;
 		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
 		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
+
+		tdisconnect_connect_mic_main_set mic_main_set; // mic status callback information
+		mic_main_set.connect_node = connect_node;
+		mic_main_set.mic_state = mic_status;
+		mic_main_set.mic_state_set = mic_report;
+		mic_main_set.p_mian_state_send = p_main_send_call;
+		mic_main_set.p_mic_set_callback = p_mic_call;
+		
 		acmp_disconnect_connect_table( talker_entity_id.value, tarker_index, \
-			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem , connect_table_disconnect_callback );
+			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem , connect_table_disconnect_callback, &mic_main_set );
+	}
+	else // 直接回调麦克风状态设置函数与发送主机状态的回调函数
+	{
+		p_mic_call( mic_status, connect_node->tmnl_dev.address.addr, connect_node->tmnl_dev.entity_id, mic_report, connect_node );// close mic
+		p_main_send_call( 0, NULL, 0 );
 	}
 
 	pthread_mutex_unlock( &cnnt_mutex );
@@ -196,8 +224,6 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id )
 
 int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
 {
-	assert( p_cnnt_node );
-
 	if( NULL != p_cnnt_node )
 	{
 		p_cnnt_node->connect_elem.tarker_id = 0;
@@ -213,8 +239,21 @@ int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
 	return 0;
 }
 
-// 连接麦克风 timeouts的单位是分钟, 连接表发送连接命令可以同过异步回调更新tarker在连接表里的状态
-void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts )
+/***********************************************************************
+*writer:YasirLiang
+*change data:2015-11-11
+*chang context:
+*		添加用于回调函数用的终端链表节点参数，添加设置麦克风状态的回调函数	的参数，发送主机状态的回调函数参数
+*func:用于连接通道，并使用异步回调的方式设置麦克风的状态
+*连接麦克风 timeouts的单位是分钟, 连接表发送连接命令可以同过异步回调更新tarker在连接表里的状态
+*************************************************************************/ 
+void connect_table_tarker_connect( const uint64_t utarker_id, 
+									uint32_t timeouts, 
+									tmnl_pdblist connect_node, 
+									bool mic_report, 
+									uint8_t mic_status,
+									p_mic_state_set_callback p_mic_call, 
+									p_main_state_send_callback p_main_send_call )
 {
 	connect_tbl_pdblist connect_pnode = NULL;
 	uint64_t ulistener_id = 0;
@@ -238,19 +277,34 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts 
 		}
 	}
 
-	DEBUG_INFO( "found found_listener_avail_first = %d, listener_entity_id = 0x%016llx", found_listener_avail_first, ulistener_id );
-	if( found_listener_avail_first && (connect_pnode!= NULL) ) // connect available
+	DEBUG_INFO( "found found_listener_avail_first = %d, listener_entity_id = 0x%016llx,tarker_entity_id = 0x%016llx", found_listener_avail_first, ulistener_id, utarker_id );
+	assert( connect_node );
+	assert( p_mic_call );
+	assert( p_main_send_call );
+	if( found_listener_avail_first && (connect_pnode != NULL) ) // connect available
 	{
 		ttcnn_table_call call_elem;
 		call_elem.limit_speak_time = timeouts;
 		call_elem.p_cnnt_node = connect_pnode;
 		call_elem.tarker_id = utarker_id;
 		call_elem.pc_callback = connect_table_connect_callback;
+
+		tdisconnect_connect_mic_main_set mic_main_set; // mic status callback information
+		mic_main_set.connect_node = connect_node;
+		mic_main_set.mic_state = mic_status;
+		mic_main_set.mic_state_set = mic_report;
+		mic_main_set.p_mian_state_send = p_main_send_call;
+		mic_main_set.p_mic_set_callback = p_mic_call;
 		
 		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
 		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
 		acmp_connect_connect_table( talker_entity_id.value, tarker_index, \
-			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem, connect_table_connect_callback );
+			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem, connect_table_connect_callback, &mic_main_set );
+	}
+	else // 直接回调麦克风状态设置函数与发送主机状态的回调函数
+	{
+		p_mic_call( !mic_status, connect_node->tmnl_dev.address.addr, connect_node->tmnl_dev.entity_id, mic_report, connect_node );// close mic
+		p_main_send_call( 0, NULL, 0 );
 	}
 	
 	pthread_mutex_unlock( &cnnt_mutex );
@@ -259,8 +313,6 @@ void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts 
 int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id )
 {
 	DEBUG_INFO( "timeout = %d, is_limit_time = %d, 0x%016llx", timeouts, is_limit_time, utarker_id );
-	assert( p_cnnt_node );
-
 	if( NULL != p_cnnt_node )
 	{
 		p_cnnt_node->connect_elem.tarker_id = utarker_id;
@@ -313,7 +365,7 @@ connect_tbl_pdblist found_connect_table_available_connect_node( const uint64_t u
 		connect_pnode = list_entry( cnnt_list_guard->list.next, connect_tbl_dblist, list );// 链表第一个结点
 		if( connect_pnode->connect_elem.listener_connect_flags && connect_pnode->connect_elem.tarker_id != 0)
 		{
-			connect_table_tarker_disconnect( connect_pnode->connect_elem.tarker_id );
+			//connect_table_tarker_disconnect( connect_pnode->connect_elem.tarker_id );
 		}
 	}
 	

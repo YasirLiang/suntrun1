@@ -216,7 +216,6 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 	aemdu->aecpdu_header.header.target_entity_id = target_entity_id;
 	aemdu->aecpdu_header.sequence_id = 0;
 
-
 	frame->length = jdksavdecc_aecpdu_aem_write( aemdu, frame->payload, 0, sizeof( frame->payload ) ) + cfc_dlgh;
 
 	return ( int )frame->length;

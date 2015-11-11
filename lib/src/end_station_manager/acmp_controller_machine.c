@@ -12,6 +12,11 @@ static desc_pdblist acmp_desc_guard = NULL;
 struct background_inflight_cmd acmp_connect_state_update;
 ttcnn_table_call connet_table_disconnect_call_info;// 断开回调信息
 ttcnn_table_call connet_table_connect_call_info; // 连接回调信息
+tdisconnect_connect_mic_main_set connect_mic_main_call; // 连接麦克风状态设置，主机发送状态回调。
+tdisconnect_connect_mic_main_set disconnect_mic_main_call; // 断开麦克风状态设置，主机发送状态回调。
+bool acmp_recv_resp_err = false; // acmp 接收到命令但响应错误参数
+
+extern tsys_discuss_pro gdisc_flags; // 会讨参数
 
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard )
 {
@@ -298,6 +303,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		delect_inflight_dblist_node( &acmp_pstation );
 
 		is_inflight_timeout = true; // 设置超时
+		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
 	}
 	else
 	{
@@ -320,7 +326,6 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 		acmp_callback( notification_flag, cmd_frame->payload);
 		release_heap_space( &inflight_est->host_tx.inflight_frame.frame);// it must delect
 		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node must delect date frame
-		//is_inflight_timeout = true; // when receive err, release the sem to send next frame by sending thread, 若想使用，需要线程锁
 	}
 	else
 	{
@@ -362,6 +367,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						"NULL", 
 						acmp_cmd_status_value_to_name(status),
 						seq_id);
+
+			acmp_recv_resp_err = true;
 		}
 	}
 	else if((notification_flag == CMD_WITH_NOTIFICATION) &&
@@ -387,29 +394,65 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
-			
-			if( (connet_table_connect_call_info.p_cnnt_node != NULL) && \
-				(connet_table_connect_call_info.pc_callback != NULL || \
-				connet_table_disconnect_call_info.pdis_callback != NULL ) )
+
+			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
 			{
-				DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
-				if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
+				assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
+				if( (connet_table_connect_call_info.p_cnnt_node != NULL) && (connet_table_connect_call_info.pc_callback != NULL ))
 				{
-					assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
+					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
 					connet_table_connect_call_info.pc_callback( connet_table_connect_call_info.p_cnnt_node,\
 						connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.limit_speak_time?true:false,\
 						connet_table_connect_call_info.tarker_id );
 				}
-				else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
+
+				assert( connect_mic_main_call.connect_node && connect_mic_main_call.p_mian_state_send && connect_mic_main_call.p_mic_set_callback );
+				if( connect_mic_main_call.connect_node != NULL && \
+					connect_mic_main_call.p_mian_state_send != NULL && connect_mic_main_call.p_mic_set_callback != NULL )
 				{
-					assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
-					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
+					uint8_t mic_state = connect_mic_main_call.mic_state;
+					bool is_set_mic_state = connect_mic_main_call.mic_state_set;
+					uint16_t addr = (connect_mic_main_call.connect_node)->tmnl_dev.address.addr;
+					uint64_t tarker_id = (connect_mic_main_call.connect_node)->tmnl_dev.entity_id;
+					connect_mic_main_call.p_mic_set_callback( mic_state, addr, tarker_id, is_set_mic_state, connect_mic_main_call.connect_node );
+					connect_mic_main_call.p_mian_state_send( 0, NULL, 0 );
+
+					if( (gdisc_flags.edis_mode == FREE_MODE) || (gdisc_flags.edis_mode == LIMIT_MODE) || (gdisc_flags.edis_mode == FIFO_MODE))
+					{
+						gdisc_flags.speak_limit_num++;
+					}
 				}
 			}
-			
-			acmp_update_endstation_connections_networks();
+			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
+			{
+				assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
+				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
+				{
+					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
+					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
+				}
+
+				assert( disconnect_mic_main_call.connect_node && disconnect_mic_main_call.p_mian_state_send && disconnect_mic_main_call.p_mic_set_callback );
+				if( disconnect_mic_main_call.connect_node != NULL && \
+					disconnect_mic_main_call.p_mian_state_send != NULL && disconnect_mic_main_call.p_mic_set_callback != NULL )
+				{
+					uint8_t mic_state = disconnect_mic_main_call.mic_state;
+					bool is_set_mic_state = disconnect_mic_main_call.mic_state_set;
+					uint16_t addr = (disconnect_mic_main_call.connect_node)->tmnl_dev.address.addr;
+					uint64_t tarker_id = (disconnect_mic_main_call.connect_node)->tmnl_dev.entity_id;
+					disconnect_mic_main_call.p_mic_set_callback( mic_state, addr, tarker_id, is_set_mic_state, disconnect_mic_main_call.connect_node );
+					disconnect_mic_main_call.p_mian_state_send( 0, NULL, 0 );
+
+					if( (gdisc_flags.edis_mode == FREE_MODE) || (gdisc_flags.edis_mode == LIMIT_MODE) || (gdisc_flags.edis_mode == FIFO_MODE))
+					{
+						if( gdisc_flags.speak_limit_num > 0 )
+							gdisc_flags.speak_limit_num--;
+					}
+				}
+			}	
 		}
-		else
+		else if( (status == ACMP_STATUS_SUCCESS) && ((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE) ||
+			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE)))
 		{
 			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
@@ -419,8 +462,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						acmp_cmd_status_value_to_name(status));
 		}
-		
-		if( status != ACMP_STATUS_SUCCESS )
+		else if( status != ACMP_STATUS_SUCCESS )
 		{
 			DEBUG_INFO("LOGGING_LEVEL_ERROR: RESPONSE_RECEIVED, 0x%016llx (listener), %s, %s, %s, %s, %d",
 							end_station_entity_id,
@@ -429,6 +471,54 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 							"NULL", 
 							acmp_cmd_status_value_to_name(status),
 							seq_id);
+			
+			/*断开连接失败，连接失败*/
+			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
+			{
+				assert( connet_table_connect_call_info.p_cnnt_node && connet_table_connect_call_info.pc_callback );
+				if( (connet_table_connect_call_info.p_cnnt_node != NULL) && (connet_table_connect_call_info.pc_callback != NULL ))
+				{
+					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
+					connet_table_connect_call_info.pc_callback( NULL, /* NULL mean connect err!*/connet_table_connect_call_info.limit_speak_time, \
+						connet_table_connect_call_info.limit_speak_time?true:false,\
+						connet_table_connect_call_info.tarker_id );
+				}
+
+				assert( connect_mic_main_call.connect_node && connect_mic_main_call.p_mian_state_send && connect_mic_main_call.p_mic_set_callback );
+				if( connect_mic_main_call.connect_node != NULL && \
+					connect_mic_main_call.p_mian_state_send != NULL && connect_mic_main_call.p_mic_set_callback != NULL )
+				{
+					uint8_t mic_state = (!connect_mic_main_call.mic_state); // 麦克风状态-关闭
+					bool is_set_mic_state = connect_mic_main_call.mic_state_set;
+					uint16_t addr = (connect_mic_main_call.connect_node)->tmnl_dev.address.addr;
+					uint64_t tarker_id = (connect_mic_main_call.connect_node)->tmnl_dev.entity_id;
+					connect_mic_main_call.p_mic_set_callback( mic_state, addr, tarker_id, is_set_mic_state, connect_mic_main_call.connect_node );
+					connect_mic_main_call.p_mian_state_send( 0, NULL, 0 );
+				}
+			}
+			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
+			{
+				assert( connet_table_disconnect_call_info.p_cnnt_node && connet_table_disconnect_call_info.pdis_callback );
+				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
+				{
+					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
+					connet_table_disconnect_call_info.pdis_callback( NULL ); /* NULL means disconnect err!*/
+				}
+
+				assert( disconnect_mic_main_call.connect_node && disconnect_mic_main_call.p_mian_state_send && disconnect_mic_main_call.p_mic_set_callback );
+				if( disconnect_mic_main_call.connect_node != NULL && \
+					disconnect_mic_main_call.p_mian_state_send != NULL && disconnect_mic_main_call.p_mic_set_callback != NULL )
+				{
+					uint8_t mic_state = (!connect_mic_main_call.mic_state); // 麦克风打开
+					bool is_set_mic_state = disconnect_mic_main_call.mic_state_set;
+					uint16_t addr = (disconnect_mic_main_call.connect_node)->tmnl_dev.address.addr;
+					uint64_t tarker_id = (disconnect_mic_main_call.connect_node)->tmnl_dev.entity_id;
+					disconnect_mic_main_call.p_mic_set_callback( mic_state, addr, tarker_id, is_set_mic_state, disconnect_mic_main_call.connect_node );
+					disconnect_mic_main_call.p_mian_state_send( 0, NULL, 0 );
+				}
+			}
+
+			acmp_recv_resp_err = true;
 		}
 	}
 	else if((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||
@@ -473,20 +563,34 @@ int acmp_disconnect_connect_table( uint8_t tarker_value[8],
 									uint16_t cnnt_count, 
 									uint16_t sequence_id, 
 									ttcnn_table_call *discnnt_callback_save , 
-									int (*disconnect_callback_func)( connect_tbl_pdblist p_cnnt_node ) )
+									int (*disconnect_callback_func)( connect_tbl_pdblist p_cnnt_node ),
+									tdisconnect_connect_mic_main_set *p_mic_main_set )
 {
-	assert( disconnect_callback_func && discnnt_callback_save );
-	if( discnnt_callback_save == NULL )
+	assert( disconnect_callback_func && discnnt_callback_save && p_mic_main_set );
+	if( discnnt_callback_save == NULL || disconnect_callback_func == NULL || p_mic_main_set == NULL )
 	{
 		return -1;
 	}
 	else
 	{
+		// 连接表回调信息
+		DEBUG_LINE();
 		connet_table_disconnect_call_info.limit_speak_time = discnnt_callback_save->limit_speak_time;
 		connet_table_disconnect_call_info.p_cnnt_node = discnnt_callback_save->p_cnnt_node;
 		connet_table_disconnect_call_info.tarker_id = discnnt_callback_save->tarker_id;
 		connet_table_disconnect_call_info.pdis_callback = disconnect_callback_func;
 		connet_table_disconnect_call_info.pc_callback = NULL;
+
+		// 麦克风回调信息
+		assert( p_mic_main_set->p_mian_state_send );
+		assert(p_mic_main_set->connect_node );
+		assert(p_mic_main_set->p_mic_set_callback );
+		disconnect_mic_main_call.connect_node = p_mic_main_set->connect_node;
+		disconnect_mic_main_call.mic_state = p_mic_main_set->mic_state;
+		disconnect_mic_main_call.mic_state_set = p_mic_main_set->mic_state_set;
+		disconnect_mic_main_call.p_mian_state_send = p_mic_main_set->p_mian_state_send;
+		disconnect_mic_main_call.p_mic_set_callback = p_mic_main_set->p_mic_set_callback;
+		
 		acmp_disconnect_avail( tarker_value, tarker_index, listener_value, listener_index, cnnt_count, sequence_id );
 	}
 
@@ -506,20 +610,34 @@ int acmp_connect_connect_table( uint8_t tarker_value[8],
 									uint16_t cnnt_count, 
 									uint16_t sequence_id, 
 									ttcnn_table_call *cnnt_callback_save , 
-									int (*connect_callback)( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id ) )
+									int (*connect_callback)( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id ),
+									tdisconnect_connect_mic_main_set *p_mic_main_set )
 {
-	assert( connect_callback && cnnt_callback_save );
-	if( cnnt_callback_save == NULL )
+	assert( connect_callback && cnnt_callback_save && p_mic_main_set );
+	if( cnnt_callback_save == NULL ||p_mic_main_set == NULL || cnnt_callback_save == NULL )
 	{
 		return -1;
 	}
 	else
 	{
+		// 连接表回调信息
+		DEBUG_LINE();
 		connet_table_connect_call_info.limit_speak_time = cnnt_callback_save->limit_speak_time;
 		connet_table_connect_call_info.p_cnnt_node = cnnt_callback_save->p_cnnt_node;
 		connet_table_connect_call_info.tarker_id = cnnt_callback_save->tarker_id;
 		connet_table_connect_call_info.pc_callback = connect_callback;
 		connet_table_connect_call_info.pdis_callback = NULL;
+
+		// 麦克风回调信息
+		assert( p_mic_main_set->p_mian_state_send);
+		assert(p_mic_main_set->connect_node);
+		assert(p_mic_main_set->p_mic_set_callback);
+		connect_mic_main_call.connect_node = p_mic_main_set->connect_node;
+		connect_mic_main_call.mic_state = p_mic_main_set->mic_state;
+		connect_mic_main_call.mic_state_set = p_mic_main_set->mic_state_set;
+		connect_mic_main_call.p_mian_state_send = p_mic_main_set->p_mian_state_send;
+		connect_mic_main_call.p_mic_set_callback = p_mic_main_set->p_mic_set_callback;
+		
 		acmp_connect_avail( tarker_value, tarker_index, listener_value, listener_index, cnnt_count, sequence_id );
 	}
 	

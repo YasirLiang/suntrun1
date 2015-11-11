@@ -5,6 +5,7 @@
 #include "send_pthread.h"
 
 bool is_inflight_timeout = false;
+extern bool acmp_recv_resp_err; // acmp 接收到命令但响应错误参数
 
 void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
 {
@@ -34,15 +35,15 @@ int timer_start_interval(int timerfd)
         return timerfd_settime(timerfd, 0, &itimer_new, &itimer_old);
 }
 
-int fn_timer_cb(struct epoll_priv*priv)
+int fn_timer_cb( struct epoll_priv*priv )
 {
 	uint64_t timer_exp_count;
 	read(priv->fd, &timer_exp_count, sizeof(timer_exp_count));
 
-    	time_tick_event( endpoint_list, command_send_guard);
 	terminal_mic_speak_limit_time_manager_event();
-	
-	if( is_inflight_timeout && is_wait_messsage_active_state())
+    	time_tick_event( endpoint_list, command_send_guard );
+
+	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );
 		sem_post( &sem_waiting );
@@ -78,10 +79,11 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
 
-		if( /*rx_status == 0 &&*/is_wait_messsage_active_state() )
+		if( (rx_status == 0 && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			set_wait_message_status( rx_status );
 			sem_post( &sem_waiting );
+			acmp_recv_resp_err = false;
 		}
 	}
 	

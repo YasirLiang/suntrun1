@@ -159,8 +159,9 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
-
+		
 		is_inflight_timeout = true; // …Ë÷√≥¨ ±
+		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
 	}
 	else
 	{

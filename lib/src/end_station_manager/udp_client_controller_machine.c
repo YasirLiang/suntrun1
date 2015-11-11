@@ -1,5 +1,7 @@
 #include "udp_client_controller_machine.h"
 #include "upper_computer_common.h"
+#include "wait_message.h"
+#include "send_pthread.h"
 
 static struct udp_server server_fd; // host udp as udp server information
 static inflight_plist udp_client_inflight = NULL;
@@ -148,6 +150,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		delect_inflight_dblist_node( &udp_client_pstation );
 		
 		is_inflight_timeout = true; // …Ë÷√≥¨ ±
+		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
 	}
 	else
 	{

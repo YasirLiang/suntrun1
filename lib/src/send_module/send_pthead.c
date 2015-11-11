@@ -7,7 +7,6 @@
 #include "send_pthread.h"
 
 sem_t sem_waiting; // 发送等待信号量，所有线程可见
-extern struct wait_send_massge wait_msg;
 
 void init_sem_wait_can( void )
 {
@@ -28,7 +27,7 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 
 		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
 		{
-			DEBUG_INFO( " active = %d", p_send_wq->control.active );
+			DEBUG_INFO( "active = %d", p_send_wq->control.active );
 			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
 		}
 
@@ -66,7 +65,6 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 			int status = set_wait_message_active_state();
 			assert( status == 0 );
 			sem_wait( &sem_waiting );
-			DEBUG_LINE();
 			status = set_wait_message_idle_state();
 			assert( status == 0 );
 		}

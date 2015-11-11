@@ -4,10 +4,10 @@
 void inflight_time_tick( inflight_plist guard )
 {
 	assert( guard );
-	inflight_plist inflight_station = guard->next;
+	inflight_plist inflight_station = NULL;
 
-	// check timeout and proccess with match type
-	for(; inflight_station != guard; inflight_station = inflight_station->next )
+	// check timeout and proccess with match type, only check the list of head node
+	for( inflight_station = guard->next; inflight_station != guard; inflight_station = guard->next )
 	{
 		if( inflight_timer_timeout(inflight_station) )
 		{	
@@ -23,23 +23,17 @@ void inflight_time_tick( inflight_plist guard )
 			else 
 				DEBUG_INFO("Err inflight data type");
 		}
+		else
+		{
+			break; // only check the head
+		}
 	}
 }
 
 void time_tick_event( solid_pdblist guard, inflight_plist inflight_guard )
 {
-	uint16_t inflight_list_lenght = (uint16_t)get_inflight_dblist_length( inflight_guard );
-
-	if( inflight_list_lenght > 0 ) // proccess while there is a inflight command in the inflight command linked list
-	{
-		inflight_time_tick( inflight_guard );
-	}
-	else
-	{
-		is_inflight_timeout = false; 
-	}
-	
 	adp_entity_time_tick( guard );
+	inflight_time_tick( inflight_guard );
 
 	//acmp_binflight_cmd_time_tick();
 }

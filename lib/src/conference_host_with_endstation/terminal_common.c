@@ -207,18 +207,31 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 // send terminal conference deal message in 1722 frame payload by pipe
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data )
 {
+	int send_len = 0;
+	int cnf_data_len = 0;
 	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
 	struct host_to_endstation fill_send_buf;
 	struct jdksavdecc_frame send_frame;
 	struct jdksavdecc_aecpdu_aem aemdu;
 	struct jdksavdecc_eui64 target_id;
-	int send_len = 0;
-	int cnf_data_len = 0;
-
-	memcpy( send_frame.src_address.value, net.m_my_mac, 6 );
 	convert_uint64_to_eui64( target_id.value, uint64_target_id );
+
+	struct jdksavdecc_eui48 send_dest;
+	if( uint64_target_id == BRDCST_1722_ALL )
+	{
+		memcpy( &send_dest, &jdksavdecc_multicast_adp_acmp, sizeof(struct jdksavdecc_eui48) );
+	}
+	else
+	{
+		convert_entity_id_to_eui48_mac_address( uint64_target_id, send_dest.value );
+	}
+	
+	//DEBUG_INFO( "send dest = %02x-%02x-%02x-%02x-%02x-%02x", \
+	//	send_dest.value[0], send_dest.value[1], send_dest.value[2], send_dest.value[3],\
+//		send_dest.value[4], send_dest.value[5]);
+	memcpy( send_frame.src_address.value, net.m_my_mac, 6 );
 	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data );
-	send_len = conference_1722_control_form_info( &send_frame, &aemdu, jdksavdecc_multicast_adp_acmp, target_id, cnf_data_len );
+	send_len = conference_1722_control_form_info( &send_frame, &aemdu, send_dest, target_id, cnf_data_len );
 	if( send_len < 0 )
 	{
 		DEBUG_INFO( "send len is bad! send_len = %d", send_len );
@@ -226,7 +239,6 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 	}
 
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
-	//aecp_callback( CMD_WITH_NOTIFICATION, send_frame.payload );
 	
 	return (uint16_t)send_len;
 }

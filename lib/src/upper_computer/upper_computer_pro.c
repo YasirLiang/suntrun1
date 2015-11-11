@@ -109,7 +109,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 设置限制的发言人数
 				//DEBUG_INFO( "limit_speak_num = %d", temp_status );
-				find_func_command_link(MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
@@ -117,7 +117,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 设置限制申请人数
 				//DEBUG_INFO( "limit_apply_num = %d", temp_status );
-				find_func_command_link(MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			// 限时设置
