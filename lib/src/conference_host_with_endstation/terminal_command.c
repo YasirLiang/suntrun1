@@ -171,7 +171,7 @@ void terminal_chairman_control_meeting( uint64_t target_id, uint16_t addr, uint8
 }
 
 // 发送表决结果（0x0E）
-void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_result vote_rslt)
+void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_result vote_rslt )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
@@ -226,7 +226,7 @@ void terminal_host_send_state( uint64_t target_id, tmnl_main_state_send main_sen
 }
 
 // 发送终端LCD显示屏号（0x11）
-void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send_end_lcd_display lcd_dis)
+void terminal_send_end_lcd_display( uint64_t target_id, uint16_t addr, tmnl_send_end_lcd_display lcd_dis )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
@@ -253,7 +253,7 @@ void terminal_option_endpoint( uint64_t target_id, uint16_t addr, eopt_tmnl opt 
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;
 
-	DEBUG_INFO( "option end is %d " , opt );
+	DEBUG_INFO( "option end is %d " , (int)opt );
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_OPTITION_END;
 	askbuf.cchdr.address = addr;
@@ -313,10 +313,48 @@ void terminal_query_vote_sign_result( uint64_t target_id, uint16_t addr )
 	uint16_t asklen = 0;
 
 	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
-	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_CHECK_END_RESULT ;
+	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_CHECK_END_RESULT;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 
 	ternminal_send( &askbuf, asklen, target_id, false );
+}
+
+// 终端按键动作(0x05 主机响应) 此函数数据区只能一个数据指针不为空，且其余两个必须为空
+void terminal_key_action_host_reply( uint64_t target_id, uint16_t addr, uint8_t data_len, tka_common_reply *common_data, tka_special1_reply *spe1_data, tka_special2_reply *spe2_data )
+{
+	struct host_to_endstation askbuf;
+	uint16_t asklen = 0;
+	memset(askbuf.data, 0, sizeof(askbuf.data));
+	
+	if( common_data != NULL )
+	{
+		askbuf.data[0] = common_data->recv_data;
+	}
+	else if( spe1_data != NULL )
+	{
+		askbuf.data[0] = spe1_data->recv_data;
+		askbuf.data[1] = spe1_data->reply_num;
+		askbuf.data[2] = spe1_data->mic_state;
+	}
+	else if( spe2_data != NULL )
+	{
+		askbuf.data[0] = spe2_data->recv_data;
+		askbuf.data[1] = spe2_data->reply_num;
+		askbuf.data[2] = spe2_data->key_down;
+		askbuf.data[2] |= (uint8_t)((spe2_data->key_up&0x07) << 5);// 低3位位于高三位
+		askbuf.data[3] |= (uint8_t)((spe2_data->key_up&0x18) << 0);// 高两位位于低两位
+		askbuf.data[3] |= (uint8_t)((spe2_data->key_led&0x3f) << 2);// low six bit 
+		askbuf.data[4] |= (uint8_t)((spe2_data->key_led&0x03c0) << 0); // bit 9~bit 6
+		askbuf.data[4] |= (uint8_t)((spe2_data->sys&0xf) << 4);
+		askbuf.data[5] = spe2_data->lcd_num;
+	}
+
+	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
+	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_KEYPAD_ACTION |COMMAND_TMN_REPLY;
+	askbuf.cchdr.address = addr;
+	askbuf.data_len = data_len;
+	
+	ternminal_send( &askbuf, asklen, target_id, true );
 }
 

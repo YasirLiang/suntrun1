@@ -42,7 +42,7 @@ uint8_t gsign_latetime; 									// 补签的超时时间
 uint8_t gsigned_flag = false;								// 签到标志
 
 evote_state_pro gvote_flag; 								// 投票处理
-bool first_key_flag; 										// 真为投票首键有效
+bool gfirst_key_flag; 										// 真为投票首键有效
 tevote_type gvote_mode;									// 投票模式
 
 void init_terminal_proccess_fd( FILE ** fd )
@@ -392,6 +392,42 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 {
+	struct endstation_to_host msg;
+	struct endstation_to_host_special spe_msg;
+	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
+	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
+	uint8_t key_num = KEY_ACTION_KEY_NUM( msg.data );
+	uint8_t key_value = KEY_ACTION_KEY_VALUE( msg.data );
+	uint8_t tmnl_state = KEY_ACTION_STATE_VALUE( msg.data );
+	uint8_t sys_state = get_sys_state();
+	DEBUG_INFO( "key_num = %d, key_value = %d, tmnl_state = %d, sys_state = %d", key_num, key_value, tmnl_state, sys_state );
+
+	if( (msg.cchdr.command_control & COMMAND_TMN_REPLY) )
+	{
+		DEBUG_INFO( "key action command not valid!" );
+		return -1;
+	}
+	
+	switch( sys_state )
+	{
+		case SIGN_STATE:
+		case VOTE_STATE:
+		case GRADE_STATE:
+		case ELECT_STATE:
+			terminal_vote( addr, key_num, key_value, tmnl_state, msg.data );
+			terminal_key_speak( addr, key_num, key_value, tmnl_state, msg.data );
+			break;
+		case DISCUSS_STATE:
+			break;
+		case INTERPOSE_STATE:
+			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
+			break;
+		case CAMERA_PRESET:
+			break;
+		default:
+			break;
+	}
+	
 	return 0;
 }
 
@@ -407,6 +443,125 @@ int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len )
 {
+	struct endstation_to_host msg;
+	struct endstation_to_host_special spe_msg;
+	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
+	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
+	uint8_t sign_value = 0;
+	uint8_t chair_opt = msg.data&CHAIRMAN_CONTROL_MEET_MASK;
+	uint8_t sign_flag = 0;
+	FILE *fd = NULL;
+	tmnl_pdblist query_tmp = NULL;
+	
+	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
+	if( tmp == NULL )
+	{
+		DEBUG_INFO( "not found chairman conntrol address!" );
+		return -1;
+	}
+
+	if(  chair_opt != CHM_BEGIN_VOTE )
+	{
+		terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
+	}
+
+	switch( chair_opt )
+	{
+		case CHM_BEGIN_SIGN:
+			fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb+" );
+			if( fd == NULL )
+			{
+				DEBUG_ERR( "begin sign open profile Err!" );
+				return -1;
+			}
+			
+			if( profile_system_file_write( fd, KEY_SIGN_IN, VAL_SINGIN_TYPE ) == -1 )
+			{
+				DEBUG_ERR( "begin sign write sign type of system profile !" );
+				Fclose( fd );
+				return -1;
+			}
+			
+			terminal_chman_control_start_sign_in( KEY_SIGN_IN, 10 );
+			Fclose( fd ); // must close!
+			break;
+		case CHM_END_SIGN:
+			terminal_end_sign( 0, NULL, 0 );
+			break;
+		case CHM_BEGIN_VOTE:
+			if( gtmnl_signstate ) // 系统已经签到
+			{
+				terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
+				terminal_chman_control_begin_vote( VOTE_MODE, false, &sign_flag );// 末次按键有效
+			}
+			else
+			{
+				sign_value = 1; // 未签到
+				terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
+			}
+			break;
+		case CHM_END_VOTE:
+			terminal_end_vote( 0, NULL, 0 );
+
+			// 设置终端的状态
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0; 
+			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+			terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST] );
+			terminal_state_all_copy_from_common();
+
+			// 设置lcd
+			terminal_lcd_display_num_send( BRDCST_ALL, LCD_OPTION_CLEAR, VOTE_INTERFACE );
+			// 设置led灯
+			terminal_led_set_save( BRDCST_ALL, TLED_KEY2, TLED_OFF );
+			terminal_led_set_save( BRDCST_ALL, TLED_KEY3, TLED_OFF );
+			terminal_led_set_save( BRDCST_ALL, TLED_KEY4, TLED_OFF );
+			fterminal_led_set_send( BRDCST_ALL );
+
+			// 发送表决结果
+			if( msg.data&0x10 )	// 广播表决结果
+			{
+				terminal_broadcast_end_vote_result( BRDCST_ALL );
+			}
+			else
+			{
+				terminal_broadcast_end_vote_result( addr );
+			}
+			break;
+		case CHM_SUSPEND_VOTE:
+			terminal_pause_vote( 0, NULL, 0 );
+			break;
+		case CHM_RECOVER_VOTE:
+			terminal_regain_vote( 0, NULL, 0 );
+			break;
+		case CHM_RETURN_DISCUSS:
+			set_terminal_system_state( DISCUSS_STATE, true );
+			terminal_start_discuss( false );
+			break;
+		case CHM_CLOSE_ALL_MIC:// 关闭所有普通代表机
+			assert( dev_terminal_list_guard );
+			for( query_tmp = dev_terminal_list_guard->next; query_tmp != dev_terminal_list_guard; query_tmp = query_tmp->next )
+			{
+				if( (query_tmp->tmnl_dev.address.addr != 0xffff) && \
+					query_tmp->tmnl_dev.tmnl_status.is_rgst && \
+					query_tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST &&\
+					(query_tmp->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) )
+				{
+					query_tmp->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
+					connect_table_tarker_disconnect( query_tmp->tmnl_dev.entity_id, query_tmp, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+				}
+			}
+			
+			terminal_mic_state_set( MIC_COLSE_STATUS, BRDCST_MEM,BRDCST_1722_ALL, false, NULL );
+			cmpt_miscrophone_status_list();
+			gdisc_flags.speak_limit_num = 0;
+			gdisc_flags.apply_num = 0;
+			gdisc_flags.currect_first_index = gdisc_flags.apply_limit;
+			terminal_main_state_send( 0, NULL, 0 );
+			break;
+		default:
+			break;
+	}
+
 	return 0;
 }
 
@@ -442,7 +597,8 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 	struct endstation_to_host_special spe_msg;
 	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
 	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
-
+	FILE *fd = NULL;
+	
 	/*reply termianl*/
 	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
 	{
@@ -465,7 +621,6 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 		if( DISCUSS_STATE == sys_state.host_state )
 		{
 			uint8_t dis_mode = 0;
-			FILE *fd = NULL;
 			fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
 			if( NULL == fd )
 			{
@@ -478,7 +633,6 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 				Fclose( fd ); // fd must be closed
 				return -1;
 			}
-			Fclose( fd ); // close fd 
 			
 			if( APPLY_MODE == dis_mode  && (tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
 			{
@@ -491,6 +645,7 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 		}
 	}
 
+	Fclose( fd ); // close fd 
 	return 0;
 }
 
@@ -613,7 +768,6 @@ int terminal_lcd_display_num_send( uint16_t addr, uint8_t display_opt, uint8_t d
 /*暂定投票*/
 int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
 {
-	assert( data );
 	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_SUSPEND_VOTE );
 
 	return 0;
@@ -622,7 +776,6 @@ int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
 /*重新投票*/
 int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 {
-	assert( data );
 	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_RECOVER_VOTE );
 
 	return 0;
@@ -830,6 +983,13 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 {
 	assert( tmnl_node );
 	DEBUG_INFO( "mic state = %d ",  mic_status );
+
+	if( (tmnl_node == NULL) && !(addr & BROADCAST_FLAG) )
+	{
+		DEBUG_INFO( "nothing to send to set mic status!");
+		return;
+	}
+	
 	if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) && tmnl_node != NULL)
 	{
 		tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
@@ -1888,11 +2048,87 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 	terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
 }
 
+// 主席控制终端签到
+void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
+{
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	int i = 0;
+
+	set_terminal_system_state( SIGN_STATE, true );
+	gtmnl_signstate = SIGN_IN_ON_TIME;
+	gsign_latetime = timeouts;
+	gsigned_flag = true;
+
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.address.addr != 0xffff && tmp->tmnl_dev.tmnl_status.is_rgst )
+		{
+			tmp->tmnl_dev.tmnl_status.sys_state = TMNL_NO_SIGN_IN;
+		}
+	}
+
+	for( i = 0; i < TMNL_TYPE_NUM; i++)
+	{
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].MicClose = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SIGN;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sign_stype = sign_type? CARD_SIGN_IN : KEY_SIGN_IN; // 1插卡；0按键
+	}
+
+	terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+}
+
 void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 {
 	assert( sign_flag );
-	first_key_flag = vote_start_flag.key_effective?true:false;
+	gfirst_key_flag = vote_start_flag.key_effective?true:false;
 	uint8_t vote_type = vote_start_flag.vote_type;
+	*sign_flag = gsigned_flag; 
+
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+
+	gvote_mode = (tevote_type)vote_type;
+	if( vote_type ==  VOTE_MODE )
+	{
+		set_terminal_system_state( VOTE_STATE, true );
+	}
+	else if( vote_type ==  GRADE_MODE )
+	{
+		set_terminal_system_state( GRADE_STATE, true );
+	}
+	else
+	{
+		set_terminal_system_state( ELECT_STATE, true );
+	}
+
+	gvote_flag = VOTE_SET;
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.tmnl_status.is_rgst || tmp->tmnl_dev.address.addr )
+		{
+			continue;
+		}
+
+		if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
+		{
+			tmp->tmnl_dev.tmnl_status.vote_state = TWAIT_VOTE_FLAG;
+		}
+		else
+		{
+			tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // 未签到不能投票
+		}
+	}
+
+	terminal_vote_state_set( BRDCST_ALL );
+}
+
+void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
+{
+	assert( sign_flag );
+	gfirst_key_flag = key_effective; // true = 首次按键有效；
 	*sign_flag = gsigned_flag; 
 
 	assert( dev_terminal_list_guard );
@@ -1939,7 +2175,7 @@ void terminal_vote_state_set( uint16_t addr )
 	if( addr == 0xffff )
 		return;
 
-	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].one_off = first_key_flag ? 1 : 0;
+	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].one_off = gfirst_key_flag ? 1 : 0;
 	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].VoteType = vote_type;
 	gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].MicClose = 0;
 	switch( vote_type )
@@ -2037,9 +2273,7 @@ void terminal_vote_state_set( uint16_t addr )
 			break;
 	}
 
-	memcpy( &gtmnl_state_opt[TMNL_TYPE_VIP], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
-	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_COMMON], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
-	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+	terminal_state_all_copy_from_common();
 }
 
 void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签到
@@ -2086,6 +2320,358 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签
 void termianl_vote_enable_func_handle( tmnl_pdblist sign_node )
 {
 	sign_node->tmnl_dev.tmnl_status.vote_state |= TVOTE_EN; // TVOTE_SET_FLAG ->TVOTE_EN ->TWAIT_VOTE_FLAG(投票状态流程)
+}
+
+void terminal_state_all_copy_from_common( void )
+{
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_VIP], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_COMMON], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+	memcpy( &gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE], &gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST], sizeof(tmnl_state_set));
+}
+
+void terminal_broadcast_end_vote_result( uint16_t addr ) // 根据终端的2 3 4键统计结果
+{
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp = NULL, head_list = dev_terminal_list_guard;
+	uint16_t vote_total = 0, neg = 0, abs = 0, aff = 0;
+	tmnl_vote_result vote_rslt;
+
+	for( tmp = head_list; tmp != head_list; tmp = tmp->next )
+	{
+		if( (tmp->tmnl_dev.address.addr == 0xffff) || (!tmp->tmnl_dev.tmnl_status.is_rgst) )
+		{
+			continue;
+		}
+
+		if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )
+		{
+			vote_total++;
+		}
+
+		if( (tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK) == TVOTE_KEY2_ENABLE )// 2键按下 ,反对
+		{
+			neg++;
+		}
+		else if( (tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK) == TVOTE_KEY3_ENABLE )// 3键按下 ,弃权
+		{
+			neg++;
+		}
+		else if( (tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK) == TVOTE_KEY4_ENABLE )// 4键按下 ,赞成
+		{
+			neg++;
+		}
+	}
+
+	vote_rslt.total = vote_total;
+	vote_rslt.neg = neg;
+	vote_rslt.abs = abs;
+	vote_rslt.aff = aff;
+
+	if( (tmp = found_terminal_dblist_node_by_addr( addr )) != NULL )
+	{
+		terminal_send_vote_result( tmp->tmnl_dev.entity_id, addr, vote_rslt );
+	}
+	else
+	{
+		terminal_send_vote_result( BRDCST_1722_ALL, addr, vote_rslt );
+	}
+}
+
+void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata )
+{
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp_node = NULL, tmp_head = dev_terminal_list_guard;
+	if( gvote_flag == NO_VOTE || ( key_num > 5 ) ) // 见协议(2.	终端按键的编号：表决键1~5，发言键6，主席优先键7)
+	{
+		DEBUG_INFO( "system not ready to vote or key num out of vote key num!" );
+		return;
+	}
+
+	tmp_node = found_terminal_dblist_node_by_addr( addr );
+	if( tmp_node == NULL )
+	{
+		DEBUG_INFO( "no such tmp_node: addr = %04x", addr );
+		return;
+	}
+
+	// 保存key值
+	if( terminal_key_action_value_judge_can_save( key_num,  tmp_node ) ) 
+	{// 特殊响应2
+		terminal_key_action_host_special_num2_reply( recvdata, 0, 0, 0, VOID_VOTE_INTERFACE ,tmp_node );
+	}
+	else
+	{
+		terminal_key_action_host_common_reply( recvdata, tmp_node );
+	}
+
+	upper_cmpt_sign_situation_report( tmp_node->tmnl_dev.tmnl_status.vote_state, tmp_node->tmnl_dev.address.addr );
+
+	// 检查是否所有投票完成
+	tmnl_pdblist tmp = tmp_head;
+	int vote_num = 0;
+	for( ; tmp != tmp_head; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.address.addr != 0xffff && \
+			tmp->tmnl_dev.tmnl_status.is_rgst && \
+			(tmp->tmnl_dev.tmnl_status.mic_state & TWAIT_VOTE_FLAG ) )
+		{
+			break;
+		}
+		
+		vote_num++;
+	}
+
+	DEBUG_INFO( "vote num = %d", vote_num );
+	if( vote_num >= SYSTEM_TMNL_MAX_NUM )
+	{
+		terminal_option_endpoint( BRDCST_1722_ALL, BRDCST_EXE, OPT_TMNL_ALL_VOTE );
+	}
+}
+
+bool terminal_key_action_value_judge_can_save( uint8_t key_num,  tmnl_pdblist vote_node )
+{
+	assert( vote_node );
+	bool ret = false;
+	uint8_t *p_vote_state = &vote_node->tmnl_dev.tmnl_status.vote_state;
+	assert( p_vote_state );
+
+	if( !gfirst_key_flag )	// last key effective 
+	{
+		*p_vote_state &= (~TVOTE_KEY_MARK);
+		*p_vote_state |= (1<< ( key_num -1));
+		return ret;
+	}
+
+	switch(gvote_mode)
+	{
+		case VOTE_MODE:
+		case GRADE_MODE:
+		case SLCT_2_1:
+		case SLCT_3_1:
+		case SLCT_4_1:
+		case SLCT_5_1:
+			*p_vote_state |= (1<< ( key_num -1));
+			*p_vote_state &= (~TWAIT_VOTE_FLAG);// 设置结束标志
+			ret = true;
+			break;
+		case SLCT_2_2:
+		case SLCT_3_2:
+		case SLCT_4_2:
+		case SLCT_5_2:
+			*p_vote_state |= (1<< ( key_num -1));
+			if(COUNT_KEY_DOWN_NUM( *p_vote_state & TVOTE_KEY_MARK ) >= 2 )
+			{
+				*p_vote_state &= (~TWAIT_VOTE_FLAG);// 设置结束标志
+				ret = true;
+			}
+			break;
+		case SLCT_3_3:
+		case SLCT_4_3:
+		case SLCT_5_3:
+			*p_vote_state |= (1<< ( key_num -1));
+			if(COUNT_KEY_DOWN_NUM( *p_vote_state & TVOTE_KEY_MARK ) >= 3 )
+			{
+				*p_vote_state &= (~TWAIT_VOTE_FLAG);// 设置结束标志
+				ret = true;
+			}
+			break;
+		case SLCT_4_4:
+		case SLCT_5_4:
+			*p_vote_state |= (1<< ( key_num -1));
+			if(COUNT_KEY_DOWN_NUM( *p_vote_state & TVOTE_KEY_MARK ) >= 4 )
+			{
+				*p_vote_state &= (~TWAIT_VOTE_FLAG);// 设置结束标志
+				ret = true;
+			}
+			break;
+		case SLCT_5_5:
+			*p_vote_state |= (1<< ( key_num -1));
+			if(COUNT_KEY_DOWN_NUM( *p_vote_state & TVOTE_KEY_MARK ) >= 5 )
+			{
+				*p_vote_state &= (~TWAIT_VOTE_FLAG);// 设置结束标志
+				ret = true;
+			}
+			break;
+		default:
+			break;
+	}
+
+	return ret;
+}
+
+void terminal_key_action_host_special_num2_reply( const uint8_t recvdata, uint8_t key_down, uint8_t key_up, uint16_t key_led, uint8_t lcd_num, tmnl_pdblist node )
+{
+	assert( node );
+	uint8_t data_len;
+	tka_special2_reply reply_data;
+	reply_data.recv_data = recvdata;
+	reply_data.reply_num = REPLY_SPECAIL_NUM2;
+	reply_data.key_down = key_down&TVOTE_KEY_MARK;
+	reply_data.key_up = key_up&TVOTE_KEY_MARK;
+	reply_data.sys = recvdata&KEY_ACTION_TMN_STATE_MASK;
+	reply_data.key_led = key_led&0x03ff;// 低十位
+	reply_data.lcd_num = lcd_num;
+	data_len = SPECIAL2_REPLY_KEY_AC_DATA_LEN;
+
+	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, NULL, NULL, &reply_data );
+}
+
+void terminal_key_action_host_special_num1_reply( const uint8_t recvdata, uint8_t mic_state, tmnl_pdblist node )
+{
+	assert( node );
+	uint8_t data_len;
+	tka_special1_reply reply_data;
+	reply_data.mic_state = mic_state;
+	reply_data.reply_num = REPLY_SPECAIL_NUM1;
+	reply_data.recv_data = recvdata;
+	data_len = SPECIAL1_REPLY_KEY_AC_DATA_LEN;
+
+	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, NULL, &reply_data, NULL );
+}
+
+void terminal_key_action_host_common_reply( const uint8_t recvdata, tmnl_pdblist node )
+{
+	assert( node );
+	uint8_t data_len;
+	tka_common_reply common_data;
+	common_data.recv_data = recvdata;
+	data_len = COMMON_REPLY_KEY_AC_DATA_LEN;
+	
+	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, &common_data, NULL, NULL );
+}
+
+void terminal_key_speak( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata )
+{
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist tmp_node = NULL;
+	
+	tmp_node = found_terminal_dblist_node_by_addr( addr );
+	if( tmp_node == NULL )
+	{
+		DEBUG_INFO( "no such tmp_node: addr = %04x", addr );
+		return;
+	}
+
+	if( key_num == KEY6_SPEAK )
+	{
+		uint8_t mic_state;
+		if( key_value )
+		{
+			// no limit time
+			mic_state = MIC_OPEN_STATUS;
+			connect_table_tarker_connect( tmp_node->tmnl_dev.entity_id, 0, tmp_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+			
+		}
+		else
+		{
+			mic_state = MIC_COLSE_STATUS;
+			connect_table_tarker_disconnect( tmp_node->tmnl_dev.entity_id, tmp_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+		}
+
+		terminal_key_action_host_special_num1_reply( recvdata, mic_state, tmp_node );
+	}
+}
+
+void terminal_key_action_chman_interpose( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata )
+{
+	if( key_num != KEY7_CHAIRMAN_FIRST )
+	{
+		DEBUG_INFO( "not valid chairman interpose value key " );
+		return;
+	}
+
+	tmnl_pdblist tmp_node = found_terminal_dblist_node_by_addr( addr );
+	if( tmp_node == NULL )
+	{
+		DEBUG_INFO( "no such 0x%04x addr chairman!", addr );
+		return;
+	}
+	
+
+	if( key_value )
+	{
+		terminal_chairman_interpose( addr, true, tmp_node, recvdata );
+	}
+	else
+	{
+		terminal_chairman_interpose( addr, false, tmp_node, recvdata );
+	}
+}
+
+void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chman_node, const uint8_t recvdata )
+{
+	FILE* fd = NULL;
+	thost_system_set set_sys; // 系统配置文件的格式
+	tcmpt_data_mic_status mic_list[SYSTEM_TMNL_MAX_NUM]; // 100-临时发言总人数
+	uint16_t report_mic_num = 0;
+	
+	if( (key_down && gchm_int_ctl.is_int) ||\
+		((!key_down) && (!gchm_int_ctl.is_int)) ||\
+		((!key_down) && (gchm_int_ctl.chmaddr != addr)))
+	{
+		terminal_key_action_host_common_reply( recvdata,chman_node );
+		return;
+	}
+
+	if( (get_sys_state() != INTERPOSE_STATE) && key_down )
+	{
+		bool tmp_close = false; // temp close
+		fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
+		if( NULL == fd )
+		{
+			DEBUG_INFO( "terminal_chairman_interpose ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+			return;
+		}
+		
+		if( profile_system_file_read( fd, &set_sys ) == -1)
+		{
+			DEBUG_INFO( "Read profile system Err!" );
+			Fclose( fd );
+			return;
+		}
+		
+		set_terminal_system_state( INTERPOSE_STATE, true );
+		gchm_int_ctl.is_int = true;
+		gchm_int_ctl.chmaddr = addr;
+		tmp_close = (set_sys.temp_close != 0)?true:false; 
+
+		terminal_key_action_host_special_num1_reply( recvdata, MIC_CHM_INTERPOSE_STATUS, chman_node );// 设置主席mic状态
+		terminal_mic_state_set( MIC_CHM_INTERPOSE_STATUS, BRDCST_ALL, BRDCST_1722_ALL, true, NULL );
+
+		assert( dev_terminal_list_guard );
+		tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
+		
+		for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
+		{
+			if( tmp_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST )
+			{// 关闭所有普通代表机
+				if( tmp_node->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS )
+				{
+					connect_table_tarker_disconnect( tmp_node->tmnl_dev.entity_id, tmp_node, !tmp_close, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+					if( report_mic_num <= SYSTEM_TMNL_MAX_NUM )
+					{
+						mic_list[report_mic_num].addr.low_addr = (uint8_t)((tmp_node->tmnl_dev.address.addr&0x00ff) >> 0);
+						mic_list[report_mic_num].addr.high_addr = (uint8_t)((tmp_node->tmnl_dev.address.addr&0xff00) >> 0);
+						mic_list[report_mic_num].switch_flag = MIC_COLSE_STATUS;
+						report_mic_num++;
+					}
+				}
+			}
+
+			// 上报mic状态
+			cmpt_miscrophone_status_list_from_set( mic_list, report_mic_num );
+		}
+		
+		gdisc_flags.apply_num = 0;
+		gdisc_flags.speak_limit_num = 0;
+		
+		Fclose( fd );
+	}
+	else if( !key_down )
+	{
+		gchm_int_ctl.is_int = false;
+		gchm_int_ctl.chmaddr = 0xffff;
+	}
 }
 
 /*===================================================

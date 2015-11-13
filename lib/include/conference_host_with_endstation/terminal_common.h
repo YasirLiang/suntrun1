@@ -127,7 +127,49 @@ enum		// terminal lamp STATUS
 /*{@*/
 
 /*{@ KEY ACTION*/
+#define KEY_ACTION_MASK 0x07
+#define KEY_ACTION_TMN_STATE_MASK 0x0f
+#define KEY_ACTION_KEY_VALUE_MASK 0x01
+#define KEY_ACTION_STATE_VALUE(x) (((x)>> 4)&(KEY_ACTION_TMN_STATE_MASK))
+#define KEY_ACTION_KEY_NUM(x) ((x)&(KEY_ACTION_MASK)) // 按键
+#define KEY_ACTION_KEY_VALUE(x) (((x)>>3)&(KEY_ACTION_KEY_VALUE_MASK)) // 键值
+#define COUNT_KEY_DOWN_NUM(x) (((x)&0x01)+(((x)>>1)&0x01)+(((x)>>2)&0x01)+(((x)>>3)&0x01)+(((x)>>4)&0x01))
+#define KEY1_VOTE 1
+#define KEY2_VOTE 2
+#define KEY3_VOTE 3
+#define KEY4_VOTE 4
+#define KEY5_VOTE 5
+#define KEY6_SPEAK 6 // 发言键
+#define KEY7_CHAIRMAN_FIRST 7 // 主席优先键
 
+#define REPLY_SPECAIL_NUM1 1 // 特殊响应编号1
+#define REPLY_SPECAIL_NUM2 2  // 特殊响应编号2
+
+#define SPECIAL2_REPLY_KEY_AC_DATA_LEN 6
+typedef struct _tkey_action_data_special2_reply // 按键动作特殊响应2数据区 6个字节 (注: 在填充网络数据负载时不能直接拷贝，需要一个字节一个字节地填充,而uint32_t 的成员是连续的可以直接拷贝)
+{
+	uint8_t recv_data;
+	uint8_t reply_num;
+	uint32_t key_down:5;
+	uint32_t key_up:5;
+	uint32_t key_led:10;
+	uint32_t sys:4;
+	uint32_t lcd_num:8;
+}tka_special2_reply;
+
+#define SPECIAL1_REPLY_KEY_AC_DATA_LEN 3
+typedef struct _tkey_action_data_special1_reply// 按键动作特殊响应2数据区 6个字节
+{
+	uint8_t recv_data;
+	uint8_t reply_num;
+	uint8_t mic_state;
+}tka_special1_reply;
+
+#define COMMON_REPLY_KEY_AC_DATA_LEN 1
+typedef struct _tkey_action_common_reply// 按键动作特殊响应2数据区 6个字节
+{
+	uint8_t recv_data;
+}tka_common_reply;
 
 /*@}*/
 
@@ -176,17 +218,18 @@ typedef struct _tterminal_led_data_display
 /*@}*/
 
 /*{@ chairman control meeting */
+#define CHAIRMAN_CONTROL_MEET_MASK 0x0f
 enum
 {
-	DATA_BEGIN_SIGN,
-	DATA_END_SIGN,
-	DATA_BEGIN_VOTE,
-	DATA_END_VOTE,
-	DATA_SUSPEND_VOTE,
-	DATA_RECOVER_VOTE,
-	DATA_RETURN_DISCUSS,
-	DATA_CLOSE_ALL_MIC,
-	DATA_CHM_CONTROL_LEN
+	CHM_BEGIN_SIGN, 	// 开始签到
+	CHM_END_SIGN,    	// 
+	CHM_BEGIN_VOTE,	//
+	CHM_END_VOTE,	//
+	CHM_SUSPEND_VOTE,//
+	CHM_RECOVER_VOTE,//
+	CHM_RETURN_DISCUSS,//
+	CHM_CLOSE_ALL_MIC,// 
+	CHM_CONTROL_LEN
 };
 /*@}*/
 

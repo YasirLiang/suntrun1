@@ -27,7 +27,7 @@ void terminal_endstation_special_event_reply( uint64_t target_id, uint16_t addr 
 void terminal_transmit_upper_cmpt_message( uint64_t target_id, uint16_t addr, uint8_t *msg, uint16_t msg_len);
 void terminal_reply_end_message_command( uint64_t target_id, uint16_t addr );
 void terminal_query_vote_sign_result( uint64_t target_id, uint16_t addr );
-
+void terminal_key_action_host_reply( uint64_t target_id, uint16_t addr, uint8_t data_len, tka_common_reply *common_data, tka_special1_reply *spe1_data, tka_special2_reply *spe2_data );
 
 #endif
 

@@ -734,6 +734,40 @@ int upper_cmpt_report_mic_state( uint8_t mic_status, uint16_t addr )
 	return 0;
 }
 
+int cmpt_miscrophone_status_list( void )
+{
+	tmnl_pdblist tmnl_list_head = dev_terminal_list_guard;
+	tmnl_pdblist p_tmnl_tmp = dev_terminal_list_guard->next;
+	tdata_addr_and_flag mic_list[SYSTEM_TMNL_MAX_NUM]; // 每个终端的麦克风状态对应一个元素
+	uint16_t addr_num = 0;
+
+	for( ; p_tmnl_tmp != tmnl_list_head; p_tmnl_tmp = p_tmnl_tmp->next )
+	{
+		
+		if( p_tmnl_tmp->tmnl_dev.address.addr != 0xffff && p_tmnl_tmp->tmnl_dev.tmnl_status.is_rgst )
+		{
+			uint8_t low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0);
+			uint8_t high_addr =  (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8);
+			uint8_t mic_state = p_tmnl_tmp->tmnl_dev.tmnl_status.mic_state;
+			mic_list[addr_num].addr_flag[0] = low_addr;
+			mic_list[addr_num].addr_flag[1] = high_addr;
+			mic_list[addr_num].addr_flag[2] = mic_state;
+			addr_num++;
+		}
+	}
+
+	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, MISCROPHONE_STATUS, mic_list, addr_num * sizeof(tdata_addr_and_flag) );
+	
+	return 0;
+}
+
+int cmpt_miscrophone_status_list_from_set( tcmpt_data_mic_status *p_mic_list, uint16_t mic_num )
+{
+	assert( p_mic_list );
+	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, MISCROPHONE_STATUS, p_mic_list, mic_num*sizeof(tcmpt_data_mic_status) );
+	return 0;
+}
+
 /*上报终端签到情况*/
 int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
 {
@@ -752,6 +786,22 @@ int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
 		DEBUG_INFO( "not valid rang sign flag!" );
 		return -1;
 	}
+
+	return 0;
+}
+
+int upper_cmpt_sign_situation_report( uint8_t vote_rlst, uint16_t addr )
+{
+	tcmp_vote_result vote_data;
+
+	if( addr != 0xffff )
+	{
+		vote_data.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0); // low addr
+		vote_data.addr.high_addr = (uint8_t)(( addr &0xff00) >> 8); // hight addr
+		vote_data.key_value= vote_rlst & TVOTE_KEY_MARK;
+	}
+	
+	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, RESULT_VOTE, &vote_data, sizeof(tcmp_vote_result));
 
 	return 0;
 }

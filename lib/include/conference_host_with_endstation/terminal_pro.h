@@ -29,6 +29,14 @@ typedef enum // 签到
 #define TVOTE_SET_FLAG   	0x40 // 未签到标志
 #define TWAIT_VOTE_FLAG  	0x20 // 签到允许投票标志
 
+#define TVOTE_KEY1_ENABLE 0x01
+#define TVOTE_KEY2_ENABLE 0x02
+#define TVOTE_KEY3_ENABLE 0x04
+#define TVOTE_KEY4_ENABLE 0x08
+#define TVOTE_KEY5_ENABLE 0x10
+#define TVOTE_KEY6_ENABLE 0x20
+#define TVOTE_KEY7_ENABLE 0x40
+
 typedef enum _enum_vote_state_pro
 {
 	NO_VOTE=0, 
@@ -142,6 +150,16 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 void terminal_vote_state_set( uint16_t addr );
 void terminal_sign_in_special_event( tmnl_pdblist sign_node ); // 终端特殊事件-签到
 void termianl_vote_enable_func_handle( tmnl_pdblist sign_node );
+void terminal_state_all_copy_from_common( void );
+void terminal_broadcast_end_vote_result( uint16_t addr ); // 根据终端的2 3 4键统计结果
+void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata );
+void terminal_key_speak( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata );
+bool terminal_key_action_value_judge_can_save( uint8_t key_num,  tmnl_pdblist vote_node );
+void terminal_key_action_host_special_num2_reply( const uint8_t recvdata, uint8_t key_down, uint8_t key_up, uint16_t key_led, uint8_t lcd_num, tmnl_pdblist node );
+void terminal_key_action_host_special_num1_reply( const uint8_t recvdata, uint8_t mic_state, tmnl_pdblist node );
+void terminal_key_action_host_common_reply( const uint8_t recvdata, tmnl_pdblist node );
+void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts );
+void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag );
 
 
 /*@}*/
