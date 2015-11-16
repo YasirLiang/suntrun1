@@ -84,7 +84,13 @@ void terminal_set_mic_status( uint8_t data, uint16_t addr,  uint64_t  target_id 
 	askbuf.data_len = sizeof( uint8_t );
 	askbuf.data[0] = data;
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
+	
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 设置终端指示灯(0x06)

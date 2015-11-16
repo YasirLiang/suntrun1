@@ -394,7 +394,6 @@ int connect_table_timeouts_image( void )
 	struct jdksavdecc_eui64 listener_entity_id;
 	
 	pthread_mutex_lock( &cnnt_mutex );
-	DEBUG_LINE();
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
 		if( connect_table_timer_timeout( connect_pnode ) )

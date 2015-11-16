@@ -5,8 +5,6 @@
 
 fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
-static uint8_t gpermit = TMN_RGST_STATE;  	// 当前系统的状态
-static uint8_t gpermitpre;					// 上一个系统的状态
 uint8_t globle_use_dis = TERMINAL_USE |COMPUTER_USE |MENU_USE; 	// 当前用户
 
 void init_func_command_work_queue( void )
@@ -151,10 +149,4 @@ bool use_dis_set( uint8_t  user, bool set )
 	
 	return true;
 }
-
-uint8_t get_sys_state( void )
-{
- 	return gpermit;
-}
-
 

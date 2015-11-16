@@ -169,6 +169,8 @@ void terminal_free_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg );
 bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg );
 bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg );
+void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
+void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
 
 
 /*@}*/

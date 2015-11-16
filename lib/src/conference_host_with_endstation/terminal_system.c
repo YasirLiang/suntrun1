@@ -3,9 +3,14 @@
 thost_sys_state gsystem_state;
 thost_sys_state gsystem_state_pre;
 
+void init_terminal_system_state( void )
+{
+	gsystem_state.host_state = TMN_RGST_STATE;
+}
+
 thost_sys_state get_terminal_system_state( void )
 {
-	return gsystem_state;
+ 	return gsystem_state;
 }
 
 bool set_terminal_system_state( uint8_t state_value, bool is_pre )
@@ -31,5 +36,10 @@ bool set_terminal_system_state( uint8_t state_value, bool is_pre )
 	}
 	
 	return ret;
+}
+
+uint8_t get_sys_state( void )
+{
+ 	return gsystem_state.host_state;
 }
 

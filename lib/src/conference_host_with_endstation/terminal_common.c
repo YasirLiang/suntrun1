@@ -226,9 +226,7 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		convert_entity_id_to_eui48_mac_address( uint64_target_id, send_dest.value );
 	}
 	
-	//DEBUG_INFO( "send dest = %02x-%02x-%02x-%02x-%02x-%02x", \
-	//	send_dest.value[0], send_dest.value[1], send_dest.value[2], send_dest.value[3],\
-//		send_dest.value[4], send_dest.value[5]);
+	//DEBUG_INFO( "send dest = %02x-%02x-%02x-%02x-%02x-%02x", send_dest.value[0], send_dest.value[1], send_dest.value[2], send_dest.value[3], send_dest.value[4], send_dest.value[5]);
 	memcpy( send_frame.src_address.value, net.m_my_mac, 6 );
 	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data );
 	send_len = conference_1722_control_form_info( &send_frame, &aemdu, send_dest, target_id, cnf_data_len );
@@ -309,11 +307,11 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		{
 			if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== QUERY_END)
 			{
-				terminal_register( recv_data.cchdr.address, recv_data.data[0], tmnl_list_station );
+				terminal_register( recv_data.cchdr.address & TMN_ADDR_MASK, recv_data.data[0], tmnl_list_station );
 			}
 			else if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== SET_END_STATUS )
 			{
-				//terminal_type_save( recv_data.cchdr.address, recv_data.data[0],((recv_data.cchdr.command_control&COMMAND_TMN_CHAIRMAN)?true:false));
+				terminal_type_save( recv_data.cchdr.address & TMN_ADDR_MASK, recv_data.data[0],((recv_data.cchdr.command_control&COMMAND_TMN_CHAIRMAN)?true:false));
 			}
 			else if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == CHECK_END_RESULT )
 			{
@@ -323,7 +321,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 
 		if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == TRANSIT_END_MSG ) // 特殊命令特殊处理
 		{
-			//terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
+			terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
 		}
 		else // 处理其它命令
 		{

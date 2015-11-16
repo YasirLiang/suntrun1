@@ -18,8 +18,10 @@ typedef struct _thost_system_state
 	uint8_t host_state;
 }thost_sys_state;
 
+void init_terminal_system_state( void );
 thost_sys_state get_terminal_system_state( void );
 bool set_terminal_system_state( uint8_t state_value, bool is_pre );
+uint8_t get_sys_state( void );
 
 #endif
 

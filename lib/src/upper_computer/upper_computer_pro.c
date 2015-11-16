@@ -805,6 +805,18 @@ int upper_cmpt_sign_situation_report( uint8_t vote_rlst, uint16_t addr )
 
 	return 0;
 }
+
+int upper_cmpt_terminal_message_report( void* p_tmnl_msg, uint16_t msg_len, uint16_t addr )
+{
+ 	assert( p_tmnl_msg );
+	tcmp_report_terminal_message tmnl_msg;
+	memcpy( &tmnl_msg, p_tmnl_msg, msg_len );
+		
+	send_upper_computer_command(  CMPT_MSG_TYPE_REPORT, REPORT_ENDSTATION_MESSAGE, &tmnl_msg, msg_len );
+	
+	return 0;
+}
+
 /*==================================================
 					结束上位机处理流程
 ====================================================*/

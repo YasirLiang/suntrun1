@@ -176,7 +176,7 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			}
 			else
 			{
-				DEBUG_INFO("LOGGING_LEVEL_DEBUG:Wait for correct ACMP response packet.");
+				//DEBUG_INFO("LOGGING_LEVEL_DEBUG:Wait for correct ACMP response packet.");
 				*status = AVDECC_LIB_STATUS_INVALID;
 			}
 		}

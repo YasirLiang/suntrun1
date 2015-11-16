@@ -10,6 +10,7 @@
 #include "send_pthread.h"
 #include "send_work_queue.h"
 #include "stream_descriptor.h"
+#include "terminal_system.h"
 
 void init_system( void )
 {
@@ -25,6 +26,7 @@ void init_system( void )
 	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
 
 	init_profile_system_file();
+	init_terminal_system_state();// 初始化系统状态
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
