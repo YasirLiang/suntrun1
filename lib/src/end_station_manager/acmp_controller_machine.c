@@ -323,8 +323,8 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	if( NULL != inflight_est )
 	{
 		notification_flag = inflight_est->host_tx.inflight_frame.notification_flag;
-		acmp_callback( notification_flag, cmd_frame->payload);
-		release_heap_space( &inflight_est->host_tx.inflight_frame.frame);// it must delect
+		acmp_callback( notification_flag, cmd_frame->payload );
+		release_heap_space( &inflight_est->host_tx.inflight_frame.frame );// it must delect
 		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node must delect date frame
 	}
 	else

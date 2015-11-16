@@ -34,6 +34,7 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *data, uint32_t data_len );// 函数处理流程未完成11/2。
 int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void *data, uint32_t data_len );//后期可能需要修改11/2。
 int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void *data, uint32_t data_len );// 函数处理流程未完成11/2。
+int cmpt_miscrophone_status_list_from_set( tcmpt_data_mic_status *p_mic_list, uint16_t mic_num );
 
 
 /*@终端命令函数}*/
