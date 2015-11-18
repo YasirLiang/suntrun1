@@ -155,10 +155,14 @@ void terminal_set_led_play_stype( uint64_t target_id, uint16_t addr, tmnl_led_st
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint16_t ); // data lenght of the conference deal is 2
 	memcpy( askbuf.data, &led_stype, sizeof(uint16_t));
-	//askbuf.data[0] = (((uint8_t)led_stype.blink & 0x01)<< 7) |(((uint8_t)led_stype.bright_lv & 0x0f ) << 3) |(((uint8_t)led_stype.page_show_state &0x07) << 0);
-	//askbuf.data[1] = (((uint8_t)led_stype.speed_roll & 0x0f )<< 4) |(((uint8_t)led_stype.stop_time & 0x0f ) << 0);
+
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 主席机控制会议（0x0D）是响应终端的主席控制命令
@@ -265,8 +269,14 @@ void terminal_option_endpoint( uint64_t target_id, uint16_t addr, eopt_tmnl opt 
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint8_t ); // 1
 	askbuf.data[0] = (uint8_t)opt;
+
+	bool noneed_resp = false;
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;// 不需要响应
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 终端特殊事件（0x14）响应(主机)

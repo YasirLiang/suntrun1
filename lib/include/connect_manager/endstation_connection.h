@@ -13,7 +13,13 @@
 #include "descriptor.h"
 #include "terminal_common.h"
 
-#define CHANNEL_MUX_NUM 10 // 最大的通道数
+#define CHANNEL_MUX_NUM 4 // 最大的通道数
+
+#ifdef __DEBUG__
+#ifndef __DEBUG_CONNECT_TABLE__
+#define __DEBUG_CONNECT_TABLE__
+#endif
+#endif
 
 typedef struct _tterminal_speak_timeouts
 {
@@ -72,7 +78,6 @@ void connect_table_destroy( void );
 int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node );
 int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t timeouts, bool is_limit_time, uint64_t utarker_id );
 connect_tbl_pdblist found_connect_table_available_connect_node( const uint64_t utarker_id );
-//void connect_table_tarker_connect( const uint64_t utarker_id, uint32_t timeouts );
 void connect_table_tarker_connect( const uint64_t utarker_id, 
 									uint32_t timeouts, 
 									tmnl_pdblist connect_node, 
@@ -80,7 +85,6 @@ void connect_table_tarker_connect( const uint64_t utarker_id,
 									uint8_t mic_status,
 									p_mic_state_set_callback p_mic_call, 
 									p_main_state_send_callback p_main_send_call );
-//void connect_table_tarker_disconnect( const uint64_t utarker_id );
 void connect_table_tarker_disconnect( const uint64_t utarker_id, 
 									tmnl_pdblist connect_node, 
 									bool mic_report, 

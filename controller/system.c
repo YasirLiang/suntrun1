@@ -63,7 +63,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
 
-	sleep(5);
+	sleep(1);
 	
 	/*初始化连接表*/ 
 	connect_table_info_init();
@@ -74,7 +74,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	background_read_descriptor_input_output_stream();
 
 	/* 设置连接表*/
-	sleep(2);
+	sleep(1);
 	connect_table_info_set( descptor_guard, true );
 	
 	// 注册会议终端, 维持5s

@@ -341,7 +341,11 @@ void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint
 	askbuf.cchdr.command_control = cmd |COMMAND_TMN_REPLY;
 	askbuf.cchdr.address = address; 
 	askbuf.data_len = data_len;
-	memcpy( askbuf.data, data_pay, data_len );
+
+	if( data_pay != NULL && data_len != 0 )
+	{
+		memcpy( askbuf.data, data_pay, data_len );
+	}
 
 	ternminal_send( &askbuf, asklen, target_zero, true );
 }

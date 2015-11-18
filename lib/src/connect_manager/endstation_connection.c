@@ -16,7 +16,7 @@
 
 connect_tbl_pdblist cnnt_list_guard = NULL;	// 连接表头结点
 static uint16_t ct_acmp_seq_id = 0; 		// 连接表序列号
-pthread_mutex_t cnnt_mutex;				// 连接表私有线程锁 
+pthread_mutex_t cnnt_mutex;			// 连接表私有线程锁 
 
 void connect_table_info_init( void )
 {
@@ -117,7 +117,7 @@ bool connect_table_info_set( desc_pdblist desc_guard, bool is_show_table )
 				// 与一个实体中的所有输出流比较
 				uint8_t stream_output_desc_count = out_desc->endpoint_desc.output_stream.num;
 				int out_stream_index = 0;
-				for( out_stream_index = 0; out_stream_index < stream_output_desc_count; out_stream_index++)
+				for( out_stream_index = 0; out_stream_index < stream_output_desc_count; out_stream_index++ )
 				{
 					if( (out_desc->endpoint_desc.output_stream.desc[out_stream_index].connect_num > 0)\
 						&& (out_desc->endpoint_desc.output_stream.desc[out_stream_index].stream_id \
@@ -143,7 +143,6 @@ bool connect_table_info_set( desc_pdblist desc_guard, bool is_show_table )
 
 	if( is_show_table )
 	{
-		//DEBUG_INFO( " connect table len = %d", connect_table_double_list_length_get(cnnt_list_guard) );
 		connect_table_double_list_show_all( cnnt_list_guard );
 		connect_table_double_list_show_connected( cnnt_list_guard );
 	}
@@ -230,6 +229,10 @@ int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
 		p_cnnt_node->connect_elem.tarker_index = 0;
 		p_cnnt_node->connect_elem.listener_connect_flags = false;
 		connect_table_double_list_move_node_to_tail( p_cnnt_node, cnnt_list_guard );
+		
+#ifdef __DEBUG_CONNECT_TABLE__
+		connect_table_double_list_show_all( cnnt_list_guard );
+#endif
 	}
 	else
 	{
@@ -262,48 +265,66 @@ void connect_table_tarker_connect( const uint64_t utarker_id,
 	bool found_listener_avail_first = false; // 找到第一个可用的声音通道
 	struct jdksavdecc_eui64 talker_entity_id;
 	struct jdksavdecc_eui64 listener_entity_id;
+	bool found_tarker_connected = false; // 是否已经连接
 	
 	pthread_mutex_lock( &cnnt_mutex );
+	
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
-		if( !connect_pnode->connect_elem.listener_connect_flags &&\
+		if( (connect_pnode->connect_elem.listener_connect_flags) && (connect_pnode->connect_elem.tarker_id == utarker_id) )
+		{
+			found_tarker_connected = true;// 已连接
+			break;
+		}
+		
+		if( (!connect_pnode->connect_elem.listener_connect_flags &&\
 			connect_pnode->connect_elem.tarker_id == 0 &&\
-			connect_pnode->connect_elem.listener_id != utarker_id ) // 找到可用通道? 且不是自身
+			connect_pnode->connect_elem.listener_id != utarker_id) ) // 找到可用通道? 且不是自身
 		{
 			ulistener_id = connect_pnode->connect_elem.listener_id;
 			listener_index = connect_pnode->connect_elem.listener_index;
+			found_tarker_connected = false;
 			found_listener_avail_first = true;
 			break;
 		}
 	}
 
-	DEBUG_INFO( "found found_listener_avail_first = %d, listener_entity_id = 0x%016llx,tarker_entity_id = 0x%016llx", found_listener_avail_first, ulistener_id, utarker_id );
+	DEBUG_INFO( "found found_listener_avail_first = %d, listener_entity_id = 0x%016llx, tarker_entity_id = 0x%016llx", found_listener_avail_first, ulistener_id, utarker_id );
 	assert( connect_node );
 	assert( p_mic_call );
 	assert( p_main_send_call );
-	if( found_listener_avail_first && (connect_pnode != NULL) ) // connect available
-	{
-		ttcnn_table_call call_elem;
-		call_elem.limit_speak_time = timeouts;
-		call_elem.p_cnnt_node = connect_pnode;
-		call_elem.tarker_id = utarker_id;
-		call_elem.pc_callback = connect_table_connect_callback;
 
-		tdisconnect_connect_mic_main_set mic_main_set; // mic status callback information
-		mic_main_set.connect_node = connect_node;
-		mic_main_set.mic_state = mic_status;
-		mic_main_set.mic_state_set = mic_report;
-		mic_main_set.p_mian_state_send = p_main_send_call;
-		mic_main_set.p_mic_set_callback = p_mic_call;
-		
-		convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
-		convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
-		acmp_connect_connect_table( talker_entity_id.value, tarker_index, \
-			listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem, connect_table_connect_callback, &mic_main_set );
-	}
-	else // 直接回调麦克风状态设置函数与发送主机状态的回调函数
+	if( !found_tarker_connected )// not connected?
 	{
-		p_mic_call( !mic_status, connect_node->tmnl_dev.address.addr, connect_node->tmnl_dev.entity_id, mic_report, connect_node );// close mic
+		if( found_listener_avail_first && (connect_pnode != NULL) ) // connect available
+		{
+			ttcnn_table_call call_elem;
+			call_elem.limit_speak_time = timeouts;
+			call_elem.p_cnnt_node = connect_pnode;
+			call_elem.tarker_id = utarker_id;
+			call_elem.pc_callback = connect_table_connect_callback;
+
+			tdisconnect_connect_mic_main_set mic_main_set; // mic status callback information
+			mic_main_set.connect_node = connect_node;
+			mic_main_set.mic_state = mic_status;
+			mic_main_set.mic_state_set = mic_report;
+			mic_main_set.p_mian_state_send = p_main_send_call;
+			mic_main_set.p_mic_set_callback = p_mic_call;
+			
+			convert_uint64_to_eui64( talker_entity_id.value, utarker_id );
+			convert_uint64_to_eui64( listener_entity_id.value, ulistener_id );
+			acmp_connect_connect_table( talker_entity_id.value, tarker_index, \
+				listener_entity_id.value, listener_index, 1, ct_acmp_seq_id++, &call_elem, connect_table_connect_callback, &mic_main_set );
+		}
+		else // 直接回调麦克风状态设置函数与发送主机状态的回调函数
+		{
+			p_mic_call( !mic_status, connect_node->tmnl_dev.address.addr, connect_node->tmnl_dev.entity_id, mic_report, connect_node );// close mic status
+			p_main_send_call( 0, NULL, 0 );
+		}
+	}
+	else
+	{
+		p_mic_call( mic_status, connect_node->tmnl_dev.address.addr, connect_node->tmnl_dev.entity_id, mic_report, connect_node );// set mic open status
 		p_main_send_call( 0, NULL, 0 );
 	}
 	
@@ -326,6 +347,11 @@ int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t ti
 		{
 			connect_table_timer_stop( p_cnnt_node );
 		}
+
+#ifdef __DEBUG_CONNECT_TABLE__
+		connect_table_double_list_show_all( cnnt_list_guard );
+#endif
+
 	}
 	else
 	{

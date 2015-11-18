@@ -11,7 +11,22 @@ struct raw_context net;				// 原始套接字
 struct udp_server pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
 solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 inflight_plist command_send_guard;	// 系统中发送网络数据命令链表哨兵节点
-desc_pdblist descptor_guard;			// 系统中描述符链表哨兵节点
+desc_pdblist descptor_guard;	// 系统中描述符链表哨兵节点
+
+#ifdef __TEST_DEBUG_CM__ 
+int thread_test_fn( void*pgm )
+{
+	uint64_t tar_id = 0;
+	
+	while( 1 )
+	{
+		sleep(1);
+		terminal_set_mic_status( 1, 0, tar_id );
+		sleep(1);
+		terminal_set_mic_status( 0, 0, tar_id );
+	}
+}
+#endif
 
 int main( int argc, char *argv[] )
 {
@@ -33,6 +48,19 @@ int main( int argc, char *argv[] )
 
 	pthread_t s_thread; // 发送网络数据的线程
 	pthread_send_network_create( &s_thread );
+	
+#ifdef __TEST_DEBUG_CM__
+	pthread_t test_cm_thread; // 测试线程
+	int rc = 0;
+	rc = pthread_create( &test_cm_thread, NULL, (void*)&thread_test_fn, NULL );
+	if( rc )
+	{
+		DEBUG_INFO(" test_cm_thread ERROR; return code from pthread_create() is %d\n", rc);
+		assert( rc == 0 );
+	}
+	
+	pthread_detach( test_cm_thread );
+#endif
 
 	// 分离主线程与次线程
 	pthread_detach( h_thread );

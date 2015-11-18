@@ -450,6 +450,7 @@ int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 		case ELECT_STATE:
 			terminal_vote( addr, key_num, key_value, tmnl_state, msg.data );
 			terminal_key_speak( addr, key_num, key_value, tmnl_state, msg.data );
+			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
 			break;
 		case DISCUSS_STATE:
 			terminal_key_discuccess( addr, key_num, key_value, tmnl_state, msg.data );
@@ -1095,7 +1096,7 @@ int terminal_start_discuss( bool mic_flag )
 			
 			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst ) // 断开注册连接的终端
 			{
-				connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+				//connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 			}
 		}
 	}
@@ -1107,7 +1108,7 @@ int terminal_start_discuss( bool mic_flag )
 		gtmnl_state_opt[i].keydown = 0;
 		gtmnl_state_opt[i].keyup = 0;
 		gtmnl_state_opt[i].MicClose = mic_flag?1:0;
-		gtmnl_state_opt[i].sys = TMNL_SYS_STA_DISC; // 系统模式
+		gtmnl_state_opt[i].sys = TMNL_SYS_STA_DISC; // 讨论模式
 	} 
 
 	/* 设置终端状态*/
@@ -2069,7 +2070,7 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 	{
 		if( tmp->tmnl_dev.address.addr != 0xffff && tmp->tmnl_dev.tmnl_status.is_rgst )
 		{
-			tmp->tmnl_dev.tmnl_status.sys_state = TMNL_NO_SIGN_IN;
+			tmp->tmnl_dev.tmnl_status.sign_state = TMNL_NO_SIGN_IN;
 		}
 	}
 
@@ -2101,7 +2102,7 @@ void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 	{
 		if( tmp->tmnl_dev.address.addr != 0xffff && tmp->tmnl_dev.tmnl_status.is_rgst )
 		{
-			tmp->tmnl_dev.tmnl_status.sys_state = TMNL_NO_SIGN_IN;
+			tmp->tmnl_dev.tmnl_status.sign_state = TMNL_NO_SIGN_IN;
 		}
 	}
 
@@ -2356,6 +2357,7 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签
 
 void termianl_vote_enable_func_handle( tmnl_pdblist sign_node )
 {
+	assert( sign_node );
 	sign_node->tmnl_dev.tmnl_status.vote_state |= TVOTE_EN; // TVOTE_SET_FLAG ->TVOTE_EN ->TWAIT_VOTE_FLAG(投票状态流程)
 }
 
@@ -2707,6 +2709,9 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		set_terminal_system_state( INTERPOSE_STATE, false );
 		assert(dev_terminal_list_guard);
 		tmnl_pdblist end_node = dev_terminal_list_guard->next;
+		
+		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );
+		
 		for( ;end_node != dev_terminal_list_guard; end_node = end_node->next )
 		{
 			if( (end_node->tmnl_dev.address.addr != 0xffff)&&\
@@ -2750,7 +2755,7 @@ int terminal_key_discuccess( uint16_t addr, uint8_t key_num, uint8_t key_value, 
 	dis_node = found_terminal_dblist_node_by_addr( addr );
 	if( dis_node == NULL )
 	{
-		DEBUG_INFO( "not found discuccess termianl key" );
+		DEBUG_INFO( "not found discuccess termianl key!" );
 		return -1;
 	}
 
@@ -2772,6 +2777,7 @@ int terminal_key_discuccess( uint16_t addr, uint8_t key_num, uint8_t key_value, 
 bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t recv_msg )
 {
 	thost_system_set set_sys;
+	uint8_t dis_mode = gdisc_flags.edis_mode;
 	
 	if( !terminal_read_profile_file( &set_sys ) )
 	{
@@ -2784,8 +2790,8 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 
 	if( !dis_node->tmnl_dev.tmnl_status.is_rgst )
 		return false;
-
-	uint8_t dis_mode = gdisc_flags.edis_mode;
+	
+	DEBUG_INFO( "dis mode = %d ", dis_mode );
 	if( dis_mode == PPT_MODE ||\
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP) ||\
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\

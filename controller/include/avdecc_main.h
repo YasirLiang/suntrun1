@@ -13,6 +13,13 @@
 #include "func_proccess.h"
 #include "data.h"
 
+#ifdef __DEBUG__
+
+#ifndef __TEST_DEBUG_CM__ // ²âÊÔÍ¸´«¹¦ÄÜ
+//#define __TEST_DEBUG_CM__
+#endif
+#endif
+
 #define NETWORT_INTERFACE "eth0"
 
 enum useful_enums
