@@ -1,13 +1,8 @@
-SRC_FILES += $(wildcard ./*.c)
-OBJS = $(patsubst %.c, %.o, $(SRC_FILES))
-
-%.o:%.c
-	$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
-
-avdecc_ctl:$(OBJS) 
-	$(CC) $(OBJS) $(CFLAGS) -o avdecc_ctl 
-	mv avdecc_ctl ../
+app_all:
+	make -C lib
+	make -C app
 
 .PHONY:clean
 clean:
-	rm -rf $(OBJS) avdecc_ctl
+	make -C lib clean
+	make -C app clean

@@ -6,6 +6,7 @@ export CC AR LD
 
 ROOTPATH = $(shell pwd)
 CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib 
+#CFLAGS = -Wall -g -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib 
 #CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/avdecc \
@@ -22,7 +23,9 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/lib/include/message_func \
 		   -I$(ROOTPATH)/lib/include/common\
 		   -I$(ROOTPATH)/lib/include/connect_manager\
-		   -I$(ROOTPATH)/lib/include/send_module
+		   -I$(ROOTPATH)/lib/include/send_module\
+		   -I$(ROOTPATH)/lib/include/camera_module\
+		   -I$(ROOTPATH)/lib/include/uart
 
 
 export CFG_INC CFLAGS ROOTPATH
@@ -37,3 +40,4 @@ clean:
 	-rm -rf libavdecc-host.a avdecc_ctl avdecc_ctl.txt address.dat system.dat
 	make -C lib clean
 	make -C controller clean
+	make -C lib/src/uart/test clean
