@@ -1,14 +1,20 @@
-SRC_FILES += $(wildcard ./*.c)
-OBJS = $(patsubst %.c, %.o, $(SRC_FILES))
+CUR_SOURCE = $(wildcard ./*.c)
+CUR_OBJS = $(patsubst %.c, %.o, $(CUR_SOURCE))
 
-%.o:%.c
+BIN=avdecc_ctl
+
+all:$(CUR_OBJS) BIN
+
+$(CUR_OBJS):%.o:%.c
 	@echo "$(CC) $< -o $@"
-	@$(CC) $(CFLAGS) $(CFG_INC) -c $< -o $@
+	@$(CC) $(CFLAGS) $(CFG_INC) -c  -o $@ $<
 
-avdecc_ctl:$(OBJS) 
-	$(CC) $(OBJS) $(CFLAGS) -o avdecc_ctl 
-	cp avdecc_ctl $(ROOTPATH)
+BIN:$(CUR_OBJS)
+	@echo "$(CC) -o $(BIN)"
+	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
+	@cp $(BIN) $(ROOTPATH) 
 
 .PHONY:clean
 clean:
-	rm -rf $(OBJS) avdecc_ctl
+	@echo $(RM) $(CUR_OBJS) $(BIN) .*.sw?
+	@$(RM) $(CUR_OBJS) $(BIN) .*.sw?

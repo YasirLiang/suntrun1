@@ -5,39 +5,51 @@ OBJDUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFLAGS = -Wall -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib 
-#CFLAGS = -Wall -g -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib 
-#CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) -I$(ROOTPATH)/lib
+CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+#CFLAGS = -Wall -g -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) 
+#CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH)
 CFG_INC += -I$(ROOTPATH)/controller/include \
-		   -I$(ROOTPATH)/lib/include/avdecc \
+		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
-		   -I$(ROOTPATH)/lib/include/conference_host_with_endstation\
-		   -I$(ROOTPATH)/lib/include/conference_network\
-		   -I$(ROOTPATH)/lib/include/consultative_encapsulation \
-		   -I$(ROOTPATH)/lib/include/packet_events \
-		   -I$(ROOTPATH)/lib/include/host_controller_debug \
-		   -I$(ROOTPATH)/lib/include/native_proccess \
-		   -I$(ROOTPATH)/lib/include/system_work_tool_uits \
-		   -I$(ROOTPATH)/lib/include/upper_computer \
-		   -I$(ROOTPATH)/lib/include/end_station_manager \
-		   -I$(ROOTPATH)/lib/include/message_func \
-		   -I$(ROOTPATH)/lib/include/common\
-		   -I$(ROOTPATH)/lib/include/connect_manager\
-		   -I$(ROOTPATH)/lib/include/send_module\
-		   -I$(ROOTPATH)/lib/include/camera_module\
-		   -I$(ROOTPATH)/lib/include/uart
+		   -I$(ROOTPATH)/controller/lib/include/avdecc \
+		   -I$(ROOTPATH)/controller/lib/include/conference_host_with_endstation\
+		   -I$(ROOTPATH)/controller/lib/include/conference_network\
+		   -I$(ROOTPATH)/controller/lib/include/consultative_encapsulation \
+		   -I$(ROOTPATH)/controller/lib/include/packet_events \
+		   -I$(ROOTPATH)/controller/lib/include/host_controller_debug \
+		   -I$(ROOTPATH)/controller/lib/include/native_proccess \
+		   -I$(ROOTPATH)/controller/lib/include/system_work_tool_uits \
+		   -I$(ROOTPATH)/controller/lib/include/upper_computer \
+		   -I$(ROOTPATH)/controller/lib/include/end_station_manager \
+		   -I$(ROOTPATH)/controller/lib/include/message_func \
+		   -I$(ROOTPATH)/controller/lib/include/common\
+		   -I$(ROOTPATH)/controller/lib/include/connect_manager\
+		   -I$(ROOTPATH)/controller/lib/include/send_module\
+		   -I$(ROOTPATH)/controller/lib/include/camera_module\
+		   -I$(ROOTPATH)/controller/lib/include/uart
 
 
 export CFG_INC CFLAGS ROOTPATH
 
-ALL:
-	make -C lib
-	make -C controller
-#	$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
+SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
+APP_SUB=$(shell ls -l | grep ^d | awk '{if($$9 == "controller") print $$9}')
 
-.PHONY:clean
+ALL:$(SUBDIRS) APP_SUB
+
+$(SUBDIRS):ECHO
+	make -C $@
+
+APP_SUB:ECHO
+	make -C controller
+
+ECHO:
+	@echo $(SUBDIRS)
+
+.PHONY:cleanall clean
 clean:
-	-rm -rf libavdecc-host.a avdecc_ctl avdecc_ctl.txt address.dat system.dat
+	make -C controller clean
+	@$(RM) avdecc_ctl system.dat address.dat
+cleanall:
 	make -C lib clean
 	make -C controller clean
-	make -C lib/src/uart/test clean
+	@$(RM) avdecc_ctl system.dat address.dat

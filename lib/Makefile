@@ -1,17 +1,22 @@
 SRC_FILES += $(wildcard jdksavdecc/*.c) 
 
-DIR=$(notdir $(SRC_FILES))
-
 OBJS := $(patsubst %.c, %.o, $(SRC_FILES)) 
 
-%.o:%.c
+DIR=$(notdir $(OBJS))
+
+LIB=libjdksavdecc.a
+
+all:$(OBJS) LIB
+
+$(OBJS):%.o:%.c
 	@echo "$(CC) $< -o $@"
 	@$(CC) $(CFLAGS) $(CFG_INC) -c $< -o $@
 
-libjdksavdecc.a:$(OBJS)
-	@echo "$(AR) rc libjdksavdecc.a $(DIR)"
-	@$(AR) rc libjdksavdecc.a $(OBJS)
+LIB:$(OBJS)
+	@echo "$(AR) rc $(LIB) $(DIR)"
+	@$(AR) rc $(LIB) $(OBJS)
 
 .PHONY:clean
 clean:
-	rm -rf $(OBJS) libjdksavdecc.a
+	@echo $(RM) $(DIR) $(LIB)
+	@$(RM) $(OBJS) $(LIB)
