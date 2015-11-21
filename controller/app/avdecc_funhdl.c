@@ -37,8 +37,9 @@ int timer_start_interval(int timerfd)
 
 int fn_timer_cb( struct epoll_priv*priv )
 {
+	int read_len = 0;
 	uint64_t timer_exp_count;
-	read(priv->fd, &timer_exp_count, sizeof(timer_exp_count));
+	read_len = read( priv->fd, &timer_exp_count, sizeof(timer_exp_count));
 
 	terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
@@ -51,7 +52,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 
 	is_inflight_timeout = false; 
 	
-    	return 0;
+    	return read_len;
 }
 
 int fn_netif_cb( struct epoll_priv *priv )

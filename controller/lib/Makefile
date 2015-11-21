@@ -13,12 +13,17 @@ DIR = $(notdir $(OBJS))
 LIB=libavdecc-host.a
 
 ALL:$(OBJS) LIB
+
 $(OBJS):%o:%c
-	@echo $< -o $@
-	@$(CC) -c -o $@ $< $(CFG_INC) $(CFLAGS) 
+	@echo "\033[32m$(CC) -o $@ $< \033[0m"
+	@$(CC) $(CFG_INC) $(CFLAGS) -c -o $@ $< 
 
 LIB:$(OBJS)
+ifeq ($(LIB), $(wildcard $(LIB)))
+else
 	@echo $(AR) rc $(LIB) $(DIR)
+endif
+
 	@$(AR) rc $(LIB) $(OBJS)
 
 .PHONY:clean

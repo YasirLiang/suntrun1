@@ -6,11 +6,15 @@ BIN=avdecc_ctl
 all:$(CUR_OBJS) BIN
 
 $(CUR_OBJS):%.o:%.c
-	@echo "$(CC) $< -o $@"
+	@echo "\033[32m$(CC) -o $@ $< \033[0m"
 	@$(CC) $(CFLAGS) $(CFG_INC) -c  -o $@ $<
 
 BIN:$(CUR_OBJS)
-	@echo "$(CC) -o $(BIN)"
+ifeq ($(BIN), $(wildcard $(BIN)))
+else
+	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
+endif
+
 	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
 	@cp $(BIN) $(ROOTPATH) 
 

@@ -250,7 +250,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 	uint8_t data_buf[MAX_FUNC_MSG_LEN] = { 0 };
 	tmnl_pdblist tmnl_list_station = NULL;
 	bool is_new_tmnl_list_station = false;
-
+	
 	// check the crc of the both data backups,if crc is wrong,return directory
 	if( check_conferece_deal_data_crc( frame_len, conference_frame->payload, ZERO_OFFSET_IN_PAYLOAD))
 	{	

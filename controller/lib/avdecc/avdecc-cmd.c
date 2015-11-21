@@ -89,7 +89,7 @@ void avdecc_cmd_process_incoming_raw( const void *request_,
     struct timeval timeout;
 
 
-   // raw_set_socket_nonblocking( net->m_fd );
+    raw_set_socket_nonblocking( net->m_fd );
     FD_ZERO( &rd_fds );
     FD_SET( net->m_fd, &rd_fds );
     nfds = net->m_fd + 1;
@@ -106,9 +106,9 @@ void avdecc_cmd_process_incoming_raw( const void *request_,
         do
         {
             // wait for it to become readable
-            r = select( nfds, &rd_fds, 0, 0, /*&time_portion*/NULL );
+            r = select( nfds, &rd_fds, 0, 0, &time_portion );
         } while ( r < 0 && errno == EINTR );
-printf("r = %d\n", r);
+		
         // any error aborts now
         if ( r < 0 )
         {
@@ -133,19 +133,7 @@ printf("r = %d\n", r);
                 // Did we get one?
                 if ( len > 0 )
                 {
-/*
-					{
-						printf("Recv Package:\n\t");
-						int i = 0;
-						for(i = 0; i < len; i++)
-						{
-							fprintf(stdout, "%02x ", frame.payload[i]);
-						}
-						printf("\n");
-					}
-*/
                     // Yes, fill in the length
-
                     frame.length = (uint16_t)len;
                     // And ethertype
                     frame.ethertype = net->m_ethertype;
@@ -155,7 +143,6 @@ printf("r = %d\n", r);
                         // Process function wants us to stop.
                         break;
                     }
-					
                 }
                 else
                 {

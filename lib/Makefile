@@ -9,11 +9,15 @@ LIB=libjdksavdecc.a
 all:$(OBJS) LIB
 
 $(OBJS):%.o:%.c
-	@echo "$(CC) $< -o $@"
-	@$(CC) $(CFLAGS) $(CFG_INC) -c $< -o $@
+	@echo "\033[32m$(CC) -o $@ $< \033[0m"
+	@$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
 
 LIB:$(OBJS)
-	@echo "$(AR) rc $(LIB) $(DIR)"
+ifeq ($(LIB), $(wildcard $(LIB)))
+else
+	@echo $(AR) rc $(LIB) $(DIR)
+endif
+
 	@$(AR) rc $(LIB) $(OBJS)
 
 .PHONY:clean
