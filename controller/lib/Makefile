@@ -1,3 +1,5 @@
+SUBDIRS=$(shell ls -l |grep ^d | awk '{if($$9 == "uart") print $$9}')
+
 SRC_FILE += $(wildcard avdecc/*.c) $(wildcard camera_module/*.c)\
 		    $(wildcard common/*.c) $(wildcard upper_computer/*.c)\
 		    $(wildcard conference_host_with_endstation/*.c) $(wildcard conference_network/*.c)\
@@ -12,7 +14,7 @@ DIR = $(notdir $(OBJS))
 
 LIB=libavdecc-host.a
 
-ALL:$(OBJS) LIB
+ALL:$(OBJS) LIB $(SUBDIRS)
 
 $(OBJS):%o:%c
 	@echo "\033[32m$(CC) -o $@ $< \033[0m"
@@ -26,7 +28,14 @@ endif
 
 	@$(AR) rc $(LIB) $(OBJS)
 
+$(SUBDIRS):ECHO
+	make -C $@
+
+ECHO:
+	@echo $(SUBDIRS)
+
 .PHONY:clean
 clean:
 	@echo $(RM) $(DIR) $(LIB) .*.sw?
 	@$(RM) $(OBJS) $(LIB) .*.sw?
+	make -C $(SUBDIRS) clean
