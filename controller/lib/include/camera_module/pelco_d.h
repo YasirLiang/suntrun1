@@ -1,30 +1,36 @@
+/*pelco_d.h
+**
+**
+**
+*/
+
 #ifndef __PELCO_D_H__
 #define __PELCO_D_H__
 
 #include "jdksavdecc_world.h"
 #include "host_controller_debug.h"
 
-typedef struct _type_instruction_word_1 
-{	
-	uint8_t focucs_near:1;	// 近距离聚焦
-	uint8_t iris_open:1;  	// 光圈扩大
-	uint8_t irs_close:1; 		// 光圈缩小
-	uint8_t zero_elem1:1;     	// 始终为零
-	uint8_t auto_scan:1;	// 自动扫描功能控制位
-	uint8_t zero_elem3:3; 	// 3位都为零且始终为零
-}instruction_word_1;
+/*{@D型控制协议*/
+#define CAMERA_SYNC_BYTE_HEAD 0xFF 	// 同步字节
+#define CAMERA_PELCO_D_DEAL_LEN 7
 
-typedef struct _type_instruction_word_2
-{
-	uint8_t zero_elem1:1;	// 始终为零
-	uint8_t right:1;			// 右移  
-	uint8_t left:1;			// 左移
-	uint8_t up:1;			// 上移
-	uint8_t down:1;		// 下移
-	uint8_t zoom_tele:1;	// 控制摄像机的变倍 接近物体
-	uint8_t zoom_wide:1;	// 控制摄像机的变倍 远离物体
-	uint8_t fucus_far:1;		// 远距离聚焦
-}instruction_word_2;
+#define CAMERA_CTRL_STOP 0x0000
+#define CAMERA_CTRL_AUTO_SCAN 0x0010	 // 自动扫描功能
+#define CAMERA_CTRL_IRIS_CLOSE 0x0004	 // 光圈缩小
+#define CAMERA_CTRL_IRIS_OPEN 0x0002	 // 光圈扩大
+#define CAMERA_CTRL_FOCUCS_NEAR 0x0001	// 近距离聚焦
+#define CAMERA_CTRL_FOCUCS_FAR 0x8000 	// 远距离聚焦
+#define CAMERA_CTRL_ZOOM_WIDE 0x4000	// 远离物体
+#define CAMERA_CTRL_ZOOM_TELE 0x2000 	// 接近物体
+#define CAMERA_CTRL_DOWN 0x1000 		// 下
+#define CAMERA_CTRL_UP 0x0800 			// 上
+#define CAMERA_CTRL_LEFT 0x0400			// 左
+#define CAMERA_CTRL_RIGHT 0x0200 		// 右
+
+#define CAMERA_CTRL_PRESET_SET 0x0300	// 设置预置点
+#define CAMERA_CTRL_PRESET_CALL 0x0700	// 调用预置点
+
+/*@}*/
 
 typedef struct _type_control_level_speed
 {
@@ -40,14 +46,15 @@ typedef struct _pelco_d_command_form	// D型控制协议命令格式
 {
 	uint8_t sync;						// 同步字节
 	uint8_t bit_id;						// 地址码
-	instruction_word_1 order_1;			// 指令码1  注: 当是预置点命令时 此元素为0
-	instruction_word_2 order_2;			// 指令码2   注:当是预置点命令 03 07 分别为设置与调用预置点命令
+	uint16_t order;			// 指令码1  注: 当是预置点命令时 此元素为0  指令码2   注:当是预置点命令 03 07 分别为设置与调用预置点命令
 	control_lv_speed data_code_1;		// 数据码1 注: 当是预置点命令时 此元素为0
 	control_vtcl_speed data_code_2;		// 数据码2 注:当是预置点命令，此元素是代表预置点号 
 	uint8_t check_digit; 				// 校验码
 }pelco_d_format;
 
-#define DIVISOR_CHECK_COUNT 0x100
-#define CHECK_DIGIT_RESULT(x,y,z,m,n) (((x)+(y)+(z)+(m)+(n))/(DIVISOR_CHECK_COUNT))
+#define DIVISOR_CHECK_COUNT 0x000000FF
+#define CHECK_DIGIT_RESULT(x,y,z,u) (((x)+(y)+(z)+(u))&(DIVISOR_CHECK_COUNT))// 计算校验码
+
+int pelco_d_cammand_set( uint8_t camera_address,  uint16_t d_cmd, uint8_t speed_lv, uint8_t speed_vertical, pelco_d_format* askbuf );
 
 #endif

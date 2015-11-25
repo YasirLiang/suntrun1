@@ -166,7 +166,7 @@ int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, 
 	tdata_addr_and_flag mic_list[SYSTEM_TMNL_MAX_NUM]; // 每个终端的麦克风状态对应一个元素
 	uint16_t addr_num = 0;
 
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_QUERY)
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_QUERY )
 	{
 		return -1;
 	}

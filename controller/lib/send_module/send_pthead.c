@@ -60,13 +60,27 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 		free( p_send_wnode );
 		p_send_wnode = NULL;
 
-		if( !is_resp_data && is_wait_messsage_primed_state() ) // 发送非响应数据
+		/*发送下一条数据的条件-数据获得响应或数据超时或时间间隔到了(注:时间间隔只适用于系统响应数据或摄像头控制数据的发送)*/
+		if( (!is_resp_data && is_wait_messsage_primed_state()) || ( is_resp_data && is_send_interval_primed_state())) 
 		{
-			int status = set_wait_message_active_state();
-			assert( status == 0 );
-			sem_wait( &sem_waiting );
-			status = set_wait_message_idle_state();
-			assert( status == 0 );
+			int status = -1;
+			if( !is_resp_data )
+			{
+				status = set_wait_message_active_state();
+				assert( status == 0 );
+				sem_wait( &sem_waiting );
+				status = set_wait_message_idle_state();
+				assert( status == 0 );
+			}
+			else
+			{
+				DEBUG_INFO( "coming start of sending response data: is primed_state = %d ", is_send_interval_primed_state());
+				status = set_send_interval_wait_state();
+				assert( status == 0 );
+				sem_wait( &sem_waiting );
+				status = set_send_interval_idle_state();
+				assert( status == 0 );
+			}
 		}
 	}
 

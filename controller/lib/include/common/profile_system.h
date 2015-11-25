@@ -14,22 +14,22 @@
 
 typedef enum
 {
-  VAL_CHM_PRIOR_ENUM=0,	// 主席优先 1 
-  VAL_CHM_MUSIC,			// 主席音乐 2
-  VAL_AUTO_CLOSE,			// 自动关闭 3
-  VAL_DSCS_MODE,			// 讨论模式 9
-  VAL_SPKER_LIMIT,		// 代表发言人数限制 4
-  VAL_APPLY_LIMIT,			// 申请人数限制 5 
-  VAL_CHM_TIMED_ENUM,	// 主席发言限时 6
-  VAL_VIP_TIMED_ENUM,		// VIP发言限时 7 
-  VAL_SPK_LIMIT_TIME,		// 发言限制时长 8 
+	VAL_CHM_PRIOR_ENUM=0,	// 主席优先 1 
+	VAL_CHM_MUSIC,			// 主席音乐 2
+	VAL_AUTO_CLOSE,			// 自动关闭 3
+	VAL_DSCS_MODE,			// 讨论模式 9
+	VAL_SPKER_LIMIT,			// 代表发言人数限制 4
+	VAL_APPLY_LIMIT,			// 申请人数限制 5 
+	VAL_CHM_TIMED_ENUM,		// 主席发言限时 6
+	VAL_VIP_TIMED_ENUM,		// VIP发言限时 7 
+	VAL_SPK_LIMIT_TIME,		// 发言限制时长 8 
 
-  VAL_TEMP_CLOSE,			// 暂时关闭,主机与终端 主席优先权限。1、静音；0、关闭
-  VAL_SINGIN_TYPE,		// 签到类型 
-  VAL_CMR_TRACK_ENUM,	// 摄像跟踪
-  VAL_CUR_CMR,			// 
-  VAL_MENU_LANG,			// 菜单语言
-  BYTE_DATA_NUM	
+	VAL_TEMP_CLOSE,			// 暂时关闭,主机与终端 主席优先权限。1、静音；0、关闭
+	VAL_SINGIN_TYPE,			// 签到类型 
+	VAL_CMR_TRACK_ENUM,		// 摄像跟踪
+	VAL_CUR_CMR,			// 当前摄像头
+	VAL_MENU_LANG,			// 菜单语言
+	BYTE_DATA_NUM	
 }ENUM_SYSTEM_SET_INDEX;
 
 

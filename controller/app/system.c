@@ -31,6 +31,7 @@ void init_system( void )
 	init_func_command_work_queue();
 	init_sem_wait_can();
 	init_network_send_queue();
+	send_interval_init();// ·¢ËÍ¼ä¸ô
 #ifdef __DEBUG__
 #ifdef __TEST_QUEUE__
 	fcqueue_data_elem queue_data_elem;

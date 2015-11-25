@@ -5,6 +5,8 @@
 #include "udp_server_controller_machine.h"
 #include "udp_client_controller_machine.h"
 #include "wait_message.h"
+#include "uart_controller_machine.h"
+#include "send_interval.h"
 
 /************************************************
 *Name:	system_raw_packet_tx
@@ -86,7 +88,7 @@ void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t 
 */
 void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
 {
-	assert( sin && frame);
+	assert( sin && frame );
 	
 	int ret = 0;
 	
@@ -119,6 +121,71 @@ void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 	}
 }
 
+/***********************************************
+*Writer:YasirLiang
+*Data: 2015/11/25
+*Name: system_uart_packet_tx
+*Param:
+*	frame:the sending data 
+*	frame_len:the length of sending data
+*	notification: decide whether send
+*	data_type: the data type of sending data by system sending
+*Return Value:None
+************************************************/
+
+void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
+{
+	assert( frame);
+	
+	if( notification )
+		system_uart_queue_tx( frame, frame_len, data_type, isresp );
+}
+
+/***********************************************
+*Writer:YasirLiang
+*Data: 2015/11/25
+*Name: system_uart_packet_tx
+*Param:
+*	frame:the sending data 
+*	frame_len:the length of sending data
+*	data_type: the data type of sending data by system sending
+*Return Value:None
+************************************************/
+void system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp )
+{
+	assert( frame );
+	
+	int ret = 0;
+	
+	if( data_type == TRANSMIT_TYPE_UART_CTRL )
+	{
+		tx_data tx;
+		uint8_t *tran_buf;
+		bool resp = isresp; // no need camera response data 
+		memset( tx.raw_dest.value, 0, 6 );
+
+		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
+		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		memcpy( tran_buf, frame, frame_len );
+		tx.frame = tran_buf;
+		tx.data_type = data_type;
+		tx.frame_len = frame_len;
+		tx.notification_flag = RUNINFLIGHT;
+		tx.resp = resp;
+		memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
+		if( ret == write_pipe_tx( &tx, sizeof(tx_data) ))
+		{
+			DEBUG_INFO( "ERR transmit data to PIPE" );
+			assert( -1 != ret );
+		}
+	}
+	else
+	{
+		DEBUG_INFO( "transmit data type not uart data!" );
+		return;
+	}
+}
+
 
 /****************************
 *writer:YasirLiang ---2015/09/09
@@ -133,14 +200,14 @@ void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 *		因为tx_packet_event调用结束后会释放frame的空间，而inflight 命令链表则会一直存在于系统中，
 *		直到程序成功发送网络数据。
 *返回值:无
-****************************/
-void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin, const bool resp)
+*****************************/
+void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin, const bool resp )
 {
 	int server_fd = 0;
 	int client_fd = 0;
 	bool istx = false;
+	bool right_packet = false;
 	struct sockaddr_in sin_event;
-	uint8_t subtype = jdksavdecc_common_control_header_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD );
 	
 	if( notification_flag == RUNINFLIGHT )
 	{
@@ -155,68 +222,61 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 	struct jdksavdecc_eui48 dest;
 	convert_eui48_to_uint64(dest_mac, &dest_addr);
 	if( dest_addr != 0)
-		memcpy(&dest, dest_mac, 6 );
+		memcpy( &dest, dest_mac, 6 );
 	else
-		memcpy(&dest, jdksavdecc_multicast_adp_acmp.value, 6);
+		memcpy( &dest, jdksavdecc_multicast_adp_acmp.value, 6 );
 	
 	if( istx )
 	{
-		switch( type )
+		if( type == TRANSMIT_TYPE_ADP )
 		{
-			
-			case TRANSMIT_TYPE_ADP:
-			{
-				if( subtype == JDKSAVDECC_SUBTYPE_ADP )
-					transmit_adp_packet_to_net( frame, frame_len, guard, false, dest.value, resp );// 未完成
-
-				else
-				{
-					DEBUG_INFO("Err ADP data!");
-					break;
-				}
-			}
-			break;
-			case TRANSMIT_TYPE_ACMP:
-			{
-				if( subtype == JDKSAVDECC_SUBTYPE_ACMP )			
-					transmit_acmp_packet_network( frame, frame_len, guard, false, dest.value, resp );
-				else
-				{
-					DEBUG_INFO("Err ACMP data!");
-					break;
-				}
-			}
-			break;
-			case TRANSMIT_TYPE_AECP:	// 这里包含了主机与终端通信的协议
-			{
-				if( subtype == JDKSAVDECC_SUBTYPE_AECP )
-				{
-					transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp );
-				}
-				else
-				{
-					DEBUG_INFO("Err AECP data!");
-					break;
-				}
-			}
-			break;
-			case TRANSMIT_TYPE_UDP_SVR: // host as client send data to udp server using client fd
-			{
-				transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
-			}
-			break;
-			case TRANSMIT_TYPE_UDP_CLT: // host as server send data to udp client using server fd
-			{
-				transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp );
-			}
-			break;
-			default:
-				DEBUG_INFO("NO match transmit data type, Please check!");
-				break;
+			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest.value, resp );
+			right_packet = true;
 		}
-		if( !resp )
+		else if( type == TRANSMIT_TYPE_ACMP )
 		{
-			set_wait_message_primed_state();
+			transmit_acmp_packet_network( frame, frame_len, guard, false, dest.value, resp );
+			right_packet = true;
+		}
+		else if( type == TRANSMIT_TYPE_AECP )
+		{
+			transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp );
+			right_packet = true;
+		}
+		else if( type == TRANSMIT_TYPE_UDP_SVR )// host as client send data to udp server using client fd
+		{ 
+			transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
+			right_packet = true;
+		}
+		else if( type == TRANSMIT_TYPE_UDP_CLT )// host as server send data to udp client using server fd
+		{ 
+			transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp );
+			right_packet = true;
+		}
+		else if( type == TRANSMIT_TYPE_UART_CTRL )
+		{ 
+			transmit_uart_control_packet_uart( frame, frame_len, false, resp ); 
+			right_packet = true;
+		}
+		else 
+		{
+			DEBUG_INFO("NO match transmit data type, Please check!");
+			right_packet = false;
+		}
+
+		if( right_packet )
+		{
+			if( !resp )
+			{
+				set_wait_message_primed_state();
+			}
+			else
+			{
+				if( set_send_interval_primed_state() != -1 );
+				{
+					uart_resp_send_interval_timer_start();
+				}
+			}
 		}
 	}
 	else

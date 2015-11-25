@@ -12,6 +12,7 @@
 #include "wait_message.h"
 #include "circular_link_queue.h"
 #include "control_data.h"
+#include "send_interval.h"
 
 extern sem_t sem_waiting; // 发送等待信号量，所有线程可见
 void init_sem_wait_can( void );

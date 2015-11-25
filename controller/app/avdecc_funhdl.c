@@ -44,13 +44,18 @@ int fn_timer_cb( struct epoll_priv*priv )
 	terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 
-	if( is_inflight_timeout && is_wait_messsage_active_state() )
+	if( is_inflight_timeout && is_wait_messsage_active_state())
 	{
-		set_wait_message_status( WAIT_TIMEOUT );
+		set_wait_message_status( WAIT_TIMEOUT );	
 		sem_post( &sem_waiting );
 	}
-
 	is_inflight_timeout = false; 
+
+	if((is_send_interval_wait_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
+	{
+		DEBUG_INFO( "coming end of sending response data " );
+		sem_post( &sem_waiting );
+	}
 	
     	return read_len;
 }

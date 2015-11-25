@@ -16,7 +16,9 @@ enum transmit_data_type
 	TRANSMIT_TYPE_ACMP,
 	TRANSMIT_TYPE_AECP,
 	TRANSMIT_TYPE_UDP_SVR, // send data to udp server
-	TRANSMIT_TYPE_UDP_CLT // send data to udp client
+	TRANSMIT_TYPE_UDP_CLT, // send data to udp client
+
+	TRANSMIT_TYPE_UART_CTRL	// send data to uart for controling the camera (2015-11-25 add)
 };
 
 typedef struct transmit_data
@@ -37,6 +39,8 @@ void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t fram
 void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type );
 void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,  const struct sockaddr_in *sin );
 void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin,const bool resp);
+void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
+void system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp );
 
 
 #endif
