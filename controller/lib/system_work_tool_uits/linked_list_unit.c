@@ -1,18 +1,37 @@
 #include "linked_list_unit.h"
 
 // 分配大小为size 类型为uint8_t *的堆空间
-uint8_t *allot_heap_space( int size, uint8_t ** pout)
+uint8_t* allot_heap_space( int size, uint8_t** pout )
 {
 	assert( NULL != pout );
+	*pout = NULL;
 	
-	*pout = ( uint8_t *)malloc( size );
-	if( NULL != *pout )
-		return *pout;
+	if( size > 0 )
+	{
+		DEBUG_INFO( "=======================malloc 1=====================" );
+		*pout = (uint8_t *)malloc( size );
+		DEBUG_INFO( "=======================malloc 2=====================" );
+		if( NULL != (*pout) )
+		{
+			DEBUG_INFO( "=======================malloc success=====================" );
+			return (*pout);
+		}
+		else
+		{
+			DEBUG_INFO("there is no space for malloc,malloc error!" );
+			return NULL;
+		}
+
+		DEBUG_INFO( "=======================malloc 3=====================" );
+	}
 	else
 	{
-		DEBUG_INFO("there is no space for malloc,malloc error!" );
+		DEBUG_INFO("Err size of space!" );
 		return NULL;
 	}
+
+	DEBUG_INFO( "=======================malloc 4=====================" );
+	return NULL;
 }
 
 // 释放堆空间

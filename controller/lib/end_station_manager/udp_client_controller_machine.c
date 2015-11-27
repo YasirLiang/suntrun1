@@ -95,6 +95,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 		}
 	}
 
+	//DEBUG_SEND( frame, frame_len, "Udp Client Send Data");
 	int send_len = send_udp_frame( fd, frame, frame_len, &sin_event );
 	if( send_len < 0)
 	{

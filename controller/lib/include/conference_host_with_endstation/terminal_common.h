@@ -33,6 +33,12 @@
 
 #define FREE_MODE_SPEAK_MAX 10 // 自由模式最大讲话人数
 
+
+/*{@ set terminal address*/
+#define ADDRESS_NOT_ALLOT 0
+#define ADDRESS_ALREADY_ALLOT 1
+/*@}*/
+
 /*{@ set terminal status*/
 #define MIC_CLOSE 1
 #define MIC_INVALID 0

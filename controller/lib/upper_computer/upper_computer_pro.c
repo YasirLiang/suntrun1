@@ -40,10 +40,10 @@ int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_d
 
 int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data, uint32_t data_len ) //后期可能需要修改11/10。
 {
-	FILE* fd = NULL;
 	thost_system_set set_sys; // 系统配置文件的格式
 	tcmpt_discuss_parameter qu_dis_para, set_dis_para;
 	uint16_t send_data_len = 0; // 协议数据负载的长度
+	FILE* fd = NULL;
 	
 	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb+" );
 	if( NULL == fd )
@@ -51,9 +51,10 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
 		return -1;
 	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
+	if( profile_system_file_read( fd, &set_sys ) == -1 )
 	{
 		DEBUG_INFO( "Read profile system Err!" );
+		Fclose( fd );
 		return -1;
 	}
 
@@ -69,16 +70,12 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		qu_dis_para.limit_vip_time = set_sys.vip_limitime ? ENABLE_VAL : FORBID_VAL;
 		qu_dis_para.limit_speak_time = set_sys.spk_limtime & 0x3f;
 		send_data_len = sizeof(tcmpt_discuss_parameter);
+		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_QUERY, \
-			DISCUSSION_PARAMETER, &qu_dis_para, send_data_len);
+			DISCUSSION_PARAMETER, &qu_dis_para, send_data_len );
 	}
-	// 设置保存系统状态值并设置系统状态
-	else if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
-	{
-		// 发送响应
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
-			DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
-			
+	else if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )// 设置保存系统状态值并设置系统状态
+	{	
 		get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
 		DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
 
@@ -92,7 +89,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				//DEBUG_INFO( "auto close = %d", temp_status );
+				DEBUG_INFO( "auto close = %d", temp_status );
 				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
@@ -100,7 +97,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				//DEBUG_INFO( "discuss_mode = %d", temp_status );
+				DEBUG_INFO( "discuss_mode = %d", temp_status );
 				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
@@ -108,7 +105,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
-				//DEBUG_INFO( "limit_speak_num = %d", temp_status );
+				DEBUG_INFO( "limit_speak_num = %d", temp_status );
 				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
@@ -116,7 +113,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				//DEBUG_INFO( "limit_apply_num = %d", temp_status );
+				DEBUG_INFO( "limit_apply_num = %d", temp_status );
 				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
@@ -129,8 +126,16 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		}
 		else
 		{
+			// 发送响应
+			send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, DISCUSSION_PARAMETER, NULL, 0 ); 
+			Fclose( fd );
+			
 			return -1; // 这里返回0 的目的是不让主机报错，
 		}
+
+		// 发送响应
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
+				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 	}
 
 	Fclose( fd );

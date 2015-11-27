@@ -2,6 +2,8 @@
 #include "aecp.h"
 #include "conference_end_to_host.h"
 #include "terminal_command.h"
+#include "conference.h"
+#include "conference_host_to_end.h"
 
 static uint16_t aecp_seq_id = 0;
 static solid_pdblist aecp_solid_guard = NULL;
@@ -100,7 +102,13 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			}
 		}
 	}
-
+	
+#if 0
+	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// conference data in this subtype data payload
+	{
+		test_conf_printf( frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cmd_type,  CONFERENCE_DATA_MSG);
+	}
+#endif
 	// ready to send
 	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
 	if( send_len < 0 )

@@ -1,6 +1,7 @@
 #include "avdecc_funhdl_native.h"
 #include "message_queue.h"
 #include "send_work_queue.h"
+#include "system_packet_tx.h"
 
 /* 这是网络原来的发送函数，只是简单的发送数据，没有考虑终端的处理数据需要过程。
 这里不停地发数据没有意义，因此修改如下:1、加入发送队列(使用线程锁与条件变量)。
@@ -66,13 +67,13 @@ int thread_pipe_fn( void *pgm )
 		{
 			tx_data tnt;
 			int result = read_pipe_tx( &tnt, sizeof(tx_data) );
+			DEBUG_INFO( "frame len = %d ", tnt.frame_len );
 			
 			if( result > 0 )
 			{
 				// 加入网络数据发送队列
 				pthread_mutex_lock( &send_wq->control.mutex );
-				
-				//DEBUG_INFO( "frame len = %d ", tnt.frame_len );
+
 				send_work_queue_message_save( &tnt );
 				
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
@@ -82,6 +83,10 @@ int thread_pipe_fn( void *pgm )
 			{
 				assert( tnt.frame && (result >= 0) );
 			}
+
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+			sem_post( &sem_tx );
+#endif
 		}
 		else
 		{

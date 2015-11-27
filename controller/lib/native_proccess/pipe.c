@@ -12,7 +12,7 @@ bool check_pipe_read_ready( int pipe_read_fd )
 	event.events = POLLIN; 				//存放要等待发生的事件,这里表示文件描述符可读
 	event.revents = 0;
 	
-	ret = poll( (struct pollfd *)&event, 1, -1 ); // 监测event，一个对象，等待5000毫秒后超时,-1为无限等待
+	ret = poll( (struct pollfd *)&event, 1, -1 ); // 监测event，一个对象，等待5000毫秒后超时,-1为无限等待, 0是不阻塞进程
 	if( ret<0 ) 						// 判断poll的返回值，负数是出错，0是设定的时间超时，整数表示等待的时间发生
 	{
 		DEBUG_INFO( "poll error!" );
@@ -57,7 +57,7 @@ uint16_t read_pipe_tx( void *buf, uint16_t read_len )
 	return lenght;
 }
 
-uint16_t write_pipe_tx(const void *buf, uint16_t buf_len )
+int write_pipe_tx(const void *buf, uint16_t buf_len )
 {
 	uint16_t pipe_len = 0;
 	
@@ -66,8 +66,12 @@ uint16_t write_pipe_tx(const void *buf, uint16_t buf_len )
 			return pipe_len;
 	else
 	{
+#ifndef __DEBUG__
 		DEBUG_ERR("pipe write ERR:");
 		assert( pipe_len != -1 );
+#else
+		return -1;
+#endif
 	}
 }
 

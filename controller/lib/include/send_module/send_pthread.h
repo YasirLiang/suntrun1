@@ -14,6 +14,12 @@
 #include "control_data.h"
 #include "send_interval.h"
 
+#ifdef __DEBUG__
+#ifndef __TEST_SEND_QUEUE__
+//#define __TEST_SEND_QUEUE__ // 测试发送网络数据的发送队列
+#endif
+#endif
+
 extern sem_t sem_waiting; // 发送等待信号量，所有线程可见
 void init_sem_wait_can( void );
 int pthread_send_network_create( pthread_t *send_pid );

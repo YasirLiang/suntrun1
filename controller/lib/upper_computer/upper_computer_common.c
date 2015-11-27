@@ -6,6 +6,18 @@
 struct udp_client upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;
 
+
+void test_udp_printf(const void *pri_load, size_t load_len, char *msg)
+{
+	uint8_t *p = ( uint8_t * )pri_load;
+	int i = 0;
+
+	fprintf( stdout, "%s  ",  msg);
+	for( ; i < ( int )load_len; i++ )
+		fprintf( stdout, "%02x ", *(p + i) );
+	fprintf( stdout, "\n" );
+}
+
 void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
 {
 	assert( askbuf );
@@ -55,8 +67,10 @@ int upper_computer_send( void* data_send )
 
 	if( is_upper_udp_client_connect )
 	{
+#ifdef __DEBUG__
+		test_udp_printf( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data:" );
+#endif
 		system_udp_packet_tx( &upper_udp_client.cltaddr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );
-		DEBUG_SEND( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data");
 	}
 
 	return upper_send_frame_len;

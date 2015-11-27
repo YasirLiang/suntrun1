@@ -5,9 +5,9 @@ OBJDUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-#CFLAGS = -Wall -g -O -O2 -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH) 
-#CFLAGS = -Wall -lavdecc-host -lpthread -lreadline -lrt -L$(ROOTPATH)
+#CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+#CFLAGS = -Wall -O -O2 -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -41,6 +41,8 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
+	@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
+	@$(OBJDUMP) -d avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)
@@ -48,8 +50,8 @@ ECHO:
 .PHONY:cleanall clean
 clean:
 	make -C controller clean
-	@$(RM) avdecc_ctl system.dat address.dat
+	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump
 cleanall:
 	make -C lib clean
 	make -C controller clean
-	@$(RM) avdecc_ctl system.dat address.dat
+	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump

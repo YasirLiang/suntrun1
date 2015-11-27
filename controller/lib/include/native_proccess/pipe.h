@@ -15,7 +15,7 @@ enum _pipe
 void build_pipe( int pipe_fd[2] );
 bool check_pipe_read_ready( int pipe_read_fd );
 uint16_t read_pipe_tx( void *buf, uint16_t read_len );
-uint16_t write_pipe_tx(const void *buf, uint16_t buf_len );
+int write_pipe_tx(const void *buf, uint16_t buf_len );
 
 #endif
 

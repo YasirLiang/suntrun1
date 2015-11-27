@@ -20,5 +20,5 @@ endif
 
 .PHONY:clean
 clean:
-	@echo $(RM) $(CUR_OBJS) $(BIN) .*.sw?
-	@$(RM) $(CUR_OBJS) $(BIN) .*.sw?
+	@echo $(RM) $(CUR_OBJS) $(BIN) $(DUMPTXT) .*.sw?
+	@$(RM) $(CUR_OBJS) $(BIN) $(DUMPTXT) .*.sw?

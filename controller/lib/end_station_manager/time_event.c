@@ -20,8 +20,9 @@ void inflight_time_tick( inflight_plist guard )
 				acmp_inflight_station_timeouts( inflight_station, guard );
 			else if( data_type == JDKSAVDECC_SUBTYPE_AECP )
 				aecp_inflight_station_timeouts( inflight_station, guard );
-			else 
+			else
 				DEBUG_INFO("Err inflight data type");
+				
 		}
 		else
 		{

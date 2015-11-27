@@ -226,7 +226,7 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		convert_entity_id_to_eui48_mac_address( uint64_target_id, send_dest.value );
 	}
 	
-	//DEBUG_INFO( "send dest = %02x-%02x-%02x-%02x-%02x-%02x", send_dest.value[0], send_dest.value[1], send_dest.value[2], send_dest.value[3], send_dest.value[4], send_dest.value[5]);
+	DEBUG_INFO( "send dest = %02x-%02x-%02x-%02x-%02x-%02x", send_dest.value[0], send_dest.value[1], send_dest.value[2], send_dest.value[3], send_dest.value[4], send_dest.value[5]);
 	memcpy( send_frame.src_address.value, net.m_my_mac, 6 );
 	cnf_data_len = conference_host_to_end_form_msg( &send_frame, &fill_send_buf, data_buf->cchdr.command_control, data_buf->data_len, data_buf->cchdr.address, data_buf->data );
 	send_len = conference_1722_control_form_info( &send_frame, &aemdu, send_dest, target_id, cnf_data_len );

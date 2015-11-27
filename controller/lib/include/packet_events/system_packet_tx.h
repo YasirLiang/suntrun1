@@ -6,8 +6,13 @@
 #include "linked_list_unit.h"
 #include "pipe.h"
 #include "avdecc_net.h"
+#include <semaphore.h>
 
-#define TRANSMIT_DATA_BUFFER_SIZE 2048
+#ifndef __PIPE_SEND_CONTROL_ENABLE__
+#define __PIPE_SEND_CONTROL_ENABLE__ // 管道同步传输控制
+#endif
+
+#define TRANSMIT_DATA_BUFFER_SIZE 512
 #define CONFERENCE_RESPONSE_POS 1
 
 enum transmit_data_type
@@ -33,14 +38,16 @@ typedef struct transmit_data
 }tx_data,*ptr_tx_data;
 
 struct fds;
+extern sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
+void init_sem_tx_can( void );
 
-void system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp );
+int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp );
 void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
 void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type );
-void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,  const struct sockaddr_in *sin );
+int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,  const struct sockaddr_in *sin );
 void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin,const bool resp);
 void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
-void system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp );
+int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp );
 
 
 #endif

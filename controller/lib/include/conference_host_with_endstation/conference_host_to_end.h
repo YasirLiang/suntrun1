@@ -9,6 +9,7 @@
 #define CONFERENCE_CONTROL_DATA_MSG "Conference Control Header:"
 #define READY_SEND_FRAME_DATA "Ready Send Frame:"
 
+void test_conf_printf(const void *pri_load, size_t load_len, char *msg);
 void conference_common_header_write(const struct conference_common_header phdr,  void*base, size_t offset);
 int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_to_endstation *phost,uint8_t msg_type,const ssize_t data_len,uint16_t end_addr,	uint8_t hdata[]);
 int conference_host_to_command_set(uint8_t *scmd, uint8_t *high3bit);

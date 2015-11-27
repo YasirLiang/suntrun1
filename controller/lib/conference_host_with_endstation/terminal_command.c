@@ -205,7 +205,7 @@ void terminal_limit_spk_time( uint64_t target_id, uint16_t addr, tmnl_limit_spk_
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_TALKTIME_LEN;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( uint8_t );
-	memcpy(&askbuf.data[0], &spk_time, sizeof( uint8_t));
+	askbuf.data[0] = spk_time.limit_time;
 
 	bool noneed_resp = false;// 不需要响应
 	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )

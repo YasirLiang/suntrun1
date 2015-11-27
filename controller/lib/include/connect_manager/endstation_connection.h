@@ -64,7 +64,7 @@ typedef struct _ttdisconnect_connect_mic_set_callback
 {
 	uint8_t mic_state;
 	bool mic_state_set;
-	tmnl_pdblist connect_node;
+	tmnl_pdblist connect_node; // 不能改变的参数
 	p_mic_state_set_callback p_mic_set_callback;
 	p_main_state_send_callback p_mian_state_send;
 }tdisconnect_connect_mic_main_set;

@@ -392,7 +392,7 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 	}
 	else
 	{
-		if( msg.data && (!p_allot->renew_flag) && (p_addr_list[p_allot->index].addr != 0xffff))
+		if( (msg.data == ADDRESS_ALREADY_ALLOT) && (p_allot->renew_flag) && (p_addr_list[p_allot->index].addr != 0xffff))
 		{
 			new_addr = p_addr_list[p_allot->index].addr;
 		}
@@ -729,8 +729,7 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29), 使用连接表管理系统的麦克风的连接状态，暂时未考虑同步的问题(11/4)*/
 	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 	{
-
-		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst )
+		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS )
 		{
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 		}
@@ -775,10 +774,10 @@ int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 	
 	for( ;p_tmnl_list != dev_terminal_list_guard; p_tmnl_list = p_tmnl_list->next )
 	{
-		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && \
-			(p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
+		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && (p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
 			spk_num++;
 	}
+	
 	host_main_state.spk_num = spk_num; // 当前讲话人数
 	host_main_state.apply = gdisc_flags.apply_num;
 
@@ -835,11 +834,8 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 	/*关闭所有麦克风*/
 	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 	{
-		// 1.查看连接表，断开所有的连接(1722.1协议),暂时不考虑同步的问题11/3
-		//connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id );
-		
 		// 2.设置麦克风tarker的状态,上报麦克风状态, 设置相应终端的麦克风状态(会议主机与终端协议)
-		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst )
+		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) )
 		{
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 		}
@@ -921,6 +917,7 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	{
 		DEBUG_INFO( "Read profile system Err!" );
 		Fclose( fd );
+		fd = NULL;
 		return -1;
 	}
 
@@ -1088,15 +1085,16 @@ int terminal_start_discuss( bool mic_flag )
 
 	if( !mic_flag ) // 关闭所有麦克风
 	{
+		assert( dev_terminal_list_guard );
 		tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
 		
 		/*关闭所有麦克风*/
 		for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 		{
-			
-			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst ) // 断开注册连接的终端
+			DEBUG_INFO( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
+			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) ) // 断开注册连接的终端
 			{
-				//connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+				connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 			}
 		}
 	}

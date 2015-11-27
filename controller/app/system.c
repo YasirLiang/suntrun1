@@ -30,8 +30,12 @@ void init_system( void )
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+	init_sem_tx_can();
+#endif
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
+	
 #ifdef __DEBUG__
 #ifdef __TEST_QUEUE__
 	fcqueue_data_elem queue_data_elem;
@@ -51,6 +55,31 @@ void init_system( void )
 #endif
 #endif
 
+#ifdef __DEBUG__
+#ifdef __TEST_SEND_QUEUE__
+
+	pthread_mutex_lock( &net_send_queue.control.mutex );
+
+	tx_data tnt;
+	memset( &tnt, 0, sizeof(tx_data));
+	int i = 0;
+	for(  i = 0; i < 100000; i++ )// 目前测试的最大数(同时存在)是100000,就frame总大小200M;在虚拟机上的测试，内存够大，无问题
+	{
+		uint8_t *tran_buf = NULL;
+		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		if( tran_buf == NULL )
+		{
+			DEBUG_INFO( "Err allot_heap_space!" );
+			exit(1);
+		}
+		tnt.frame_len = i;
+		tnt.frame = tran_buf;
+		send_work_queue_message_save( &tnt );
+	}
+	
+	pthread_mutex_unlock( &net_send_queue.control.mutex );
+#endif
+#endif
 }
 
 void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )

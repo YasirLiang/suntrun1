@@ -8,6 +8,14 @@
 #include "uart_controller_machine.h"
 #include "send_interval.h"
 
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
+void init_sem_tx_can( void )
+{
+	sem_init( &sem_tx, 0, 0 );
+}
+#endif
+
 /************************************************
 *Name:	system_raw_packet_tx
 *Function:	to send a frame data to system unnamed pipe	
@@ -28,38 +36,58 @@ void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t fram
 		system_raw_queue_tx( frame, frame_len, data_type, dest_mac, isresp );
 }
 
-void system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp )
+int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp )
 {
 	assert( frame);
 	
-	int ret = 0;
+	int ret = -1;
 	if( (data_type == TRANSMIT_TYPE_ADP) || (data_type == TRANSMIT_TYPE_ACMP) || (data_type == TRANSMIT_TYPE_AECP) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf;
-		memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
+		uint8_t *tran_buf = NULL;
+		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		
+		// heap using later free by reading pipe thread.tran_buf space must to be free!
+		DEBUG_INFO( ">>>================start write pipe tx============<<<");
+		tran_buf= allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		DEBUG_INFO( ">>>================start write pipe tx1============<<<");
+		if( NULL == tran_buf )
+		{
+			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
+			return -1;
+		}
 
-		// heap using later free by reading pipe thread.tran_buf space must to be free! 
-		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		memcpy( tran_buf, frame, frame_len );
+		DEBUG_INFO( ">>>================ midle write pipe tx============<<<");
+		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = isresp;
-		memcpy(tx.raw_dest.value, dest_mac, 6);
+		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		
-		if( ret == write_pipe_tx(&tx, sizeof(tx_data)))
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
+
+		sem_wait( &sem_tx );
+#else 
+		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
+		{
+			DEBUG_INFO( "ERR transmit data to PIPE" );
+			assert(-1 != ret);
+		}
+#endif
 	}
 	else
 	{
 		DEBUG_INFO( "ERR transmit data type" );
-		return;
 	}
+
+	return ret;
 }
 
 /**************************
@@ -86,21 +114,29 @@ void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t 
 *	after change:void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
 *
 */
-void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
+int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const struct sockaddr_in *sin )
 {
 	assert( sin && frame );
 	
-	int ret = 0;
-	
+	int ret = -1;
 	if( (data_type == TRANSMIT_TYPE_UDP_SVR) || (data_type == TRANSMIT_TYPE_UDP_CLT) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf;
+		uint8_t *tran_buf = NULL;
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
-		memset( tx.raw_dest.value, 0, 6 );
+		memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
 
 		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
+		DEBUG_INFO( ">>>================start udp write pipe tx============<<<");
 		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		DEBUG_INFO( ">>>================ start udp write pipe tx1============<<<");
+		if( NULL == tran_buf )
+		{
+			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
+			return -1;
+		}
+
+		DEBUG_INFO( ">>>================ midle udp write pipe tx============<<<");
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -108,17 +144,36 @@ void system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, co
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 		memcpy(&tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
-		if( ret == write_pipe_tx(&tx, sizeof(tx_data)))
+
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
+		else
+		{
+			DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
+		}
+		sem_wait( &sem_tx );
+#else
+	if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
+		{
+			DEBUG_INFO( "ERR transmit data to PIPE" );
+			assert(-1 != ret);
+		}
+		else
+		{
+			DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
+		}
+#endif
 	}
 	else
 	{
 		DEBUG_INFO( "transmit data type not udp clt or srv" );
-		return;
 	}
+
+	return ret;
 }
 
 /***********************************************
@@ -151,11 +206,11 @@ void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, 
 *	data_type: the data type of sending data by system sending
 *Return Value:None
 ************************************************/
-void system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp )
+int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp )
 {
 	assert( frame );
 	
-	int ret = 0;
+	int ret = -1;
 	
 	if( data_type == TRANSMIT_TYPE_UART_CTRL )
 	{
@@ -173,17 +228,28 @@ void system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, b
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 		memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
-		if( ret == write_pipe_tx( &tx, sizeof(tx_data) ))
+		
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert( -1 != ret );
 		}
+		sem_wait( &sem_tx );
+#else
+		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
+		{
+			DEBUG_INFO( "ERR transmit data to PIPE" );
+			assert( -1 != ret );
+		}
+#endif
 	}
 	else
 	{
 		DEBUG_INFO( "transmit data type not uart data!" );
-		return;
 	}
+
+	return ret;
 }
 
 
