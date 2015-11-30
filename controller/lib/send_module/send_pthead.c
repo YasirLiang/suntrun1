@@ -18,12 +18,11 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 	sdpwqueue*  p_send_wq = &net_send_queue;
 	assert( p_send_wq );
 
-	p_sdpqueue_wnode p_send_wnode = NULL;
-
-#ifndef __TEST_SEND_QUEUE__
 	while( 1 )
 	{
+		p_sdpqueue_wnode p_send_wnode = NULL;
 		bool is_resp_data = false;
+		
 		pthread_mutex_lock( &p_send_wq->control.mutex );
 
 		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
@@ -57,8 +56,6 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
 		assert( p_send_wnode->job_data.frame == NULL );		// free successfully and result is NULL? 
 		free( p_send_wnode );
-		p_send_wnode = NULL;
-
 		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		/*发送下一条数据的条件-数据获得响应或数据超时或时间间隔到了(注:时间间隔只适用于系统响应数据或摄像头控制数据的发送)*/
@@ -84,36 +81,6 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 			}
 		}
 	}
-#else
-	while( 1 )
-	{
-		pthread_mutex_lock( &p_send_wq->control.mutex );
-
-		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
-		{
-			DEBUG_INFO( "active = %d", p_send_wq->control.active );
-			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
-		}
-
-		// 获取队列数据
-		p_send_wnode = send_queue_message_get( p_send_wq );
-		if( NULL == p_send_wnode )
-		{
-			DEBUG_INFO( "No send queue message: ERROR!" );
-			pthread_mutex_unlock( &p_send_wq->control.mutex );
-			continue;
-		}
-
-		DEBUG_INFO( " len = %d", p_send_wnode->job_data.frame_len );
-		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
-		assert( p_send_wnode->job_data.frame == NULL );		// free successfully and result is NULL? 
-		free( p_send_wnode );
-		p_send_wnode = NULL;
-
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
-	}
-#endif
-
 	return 0;
 }
 

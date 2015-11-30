@@ -2,7 +2,8 @@
 
 queue_node* queue_get( queue *root )
 {
-	queue_node* node_get = root->front;;
+	assert( root );
+	queue_node* node_get = root->front;
 
 	if( !is_queue_empty( root ) )
 	{
@@ -13,7 +14,8 @@ queue_node* queue_get( queue *root )
 }
 
 void queue_push( queue *root, queue_node *node )
-{
+{	
+	assert( node );
 	if( NULL != root->rear )
 	{	
 		root->rear->next = node; //新节点插入到队列尾
@@ -30,6 +32,7 @@ void queue_push( queue *root, queue_node *node )
 
 bool is_queue_empty( queue* root )
 {
+	assert( root );
 	return (( root->front == NULL ) ? true : false );
 }
 

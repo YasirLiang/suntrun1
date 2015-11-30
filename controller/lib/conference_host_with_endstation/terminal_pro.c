@@ -729,6 +729,7 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29), 使用连接表管理系统的麦克风的连接状态，暂时未考虑同步的问题(11/4)*/
 	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 	{
+		DEBUG_LINE();
 		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS )
 		{
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
@@ -963,7 +964,6 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	}
 
 	Fclose( fd );
-	
 	return 0;
 }
 

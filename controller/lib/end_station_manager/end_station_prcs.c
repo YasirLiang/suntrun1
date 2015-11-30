@@ -439,7 +439,7 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 		}
 	}
 
-       aecp_update_inflight_for_rcvd_resp( msg_type, u_field, &cmd_frame);
+       aecp_update_inflight_for_rcvd_resp( msg_type, u_field, &cmd_frame );
 
         bool store_descriptor = false;
         if( *status == AEM_STATUS_SUCCESS )
@@ -493,7 +493,8 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 					memcpy(&descptor_info->endpoint_desc.entity_name,  &entity_desc.entity_name, sizeof(struct jdksavdecc_string ));
 					memcpy(&descptor_info->endpoint_desc.firmware_version,  &entity_desc.firmware_version, sizeof(struct jdksavdecc_string ));
 				}
-				insert_descptor_dblist_trail( descptor_guard, descptor_info);
+				
+				insert_descptor_dblist_trail( descptor_guard, descptor_info );
                         }
                         break;
 

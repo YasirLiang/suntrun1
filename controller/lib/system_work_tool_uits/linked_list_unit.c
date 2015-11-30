@@ -8,12 +8,12 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 	
 	if( size > 0 )
 	{
-		DEBUG_INFO( "=======================malloc 1=====================" );
+		//DEBUG_INFO( "=======================malloc 1=====================" );
 		*pout = (uint8_t *)malloc( size );
-		DEBUG_INFO( "=======================malloc 2=====================" );
+		//DEBUG_INFO( "=======================malloc 2=====================" );
 		if( NULL != (*pout) )
 		{
-			DEBUG_INFO( "=======================malloc success=====================" );
+			//DEBUG_INFO( "=======================malloc success=====================" );
 			return (*pout);
 		}
 		else
@@ -22,7 +22,7 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 			return NULL;
 		}
 
-		DEBUG_INFO( "=======================malloc 3=====================" );
+		//DEBUG_INFO( "=======================malloc 3=====================" );
 	}
 	else
 	{
@@ -30,7 +30,7 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 		return NULL;
 	}
 
-	DEBUG_INFO( "=======================malloc 4=====================" );
+	//DEBUG_INFO( "=======================malloc 4=====================" );
 	return NULL;
 }
 
@@ -39,7 +39,9 @@ void release_heap_space( uint8_t **p )
 {
 	if( NULL != *p )
 	{
+		DEBUG_LINE();
 		free( *p );
+		DEBUG_LINE();
 		*p = NULL;
 	}
 	else

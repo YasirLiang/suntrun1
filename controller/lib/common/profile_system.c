@@ -212,7 +212,6 @@ int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint1
 
 			if( ret != 0 ) // 不是文件末尾
 			{
-				
 				count_crc += byte;
 				read_buf[i++] = byte;
 			}

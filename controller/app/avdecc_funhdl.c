@@ -3,14 +3,17 @@
 #include "terminal_pro.h"
 #include "wait_message.h"
 #include "send_pthread.h"
+#include "send_work_queue.h"
+#include "func_proccess.h"
 
 bool is_inflight_timeout = false;
 extern bool acmp_recv_resp_err; // acmp 接收到命令但响应错误参数
 
 void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
 {
+	char *addr = (char*)inet_ntoa( sin->sin_addr );
 	frame->payload_len = len;
-	strcpy( (char*)frame->dest_address, (char*)inet_ntoa( sin->sin_addr ) );
+	strcpy( (char*)frame->dest_address, addr );
 	frame->dest_port = ntohs( sin->sin_port );
 
 	//DEBUG_INFO("dest address = %s:%d", frame->dest_address, frame->dest_port);
@@ -53,8 +56,8 @@ int fn_timer_cb( struct epoll_priv*priv )
 
 	if((is_send_interval_wait_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
 	{
-		DEBUG_INFO( "coming end of sending response data " );
 		sem_post( &sem_waiting );
+		DEBUG_INFO( "coming end of sending response data " );
 	}
 	
     	return read_len;
@@ -106,7 +109,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	int recv_len = 0;
 	memset( &recv_frame, -1, sizeof( struct host_upper_cmpt_frame ) );
 	memset( &sin_in, 0, sin_len );
-	
+
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
 	if( recv_len > 0)
 	{

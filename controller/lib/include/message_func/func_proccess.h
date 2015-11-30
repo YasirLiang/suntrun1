@@ -12,8 +12,9 @@
 
 #include "common.h"
 #include "enum.h"
+#include <semaphore.h>
 
-#define MAX_FUNC_MSG_LEN 200
+#define MAX_FUNC_MSG_LEN 512
 
 typedef struct func_message_head
 {

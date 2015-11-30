@@ -18,12 +18,12 @@
 #include "host_controller_debug.h"
 
 
-#define SUB_DATA_TYPE_SIZE 512
+#define SUB_DATA_TYPE_SIZE 256
 
 typedef struct data_element		// Êý¾ÝÔªËØ
 {
-	uint32_t data_len;
 	uint8_t data_buf[SUB_DATA_TYPE_SIZE];
+	uint32_t data_len;
 }data_element_type;
 
 #endif

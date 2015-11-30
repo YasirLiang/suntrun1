@@ -71,7 +71,8 @@ int main( int argc, char *argv[] )
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
-	//controller_proccess();
+	controller_proccess();
+	while(1);
 	
 	pthread_exit( NULL );
 	

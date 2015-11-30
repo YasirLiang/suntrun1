@@ -114,9 +114,9 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 		pthread_mutex_lock( &fcwork_queue.control.mutex );
 		
 		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
-		
+
 		pthread_mutex_unlock( &fcwork_queue.control.mutex );
-		pthread_cond_signal( &fcwork_queue.control.cond);
+		pthread_cond_signal( &fcwork_queue.control.cond );
 	}
 	else
 	{

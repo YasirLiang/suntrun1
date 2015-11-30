@@ -30,11 +30,15 @@ void init_system( void )
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
+	connect_table_info_init();/*初始化连接表*/ 
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 	init_sem_tx_can();
 #endif
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
+
+	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
+	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
 	
 #ifdef __DEBUG__
 #ifdef __TEST_QUEUE__
@@ -93,19 +97,16 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
 
-	sleep(1);
+	sleep(2);
 	
-	/*初始化连接表*/ 
-	connect_table_info_init();
-	connect_table_get_information( descptor_guard );
+	//connect_table_get_information( descptor_guard );
 	
-
 	/*获取系统的终端连接信息*/ 
-	background_read_descriptor_input_output_stream();
+	//background_read_descriptor_input_output_stream();
 
 	/* 设置连接表*/
 	sleep(1);
-	connect_table_info_set( descptor_guard, true );
+	//connect_table_info_set( descptor_guard, true );
 	
 	// 注册会议终端, 维持5s
 }

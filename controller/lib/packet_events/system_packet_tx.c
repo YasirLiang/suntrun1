@@ -45,19 +45,19 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	{
 		tx_data tx;
 		uint8_t *tran_buf = NULL;
-		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		//memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
 		
 		// heap using later free by reading pipe thread.tran_buf space must to be free!
-		DEBUG_INFO( ">>>================start write pipe tx============<<<");
+		//DEBUG_INFO( ">>>================start write pipe tx============<<<");
 		tran_buf= allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		DEBUG_INFO( ">>>================start write pipe tx1============<<<");
+		//DEBUG_INFO( ">>>================start write pipe tx1============<<<");
 		if( NULL == tran_buf )
 		{
 			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
 			return -1;
 		}
 
-		DEBUG_INFO( ">>>================ midle write pipe tx============<<<");
+		//DEBUG_INFO( ">>>================ midle write pipe tx============<<<");
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -127,16 +127,16 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
 
 		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
-		DEBUG_INFO( ">>>================start udp write pipe tx============<<<");
+		//DEBUG_INFO( ">>>================start udp write pipe tx============<<<");
 		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		DEBUG_INFO( ">>>================ start udp write pipe tx1============<<<");
+		//DEBUG_INFO( ">>>================ start udp write pipe tx1============<<<");
 		if( NULL == tran_buf )
 		{
 			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
 			return -1;
 		}
 
-		DEBUG_INFO( ">>>================ midle udp write pipe tx============<<<");
+		//DEBUG_INFO( ">>>================ midle udp write pipe tx============<<<");
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -153,7 +153,7 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		}
 		else
 		{
-			DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
+			//DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
 		}
 		sem_wait( &sem_tx );
 #else
@@ -164,7 +164,7 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		}
 		else
 		{
-			DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
+			//DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
 		}
 #endif
 	}

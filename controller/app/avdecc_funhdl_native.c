@@ -83,7 +83,7 @@ int thread_pipe_fn( void *pgm )
 			{
 				assert( tnt.frame && (result >= 0) );
 			}
-
+			
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 			sem_post( &sem_tx );
 #endif
@@ -117,7 +117,7 @@ int thread_func_fn( void * pgm )
 			DEBUG_LINE();
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
 		}
-		
+
 		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
 		if( NULL == p_msg_wnode )
 		{
@@ -129,14 +129,23 @@ int thread_func_fn( void * pgm )
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
 		DEBUG_ONINFO( "[ queue test:  %d(index)--%d(cmd) ]",  func_index, func_cmd );
 		free( p_msg_wnode );
+		p_msg_wnode->next = NULL;
+		p_msg_wnode = NULL;
 
 		pthread_mutex_unlock( &p_func_wq->control.mutex );
 #else // normal 
 		pthread_mutex_lock( &p_func_wq->control.mutex );
 		
-		while( p_func_wq->work.front == NULL && p_func_wq->control.active )
+		while( p_func_wq->control.active && (p_func_wq->work.front == NULL) )
 		{
+			DEBUG_INFO( "func_wq active = %d ", p_func_wq->control.active );
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
+		}
+
+		if( !p_func_wq->control.active )
+		{
+			pthread_mutex_unlock( &p_func_wq->control.mutex );
+			break;
 		}
 		
 		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
@@ -147,15 +156,19 @@ int thread_func_fn( void * pgm )
 			continue;
 		}
 
-		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
-
 		// proccess func command queue message
 		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
 		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
 		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
+		
+		DEBUG_INFO( " get func data len = %d", data_len );
 		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
 		free( p_msg_wnode );
+		//p_msg_wnode->next = NULL;
+		//p_msg_wnode = NULL;
+		
+		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 #endif	
 	}
 	

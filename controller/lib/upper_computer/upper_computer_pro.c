@@ -58,6 +58,9 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		return -1;
 	}
 
+	get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
+	DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
+
 	if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
 	{
 		qu_dis_para.chairman_first = set_sys.chman_first ? ENABLE_VAL : FORBID_VAL;
@@ -76,9 +79,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	}
 	else if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )// 设置保存系统状态值并设置系统状态
 	{	
-		get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
-		DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
-
 		// 保存配置文件
 		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
 		{
@@ -90,7 +90,8 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 自动关闭麦克风
 				DEBUG_INFO( "auto close = %d", temp_status );
-				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
+				//terminal_mic_auto_close( 0, NULL, 0 );
+				//find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
 			temp_status = set_dis_para.discuss_mode;
@@ -98,7 +99,8 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 设置系统讨论模式
 				DEBUG_INFO( "discuss_mode = %d", temp_status );
-				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
+				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );
+				//find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
@@ -106,7 +108,8 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 设置限制的发言人数
 				DEBUG_INFO( "limit_speak_num = %d", temp_status );
-				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				//terminal_speak_limit_num_set( 0, &temp_status, 1 );
+				//find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
@@ -114,7 +117,8 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			{
 				// 设置限制申请人数
 				DEBUG_INFO( "limit_apply_num = %d", temp_status );
-				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				//terminal_apply_limit_num_set( 0, &temp_status, 1 );
+				//find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			// 限时设置
@@ -124,22 +128,12 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
 		}
-		else
-		{
-			// 发送响应
-			send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, DISCUSSION_PARAMETER, NULL, 0 ); 
-			Fclose( fd );
-			
-			return -1; // 这里返回0 的目的是不让主机报错，
-		}
 
-		// 发送响应
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
 				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 	}
-
-	Fclose( fd );
 	
+	Fclose( fd );
 	return 0;
 }
 
@@ -362,10 +356,10 @@ int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_
 	assert( data );
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_OF_SIGN, NULL, 0 );
+		
 		/*处理结束签到*/
 		terminal_end_sign( 0, NULL, 0 ); 
-		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_OF_SIGN, NULL, 0 );
 	}
 	else
 	{
