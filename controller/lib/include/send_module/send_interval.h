@@ -11,7 +11,7 @@
 #include "host_time.h"
 
 /*{@系统发送数据的间隔时间(用于系统对响应数据的发送)*/
-#define SEND_INTERVAL_TIME 100 // 100MS
+#define SEND_INTERVAL_TIME 25 // 25MS
 /*@}*/
 
 enum send_interval_enum

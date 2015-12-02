@@ -53,11 +53,10 @@ int upper_computer_send( void* data_send )
 	assert( data_send );
 	struct host_upper_cmpt *askbuf = (struct host_upper_cmpt*)data_send;
 	struct host_upper_cmpt_frame upper_send_frame;
-	uint16_t upper_send_frame_len = 0;
 	int ret = 0;
 
+	memset( &upper_send_frame, 0, sizeof(struct host_upper_cmpt_frame) );
 	upper_send_frame.payload_len = OTHER_DATA_LENGHT + askbuf->common_header.data_len;
-	upper_send_frame_len = upper_send_frame.payload_len;
 	ret = conference_host_to_upper_computer_form_msg( &upper_send_frame, askbuf );// need to set check first in this function
 	if( ret < 0 )
 	{
@@ -68,12 +67,13 @@ int upper_computer_send( void* data_send )
 	if( is_upper_udp_client_connect )
 	{
 #ifdef __DEBUG__
+		//DEBUG_INFO( " (ret =%d)?= (pay len = %d)", ret, upper_send_frame.payload_len );
 		test_udp_printf( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data:" );
 #endif
 		system_udp_packet_tx( &upper_udp_client.cltaddr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );
 	}
 
-	return upper_send_frame_len;
+	return (upper_send_frame.payload_len);
 }
 
 /*************************************

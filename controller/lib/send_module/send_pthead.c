@@ -13,18 +13,15 @@ void init_sem_wait_can( void )
 	sem_init( &sem_waiting, 0, 0 );
 }
 
-int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
+#ifndef __NOT_USE_SEND_QUEUE_PTHREAD__ // 定义于send_pthread.h
+int thread_send_func( void *pgm ) // 加入同步机制，采用信号量.(修改后不在此线程使用同步机制2015-12-1)
 {
 	sdpwqueue*  p_send_wq = &net_send_queue;
 	assert( p_send_wq );
-
+	
 	while( 1 )
 	{
-		p_sdpqueue_wnode p_send_wnode = NULL;
-		bool is_resp_data = false;
-		
-		pthread_mutex_lock( &p_send_wq->control.mutex );
-
+		pthread_mutex_lock( &p_send_wq->control.mutex ); // lock mutex
 		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
 		{
 			DEBUG_INFO( "active = %d", p_send_wq->control.active );
@@ -32,6 +29,8 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 		}
 
 		// 获取队列数据
+		p_sdpqueue_wnode p_send_wnode = NULL;
+		bool is_resp_data = false;
 		p_send_wnode = send_queue_message_get( p_send_wq );
 		if( NULL == p_send_wnode )
 		{
@@ -42,7 +41,6 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 
 		// ready to sending data
 		is_resp_data = p_send_wnode->job_data.resp;
-
 		tx_packet_event( p_send_wnode->job_data.data_type, 
 							     p_send_wnode->job_data.notification_flag, 
 							     p_send_wnode->job_data.frame, 
@@ -56,14 +54,19 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
 		assert( p_send_wnode->job_data.frame == NULL );		// free successfully and result is NULL? 
 		free( p_send_wnode );
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
+		int len = get_queue_length( &p_send_wq->work );
+		DEBUG_INFO( "============>>after queue len = %d <<=============", len );
+		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+#if 1		
 		/*发送下一条数据的条件-数据获得响应或数据超时或时间间隔到了(注:时间间隔只适用于系统响应数据或摄像头控制数据的发送)*/
-		if( (!is_resp_data && is_wait_messsage_primed_state()) || ( is_resp_data && is_send_interval_primed_state())) 
+		//DEBUG_INFO( "wait (%d) -----------interval(%d)",  is_wait_messsage_primed_state(), is_send_interval_primed_state());
+		if( is_wait_messsage_primed_state() ) 
 		{
 			int status = -1;
 			if( !is_resp_data )
 			{
+				DEBUG_INFO( "coming start of sending >>>host data<<<: (%d) ! ", is_wait_messsage_primed_state());
 				status = set_wait_message_active_state();
 				assert( status == 0 );
 				sem_wait( &sem_waiting );
@@ -73,14 +76,22 @@ int thread_send_func( void *pgm ) // 加入同步机制，采用信号量
 			else
 			{
 				DEBUG_INFO( "coming start of sending response data: is primed_state = %d ", is_send_interval_primed_state());
-				status = set_send_interval_wait_state();
+				status = set_wait_message_active_state();
 				assert( status == 0 );
+				uart_resp_send_interval_timer_start(); // start timer
 				sem_wait( &sem_waiting );
-				status = set_send_interval_idle_state();
+				resp_send_interval_timer_stop();
+				status = set_wait_message_idle_state();
 				assert( status == 0 );
 			}
 		}
+		else
+		{
+			DEBUG_INFO("...................................." );
+		}
+#endif
 	}
+	
 	return 0;
 }
 
@@ -98,4 +109,5 @@ int pthread_send_network_create( pthread_t *send_pid )
 
 	return 0;
 }
+#endif
 

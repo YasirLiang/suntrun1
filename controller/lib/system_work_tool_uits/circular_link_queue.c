@@ -36,6 +36,28 @@ bool is_queue_empty( queue* root )
 	return (( root->front == NULL ) ? true : false );
 }
 
+int get_queue_length( queue* root )
+{
+	assert( root );
+	int length = 0;
+
+	if ( is_queue_empty(root) )
+	{
+		length = 0;
+	}
+	else
+	{
+		queue_node* q_node = root->front;
+		do
+		{
+			length++;
+			q_node = q_node->next;
+		}while ( q_node != NULL );	
+	}
+
+	return length;
+}
+
 void init_queue( queue *root )
 {
 	root->front = NULL;

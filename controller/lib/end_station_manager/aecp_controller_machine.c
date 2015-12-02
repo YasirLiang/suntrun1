@@ -77,6 +77,9 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
+
+				int inflight_len = get_inflight_dblist_length( guard );
+				DEBUG_INFO( "inflight len = %d ", inflight_len );
 			}
 			else
 			{

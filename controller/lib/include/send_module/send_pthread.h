@@ -20,6 +20,8 @@
 #endif
 #endif
 
+//#define __NOT_USE_SEND_QUEUE_PTHREAD__ // 决定不使用发送队列的大数据发送机制
+
 extern sem_t sem_waiting; // 发送等待信号量，所有线程可见
 void init_sem_wait_can( void );
 int pthread_send_network_create( pthread_t *send_pid );

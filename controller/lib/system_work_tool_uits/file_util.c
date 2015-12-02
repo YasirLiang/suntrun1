@@ -54,7 +54,6 @@ FILE * Fopen( const char *file_name, const char* mode )
 		DEBUG_ERR( "open %s address Err", file_name );
 	}
 	
-	DEBUG_INFO( "fopen ok" );
 	return fd;
 }
 

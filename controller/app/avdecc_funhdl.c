@@ -44,19 +44,21 @@ int fn_timer_cb( struct epoll_priv*priv )
 	uint64_t timer_exp_count;
 	read_len = read( priv->fd, &timer_exp_count, sizeof(timer_exp_count));
 
-	terminal_mic_speak_limit_time_manager_event();
+	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 
-	if( is_inflight_timeout && is_wait_messsage_active_state())
+	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );	
 		sem_post( &sem_waiting );
+		DEBUG_INFO( "end of sending >>>host data<<< ");
 	}
+	
 	is_inflight_timeout = false; 
 
-	if((is_send_interval_wait_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
+	if((is_wait_messsage_active_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
 	{
-		sem_post( &sem_waiting );
+		sem_post( &sem_waiting ); 
 		DEBUG_INFO( "coming end of sending response data " );
 	}
 	
@@ -88,10 +90,14 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
 
-		if( (rx_status == 0 && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
+		//DEBUG_INFO( " rx status =%d, msg wait active = %d ", rx_status, is_wait_messsage_active_state());
+		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
-			set_wait_message_status( rx_status );
-			sem_post( &sem_waiting );
+			int msr_status = 0;
+			DEBUG_INFO( "end of sending >>>host data<<<!");
+			msr_status = set_wait_message_status( rx_status );
+			assert( msr_status == 0 );
+			sem_post( &sem_waiting ); 
 			acmp_recv_resp_err = false;
 		}
 	}
@@ -128,6 +134,7 @@ int udp_server_fn(struct epoll_priv *priv )
 		{
 			set_wait_message_status( 0 );
 			sem_post( &sem_waiting );
+			DEBUG_INFO( "end of sending >>>host data<<< !");
 		}
 	}
 	else

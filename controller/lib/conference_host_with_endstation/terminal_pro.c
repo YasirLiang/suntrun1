@@ -32,7 +32,7 @@ tchairman_control_in gchm_int_ctl; 						// 主席插话
 
 ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 
-uint32_t speak_limit_time = 0; 							// 发言时长， 0表示无限时；1-63表示限时1-63分钟
+uint8_t speak_limit_time = 0; 							// 发言时长， 0表示无限时；1-63表示限时1-63分钟
 
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
@@ -923,7 +923,8 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	}
 
 	tmnl_limit_spk_time spk_time;
-	speak_limit_time = spk_time.limit_time = set_sys.spk_limtime;
+	spk_time.limit_time = set_sys.spk_limtime;
+	speak_limit_time = (uint8_t)spk_time.limit_time;
 
 	if( !set_sys.spk_limtime ) // 无限时
 	{
@@ -1026,14 +1027,13 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 		DEBUG_INFO( "nothing to send to set mic status!");
 		return;
 	}
-	
+
+	terminal_set_mic_status( mic_status, addr, tarker_id );
 	if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) && tmnl_node != NULL)
 	{
 		tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
 		upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
 	}
-
-	terminal_set_mic_status( mic_status, addr, tarker_id );
 }
 
 /*********************************************************
@@ -1082,12 +1082,11 @@ int terminal_start_discuss( bool mic_flag )
 		Fclose( fd );
 		return -1;
 	}
-
+	
+	assert( dev_terminal_list_guard );
+	tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
 	if( !mic_flag ) // 关闭所有麦克风
-	{
-		assert( dev_terminal_list_guard );
-		tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
-		
+	{	
 		/*关闭所有麦克风*/
 		for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 		{
@@ -1098,7 +1097,8 @@ int terminal_start_discuss( bool mic_flag )
 			}
 		}
 	}
-	
+	tmnl_node = dev_terminal_list_guard->next;
+DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );	
 	int i = 0;
 	for( i = 0; i < TMNL_TYPE_NUM; i++ )
 	{
@@ -1122,7 +1122,7 @@ int terminal_start_discuss( bool mic_flag )
 		terminal_state_set_base_type( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE,gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);	// 根据终端类型设置终端的状态
 		terminal_lcd_display_num_send( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE, LCD_OPTION_CLEAR, glcd_num );// 发送lcd显示屏号
 	}
-
+DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 	/*设置终端指示灯*/
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY1, TLED_OFF );
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY2, TLED_OFF );
@@ -1130,9 +1130,9 @@ int terminal_start_discuss( bool mic_flag )
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY4, TLED_OFF );
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY5, TLED_OFF );
 	fterminal_led_set_send( BRDCST_ALL );
-
+DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 	terminal_main_state_send( 0, NULL, 0 );
-	
+	DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 	Fclose( fd );
 	return 0;
 }

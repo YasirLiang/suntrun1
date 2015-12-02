@@ -58,9 +58,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		return -1;
 	}
 
-	get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
-	DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
-
 	if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
 	{
 		qu_dis_para.chairman_first = set_sys.chman_first ? ENABLE_VAL : FORBID_VAL;
@@ -79,6 +76,9 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	}
 	else if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )// 设置保存系统状态值并设置系统状态
 	{	
+		get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
+		DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
+		
 		// 保存配置文件
 		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
 		{

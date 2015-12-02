@@ -39,9 +39,7 @@ void release_heap_space( uint8_t **p )
 {
 	if( NULL != *p )
 	{
-		DEBUG_LINE();
 		free( *p );
-		DEBUG_LINE();
 		*p = NULL;
 	}
 	else
@@ -735,7 +733,6 @@ tmnl_pdblist search_terminal_dblist_entity_id_node( uint64_t entity_id, tmnl_pdb
 	}
 	else
 	{
-		DEBUG_INFO( "no such terminal entity id  0x%016llx node",entity_id );
 		return NULL;
 	}
 }

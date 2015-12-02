@@ -98,6 +98,7 @@ int profile_system_file_read( FILE* fd,  thost_system_set* system_set )
 		return -1;
 	}
 
+	//DEBUG_INFO( "sizeof(thost_system_set) = %d", sizeof(thost_system_set) );
 	memcpy( system_set, &tmp_profile.set_sys, sizeof(thost_system_set));
 
 	return 0;

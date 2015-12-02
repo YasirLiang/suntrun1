@@ -39,15 +39,21 @@ int main( int argc, char *argv[] )
 
 	pthread_t h_thread;
 	pthread_handle_create( &h_thread, &net_fd ); // 创建接收数据处理线程
+	pthread_detach( h_thread );
 
 	pthread_t p_thread;
 	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
+	pthread_detach( p_thread );
 
 	pthread_t f_thread;	// 接收命令处理函数
 	pthread_handle_cmd_func( &f_thread, proccess_func_link_tables );
-
+	pthread_detach( f_thread );
+	
+#ifndef __NOT_USE_SEND_QUEUE_PTHREAD__
 	pthread_t s_thread; // 发送网络数据的线程
 	pthread_send_network_create( &s_thread );
+	pthread_detach( s_thread );
+#endif
 	
 #ifdef __TEST_DEBUG_CM__
 	pthread_t test_cm_thread; // 测试线程
@@ -62,17 +68,10 @@ int main( int argc, char *argv[] )
 	pthread_detach( test_cm_thread );
 #endif
 
-	// 分离主线程与次线程
-	pthread_detach( h_thread );
-	pthread_detach( p_thread );
-	pthread_detach( f_thread );
-	pthread_detach( s_thread );
-
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
 	controller_proccess();
-	while(1);
 	
 	pthread_exit( NULL );
 	

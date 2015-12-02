@@ -63,7 +63,7 @@ int write_pipe_tx(const void *buf, uint16_t buf_len )
 	
 	pipe_len = write( fd[WRITE_PIPE_FD], buf,  buf_len );
 	if( pipe_len != -1 )
-			return pipe_len;
+		return pipe_len;
 	else
 	{
 #ifndef __DEBUG__

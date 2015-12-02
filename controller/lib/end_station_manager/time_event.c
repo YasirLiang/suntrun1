@@ -4,14 +4,17 @@
 void inflight_time_tick( inflight_plist guard )
 {
 	assert( guard );
-	inflight_plist inflight_station = NULL;
-
+	inflight_plist inflight_station = NULL, tmp_inflight = NULL;
+	
 	// check timeout and proccess with match type, only check the list of head node
-	for( inflight_station = guard->next; inflight_station != guard; inflight_station = guard->next )
+	for( inflight_station = guard->next; inflight_station != guard; inflight_station = tmp_inflight )
 	{
+		tmp_inflight = inflight_station->next; // save next node
+		uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
+		
+		DEBUG_INFO( "inflight data type = %d", data_type );
 		if( inflight_timer_timeout(inflight_station) )
 		{	
-			uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
 			if( data_type == INFLIGHT_TRANSMIT_TYPE_UDP_CLIENT )
 				udp_client_inflight_station_timeouts( inflight_station, guard ); // host and upper cmpt
 			else if( data_type == INFLIGHT_TRANSMIT_TYPE_UDP_SERVER )

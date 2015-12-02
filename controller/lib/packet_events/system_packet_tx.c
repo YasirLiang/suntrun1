@@ -7,6 +7,8 @@
 #include "wait_message.h"
 #include "uart_controller_machine.h"
 #include "send_interval.h"
+#include "send_work_queue.h"
+#include "send_pthread.h"
 
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
@@ -45,19 +47,17 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	{
 		tx_data tx;
 		uint8_t *tran_buf = NULL;
-		//memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
 		
 		// heap using later free by reading pipe thread.tran_buf space must to be free!
-		//DEBUG_INFO( ">>>================start write pipe tx============<<<");
 		tran_buf= allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		//DEBUG_INFO( ">>>================start write pipe tx1============<<<");
 		if( NULL == tran_buf )
 		{
 			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
 			return -1;
 		}
 
-		//DEBUG_INFO( ">>>================ midle write pipe tx============<<<");
+		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -127,16 +127,14 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
 
 		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
-		//DEBUG_INFO( ">>>================start udp write pipe tx============<<<");
 		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		//DEBUG_INFO( ">>>================ start udp write pipe tx1============<<<");
 		if( NULL == tran_buf )
 		{
 			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
 			return -1;
 		}
 
-		//DEBUG_INFO( ">>>================ midle udp write pipe tx============<<<");
+		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -151,20 +149,12 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
-		else
-		{
-			//DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
-		}
 		sem_wait( &sem_tx );
 #else
 	if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
-		}
-		else
-		{
-			//DEBUG_INFO( ">>>================ end udp write pipe tx(success)============<<<" );
 		}
 #endif
 	}
@@ -332,17 +322,21 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 
 		if( right_packet )
 		{
-			if( !resp )
+			int status = 0;
+			status = set_wait_message_primed_state();
+			assert( status == 0 );
+			
+			/*if( !resp )
 			{
-				set_wait_message_primed_state();
+				status = set_wait_message_primed_state();
+				assert( status == 0 );
 			}
 			else
 			{
-				if( set_send_interval_primed_state() != -1 );
-				{
-					uart_resp_send_interval_timer_start();
-				}
+				status = set_send_interval_primed_state();
+				assert( status == 0 );
 			}
+			*/
 		}
 	}
 	else

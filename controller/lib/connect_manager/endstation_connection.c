@@ -176,6 +176,8 @@ void connect_table_tarker_disconnect( const uint64_t utarker_id,
 	struct jdksavdecc_eui64 listener_entity_id;
 
 	pthread_mutex_lock( &cnnt_mutex );
+	
+	connect_table_double_list_show_all( cnnt_list_guard );
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
 		if( connect_pnode->connect_elem.listener_connect_flags &&\
@@ -231,7 +233,7 @@ int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
 		connect_table_double_list_move_node_to_tail( p_cnnt_node, cnnt_list_guard );
 		
 #ifdef __DEBUG_CONNECT_TABLE__
-		connect_table_double_list_show_all( cnnt_list_guard );
+		//connect_table_double_list_show_all( cnnt_list_guard );
 #endif
 	}
 	else
@@ -269,6 +271,7 @@ void connect_table_tarker_connect( const uint64_t utarker_id,
 	
 	pthread_mutex_lock( &cnnt_mutex );
 	
+	connect_table_double_list_show_all( cnnt_list_guard );
 	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
 	{
 		if( (connect_pnode->connect_elem.listener_connect_flags) && (connect_pnode->connect_elem.tarker_id == utarker_id) )
@@ -349,7 +352,7 @@ int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t ti
 		}
 
 #ifdef __DEBUG_CONNECT_TABLE__
-		connect_table_double_list_show_all( cnnt_list_guard );
+		//connect_table_double_list_show_all( cnnt_list_guard );
 #endif
 
 	}

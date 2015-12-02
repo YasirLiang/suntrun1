@@ -28,6 +28,6 @@ queue_node* queue_get( queue *root );
 void queue_push( queue *root, queue_node *node );
 bool is_queue_empty( queue* root );
 void init_queue( queue *root );
-
+int get_queue_length( queue* root );
 
 #endif

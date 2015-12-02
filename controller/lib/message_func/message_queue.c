@@ -29,7 +29,7 @@ int func_command_work_queue_messag_save( fcqueue_data_elem *p_node, fcwqueue *p_
 	p_work_node->job_data.func_msg_head.func_cmd = p_node->func_msg_head.func_cmd;
 	p_work_node->job_data.meet_msg.data_len = p_node->meet_msg.data_len;
 	
-	DEBUG_INFO( "save func data len = %d", p_node->meet_msg.data_len );
+	//DEBUG_INFO( "save func data len = %d", p_node->meet_msg.data_len );
 	memcpy( p_work_node->job_data.meet_msg.data_buf,  p_node->meet_msg.data_buf, p_node->meet_msg.data_len );
 	queue_push( &p_fcwq->work, (struct queue_node *)p_work_node);
 

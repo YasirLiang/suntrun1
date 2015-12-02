@@ -51,6 +51,7 @@ void acmp_disconnect_avail( uint8_t output_id[8], uint16_t talker_unique_id, uin
 	acmp_frame_init();
 	memcpy( talker_entity_id.value, output_id, 8 );
 	memcpy( listener_entity_id.value, input_id, 8 );
+	
 	acmp_form_msg( &acmp_frame, &acmpdu,  JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND, \
 		sequence_id,  talker_entity_id, talker_unique_id, listener_entity_id, listener_unique_id,\
 		connection_count );
@@ -67,6 +68,7 @@ void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8
 	acmp_frame_init();
 	memcpy( talker_entity_id.value, output_id, 8 );
 	memcpy( listener_entity_id.value, input_id, 8 );
+	
 	acmp_form_msg( &acmp_frame, &acmpdu,  JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_COMMAND, \
 		sequence_id,  talker_entity_id, talker_unique_id, listener_entity_id, listener_unique_id,\
 		connection_count );
@@ -76,18 +78,19 @@ void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8
 
 void acmp_rx_state_avail( uint64_t listener_entity_id, uint16_t listener_unique_id )
 {
-    struct jdksavdecc_acmpdu acmp_cmd_get_rx_state;
+	struct jdksavdecc_acmpdu acmp_cmd_get_rx_state;
 	struct jdksavdecc_frame frame;
 	acmp_frame_init_2( &frame );
-	
-    jdksavdecc_eui64_init(&acmp_cmd_get_rx_state.talker_entity_id);
-    jdksavdecc_uint64_write(listener_entity_id, &acmp_cmd_get_rx_state.listener_entity_id, 0, sizeof(uint64_t));
-    acmp_cmd_get_rx_state.listener_unique_id = listener_unique_id;
-    jdksavdecc_eui48_init(&acmp_cmd_get_rx_state.stream_dest_mac);
 
+	jdksavdecc_eui64_init(&acmp_cmd_get_rx_state.talker_entity_id);
+	jdksavdecc_uint64_write(listener_entity_id, &acmp_cmd_get_rx_state.listener_entity_id, 0, sizeof(uint64_t));
+	acmp_cmd_get_rx_state.listener_unique_id = listener_unique_id;
+	jdksavdecc_eui48_init(&acmp_cmd_get_rx_state.stream_dest_mac);
+	
 	acmp_form_msg( &frame, &acmp_cmd_get_rx_state,  JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_COMMAND, \
 		acmp_sequence_id++,  acmp_cmd_get_rx_state.talker_entity_id, 0, acmp_cmd_get_rx_state.listener_entity_id, listener_unique_id,\
 		0 );
+	
 	system_raw_packet_tx( frame.dest_address.value, frame.payload, frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ACMP, false);
 
 }
@@ -106,6 +109,7 @@ void acmp_tx_state_avail( uint64_t tarker_entity_id, uint16_t tarker_unique_id )
 	acmp_form_msg( &frame, &acmp_cmd_get_tx_state,  JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_COMMAND, \
 		acmp_sequence_id++,  acmp_cmd_get_tx_state.talker_entity_id, tarker_unique_id, acmp_cmd_get_tx_state.listener_entity_id, 0,\
 		0 );
+	
 	system_raw_packet_tx( frame.dest_address.value, frame.payload, frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ACMP, false);
 }
 
@@ -230,6 +234,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
+				
+				//int inflight_len = get_inflight_dblist_length( guard );
+				//DEBUG_INFO( "inflight len = %d ", inflight_len );
 			}
 			else
 			{
@@ -593,7 +600,6 @@ int acmp_disconnect_connect_table( uint8_t tarker_value[8],
 	else
 	{
 		// 连接表回调信息
-		DEBUG_LINE();
 		connet_table_disconnect_call_info.limit_speak_time = discnnt_callback_save->limit_speak_time;
 		connet_table_disconnect_call_info.p_cnnt_node = discnnt_callback_save->p_cnnt_node;
 		connet_table_disconnect_call_info.tarker_id = discnnt_callback_save->tarker_id;

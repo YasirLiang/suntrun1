@@ -99,14 +99,14 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 
 	sleep(2);
 	
-	//connect_table_get_information( descptor_guard );
+	connect_table_get_information( descptor_guard );
 	
 	/*获取系统的终端连接信息*/ 
-	//background_read_descriptor_input_output_stream();
+	background_read_descriptor_input_output_stream();
 
 	/* 设置连接表*/
 	sleep(1);
-	//connect_table_info_set( descptor_guard, true );
+	connect_table_info_set( descptor_guard, true );
 	
 	// 注册会议终端, 维持5s
 }

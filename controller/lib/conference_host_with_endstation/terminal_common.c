@@ -235,10 +235,10 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		assert( send_len >= 0 );
 	}
 
-	DEBUG_INFO( "conf_data_len = %d send len = %d, send dest = %02x-%02x-%02x-%02x-%02x-%02x", cnf_data_len, send_len, \
-		send_frame.dest_address.value[0], send_frame.dest_address.value[1], \
-		send_frame.dest_address.value[2], send_frame.dest_address.value[3], \
-		send_frame.dest_address.value[4], send_frame.dest_address.value[5]);
+	//DEBUG_INFO( "conf_data_len = %d send len = %d, send dest = %02x-%02x-%02x-%02x-%02x-%02x", cnf_data_len, send_len, \
+		//send_frame.dest_address.value[0], send_frame.dest_address.value[1], \
+		//send_frame.dest_address.value[2], send_frame.dest_address.value[3], \
+		//send_frame.dest_address.value[4], send_frame.dest_address.value[5]);
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	
 	return (uint16_t)send_len;
@@ -276,6 +276,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 	if( NULL == tmnl_list_station )
 	{
 		is_new_tmnl_list_station = true;
+		DEBUG_INFO( "create new tmnl list node[0x%016llx] ", target_id );
 		tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
 		if( NULL == tmnl_list_station )
 		{
