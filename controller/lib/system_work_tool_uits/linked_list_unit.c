@@ -8,12 +8,9 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 	
 	if( size > 0 )
 	{
-		//DEBUG_INFO( "=======================malloc 1=====================" );
 		*pout = (uint8_t *)malloc( size );
-		//DEBUG_INFO( "=======================malloc 2=====================" );
 		if( NULL != (*pout) )
 		{
-			//DEBUG_INFO( "=======================malloc success=====================" );
 			return (*pout);
 		}
 		else
@@ -21,8 +18,6 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 			DEBUG_INFO("there is no space for malloc,malloc error!" );
 			return NULL;
 		}
-
-		//DEBUG_INFO( "=======================malloc 3=====================" );
 	}
 	else
 	{
@@ -30,7 +25,6 @@ uint8_t* allot_heap_space( int size, uint8_t** pout )
 		return NULL;
 	}
 
-	//DEBUG_INFO( "=======================malloc 4=====================" );
 	return NULL;
 }
 
@@ -77,6 +71,16 @@ void destroy_endpoint_node( solid_pdblist* node_dstry )
 		DEBUG_INFO("NULL destroy Node!");
 		assert(NULL != *node_dstry);
 	}
+}
+
+// 从链表中摧毁指定的节点
+void delect_node_from_endpoint_dblist( solid_pdblist *free_node )
+{
+	assert( *free_node );
+	solid_pdblist *p = free_node;
+	(*p)->next->prior = (*p)->prior;
+	(*p)->prior->next = (*p)->next;
+	destroy_endpoint_node( p );
 }
 
 // 初始化链表,head为哨兵结点
@@ -323,6 +327,28 @@ void endpoint_dblist_show( solid_pdblist head )
 	}
 }
 
+// 摧毁整个链表，包括头结点
+void destroy_endpoint_dblist( solid_pdblist head )
+{
+	solid_pdblist tmp_node = NULL;
+	solid_pdblist delect_node = NULL;
+	
+	for( delect_node = head->next;  delect_node != head; delect_node = tmp_node )
+	{
+		tmp_node = delect_node->next;
+		delect_node_from_endpoint_dblist( &delect_node );
+	}
+
+	if( delect_node == head ) // delect guard
+	{
+		destroy_endpoint_node( &head );
+	}
+	else
+	{
+		DEBUG_INFO( "Err endpoint dblist delect!" );
+	}
+}
+
 /*=====================================
 *以上的函数用于操作系统中终端的链表，而
 *以下的函数用于操作inflight命令链表
@@ -465,6 +491,29 @@ void delect_inflight_dblist_node( inflight_plist *free_node )
 	destroy_inflight_node( p );
 }
 
+void destroy_inflight_dblist( inflight_plist guard )
+{
+	assert( guard );
+
+	inflight_plist tmp_node = NULL;
+	inflight_plist de_node = NULL;
+
+	for( de_node = guard->next; de_node != guard; de_node = tmp_node )
+	{
+		tmp_node = de_node->next;
+		delect_inflight_dblist_node( &de_node );
+	}
+
+	if( de_node == guard ) // delect guard
+	{
+		destroy_inflight_node( &guard );
+	}
+	else
+	{
+		DEBUG_INFO( "Err inflight dblist delect!" );
+	}
+}
+
 /*=====================================
 *以上的函数用于操作系统中终端的链表和系统中inflight命令链表
 *以下函数用于操作entity_desc的文件描述符的信息链表
@@ -562,6 +611,29 @@ void delect_descptor_dblist_node( desc_pdblist *free_node )
 	(*p)->next->prior = (*p)->prior;
 	(*p)->prior->next = (*p)->next;
 	destroy_descptor_dblist_node( p );
+}
+
+// 摧毁descptor链表
+void destroy_descptor_dblist( desc_pdblist  head )
+{
+	assert( head );
+	desc_pdblist tmp_node = NULL;
+	desc_pdblist delect_node = NULL;
+	
+	for( delect_node = head->next;  delect_node != head; delect_node = tmp_node )
+	{
+		tmp_node = delect_node->next;
+		delect_descptor_dblist_node( &delect_node );
+	}
+
+	if( delect_node == head ) // delect guard
+	{
+		destroy_descptor_dblist_node( &head );
+	}
+	else
+	{
+		DEBUG_INFO( "Err endpoint dblist delect!" );
+	}
 }
 
 // 寻找ID为entity_id 的描述符信息节点
@@ -759,10 +831,12 @@ tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblis
 tmnl_pdblist terminal_dblist_except_free( tmnl_pdblist guard )
 {
 	assert( guard );
-	tmnl_pdblist p_free = guard->next;
+	tmnl_pdblist p_free = NULL;
+	tmnl_pdblist tmp_node = NULL;
 	
-	for( ; (p_free != guard); p_free = guard->next )
+	for( p_free = guard->next; p_free != guard; p_free = tmp_node )
 	{
+		tmp_node = p_free->next;
 		delect_terminal_dblist_node( &p_free );
 	}
 	
@@ -773,6 +847,28 @@ tmnl_pdblist terminal_dblist_except_free( tmnl_pdblist guard )
 	
 	return NULL;
 }
+
+// 摧毁相应会议管理相关的链表
+tmnl_pdblist destroy_terminal_dblist( tmnl_pdblist guard )
+{
+	assert( guard );
+	tmnl_pdblist p_free = guard->next;
+	tmnl_pdblist tmp_node = NULL;
+	
+	for( p_free = guard->next; p_free != guard; p_free = tmp_node )
+	{
+		tmp_node = p_free->next;
+		delect_terminal_dblist_node( &p_free );
+	}
+	
+	if( p_free == guard )
+	{	
+		destroy_terminal_dblist_node( &p_free );
+	}
+
+	return p_free;
+}
+
 
 /*===============================================================
 *					end terminal double list

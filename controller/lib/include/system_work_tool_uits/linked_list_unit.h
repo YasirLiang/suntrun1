@@ -11,6 +11,8 @@
 #include "terminal_pro.h"
 
 #define HEAP_RAW_RECV_BUF_SIZE 2048	// 原始套接字接收缓冲区的大小
+
+/*{@*/
 // 寻找ID为entity_id的终端节点,head是链表的哨兵
 #define SEARCH_ENTITY_ID_ENDPOINT_NODE( head, pnode, entity_id )\
 	for( ; (pnode != head) && (pnode->solid.entity_id != entity_id ); pnode = pnode->next )
@@ -31,6 +33,11 @@ int  get_entity_id_endpoint_dblist( solid_pdblist head, int index, uint64_t *ent
 int  get_entity_index_endpoint_dblist( solid_pdblist head, uint64_t entity_id );
 int set_connect_flag_endpoint_dblist( solid_pdblist head, uint64_t entity_id, int flags);
 void endpoint_dblist_show( const solid_pdblist head );
+void destroy_endpoint_dblist( solid_pdblist head );
+void delect_node_from_endpoint_dblist( solid_pdblist *free_node );
+
+/*@}*/
+
 
 /*=====================================
 *以上的函数用于操作系统中终端的链表，而
@@ -52,10 +59,10 @@ inflight_plist search_node_inflight_from_dblist(inflight_plist head, uint16_t  s
 void delect_inflight_dblist_node( inflight_plist *free_node );
 inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd );
 bool is_exist_udp_client_inflight_type_node( inflight_plist head, uint8_t subtype );
+void destroy_inflight_dblist( inflight_plist guard );
 
 
-
-/*{@以下函数用于操作会议终端的的信息链表@}*/
+/*{@以下函数用于操作会议终端的的信息链表*/
 #define SEARCH_FOR_DESCPTOT_LIST_RIGHT_ENTITY_NODE( head, pnode, entity_id )\
 	for( ; pnode != head; pnode = pnode->next )\
 		if( pnode->endpoint_desc.entity_id == entity_id)break
@@ -70,12 +77,14 @@ void destroy_descptor_dblist_node( desc_pdblist *node_dstry );
 void init_descptor_dblist_node_info( desc_pdblist node );
 void init_descptor_dblist( desc_pdblist *guard );
 desc_pdblist create_descptor_dblist_node( desc_pdblist* node );
-/*{@@}*/
+void destroy_descptor_dblist( desc_pdblist  head );
+/*@}*/
 
 /*=====================================
 *
 *以下函数用于操作会议终端的的信息链表
 *======================================*/
+/*{@*/
 #define SEARCH_FOR_TERMINAL_LIST_RIGHT_ENTITY_NODE(head, pnode, entity_id )\
 		for( ; pnode != head; pnode = pnode->next )\
 			if( pnode->tmnl_dev.entity_id == entity_id)break
@@ -93,7 +102,8 @@ void delect_terminal_dblist_node( tmnl_pdblist *free_node );
 tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblist guard );
 tmnl_pdblist search_terminal_dblist_entity_id_node( uint64_t entity_id, tmnl_pdblist guard ); 
 tmnl_pdblist terminal_dblist_except_free( tmnl_pdblist guard );
-
+tmnl_pdblist destroy_terminal_dblist( tmnl_pdblist guard );
+/*@}*/
 
 #endif
 

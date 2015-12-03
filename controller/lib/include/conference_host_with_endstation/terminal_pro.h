@@ -172,12 +172,13 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
 
-
 /*@}*/
 
 /*{@*/
 tmnl_pdblist terminal_system_dblist_except_free( void );
 void terminal_open_addr_file_wt_wb( void );
+void terminal_system_dblist_destroy( void );
+
 /*@}*/
 
 #endif

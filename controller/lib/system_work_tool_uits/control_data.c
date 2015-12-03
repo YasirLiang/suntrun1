@@ -10,20 +10,20 @@
 
 bool controll_activate( data_control* p_controll )
 {
-	DABORT( p_controll );
-	//if( pthread_mutex_lock(&p_controll->mutex) )
-	//{
-	//	return false;
-	//}
-	//if( pthread_cond_signal(&p_controll->cond) )
-	//{
-	//	return false;
-	//}
-	//if( phread_mutex_unlock(&(p_controll->mutex)) )
-	//{
-	//	return false;
-	//}
-
+	DABORT( p_controll );/*
+	if( pthread_mutex_lock(&p_controll->mutex) )
+	{
+		return false;
+	}
+	if( pthread_cond_signal(&p_controll->cond) )
+	{
+		return false;
+	}
+	if( phread_mutex_unlock(&(p_controll->mutex)) )
+	{
+		return false;
+	}
+*/
 	p_controll->active = 1;
 
 	return true;
@@ -32,14 +32,14 @@ bool controll_activate( data_control* p_controll )
 bool controll_deactivate( data_control* p_controll )
 {
 	DABORT( p_controll );
-	
-	//if( pthread_mutex_lock(&p_controll->mutex) )
-	//	return false;
-	//if( pthread_cond_signal(&p_controll->cond) )
-	//	return false;
-	//if( phread_mutex_unlock(&(p_controll->mutex)) )
-	//	return false;
-	
+/*	
+	if( pthread_mutex_lock(&p_controll->mutex) )
+		return false;
+	if( pthread_cond_signal(&p_controll->cond) )
+		return false;
+	if( phread_mutex_unlock(&(p_controll->mutex)) )
+		return false;
+*/	
 	p_controll->active = 0;
 
 	return true;
@@ -62,13 +62,23 @@ bool controll_init( data_control *p_controll )
 bool controll_destroy( data_control *p_controll )
 {
 	DABORT( p_controll );
-	
+
 	if( pthread_mutex_destroy( &p_controll->mutex) )
-		return false;
-	if( pthread_cond_destroy( &p_controll->cond) )
-		return false;
+	{
+		perror( "mutex destroy Err");
+		DEBUG_ERR( "controll destroy Err:" );
 		
-	p_controll->active = 1;
+		return false;
+	}
+		
+	if( pthread_cond_destroy( &p_controll->cond) )
+	{
+		perror( "mutex destroy Err");
+		DEBUG_ERR( "controll destroy Err:" );
+		return false;
+	}	
+		
+	p_controll->active = 0;
 
 	return true;
 }

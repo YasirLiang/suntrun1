@@ -113,17 +113,17 @@ int thread_pipe_fn( void *pgm )
 			if( result > 0 )
 			{
 				// 加入网络数据发送队列
+				DEBUG_INFO( "before lock" );
 				pthread_mutex_lock( &send_wq->control.mutex );
 
-				send_work_queue_message_save( &tnt );
+				send_work_queue_message_save( &tnt, send_wq );
 				int len = get_queue_length( &send_wq->work );
 				DEBUG_INFO( "============>>save queue len = %d <<=============", len );
 
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
-				if( 1 == len )
-				{
-					pthread_cond_signal( &send_wq->control.cond ); // send pthread messag
-				}
+				DEBUG_INFO( "after lock" );
+				pthread_cond_signal( &send_wq->control.cond );
+				DEBUG_INFO( "after pthread_cond_signal" );
 			}
 			else 
 			{
@@ -201,6 +201,8 @@ int thread_func_fn( void * pgm )
 			continue;
 		}
 
+		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
+
 		// proccess func command queue message
 		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
@@ -210,8 +212,6 @@ int thread_func_fn( void * pgm )
 		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
 		
 		free( p_msg_wnode );
-	
-		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 #endif	
 	}
 	
@@ -246,5 +246,4 @@ int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items 
 
 	return 0;
 }
-
 

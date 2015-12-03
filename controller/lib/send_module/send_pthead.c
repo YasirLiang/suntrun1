@@ -5,12 +5,57 @@
 */
 
 #include "send_pthread.h"
+#include <time.h>
 
 sem_t sem_waiting; // ·¢ËÍµÈ´ýÐÅºÅÁ¿£¬ËùÓÐÏß³Ì¿É¼û
 
+sdpwqueue net_send_queue;// ÍøÂçÊý¾Ý·¢ËÍ¹¤×÷¶ÓÁÐ
+
 void init_sem_wait_can( void )
 {
-	sem_init( &sem_waiting, 0, 0 );
+	sem_init( &sem_waiting, 0, -1 );
+}
+
+void init_network_send_queue( void )
+{
+	bool is_su = false;
+	
+	is_su = controll_init( &net_send_queue.control );
+	if( !is_su )
+		DABORT( is_su );
+	init_queue( &net_send_queue.work );
+	
+	is_su = controll_activate( &net_send_queue.control );
+	if( !is_su );
+		DABORT( is_su );
+}
+
+// ´Ý»Ù·¢ËÍ¶ÓÁÐ
+void destroy_network_send_work_queue( void )
+{
+	//bool is_su = false;
+	p_sdpqueue_wnode q_node = NULL;
+
+	pthread_mutex_lock( &net_send_queue.control.mutex );
+	
+	while( !is_queue_empty( &net_send_queue.work ) ) // release node
+	{
+		q_node = send_queue_message_get( &net_send_queue );
+		if( NULL != q_node )
+		{
+			free( q_node );
+			q_node = NULL;	
+		}
+	}
+	
+	pthread_mutex_unlock( &net_send_queue.control.mutex );
+	
+	controll_deactivate( &net_send_queue.control );
+	/*is_su = controll_destroy( &net_send_queue.control );
+	if( !is_su )
+	{
+		DABORT( is_su );
+	}*/
 }
 
 #ifndef __NOT_USE_SEND_QUEUE_PTHREAD__ // ¶¨ÒåÓÚsend_pthread.h
@@ -64,12 +109,35 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		if( is_wait_messsage_primed_state() ) 
 		{
 			int status = -1;
+			struct timespec timeout;
+			int ret = 0;
+			if ( clock_gettime( CLOCK_REALTIME, &timeout ) == -1)
+			{
+				 perror("clock_gettime:");
+				 return -1;
+			}
+			
+			timeout.tv_sec += 4;// 4 seconds
+			
 			if( !is_resp_data )
 			{
 				DEBUG_INFO( "coming start of sending >>>host data<<<: (%d) ! ", is_wait_messsage_primed_state());
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-				sem_wait( &sem_waiting );
+				//sem_wait( &sem_waiting );
+				ret = sem_timedwait( &sem_waiting, &timeout );
+				if( ret == -1 )
+				{
+					if( errno == ETIMEDOUT )
+					{
+						DEBUG_INFO( "sem_timedwait(): time out!send pthread proccess continue" );
+						sem_post( &sem_waiting );
+					}
+					else
+					{
+						perror( "sem_timedwait():" );
+					}
+				}
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
 			}
@@ -79,7 +147,21 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				status = set_wait_message_active_state();
 				assert( status == 0 );
 				uart_resp_send_interval_timer_start(); // start timer
-				sem_wait( &sem_waiting );
+				//sem_wait( &sem_waiting );
+				ret = sem_timedwait( &sem_waiting, &timeout );
+				if( ret == -1 )
+				{
+					if( errno == ETIMEDOUT )
+					{
+						DEBUG_INFO( "sem_timedwait(): time out! send pthread proccess continue" );
+						sem_post( &sem_waiting );
+					}
+					else
+					{
+						perror( "sem_timedwait():" );
+					}
+				}
+				
 				resp_send_interval_timer_stop();
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
@@ -94,6 +176,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 	
 	return 0;
 }
+#endif
 
 int pthread_send_network_create( pthread_t *send_pid )
 {
@@ -109,5 +192,5 @@ int pthread_send_network_create( pthread_t *send_pid )
 
 	return 0;
 }
-#endif
+
 

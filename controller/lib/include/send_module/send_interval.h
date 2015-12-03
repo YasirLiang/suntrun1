@@ -49,6 +49,7 @@ int set_send_interval_wait_state( void );
 bool is_send_interval_idle_state( void );
 bool is_send_interval_primed_state( void );
 bool is_send_interval_wait_state( void );
+void resp_send_interval_timer_stop( void );
 
 
 #endif

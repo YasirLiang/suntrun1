@@ -111,4 +111,29 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	// 注册会议终端, 维持5s
 }
 
+void system_close( struct threads_info *p_threads )
+{	
+	sem_post( &sem_waiting );
+	
+	// 退出thread_fn线程
+	//thread_fn_thread_stop();
+	
+	// 释放所有系统链表
+	destroy_endpoint_dblist( endpoint_list );
+	destroy_inflight_dblist( command_send_guard );
+	destroy_descptor_dblist( descptor_guard );
+	terminal_system_dblist_destroy();
+	
+	// 释放系统队列资源
+	destroy_func_command_work_queue();
+	destroy_network_send_work_queue();
+
+	// 释放所有文件描述符
+	close( net_fd.raw_fd );
+	close( net_fd.tx_pipe[PIPE_RD] );
+	close( net_fd.tx_pipe[PIPE_WR]);
+	close( net_fd.udp_client_fd );
+	close( net_fd.udp_server_fd );
+}
+
 

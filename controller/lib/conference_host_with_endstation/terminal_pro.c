@@ -3190,6 +3190,17 @@ void terminal_open_addr_file_wt_wb( void )
 	
 	Fclose( addr_file_fd );	
 }
+
+// ¥›ªŸ÷’∂À¡¥±Ì
+void terminal_system_dblist_destroy( void )
+{
+	tmnl_pdblist p_node = destroy_terminal_dblist( dev_terminal_list_guard );
+	if( NULL != p_node )
+	{
+		DEBUG_INFO( "destroy terminal double list not success!" );
+	}
+}
+	
 /*===================================================
 end reallot address
 =====================================================*/

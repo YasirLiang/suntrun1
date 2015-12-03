@@ -7,7 +7,13 @@
 #include "func_proccess.h"
 
 bool is_inflight_timeout = false;
+static bool system_stop = false; // 线程退出全局变量
 extern bool acmp_recv_resp_err; // acmp 接收到命令但响应错误参数
+
+void thread_fn_thread_stop( void )
+{
+	system_stop = true;
+}
 
 void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
 {
@@ -94,10 +100,10 @@ int fn_netif_cb( struct epoll_priv *priv )
 		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			int msr_status = 0;
-			DEBUG_INFO( "end of sending >>>host data<<<!");
 			msr_status = set_wait_message_status( rx_status );
 			assert( msr_status == 0 );
 			sem_post( &sem_waiting ); 
+			DEBUG_INFO( "end of sending >>>host data<<<!");
 			acmp_recv_resp_err = false;
 		}
 	}
@@ -108,7 +114,6 @@ int fn_netif_cb( struct epoll_priv *priv )
 // host controller as a server
 int udp_server_fn(struct epoll_priv *priv )
 {
-
 	struct sockaddr_in sin_in;
 	socklen_t sin_len = sizeof( struct sockaddr_in );	// (特别注意)调用者应该在调用之前初始化与struct sockaddr_in相关的缓冲区的大小
 	struct host_upper_cmpt_frame recv_frame;
@@ -197,7 +202,7 @@ int thread_fn(void *pgm)
 		int i, res;
 
 		struct epoll_priv *priv;
-		res = epoll_wait(epollfd, epoll_evt, POLL_COUNT, -1);
+		res = epoll_wait( epollfd, epoll_evt, POLL_COUNT, -1 );
 
 		/* exit on error */
 		if (-1 == res)
@@ -209,6 +214,12 @@ int thread_fn(void *pgm)
 			
 			DEBUG_ERR("epoll_wait error : ");
 			return -errno;
+		}
+ 
+		if( system_stop ) //  stop the thread?
+		{
+			DEBUG_INFO( "thread_fn return success......" );
+			return 0;
 		}
 		
 		//监听到的准备好的文件描述符的数量

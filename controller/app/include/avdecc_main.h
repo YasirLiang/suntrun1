@@ -58,6 +58,13 @@ struct udp_context
 	struct udp_client udp_clt;
 };
 
+#define THREADS_MUX_NUM 16
+struct threads_info
+{
+	pthread_t tid[THREADS_MUX_NUM];
+	int pthread_nums;
+};
+
 extern struct fds net_fd;						// 网络通信套接字与线程间通信套接字
 extern struct udp_client upper_udp_client;		// 上位机的通信信息
 extern struct udp_server pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
