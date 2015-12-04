@@ -9,6 +9,7 @@
 bool is_inflight_timeout = false;
 static bool system_stop = false; // 线程退出全局变量
 extern bool acmp_recv_resp_err; // acmp 接收到命令但响应错误参数
+extern fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
 void thread_fn_thread_stop( void )
 {
@@ -57,7 +58,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );	
 		sem_post( &sem_waiting );
-		DEBUG_INFO( "end of sending >>>host data<<< ");
+		//DEBUG_INFO( "end of sending >>>host data<<< ");
 	}
 	
 	is_inflight_timeout = false; 
@@ -65,7 +66,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 	if((is_wait_messsage_active_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
 	{
 		sem_post( &sem_waiting ); 
-		DEBUG_INFO( "coming end of sending response data " );
+		//DEBUG_INFO( "coming end of sending response data " );
 	}
 	
     	return read_len;
@@ -78,7 +79,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 	uint64_t dest_addr = 0;
 	uint64_t default_native_dest = 0;
 	struct jdksavdecc_frame frame;
-
+	
 	status = (ssize_t)conference_host_raw_receive( fd, &frame.ethertype, frame.src_address.value, \
 									frame.dest_address.value, frame.payload, sizeof(frame.payload) );
 	uint16_t frame_len = ( uint16_t )status;
@@ -103,7 +104,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 			msr_status = set_wait_message_status( rx_status );
 			assert( msr_status == 0 );
 			sem_post( &sem_waiting ); 
-			DEBUG_INFO( "end of sending >>>host data<<<!");
+			//DEBUG_INFO( "end of sending >>>host data<<<!");
 			acmp_recv_resp_err = false;
 		}
 	}
@@ -120,7 +121,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	int recv_len = 0;
 	memset( &recv_frame, -1, sizeof( struct host_upper_cmpt_frame ) );
 	memset( &sin_in, 0, sin_len );
-
+	
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
 	if( recv_len > 0)
 	{
@@ -129,17 +130,17 @@ int udp_server_fn(struct epoll_priv *priv )
 		memcpy( &upper_udp_client.cltaddr, &sin_in, sizeof(struct sockaddr_in) );
 		upper_udp_client.cltlen = sin_len;
 		is_upper_udp_client_connect = true;
-		set_UDP_parameter( &recv_frame, &sin_in, recv_len );
+		//set_UDP_parameter( &recv_frame, &sin_in, recv_len );
 		int rx_status = -1;
-		
+				
 		// 处理接收的上位机发送过来的数据包
 		handle_upper_computer_conference_data( &recv_frame, &rx_status );
-
+				
 		if( rx_status && is_wait_messsage_active_state() )
 		{
 			set_wait_message_status( 0 );
 			sem_post( &sem_waiting );
-			DEBUG_INFO( "end of sending >>>host data<<< !");
+			//DEBUG_INFO( "end of sending >>>host data<<< !");
 		}
 	}
 	else

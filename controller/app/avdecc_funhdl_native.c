@@ -113,7 +113,6 @@ int thread_pipe_fn( void *pgm )
 			if( result > 0 )
 			{
 				// 加入网络数据发送队列
-				DEBUG_INFO( "before lock" );
 				pthread_mutex_lock( &send_wq->control.mutex );
 
 				send_work_queue_message_save( &tnt, send_wq );
@@ -121,9 +120,7 @@ int thread_pipe_fn( void *pgm )
 				DEBUG_INFO( "============>>save queue len = %d <<=============", len );
 
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
-				DEBUG_INFO( "after lock" );
 				pthread_cond_signal( &send_wq->control.cond );
-				DEBUG_INFO( "after pthread_cond_signal" );
 			}
 			else 
 			{

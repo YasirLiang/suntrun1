@@ -632,7 +632,7 @@ void destroy_descptor_dblist( desc_pdblist  head )
 	}
 	else
 	{
-		DEBUG_INFO( "Err endpoint dblist delect!" );
+		DEBUG_INFO( "Err descptor dblist delect!" );
 	}
 }
 

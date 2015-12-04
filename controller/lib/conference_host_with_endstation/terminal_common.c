@@ -11,6 +11,7 @@
 #include "terminal_pro.h"
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
+extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 
 /*****************************************************************
 *Writer:YasirLiang
@@ -269,14 +270,17 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 	
 	// 查看系统是否存在此实体，若存在继续处理;不存在新建节点后插入链表
 	uint64_t target_id = convert_eui64_to_uint64_return(conference_frame->aecpdu_aem_header.aecpdu_header.header.target_entity_id.value);
-	if( target_id == 0)
+	if( NULL == search_endtity_node_endpoint_dblist( endpoint_list, target_id )) // 注意:这里也用到了链表
+	{
+		DEBUG_INFO( "no such endpoint list node 0x%016llx", target_id );
 		return;
+	}
 
 	tmnl_list_station = search_terminal_dblist_entity_id_node( target_id, dev_terminal_list_guard );
 	if( NULL == tmnl_list_station )
 	{
 		is_new_tmnl_list_station = true;
-		DEBUG_INFO( "create new tmnl list node[0x%016llx] ", target_id );
+		DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id );
 		tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
 		if( NULL == tmnl_list_station )
 		{
@@ -291,11 +295,12 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 	
 	if( NULL != tmnl_list_station )
 	{
-		DEBUG_RECV( p_right_data, frame_len, "Recv Right Conference Data" );
 		memcpy( data_buf, p_right_data, frame_len );
 		ttmnl_recv_msg recv_data;
 		ssize_t ret = 0;
-		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, p_right_data, ZERO_OFFSET_IN_PAYLOAD, (TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2, frame_len);
+
+		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data" );
+		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
 		if( ret < 0 )
 		{
 			DEBUG_INFO( "Err recv conference data read" );
@@ -331,7 +336,6 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		{
 			find_func_command_link( TERMINAL_USE, recv_data.cchdr.command_control & COMMAND_TMN_MASK, 0, data_buf, frame_len );
 		}
-
 	}
 }
 

@@ -78,7 +78,10 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 	{	
 		get_host_upper_cmpt_data( &set_dis_para, data, CMPT_DATA_OFFSET, sizeof(tcmpt_discuss_parameter));
 		DEBUG_RECV( &set_dis_para, sizeof(tcmpt_discuss_parameter), "Dis Param ");
-		
+
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
+				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
+				
 		// 保存配置文件
 		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
 		{
@@ -128,9 +131,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
 		}
-
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
-				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 	}
 	
 	Fclose( fd );

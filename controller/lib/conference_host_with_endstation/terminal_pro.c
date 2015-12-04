@@ -282,7 +282,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len )
 {
 	assert( p_data );
-	upper_cmpt_terminal_message_report(p_data, msg_len, address );
+	upper_cmpt_terminal_message_report( p_data, msg_len, address );
 }
 
 uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index)

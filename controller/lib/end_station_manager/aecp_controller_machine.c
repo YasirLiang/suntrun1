@@ -54,9 +54,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			memset(inflight_station->host_tx.inflight_frame.frame, 0, TRANSMIT_DATA_BUFFER_SIZE);
 			if( NULL != inflight_station->host_tx.inflight_frame.frame )
 			{
-				
-				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
-				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
+				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len > 50?frame_len:50;
+				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len > 50?frame_len:50 );
 				inflight_station->host_tx.inflight_frame.data_type = subtype; 	//协议aecp acmp adp udpclient udpserver (fb fc fa ac )
 				inflight_station->host_tx.inflight_frame.seq_id = aecp_seq_id;	// 初始为零
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, frame, 0 );
@@ -67,7 +66,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				inflight_station->host_tx.command_type = TRANSMIT_TYPE_AECP;
 				inflight_station->host_tx.flags.retried = 1;	// meaning send once
 				inflight_station->host_tx.flags.resend = false;
-				inflight_timer_start(timeout, inflight_station );
+				inflight_timer_start( timeout, inflight_station );
 
 				if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND ) // 会议数据的特殊识别方法(在这里已经不是在1722协议层处理数据)
 				{
@@ -113,7 +112,15 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	}
 #endif
 	// ready to send
-	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
+	int i = 0;
+	printf( "Send dest:\t" );
+	for( ; i < 6; i ++ )
+	{
+		printf( " %02x", dest_mac[i] );
+	}
+	printf( "========================================================\n" );
+	
+	ssize_t send_len = raw_send( &net, dest_mac, frame, (frame_len >= 50)?frame_len: 50 );// at lease 50+14
 	if( send_len < 0 )
 	{
 		DEBUG_INFO( "Err raw send data!");

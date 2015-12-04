@@ -113,11 +113,31 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 
 void system_close( struct threads_info *p_threads )
 {	
+	int can_num = p_threads->pthread_nums;
+	int i = 0, ret;
+	
+	// 退出线程
 	sem_post( &sem_waiting );
-	
-	// 退出thread_fn线程
-	//thread_fn_thread_stop();
-	
+	for( i = 0; i < can_num; i++ )
+	{
+		ret = pthread_kill( p_threads->tid[i], SIGQUIT );
+		if( ret == 0 )
+		{
+			DEBUG_INFO( "pthread_kill  success: tid[%d]", i );
+		}
+		else
+		{
+			if( errno == ESRCH )
+			{
+				DEBUG_INFO( "An invalid signal was specified: tid[%d] ", i );
+			}
+			else if( errno == EINVAL )
+			{
+				DEBUG_INFO( "no such tid[%d] thread to quit ", i );
+			}
+		}
+	}
+
 	// 释放所有系统链表
 	destroy_endpoint_dblist( endpoint_list );
 	destroy_inflight_dblist( command_send_guard );

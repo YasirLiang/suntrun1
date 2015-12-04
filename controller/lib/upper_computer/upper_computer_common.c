@@ -109,7 +109,7 @@ int host_controller_machine_reply_upper_computer( uint8_t deal_type, uint8_t com
 	memset( &askbuf, 0, sizeof(struct host_upper_cmpt));
 	deal_type |= CMPT_MSG_TYPE_RESPONSE;
 	
-	upper_cmpt_command_askbuf_set( &askbuf, deal_type, command, data, data_len);
+	upper_cmpt_command_askbuf_set( &askbuf, deal_type, command, data, data_len );
 	upper_computer_send( &askbuf );
 
 	return 0;

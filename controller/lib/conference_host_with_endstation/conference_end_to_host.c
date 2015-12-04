@@ -110,7 +110,7 @@ int conference_end_to_host_frame_read(const void *v_payload, struct endstation_t
 		 datalen = conference_end_to_host_spe_data_len_read(&spephost->data_len, payload, \
 		 	pos + CONFERENCE_COMMON_HEADER_LEN );
 		 conference_common_end_to_host_spe_data_read( spephost->data, payload,\
-		 	pos + CONFERENCE_COMMON_HEADER_LEN + END_TO_HOST_DATA_IN_CMD_LEN, datalen);
+		 	pos + CONFERENCE_COMMON_HEADER_LEN + END_TO_HOST_DATA_IN_CMD_LEN, datalen  );
 		 conference_common_end_to_host_crc_read( &spephost->crc, payload, \
 		 	pos + CONFERENCE_COMMON_HEADER_LEN + END_TO_HOST_DATA_IN_CMD_LEN + datalen);
 
@@ -141,12 +141,21 @@ inline static void conference_common_end_to_host_data_len_set( uint8_t *out_data
 ssize_t conference_end_to_host_deal_recv_msg_read( ttmnl_recv_msg *p_tt, const void *base, uint16_t pos, size_t buflen, size_t data_len )
 {
 	assert( p_tt && base );
-	ssize_t r = jdksavdecc_validate_range( pos, buflen, data_len);
+	ssize_t r = jdksavdecc_validate_range( pos, buflen, data_len );
 	if( r >= 0 )
 	{
 		conference_common_header_read( &p_tt->cchdr, base, pos );
-		conference_common_end_to_host_data_msg_read( p_tt->data, base , pos + CONFERENCE_COMMON_HEADER_LEN, (data_len -CONFERENCE_COMMON_HEADER_LEN -CONFERENCE_CRC_LEN) );
-		conference_common_end_to_host_data_len_set( &p_tt->data_len, (data_len -CONFERENCE_COMMON_HEADER_LEN -CONFERENCE_CRC_LEN) );
+		if( isnot_special_recv_command( base, pos ) )
+		{
+			conference_common_end_to_host_data_read( p_tt->data, base , pos + CONFERENCE_COMMON_HEADER_LEN );
+			conference_common_end_to_host_data_len_set( &p_tt->data_len, (data_len -CONFERENCE_COMMON_HEADER_LEN -CONFERENCE_CRC_LEN) );
+		}
+		else
+		{
+			conference_end_to_host_spe_data_len_read( &p_tt->data_len, base, pos + CONFERENCE_COMMON_HEADER_LEN );
+			conference_common_end_to_host_spe_data_read( p_tt->data, base,\
+		 	pos + CONFERENCE_COMMON_HEADER_LEN + END_TO_HOST_DATA_IN_CMD_LEN, p_tt->data_len );
+		}
 	}
 
 	return r;

@@ -33,11 +33,10 @@ int thread_test_fn( void*pgm )
 
 void signal_handle_main( int signum )
 {
-	DEBUG_INFO( " Stop the system start......" );
 	if( SIGINT == signum )
 	{
 		system_close( &threads );
-		exit( EXIT_SUCCESS );
+		exit(0);
 	}
 }
 
@@ -54,7 +53,7 @@ int main( int argc, char *argv[] )
 		perror( "sigaction: " );
 		exit( -1 );
 	}
-	
+
 	init_system();	// 初始化系统，包括系统管理终端链表,inflight命令链表
 	build_socket( &net_fd, &net, NETWORT_INTERFACE, &udp_net ); // 建立raw, udp server, udp client socket
 	build_pipe( net_fd.tx_pipe );	// 创建无名管道
@@ -99,8 +98,8 @@ int main( int argc, char *argv[] )
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
-	controller_proccess();
-	
+	//controller_proccess();
+
 	pthread_exit( NULL );
 }
 

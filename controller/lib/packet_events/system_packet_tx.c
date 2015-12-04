@@ -319,14 +319,14 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			DEBUG_INFO("NO match transmit data type, Please check!");
 			right_packet = false;
 		}
-
+#if  1
 		if( right_packet )
 		{
 			int status = 0;
 			status = set_wait_message_primed_state();
 			assert( status == 0 );
-			
-			/*if( !resp )
+	/*		
+			if( !resp )
 			{
 				status = set_wait_message_primed_state();
 				assert( status == 0 );
@@ -335,9 +335,9 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			{
 				status = set_send_interval_primed_state();
 				assert( status == 0 );
-			}
-			*/
+			}*/
 		}
+#endif
 	}
 	else
 	{

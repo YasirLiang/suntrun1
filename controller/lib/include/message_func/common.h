@@ -18,7 +18,7 @@
 #include "host_controller_debug.h"
 
 
-#define SUB_DATA_TYPE_SIZE 256
+#define SUB_DATA_TYPE_SIZE 512 // same as MAX_FUNC_MSG_LEN
 
 typedef struct data_element		// Êý¾ÝÔªËØ
 {
