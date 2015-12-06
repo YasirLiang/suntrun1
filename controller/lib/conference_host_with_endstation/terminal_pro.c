@@ -342,7 +342,6 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 ******************************************************/
 int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 {
-	DEBUG_LINE();
 	struct endstation_to_host msg; 
 	struct endstation_to_host_special spe_msg;
 	terminal_address_list* p_addr_list = tmnl_addr_list;
@@ -616,6 +615,7 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len )
 {
 	terminal_main_state_send( 0, NULL, 0 );
+	
 	return 0;
 }
 
@@ -701,25 +701,19 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 ******************************************************/
 int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 {
-	FILE* fd = NULL;
 	uint8_t auto_close = 0;
-	int i = 0;
+	thost_system_set set_sys;
 	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
+	int i = 0;
 	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
-	if( NULL == fd )
+	if( !terminal_read_profile_file( &set_sys ) )
 	{
-		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-
-	if(profile_system_file_read_byte( fd, &auto_close, VAL_AUTO_CLOSE, sizeof(uint8_t)) == -1)
-	{	
-		Fclose( fd ); // fd must be closed
+		DEBUG_INFO( " read profile file wrong!" );
 		return -1;
 	}
 
 	/* 设置终端的麦克风状态*/
+	auto_close = set_sys.auto_close;
 	for( i = 0; i < TMNL_TYPE_NUM; i++)
 	{
 		gtmnl_state_opt[i].auto_close = auto_close?1:0;
@@ -729,7 +723,6 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29), 使用连接表管理系统的麦克风的连接状态，暂时未考虑同步的问题(11/4)*/
 	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 	{
-		DEBUG_LINE();
 		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS )
 		{
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
@@ -739,7 +732,6 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	/*发送主机状态*/
 	terminal_main_state_send( 0, NULL, 0 );
 
-	Fclose( fd ); // fd must be closed
 	return 0;
 }
 
@@ -747,22 +739,14 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( dev_terminal_list_guard );
-	FILE* fd = NULL;
 	tmnl_main_state_send host_main_state;
 	thost_system_set set_sys; // 系统配置文件的格式
 	uint8_t spk_num = 0;
 	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;
 
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-	if( NULL == fd )
+	if( !terminal_read_profile_file( &set_sys ) )
 	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
+		DEBUG_INFO( " read profile file wrong!" );
 		return -1;
 	}
 
@@ -784,7 +768,6 @@ int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 
 	terminal_host_send_state( BRDCST_1722_ALL, host_main_state ); // target id is 0
 
-	Fclose( fd );
 	return 0;
 }
 
@@ -843,60 +826,42 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 	}
 
 	/*发送主机状态*/
-	terminal_main_state_send( 0, NULL, 0 );
+	//terminal_main_state_send( 0, NULL, 0 );
 
 	return 0;
 }
 
 int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )// 处理函数有待完善(11/4)
 {
-	FILE* fd = NULL;
-	thost_system_set set_sys; // 系统配置文件的格式
+	thost_system_set set_sys;
 	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-	if( NULL == fd )
+	if( !terminal_read_profile_file( &set_sys ) )
 	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
+		DEBUG_INFO( " read profile file wrong!" );
 		return -1;
 	}
 
 	uint8_t spk_limt_num = *((uint8_t*)data);
-	//uint8_t dis_mode = set_sys.discuss_mode;
+	uint8_t dis_mode = set_sys.discuss_mode;
 
 	gdisc_flags.limit_num = spk_limt_num;
 
-	Fclose( fd );
 	return 0;
 }
 
 int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )
 {
-	FILE* fd = NULL;
-	thost_system_set set_sys; // 系统配置文件的格式
+	thost_system_set set_sys;
 	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-	if( NULL == fd )
+	if( !terminal_read_profile_file( &set_sys ) )
 	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
+		DEBUG_INFO( " read profile file wrong!" );
 		return -1;
 	}
 
 	uint8_t apply_limt_num = *((uint8_t*)data);
 	gdisc_flags.apply_limit = apply_limt_num;
 
-	Fclose( fd );
 	return 0;
 }
 
@@ -905,27 +870,18 @@ int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )
 因此只需在终端连接时设置连接表相应的超时时间即可*/
 int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 {
-	FILE* fd = NULL;
 	thost_system_set set_sys; // 系统配置文件的格式
-	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-	if( NULL == fd )
-	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
-		fd = NULL;
-		return -1;
-	}
 
 	tmnl_limit_spk_time spk_time;
 	spk_time.limit_time = set_sys.spk_limtime;
 	speak_limit_time = (uint8_t)spk_time.limit_time;
 
+	if( !terminal_read_profile_file( &set_sys ) )
+	{
+		DEBUG_INFO( "read profile file  Err!" );
+		return -1;
+	}
+	
 	if( !set_sys.spk_limtime ) // 无限时
 	{
 		terminal_limit_spk_time( 0, BRDCST_ALL, spk_time );
@@ -964,7 +920,6 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 		terminal_limit_spk_time( BRDCST_1722_ALL, limit_addr, spk_time );
 	}
 
-	Fclose( fd );
 	return 0;
 }
 
@@ -1067,19 +1022,11 @@ int terminal_mic_speak_limit_time_manager_event( void )
 /* 设置终端开始讨论的状态*/
 int terminal_start_discuss( bool mic_flag )
 {
-	FILE* fd = NULL;
-	thost_system_set set_sys; // 系统配置文件的格式
+	thost_system_set set_sys;
 	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-	if( NULL == fd )
+	if( !terminal_read_profile_file( &set_sys ) )
 	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
+		DEBUG_INFO( " read profile file wrong!" );
 		return -1;
 	}
 	
@@ -1090,15 +1037,14 @@ int terminal_start_discuss( bool mic_flag )
 		/*关闭所有麦克风*/
 		for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 		{
-			DEBUG_INFO( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
+			//DEBUG_INFO( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) ) // 断开注册连接的终端
 			{
 				connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 			}
 		}
 	}
-	tmnl_node = dev_terminal_list_guard->next;
-DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );	
+	
 	int i = 0;
 	for( i = 0; i < TMNL_TYPE_NUM; i++ )
 	{
@@ -1122,7 +1068,7 @@ DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmn
 		terminal_state_set_base_type( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE,gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);	// 根据终端类型设置终端的状态
 		terminal_lcd_display_num_send( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE, LCD_OPTION_CLEAR, glcd_num );// 发送lcd显示屏号
 	}
-DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
+	
 	/*设置终端指示灯*/
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY1, TLED_OFF );
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY2, TLED_OFF );
@@ -1130,10 +1076,9 @@ DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmn
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY4, TLED_OFF );
 	terminal_led_set_save( BRDCST_ALL, TLED_KEY5, TLED_OFF );
 	fterminal_led_set_send( BRDCST_ALL );
-DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
+	
 	terminal_main_state_send( 0, NULL, 0 );
-	DEBUG_INFO( "=======>>>mic node id = 0x%016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
-	Fclose( fd );
+	
 	return 0;
 }
 
@@ -1311,6 +1256,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 	return 0;
 }
 
+//  file STSTEM_SET_STUTUS_PROFILE must be close,before use this function
 bool terminal_read_profile_file( thost_system_set *set_sys )
 {
 	FILE* fd = NULL;

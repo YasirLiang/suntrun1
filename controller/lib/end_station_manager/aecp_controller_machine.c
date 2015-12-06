@@ -18,6 +18,7 @@ void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_gua
 	aecp_inflight_guard = inflight_guard;
 }
 
+// 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界，其他的发送函数同理
 int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp )
 {
 	uint8_t subtype = jdksavdecc_subtype_data_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD ); // msg_type in there is sbu
@@ -76,9 +77,6 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
-
-				int inflight_len = get_inflight_dblist_length( guard );
-				DEBUG_INFO( "inflight len = %d ", inflight_len );
 			}
 			else
 			{
@@ -104,21 +102,6 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			}
 		}
 	}
-	
-#if 0
-	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// conference data in this subtype data payload
-	{
-		test_conf_printf( frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cmd_type,  CONFERENCE_DATA_MSG);
-	}
-#endif
-	// ready to send
-	int i = 0;
-	printf( "Send dest:\t" );
-	for( ; i < 6; i ++ )
-	{
-		printf( " %02x", dest_mac[i] );
-	}
-	printf( "========================================================\n" );
 	
 	ssize_t send_len = raw_send( &net, dest_mac, frame, (frame_len >= 50)?frame_len: 50 );// at lease 50+14
 	if( send_len < 0 )

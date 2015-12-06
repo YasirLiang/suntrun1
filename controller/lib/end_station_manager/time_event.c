@@ -12,7 +12,7 @@ void inflight_time_tick( inflight_plist guard )
 		tmp_inflight = inflight_station->next; // save next node
 		uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
 		
-		DEBUG_INFO( "inflight data type = %d", data_type );
+		//DEBUG_INFO( "inflight data type = %d", data_type );
 		if( inflight_timer_timeout(inflight_station) )
 		{	
 			if( data_type == INFLIGHT_TRANSMIT_TYPE_UDP_CLIENT )

@@ -119,7 +119,7 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 	}
 
 	// save message
-	//DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
+	DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
 	if( ( NULL != pdata ) && (data_len >0) && (index <  MAX_PROCCESS_FUNC) && (proccess_func_link_tables[i].permit & get_sys_state()))
 	{
 		queue_data_elem.func_msg_head.func_index = index;
@@ -134,15 +134,14 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 
 		queue_data_elem.meet_msg.data_len = data_len; // frame length 
 		memcpy( queue_data_elem.meet_msg.data_buf, pdata, data_len );
-DEBUG_LINE();
+
 		// thread lock and save data
 		pthread_mutex_lock( &fcwork_queue.control.mutex );
-DEBUG_LINE();
+
 		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
-DEBUG_LINE();
+
 		pthread_mutex_unlock( &fcwork_queue.control.mutex );
 		pthread_cond_signal( &fcwork_queue.control.cond );
-		DEBUG_LINE();
 	}
 	else
 	{

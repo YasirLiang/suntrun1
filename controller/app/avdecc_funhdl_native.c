@@ -92,7 +92,7 @@ int thread_pipe_fn( void *pgm )
 #else 
 /*2015-12-1注:使用此线程与发送队列线程发现了(即使用发送队列的发送网络数据的机制)发现了内存数据
 遭到破坏导致程序奔溃的现象，直到今天也未解决，因此使用定义宏__NOT_USE_SEND_QUEUE_PTHREAD__
-来直接通过管道发送数据(见上thread_pipe_fn)，*/
+来直接通过管道发送数据(见上thread_pipe_fn)，(2015-12-6 重新使用此线程)*/
 int thread_pipe_fn( void *pgm )
 {
 	struct fds *kfds = ( struct fds* )pgm;
@@ -108,7 +108,7 @@ int thread_pipe_fn( void *pgm )
 		{
 			tx_data tnt;
 			int result = read_pipe_tx( &tnt, sizeof(tx_data) );
-			DEBUG_INFO( "frame len = %d ", tnt.frame_len );
+			//DEBUG_INFO( "frame len = %d ", tnt.frame_len );
 			
 			if( result > 0 )
 			{
@@ -116,20 +116,18 @@ int thread_pipe_fn( void *pgm )
 				pthread_mutex_lock( &send_wq->control.mutex );
 
 				send_work_queue_message_save( &tnt, send_wq );
-				int len = get_queue_length( &send_wq->work );
-				DEBUG_INFO( "============>>save queue len = %d <<=============", len );
 
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
 				pthread_cond_signal( &send_wq->control.cond );
+
+#ifdef __PIPE_SEND_CONTROL_ENABLE__
+				sem_post( &sem_tx );
+#endif
 			}
 			else 
 			{
 				assert( tnt.frame && (result >= 0) );
 			}
-			
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
-			sem_post( &sem_tx );
-#endif
 		}
 		else
 		{
@@ -153,34 +151,10 @@ int thread_func_fn( void * pgm )
 	/* 处理命令函数 */
 	while( 1 )
 	{
-#ifdef __TEST_QUEUE__ // test queue, other is in system.c, define in the circular_queue.c
-		pthread_mutex_lock( &p_func_wq->control.mutex );
-
-		while( p_func_wq->work.front == NULL && p_func_wq->control.active )
-		{
-			DEBUG_LINE();
-			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
-		}
-
-		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
-		if( NULL == p_msg_wnode )
-		{
-			DEBUG_INFO( "func work queue no node!" );
-			return -1;
-		}
-
-		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
-		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
-		DEBUG_ONINFO( "[ queue test:  %d(index)--%d(cmd) ]",  func_index, func_cmd );
-		free( p_msg_wnode );
-
-		pthread_mutex_unlock( &p_func_wq->control.mutex );
-#else // normal 
 		pthread_mutex_lock( &p_func_wq->control.mutex );
 		
 		while( p_func_wq->control.active && (p_func_wq->work.front == NULL) )
 		{
-			//DEBUG_INFO( "func_wq active = %d ", p_func_wq->control.active );
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
 		}
 
@@ -205,11 +179,13 @@ int thread_func_fn( void * pgm )
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
 		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
 		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
-		
 		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
-		
-		free( p_msg_wnode );
-#endif	
+
+		if( NULL != p_msg_wnode )
+		{
+			free( p_msg_wnode );
+			p_msg_wnode = NULL;
+		}
 	}
 	
 	return 0;

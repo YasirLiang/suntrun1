@@ -8,6 +8,8 @@
 #define UPPER_PAYLOAD_DATA_MAX_LEN ( DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT)
 #define UPPER_COMPUTER_DATA_LOADER 0xac
 
+#define UPPER_RECV_BUF_MAX 1024
+
 #define HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH 5
 #define CMPT_HEAD_OFFSET 0
 #define CMPT_PROTOCOL_OFFSET 1
@@ -68,7 +70,7 @@ struct host_upper_cmpt_frame		// 接受udp数据的信息结构体
 	uint8_t dest_address[32];	 	// 目的ip地址
 	int dest_port;					// 目的端口号
 	int payload_len;
-	uint8_t payload[DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT]; //接收负载
+	uint8_t payload[UPPER_RECV_BUF_MAX ]; //接收负载
 };
 
 extern bool  is_upper_udp_client_connect;

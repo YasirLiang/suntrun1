@@ -256,6 +256,7 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 *		因为tx_packet_event调用结束后会释放frame的空间，而inflight 命令链表则会一直存在于系统中，
 *		直到程序成功发送网络数据。
 *返回值:无
+*state: 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界.
 *****************************/
 void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin, const bool resp )
 {
@@ -319,25 +320,13 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 			DEBUG_INFO("NO match transmit data type, Please check!");
 			right_packet = false;
 		}
-#if  1
+		
 		if( right_packet )
 		{
 			int status = 0;
 			status = set_wait_message_primed_state();
 			assert( status == 0 );
-	/*		
-			if( !resp )
-			{
-				status = set_wait_message_primed_state();
-				assert( status == 0 );
-			}
-			else
-			{
-				status = set_send_interval_primed_state();
-				assert( status == 0 );
-			}*/
 		}
-#endif
 	}
 	else
 	{

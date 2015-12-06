@@ -236,10 +236,6 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		assert( send_len >= 0 );
 	}
 
-	//DEBUG_INFO( "conf_data_len = %d send len = %d, send dest = %02x-%02x-%02x-%02x-%02x-%02x", cnf_data_len, send_len, \
-		//send_frame.dest_address.value[0], send_frame.dest_address.value[1], \
-		//send_frame.dest_address.value[2], send_frame.dest_address.value[3], \
-		//send_frame.dest_address.value[4], send_frame.dest_address.value[5]);
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	
 	return (uint16_t)send_len;

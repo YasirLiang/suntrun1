@@ -121,11 +121,7 @@ void system_close( struct threads_info *p_threads )
 	for( i = 0; i < can_num; i++ )
 	{
 		ret = pthread_kill( p_threads->tid[i], SIGQUIT );
-		if( ret == 0 )
-		{
-			DEBUG_INFO( "pthread_kill  success: tid[%d]", i );
-		}
-		else
+		if( ret != 0 )
 		{
 			if( errno == ESRCH )
 			{

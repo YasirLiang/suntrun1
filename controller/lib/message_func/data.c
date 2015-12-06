@@ -42,7 +42,7 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },
 	{ 0xffffffff, terminal_system_discuss_mode_set, FUNC_MENU_DISC_MODE_SET_CMD },
 	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET },
-	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
+	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET }
 /*	{ 0xffffffff, , },
 	{ 0xffffffff, , },
 	{ 0xffffffff, , },
@@ -64,6 +64,7 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ TERMINAL_USE, PRESIDENT_CONTROL, FUNC_TMNL_CHAIRMAN_CONTROL, 0},
 	{ TERMINAL_USE, HOST_SEND_STATUS, FUNC_TMNL_SEND_MAIN_STATE, 0},
 	{ TERMINAL_USE, END_SPETHING, FUNC_TMNL_EVENT, 0},
+	
 	{ COMPUTER_USE, DISCUSSION_PARAMETER, FUNC_CMPT_DISCUSS_PARAMETER, 0},
 	{ COMPUTER_USE, MISCROPHONE_SWITCH, FUNC_CMPT_MISCROPHONE_SWITCH, 0},
 	{ COMPUTER_USE, MISCROPHONE_STATUS, FUNC_CMPT_MISCROPHONE_STATUS, 0},

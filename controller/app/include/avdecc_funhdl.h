@@ -34,7 +34,7 @@ int udp_client_fn( struct epoll_priv *priv );
 int prep_evt_desc( int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_event *ev );
 int thread_fn( void *pgm );
 int pthread_handle_create( pthread_t *h_trd, struct fds *kfds );
-void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len );
+//void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len );
 
 
 #endif

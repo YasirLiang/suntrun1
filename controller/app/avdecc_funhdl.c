@@ -16,16 +16,6 @@ void thread_fn_thread_stop( void )
 	system_stop = true;
 }
 
-void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len)
-{
-	char *addr = (char*)inet_ntoa( sin->sin_addr );
-	frame->payload_len = len;
-	strcpy( (char*)frame->dest_address, addr );
-	frame->dest_port = ntohs( sin->sin_port );
-
-	//DEBUG_INFO("dest address = %s:%d", frame->dest_address, frame->dest_port);
-}
-
 // 设置新的超时时间, 并开始定时器
 int timer_start_interval(int timerfd)
 {
@@ -58,7 +48,6 @@ int fn_timer_cb( struct epoll_priv*priv )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );	
 		sem_post( &sem_waiting );
-		//DEBUG_INFO( "end of sending >>>host data<<< ");
 	}
 	
 	is_inflight_timeout = false; 
@@ -66,7 +55,6 @@ int fn_timer_cb( struct epoll_priv*priv )
 	if((is_wait_messsage_active_state()) && (is_send_interval_timer_timeout()))// check uart or resp data timeout
 	{
 		sem_post( &sem_waiting ); 
-		//DEBUG_INFO( "coming end of sending response data " );
 	}
 	
     	return read_len;
@@ -97,14 +85,12 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
 
-		//DEBUG_INFO( " rx status =%d, msg wait active = %d ", rx_status, is_wait_messsage_active_state());
 		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			int msr_status = 0;
 			msr_status = set_wait_message_status( rx_status );
 			assert( msr_status == 0 );
 			sem_post( &sem_waiting ); 
-			//DEBUG_INFO( "end of sending >>>host data<<<!");
 			acmp_recv_resp_err = false;
 		}
 	}
@@ -119,7 +105,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	socklen_t sin_len = sizeof( struct sockaddr_in );	// (特别注意)调用者应该在调用之前初始化与struct sockaddr_in相关的缓冲区的大小
 	struct host_upper_cmpt_frame recv_frame;
 	int recv_len = 0;
-	memset( &recv_frame, -1, sizeof( struct host_upper_cmpt_frame ) );
+	memset( &recv_frame, 0, sizeof( struct host_upper_cmpt_frame ) );
 	memset( &sin_in, 0, sin_len );
 	
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
@@ -130,9 +116,9 @@ int udp_server_fn(struct epoll_priv *priv )
 		memcpy( &upper_udp_client.cltaddr, &sin_in, sizeof(struct sockaddr_in) );
 		upper_udp_client.cltlen = sin_len;
 		is_upper_udp_client_connect = true;
-		//set_UDP_parameter( &recv_frame, &sin_in, recv_len );
+		recv_frame.payload_len = recv_len;
 		int rx_status = -1;
-				
+
 		// 处理接收的上位机发送过来的数据包
 		handle_upper_computer_conference_data( &recv_frame, &rx_status );
 				
@@ -140,7 +126,6 @@ int udp_server_fn(struct epoll_priv *priv )
 		{
 			set_wait_message_status( 0 );
 			sem_post( &sem_waiting );
-			//DEBUG_INFO( "end of sending >>>host data<<< !");
 		}
 	}
 	else
@@ -190,7 +175,7 @@ int thread_fn(void *pgm)
 			&ev );
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
-	prep_evt_desc( fn_fds->udp_server_fd, &udp_client_fn, &fd_fns[3],
+	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3],
 			&ev );
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
 

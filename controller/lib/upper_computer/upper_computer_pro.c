@@ -86,6 +86,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
 		{
 			Fflush( fd ); // 刷新到文件中
+			Fclose( fd );
 			
 			// 设置系统状态
 			uint8_t temp_status = set_dis_para.auto_close;
@@ -94,7 +95,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				// 自动关闭麦克风
 				DEBUG_INFO( "auto close = %d", temp_status );
 				//terminal_mic_auto_close( 0, NULL, 0 );
-				//find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
+				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
 			temp_status = set_dis_para.discuss_mode;
@@ -103,7 +104,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				// 设置系统讨论模式
 				DEBUG_INFO( "discuss_mode = %d", temp_status );
 				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );
-				//find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
+				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
@@ -112,7 +113,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				// 设置限制的发言人数
 				DEBUG_INFO( "limit_speak_num = %d", temp_status );
 				//terminal_speak_limit_num_set( 0, &temp_status, 1 );
-				//find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
@@ -121,7 +122,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				// 设置限制申请人数
 				DEBUG_INFO( "limit_apply_num = %d", temp_status );
 				//terminal_apply_limit_num_set( 0, &temp_status, 1 );
-				//find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			// 限时设置
@@ -133,7 +134,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		}
 	}
 	
-	Fclose( fd );
 	return 0;
 }
 

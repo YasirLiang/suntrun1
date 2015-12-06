@@ -43,8 +43,10 @@ int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe
 	cpy_frame.payload_len = frame_len;
 	memcpy( cpy_frame.payload, pframe->payload, pframe->payload_len );
 
+	//DEBUG_INFO( "CoLoad = %02x",  cpy_frame.payload[0] );
 	if( cpy_frame.payload[0] == UPPER_COMPUTER_DATA_LOADER )
 	{
+	
 		if( !check_crc( cpy_frame.payload, frame_len) )
 		{
 			*status = 0;

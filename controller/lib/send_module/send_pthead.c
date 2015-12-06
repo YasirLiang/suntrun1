@@ -51,15 +51,14 @@ void destroy_network_send_work_queue( void )
 	pthread_mutex_unlock( &net_send_queue.control.mutex );
 	
 	controll_deactivate( &net_send_queue.control );
-	/*is_su = controll_destroy( &net_send_queue.control );
+	/*is_su = controll_destroy( &net_send_queue.control ); // »á±»ÏµÍ³µ÷ÓÃ´ò¶Ï
 	if( !is_su )
 	{
 		DABORT( is_su );
 	}*/
 }
 
-#ifndef __NOT_USE_SEND_QUEUE_PTHREAD__ // ¶¨ÒåÓÚsend_pthread.h
-int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ¹ÓÃÍ¬²½»úÖÆ2015-12-1)
+int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ¹ÓÃÍ¬²½»úÖÆ2015-12-1).(¾­ÑéÖ¤201512-6´ËÏß³ÌÔÝÎÞÎÊÌâ)
 {
 	sdpwqueue*  p_send_wq = &net_send_queue;
 	assert( p_send_wq );
@@ -84,6 +83,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			continue;
 		}
 
+		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+
 		// ready to sending data
 		is_resp_data = p_send_wnode->job_data.resp;
 		tx_packet_event( p_send_wnode->job_data.data_type, 
@@ -97,19 +98,14 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 							     is_resp_data );
 
 		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
-		assert( p_send_wnode->job_data.frame == NULL );		// free successfully and result is NULL? 
-		free( p_send_wnode );
-
-		int len = get_queue_length( &p_send_wq->work );
-		DEBUG_INFO( "============>>after queue len = %d <<=============", len );
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
-#if 0
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
-			sem_post( &sem_tx );
-#endif
-#else		
+		assert( p_send_wnode->job_data.frame == NULL ); // free successfully and result is NULL? 
+		if( NULL != p_send_wnode )
+		{
+			free( p_send_wnode );
+			p_send_wnode = NULL;
+		}
+		
 		/*·¢ËÍÏÂÒ»ÌõÊý¾ÝµÄÌõ¼þ-Êý¾Ý»ñµÃÏìÓ¦»òÊý¾Ý³¬Ê±»òÊ±¼ä¼ä¸ôµ½ÁË(×¢:Ê±¼ä¼ä¸ôÖ»ÊÊÓÃÓÚÏµÍ³ÏìÓ¦Êý¾Ý»òÉãÏñÍ·¿ØÖÆÊý¾ÝµÄ·¢ËÍ)*/
-		//DEBUG_INFO( "wait (%d) -----------interval(%d)",  is_wait_messsage_primed_state(), is_send_interval_primed_state());
 		if( is_wait_messsage_primed_state() ) 
 		{
 			int status = -1;
@@ -121,11 +117,10 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				 return -1;
 			}
 			
-			timeout.tv_sec += 4;// 4 seconds
+			timeout.tv_sec += 4;	// timeouts is 4 seconds
 			
 			if( !is_resp_data )
 			{
-				DEBUG_INFO( "coming start of sending >>>host data<<<  " );
 				status = set_wait_message_active_state();
 				assert( status == 0 );
 				//sem_wait( &sem_waiting );
@@ -144,11 +139,9 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				}
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
-				DEBUG_INFO( "end of sending >>>host data<<<");
 			}
 			else
 			{
-				DEBUG_INFO( "coming start of sending response data ");
 				status = set_wait_message_active_state();
 				assert( status == 0 );
 				uart_resp_send_interval_timer_start(); // start timer
@@ -170,19 +163,16 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				resp_send_interval_timer_stop();
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
-				DEBUG_INFO( "end of sending response data " );
 			}
 		}
 		else
 		{
-			DEBUG_INFO("...................................." );
+			DEBUG_INFO(" not message primed success!" );
 		}
-#endif
 	}
 	
 	return 0;
 }
-#endif
 
 int pthread_send_network_create( pthread_t *send_pid )
 {
