@@ -34,29 +34,33 @@ int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_d
 	 (profile_system_file_write( fd, set_dis_para->limit_speak_time, VAL_SPK_LIMIT_TIME ) != -1)) ? 0 : -1;
 }
 
+int profile_dis_param_save_to_ram( thost_system_set *set_sys, tcmpt_discuss_parameter *set_dis_para )
+{
+	assert( set_sys && set_dis_para );
+	
+	set_sys->chman_first = set_dis_para->chairman_first;
+	set_sys->chman_music = set_dis_para->chair_music;
+	set_sys->auto_close = set_dis_para->auto_close;
+	set_sys->discuss_mode = set_dis_para->discuss_mode;
+	set_sys->speak_limit = set_dis_para->limit_speak_num;
+	set_sys->apply_limit = set_dis_para->limit_apply_num;
+	set_sys->chman_limitime = set_dis_para->limit_chm_time;
+	set_sys->vip_limitime = set_dis_para->limit_vip_time;
+	set_sys->spk_limtime = set_dis_para->limit_speak_time;
+
+	return 0;
+}
+
 /*==================================================
 					开始终端命令函数
 ====================================================*/
 
 int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data, uint32_t data_len ) //后期可能需要修改11/10。
 {
-	thost_system_set set_sys; // 系统配置文件的格式
 	tcmpt_discuss_parameter qu_dis_para, set_dis_para;
 	uint16_t send_data_len = 0; // 协议数据负载的长度
-	FILE* fd = NULL;
-	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb+" );
-	if( NULL == fd )
-	{
-		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-	if( profile_system_file_read( fd, &set_sys ) == -1 )
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
-		return -1;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
 	{
@@ -83,17 +87,14 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 				
 		// 保存配置文件
-		if( profile_system_file_dis_param_save( fd, &set_dis_para ) != -1 )
+		if( profile_dis_param_save_to_ram( &gset_sys, &set_dis_para ) != -1 )
 		{
-			Fflush( fd ); // 刷新到文件中
-			Fclose( fd );
-			
-			// 设置系统状态
+			/*// 设置系统状态
 			uint8_t temp_status = set_dis_para.auto_close;
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				DEBUG_INFO( "auto close = %d", temp_status );
+				//DEBUG_INFO( "auto close = %d", temp_status );
 				//terminal_mic_auto_close( 0, NULL, 0 );
 				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
@@ -102,7 +103,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				DEBUG_INFO( "discuss_mode = %d", temp_status );
+				//DEBUG_INFO( "discuss_mode = %d", temp_status );
 				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
@@ -111,7 +112,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
-				DEBUG_INFO( "limit_speak_num = %d", temp_status );
+				//DEBUG_INFO( "limit_speak_num = %d", temp_status );
 				//terminal_speak_limit_num_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
@@ -120,10 +121,10 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				DEBUG_INFO( "limit_apply_num = %d", temp_status );
+				//DEBUG_INFO( "limit_apply_num = %d", temp_status );
 				//terminal_apply_limit_num_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
-			}
+			}*/
 
 			// 限时设置
 			//DEBUG_INFO( " save limit_speak_time = %d", set_dis_para.limit_speak_time );

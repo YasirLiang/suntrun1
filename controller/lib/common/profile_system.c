@@ -5,6 +5,10 @@
 
 #include "profile_system.h"
 #include "terminal_common.h"
+ // 配文件描述符，若系统文件第一次创建是以wb+的方式打开，
+ //否则以rb+方式打开，此文件在系统运行过程中只以一种方式与只打开一次
+FILE *profile_file_fd = NULL;
+thost_system_set gset_sys; // 系统配置文件的格式
 
 int init_profile_system_file( void )
 {
@@ -50,10 +54,23 @@ int init_profile_system_file( void )
 				Fclose( fd );
 				return -1;
 			}
+
+			// 将第一次的内容写到内存中
+			memcpy( &gset_sys, &system_set_form.set_sys, sizeof(thost_system_set));
+		}
+	}
+	else // 读取文件内容到内存中
+	{
+		if( profile_system_file_read( fd, &gset_sys ) == -1)
+		{
+			DEBUG_INFO( "Read profile system Err!" );
+			Fclose( fd );
+			return -1;
 		}
 	}
 
-	Fclose( fd );
+	profile_file_fd = fd;
+
 	return 0;
 }
 

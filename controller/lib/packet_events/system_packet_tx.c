@@ -12,6 +12,8 @@
 
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
+uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区
+
 void init_sem_tx_can( void )
 {
 	sem_init( &sem_tx, 0, 0 );
@@ -48,23 +50,28 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx_data tx;
 		uint8_t *tran_buf = NULL;
 		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		
 		// heap using later free by reading pipe thread.tran_buf space must to be free!
-		tran_buf= allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
 		if( NULL == tran_buf )
 		{
 			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
 			return -1;
 		}
 
-		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
+		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+		{
+			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
+			return -1;
+		}
+		
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = isresp;
-		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
@@ -141,7 +148,7 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
-		memcpy(&tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
+		memcpy( &tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
 
 #ifdef __PIPE_SEND_CONTROL_ENABLE__
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )

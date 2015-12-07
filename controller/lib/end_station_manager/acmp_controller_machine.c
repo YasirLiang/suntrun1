@@ -234,7 +234,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
-				
+
+				DEBUG_INFO( "subtype = 0x%02x ", inflight_station->host_tx.inflight_frame.data_type );
 				//int inflight_len = get_inflight_dblist_length( guard );
 				//DEBUG_INFO( "inflight len = %d ", inflight_len );
 			}
@@ -522,7 +523,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
 				{
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
-					connet_table_disconnect_call_info.pdis_callback( NULL ); /* NULL means disconnect err!*/
+					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node ); /* NULL means disconnect err!*/
 
 					connet_table_disconnect_call_info.p_cnnt_node = NULL;
 					connet_table_disconnect_call_info.pdis_callback = NULL;
@@ -531,7 +532,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 				if( disconnect_mic_main_call.connect_node != NULL && \
 					disconnect_mic_main_call.p_mian_state_send != NULL && disconnect_mic_main_call.p_mic_set_callback != NULL )
 				{
-					uint8_t mic_state = (!connect_mic_main_call.mic_state); // 麦克风打开
+					uint8_t mic_state = connect_mic_main_call.mic_state; // 麦克风打开
 					bool is_set_mic_state = disconnect_mic_main_call.mic_state_set;
 					uint16_t addr = (disconnect_mic_main_call.connect_node)->tmnl_dev.address.addr;
 					uint64_t tarker_id = (disconnect_mic_main_call.connect_node)->tmnl_dev.entity_id;

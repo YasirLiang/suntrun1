@@ -77,6 +77,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
+
+				DEBUG_INFO( "subtype = 0x%02x ", inflight_station->host_tx.inflight_frame.data_type );
 			}
 			else
 			{
@@ -177,7 +179,7 @@ int aecp_read_desc_init(uint16_t desc_type, uint16_t desc_index, uint64_t target
 
 int aecp_send_read_desc_cmd( uint16_t desc_type, uint16_t desc_index, uint64_t target_entity_id)
 {
-	return aecp_send_read_desc_cmd_with_flag( desc_type, desc_index, target_entity_id);
+	return aecp_send_read_desc_cmd_with_flag( desc_type, desc_index, target_entity_id );
 }
 
 int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, uint64_t entity_id)
@@ -291,10 +293,12 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 		{
 			if( (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address == CONFERENCE_BROADCAST_ADDRESS) || (terminal_address == inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address) )
 			{
+				DEBUG_LINE();
 				notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 				aecp_callback( notification_flag, cmd_frame->payload );
 				release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
 				delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
+				DEBUG_LINE();
 			}
 			else
 			{

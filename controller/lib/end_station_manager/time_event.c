@@ -24,13 +24,16 @@ void inflight_time_tick( inflight_plist guard )
 			else if( data_type == JDKSAVDECC_SUBTYPE_AECP )
 				aecp_inflight_station_timeouts( inflight_station, guard );
 			else
-				DEBUG_INFO("Err inflight data type");
-				
-		}
+			{
+				DEBUG_INFO("Err inflight data type = 0x%02x", data_type );
+				release_heap_space( &inflight_station->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
+				delect_inflight_dblist_node( &inflight_station );
+			}
+		}/*
 		else
 		{
 			break; // only check the head
-		}
+		}*/
 	}
 }
 

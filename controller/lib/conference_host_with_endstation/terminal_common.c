@@ -303,6 +303,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 			assert( ret >=0 );
 		}
 
+		DEBUG_INFO( "data length = %d ",  recv_data.data_len );
 		if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
 		{
 			return; 

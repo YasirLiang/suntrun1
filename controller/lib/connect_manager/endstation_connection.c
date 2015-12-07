@@ -233,11 +233,11 @@ int connect_table_disconnect_callback( connect_tbl_pdblist p_cnnt_node )
 		connect_table_double_list_move_node_to_tail( p_cnnt_node, cnnt_list_guard );
 		
 #ifdef __DEBUG_CONNECT_TABLE__
-		//connect_table_double_list_show_all( cnnt_list_guard );
+		connect_table_double_list_show_all( cnnt_list_guard );
 #endif
 	}
 	else
-	{
+	{	
 		return -1;
 	}
 	
@@ -352,7 +352,7 @@ int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t ti
 		}
 
 #ifdef __DEBUG_CONNECT_TABLE__
-		//connect_table_double_list_show_all( cnnt_list_guard );
+		connect_table_double_list_show_all( cnnt_list_guard );
 #endif
 
 	}

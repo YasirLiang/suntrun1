@@ -180,7 +180,7 @@ int thread_func_fn( void * pgm )
 		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
 		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
 		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
-
+		
 		if( NULL != p_msg_wnode )
 		{
 			free( p_msg_wnode );

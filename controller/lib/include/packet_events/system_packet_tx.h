@@ -12,7 +12,7 @@
 #define __PIPE_SEND_CONTROL_ENABLE__ // 管道同步传输控制
 #endif
 
-#define TRANSMIT_DATA_BUFFER_SIZE 512
+#define TRANSMIT_DATA_BUFFER_SIZE 2048
 #define CONFERENCE_RESPONSE_POS 1
 
 enum transmit_data_type
@@ -28,13 +28,13 @@ enum transmit_data_type
 
 typedef struct transmit_data
 {
+	struct sockaddr_in udp_sin;//udp addr
+	struct jdksavdecc_eui48 raw_dest;	//raw packet
 	uint8_t data_type;		// 发送数据类型,为enum transmit_data_type中的类型
 	bool notification_flag;	// 发送标志
 	bool resp;				// 响应数据
 	uint8_t *frame;		// 需发送的数据缓冲区,大小为2048，这里使用堆空间，原因是函数结束后栈空间会被释放
 	uint16_t frame_len;		// 缓冲区大小
-	struct sockaddr_in udp_sin;//udp addr
-	struct jdksavdecc_eui48 raw_dest;	//raw packet
 }tx_data,*ptr_tx_data;
 
 struct fds;

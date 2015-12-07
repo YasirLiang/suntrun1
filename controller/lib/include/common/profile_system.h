@@ -58,6 +58,8 @@ typedef struct _thost_system_profile_form // ÏµÍ³ÅäÖÃÎÄ¼şµÄ¸ñÊ½ Á½¸ö×Ö½Ú + ÏµÍ³µ
 	thost_system_set set_sys;	// ÏµÍ³ÅäÖÃĞÅÏ¢
 }thost_system_profile_form;
 
+extern thost_system_set gset_sys; 							// ÏµÍ³ÅäÖÃÎÄ¼şµÄĞÅÏ¢
+
 int profile_system_file_write( FILE* fd,  const uint8_t save_value,  size_t index );
 int profile_system_file_read( FILE* fd,  thost_system_set* system_set );
 int init_profile_system_file( void );

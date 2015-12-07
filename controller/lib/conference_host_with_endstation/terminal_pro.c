@@ -32,7 +32,7 @@ tchairman_control_in gchm_int_ctl; 						// 主席插话
 
 ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 
-uint8_t speak_limit_time = 0; 							// 发言时长， 0表示无限时；1-63表示限时1-63分钟
+uint8_t speak_limit_time = 0; 								// 发言时长， 0表示无限时；1-63表示限时1-63分钟
 
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
@@ -119,22 +119,8 @@ inline void init_terminal_device_double_list( void )
 */
 int init_terminal_discuss_param( void ) 
 {
-	FILE* fd = NULL;
 	thost_system_set set_sys; // 系统配置文件的格式
-	
-	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
-	if( NULL == fd )
-	{
-		DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-		return -1;
-	}
-
-	if( profile_system_file_read( fd, &set_sys ) == -1)
-	{
-		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
-		return -1;
-	}
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	gdisc_flags.apply_limit = set_sys.apply_limit;
 	gdisc_flags.limit_num = set_sys.speak_limit;
@@ -145,7 +131,6 @@ int init_terminal_discuss_param( void )
 	memset( gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM );
 	memset( gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM );
 
-	Fclose( fd );
 	return 0;
 }
 
@@ -282,6 +267,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len )
 {
 	assert( p_data );
+	
 	upper_cmpt_terminal_message_report( p_data, msg_len, address );
 }
 
@@ -487,8 +473,9 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 	uint8_t sign_value = 0;
 	uint8_t chair_opt = msg.data&CHAIRMAN_CONTROL_MEET_MASK;
 	uint8_t sign_flag = 0;
-	FILE *fd = NULL;
 	tmnl_pdblist query_tmp = NULL;
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
@@ -505,22 +492,8 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 	switch( chair_opt )
 	{
 		case CHM_BEGIN_SIGN:
-			fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb+" );
-			if( fd == NULL )
-			{
-				DEBUG_ERR( "begin sign open profile Err!" );
-				return -1;
-			}
-			
-			if( profile_system_file_write( fd, KEY_SIGN_IN, VAL_SINGIN_TYPE ) == -1 )
-			{
-				DEBUG_ERR( "begin sign write sign type of system profile !" );
-				Fclose( fd );
-				return -1;
-			}
-			
+			gset_sys.sign_type = KEY_SIGN_IN;
 			terminal_chman_control_start_sign_in( KEY_SIGN_IN, 10 );
-			Fclose( fd ); // must close!
 			break;
 		case CHM_END_SIGN:
 			terminal_end_sign( 0, NULL, 0 );
@@ -635,7 +608,8 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 	struct endstation_to_host_special spe_msg;
 	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
 	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
-	FILE *fd = NULL;
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	/*reply termianl*/
 	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
@@ -658,19 +632,7 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 		thost_sys_state sys_state = get_terminal_system_state();
 		if( DISCUSS_STATE == sys_state.host_state )
 		{
-			uint8_t dis_mode = 0;
-			fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" );
-			if( NULL == fd )
-			{
-				DEBUG_INFO( "open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-				return -1;
-			}
-
-			if(profile_system_file_read_byte( fd, &dis_mode, VAL_DSCS_MODE, sizeof(uint8_t)) == -1)
-			{	
-				Fclose( fd ); // fd must be closed
-				return -1;
-			}
+			uint8_t dis_mode = set_sys.discuss_mode;
 			
 			if( APPLY_MODE == dis_mode  && (tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
 			{
@@ -680,8 +642,6 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 			{
 				terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
 			}
-
-			Fclose( fd ); // close fd 
 		}
 	}
 
@@ -702,16 +662,12 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 {
 	uint8_t auto_close = 0;
-	thost_system_set set_sys;
 	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
 	int i = 0;
+	thost_system_set set_sys;
 	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return -1;
-	}
-
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+	
 	/* 设置终端的麦克风状态*/
 	auto_close = set_sys.auto_close;
 	for( i = 0; i < TMNL_TYPE_NUM; i++)
@@ -739,21 +695,16 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( dev_terminal_list_guard );
+	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;	
 	tmnl_main_state_send host_main_state;
-	thost_system_set set_sys; // 系统配置文件的格式
 	uint8_t spk_num = 0;
-	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;
-
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return -1;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	host_main_state.unit = gregister_tmnl_pro.tmn_total;
 	host_main_state.camera_follow = set_sys.camara_track ? 1 : 0;
 	host_main_state.chm_first = set_sys.temp_close ? 1 : 0;
-	host_main_state.conference_stype = set_sys.discuss_mode;
+	host_main_state.conference_stype = (set_sys.discuss_mode&0x0f); // low 4bit
 	host_main_state.limit = set_sys.speak_limit; 		// 讲话人数上限
 	host_main_state.apply_set = set_sys.apply_limit;	// 申请人数上限
 	
@@ -835,11 +786,7 @@ int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )/
 {
 	thost_system_set set_sys;
 	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return -1;
-	}
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	uint8_t spk_limt_num = *((uint8_t*)data);
 	uint8_t dis_mode = set_sys.discuss_mode;
@@ -853,11 +800,7 @@ int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )
 {
 	thost_system_set set_sys;
 	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return -1;
-	}
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	uint8_t apply_limt_num = *((uint8_t*)data);
 	gdisc_flags.apply_limit = apply_limt_num;
@@ -870,17 +813,12 @@ int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )
 因此只需在终端连接时设置连接表相应的超时时间即可*/
 int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 {
-	thost_system_set set_sys; // 系统配置文件的格式
-
 	tmnl_limit_spk_time spk_time;
+	thost_system_set set_sys; // 系统配置文件的格式
+	
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	spk_time.limit_time = set_sys.spk_limtime;
 	speak_limit_time = (uint8_t)spk_time.limit_time;
-
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( "read profile file  Err!" );
-		return -1;
-	}
 	
 	if( !set_sys.spk_limtime ) // 无限时
 	{
@@ -1022,13 +960,8 @@ int terminal_mic_speak_limit_time_manager_event( void )
 /* 设置终端开始讨论的状态*/
 int terminal_start_discuss( bool mic_flag )
 {
-	thost_system_set set_sys;
-	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return -1;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	assert( dev_terminal_list_guard );
 	tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
@@ -1106,7 +1039,6 @@ void terminal_chairman_apply_type_set( uint16_t addr )
 	gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE].sys = TMNL_SYS_STA_DISC;
 
 	terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_CHM_EXCUTE] );
-	//terminal_lcd_display_num_send( BRDCST_MEM |BRDCST_VIP|BRDCST_CHM|BRDCST_EXE, LCD_OPTION_DISPLAY, CHM_APPROVE_APPLY_INTERFACE );// 发送lcd显示屏号
 	terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, CHM_APPROVE_APPLY_INTERFACE );
 }
 
@@ -1169,20 +1101,14 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 	uint8_t mic_state_set = mic_flag.switch_flag;
 	ttmnl_discuss_mode dis_mode = gdisc_flags.edis_mode;
 	tmnl_pdblist speak_node = NULL;
-	thost_system_set set_sys;
 	uint8_t limit_time = 0;
 	bool found_node = false;
 	bool read_success = false;
-
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		return -1;
-	}
-	else
-	{
-		read_success = true;
-		limit_time = set_sys.spk_limtime;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+	
+	read_success = true;
+	limit_time = set_sys.spk_limtime;
 	
 	assert( dev_terminal_list_guard );
 	DEBUG_INFO( " speak addr = %04x, discuccess mode = %d", addr, dis_mode );
@@ -1673,14 +1599,9 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 {
 	uint16_t addr = 0;
 	tmnl_pdblist apply_first = NULL;
-	thost_system_set set_sys;
 	bool ret = false;
-	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( " read profile file wrong!" );
-		return false;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	if((gdisc_flags.edis_mode != APPLY_MODE) && (gdisc_flags.edis_mode != LIMIT_MODE))
 	{
@@ -2581,10 +2502,10 @@ void terminal_key_action_chman_interpose( uint16_t addr, uint8_t key_num, uint8_
 
 void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chman_node, const uint8_t recvdata )
 {
-	FILE* fd = NULL;
-	thost_system_set set_sys; // 系统配置文件的格式
 	tcmpt_data_mic_status mic_list[SYSTEM_TMNL_MAX_NUM]; // 100-临时发言总人数
 	uint16_t report_mic_num = 0;
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	if( (key_down && gchm_int_ctl.is_int) ||\
 		((!key_down) && (!gchm_int_ctl.is_int)) ||\
@@ -2597,19 +2518,6 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	if( (get_sys_state() != INTERPOSE_STATE) && key_down )
 	{
 		bool tmp_close = false; // temp close
-		fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
-		if( NULL == fd )
-		{
-			DEBUG_INFO( "terminal_chairman_interpose ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
-			return;
-		}
-		
-		if( profile_system_file_read( fd, &set_sys ) == -1)
-		{
-			DEBUG_INFO( "Read profile system Err!" );
-			Fclose( fd );
-			return;
-		}
 		
 		set_terminal_system_state( INTERPOSE_STATE, true );
 		gchm_int_ctl.is_int = true;
@@ -2644,9 +2552,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		cmpt_miscrophone_status_list_from_set( mic_list, report_mic_num );
 		
 		gdisc_flags.apply_num = 0;
-		gdisc_flags.speak_limit_num = 0;
-		
-		Fclose( fd );
+		gdisc_flags.speak_limit_num = 0;		
 	}
 	else if( !key_down )
 	{
@@ -2720,14 +2626,9 @@ int terminal_key_discuccess( uint16_t addr, uint8_t key_num, uint8_t key_value, 
 
 bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t recv_msg )
 {
-	thost_system_set set_sys;
 	uint8_t dis_mode = gdisc_flags.edis_mode;
-	
-	if( !terminal_read_profile_file( &set_sys ) )
-	{
-		DEBUG_INFO( "terminal_key_speak_proccess read file Err!" );
-		return -1;
-	}
+	thost_system_set set_sys; // 系统配置文件的格式
+	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	if( dis_node == NULL )
 		return false;
