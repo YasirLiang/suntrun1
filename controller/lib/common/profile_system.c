@@ -53,8 +53,6 @@ int init_profile_system_file( void )
 			if(Fwrite( fd, &system_set_form, sizeof(thost_system_profile_form), 1) != 1)
 			{
 				DEBUG_INFO( "init profile system file failed: write Err!" );
-				Fclose( fd );
-				return -1;
 			}
 
 			// 将第一次的内容写到内存中
@@ -66,7 +64,6 @@ int init_profile_system_file( void )
 		if( profile_system_file_read( fd, &gset_sys ) == -1)
 		{
 			DEBUG_INFO( "Read profile system Err!" );
-			return -1;
 		}
 	}
 
@@ -110,7 +107,7 @@ int profile_system_file_read( FILE* fd,  thost_system_set* system_set )
 
 	/*检查校验,这里检验是所有数据之和,除了检验位*/ 
 	read_crc = tmp_profile.file_crc;
-	for( i = 0; i < sizeof(thost_system_set); i++)
+	for( i = 0; i < sizeof(thost_system_set); i++ )
 	{
 		uint8_t *p = ((uint8_t *)&tmp_profile.set_sys) + i;
 		count_crc += *p;
@@ -131,24 +128,26 @@ int profile_system_file_read( FILE* fd,  thost_system_set* system_set )
 // 配置信息写入文件
 int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys )
 {
+	int i = 0;
 	assert( fd && p_set_sys );
 	if( fd == NULL || NULL == p_set_sys)
 	{
 		return -1;
 	}
+
+	// 设置文件指针在文件的开头处
+	if( Fseek( fd, 0, SEEK_SET ) == -1 )
+		return -1;
 	
-	int i = 0;
-	 thost_system_profile_form system_set_form;
+	
+	thost_system_profile_form system_set_form;
+	system_set_form.file_crc = 0;
 	memcpy( &system_set_form.set_sys, p_set_sys, sizeof(thost_system_set) );
 	for( i = 0; i < sizeof(thost_system_set); i++ )
 	{
 		uint8_t* p = ((uint8_t*)&(system_set_form.set_sys)) + i;
 		system_set_form.file_crc += *p;
 	}
-
-	// 设置文件指针在文件的开头处
-	if( Fseek( fd, 0, SEEK_SET ) == -1 )
-		return -1;
 	
 	if(Fwrite( fd, &system_set_form, sizeof(thost_system_profile_form), 1) != 1)
 	{
