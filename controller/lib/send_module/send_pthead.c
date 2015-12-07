@@ -83,6 +83,9 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			continue;
 		}
 
+		int queue_len = get_queue_length( &p_send_wq->work );
+		DEBUG_INFO( "after get queue len = %d ", queue_len );
+		
 		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		// ready to sending data

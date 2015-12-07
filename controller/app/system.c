@@ -11,6 +11,7 @@
 #include "send_work_queue.h"
 #include "stream_descriptor.h"
 #include "terminal_system.h"
+#include "profile_system.h"
 
 void init_system( void )
 {
@@ -144,12 +145,19 @@ void system_close( struct threads_info *p_threads )
 	destroy_func_command_work_queue();
 	destroy_network_send_work_queue();
 
+	// 保存配置文件的信息
+	if( -1 == profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
+	{
+		DEBUG_INFO( "write system profile Err! " );
+	}
+
 	// 释放所有文件描述符
 	close( net_fd.raw_fd );
 	close( net_fd.tx_pipe[PIPE_RD] );
 	close( net_fd.tx_pipe[PIPE_WR]);
 	close( net_fd.udp_client_fd );
 	close( net_fd.udp_server_fd );
+	Fclose( profile_file_fd );
 }
 
 

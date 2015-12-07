@@ -78,7 +78,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				// 将新建的inflight命令结点插入链表结尾中
 				insert_inflight_dblist_trail( guard, inflight_station );
 
-				DEBUG_INFO( "subtype = 0x%02x ", inflight_station->host_tx.inflight_frame.data_type );
+				//DEBUG_INFO( "subtype = 0x%02x ", inflight_station->host_tx.inflight_frame.data_type );
 			}
 			else
 			{

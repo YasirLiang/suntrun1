@@ -8,10 +8,6 @@
 #include "avdecc_net.h"
 #include <semaphore.h>
 
-#ifndef __PIPE_SEND_CONTROL_ENABLE__
-#define __PIPE_SEND_CONTROL_ENABLE__ // 管道同步传输控制
-#endif
-
 #define TRANSMIT_DATA_BUFFER_SIZE 2048
 #define CONFERENCE_RESPONSE_POS 1
 

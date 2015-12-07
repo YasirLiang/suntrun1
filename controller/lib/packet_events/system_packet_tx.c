@@ -10,15 +10,13 @@
 #include "send_work_queue.h"
 #include "send_pthread.h"
 
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
-uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区
+uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
 
-void init_sem_tx_can( void )
+void init_sem_tx_can( void ) // 初始化管道传输信号量->控制pipe_buf
 {
 	sem_init( &sem_tx, 0, 0 );
 }
-#endif
 
 /************************************************
 *Name:	system_raw_packet_tx
@@ -48,24 +46,17 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	if( (data_type == TRANSMIT_TYPE_ADP) || (data_type == TRANSMIT_TYPE_ACMP) || (data_type == TRANSMIT_TYPE_AECP) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf = NULL;
-		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
-		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
-		
-		// heap using later free by reading pipe thread.tran_buf space must to be free!
-		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		if( NULL == tran_buf )
-		{
-			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
-			return -1;
-		}
+		uint8_t *tran_buf = pipe_buf;
 
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
 			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
 			return -1;
 		}
-		
+
+		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		memset( tran_buf, 0, sizeof(pipe_buf) );
+		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -73,7 +64,6 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = isresp;
 		
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
@@ -81,13 +71,6 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		}
 
 		sem_wait( &sem_tx );
-#else 
-		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert(-1 != ret);
-		}
-#endif
 	}
 	else
 	{
@@ -129,19 +112,17 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	if( (data_type == TRANSMIT_TYPE_UDP_SVR) || (data_type == TRANSMIT_TYPE_UDP_CLT) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf = NULL;
+		uint8_t *tran_buf = pipe_buf;
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
 		memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
-
-		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
-		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		if( NULL == tran_buf )
+		
+		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
-			DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
+			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
 			return -1;
 		}
-
-		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
+		
+		memset( tran_buf, 0, sizeof(pipe_buf) );
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -150,20 +131,13 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.resp = resp;
 		memcpy( &tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
 
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
+		
 		sem_wait( &sem_tx );
-#else
-	if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert(-1 != ret);
-		}
-#endif
 	}
 	else
 	{
@@ -212,12 +186,17 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 	if( data_type == TRANSMIT_TYPE_UART_CTRL )
 	{
 		tx_data tx;
-		uint8_t *tran_buf;
+		uint8_t *tran_buf = pipe_buf;
 		bool resp = isresp; // no need camera response data 
 		memset( tx.raw_dest.value, 0, 6 );
 
-		// heap using later free by reading pipe thread.its space must to be free! it be free by send network pthread
-		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
+		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+		{
+			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
+			return -1;
+		}
+
+		memset( tran_buf, 0, sizeof(pipe_buf) );
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -226,20 +205,13 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx.resp = resp;
 		memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
 		
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
 		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert( -1 != ret );
 		}
+		
 		sem_wait( &sem_tx );
-#else
-		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert( -1 != ret );
-		}
-#endif
 	}
 	else
 	{

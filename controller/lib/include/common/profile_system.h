@@ -9,6 +9,7 @@
 #include "jdksavdecc_world.h"
 #include "file_util.h"
 #include "host_controller_debug.h"
+#include "inflight.h"
 
 #define STSTEM_SET_STUTUS_PROFILE "system.dat"
 
@@ -58,12 +59,16 @@ typedef struct _thost_system_profile_form // ÏµÍ³ÅäÖÃÎÄ¼þµÄ¸ñÊ½ Á½¸ö×Ö½Ú + ÏµÍ³µ
 	thost_system_set set_sys;	// ÏµÍ³ÅäÖÃÐÅÏ¢
 }thost_system_profile_form;
 
+extern FILE *profile_file_fd;
 extern thost_system_set gset_sys; 							// ÏµÍ³ÅäÖÃÎÄ¼þµÄÐÅÏ¢
 
 int profile_system_file_write( FILE* fd,  const uint8_t save_value,  size_t index );
 int profile_system_file_read( FILE* fd,  thost_system_set* system_set );
 int init_profile_system_file( void );
 int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint16_t read_len );
+void profile_system_file_write_timeouts( void );
+bool is_profile_system_file_write_timeouts( struct inflight_timeout *timer );
+int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys );
 
 
 #endif

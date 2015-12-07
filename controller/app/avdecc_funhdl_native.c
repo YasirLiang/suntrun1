@@ -42,10 +42,6 @@ int thread_pipe_fn( void *pgm )
 				release_heap_space( &tnt.frame ); // free heap space mallo by write pipe thread
 				assert( tnt.frame == NULL );		// free successfully and result is NULL? 
 				
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
-				sem_post( &sem_tx );
-#endif
-
 				/*发送下一条数据的条件-数据获得响应或数据超时或时间间隔到了(注:时间间隔只适用于系统响应数据或摄像头控制数据的发送)*/
 				if( (!is_resp_data && is_wait_messsage_primed_state()) || ( is_resp_data && is_send_interval_primed_state())) 
 				{
@@ -92,7 +88,8 @@ int thread_pipe_fn( void *pgm )
 #else 
 /*2015-12-1注:使用此线程与发送队列线程发现了(即使用发送队列的发送网络数据的机制)发现了内存数据
 遭到破坏导致程序奔溃的现象，直到今天也未解决，因此使用定义宏__NOT_USE_SEND_QUEUE_PTHREAD__
-来直接通过管道发送数据(见上thread_pipe_fn)，(2015-12-6 重新使用此线程)*/
+来直接通过管道发送数据(见上thread_pipe_fn)，(2015-12-6 重新使用此线程) (2015-12-6 重新使用此线程, 并且完全修复了
+之前堆内存奔溃的现象，原因是原来对分配的对空间没有进行互斥的保护(在线程之间))*/
 int thread_pipe_fn( void *pgm )
 {
 	struct fds *kfds = ( struct fds* )pgm;
@@ -113,16 +110,44 @@ int thread_pipe_fn( void *pgm )
 			if( result > 0 )
 			{
 				// 加入网络数据发送队列
+				uint8_t* frame_buf = NULL;
+				uint16_t frame_len = tnt.frame_len;
+				
 				pthread_mutex_lock( &send_wq->control.mutex );
 
+				// heap using later free by reading pipe thread.tran_buf space must to be free!
+				frame_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &frame_buf );
+				if( NULL == frame_buf )
+				{
+					DEBUG_INFO( "system_raw_queue_tx Err: allot space for frame failed!" );
+					pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
+					pthread_cond_signal( &send_wq->control.cond );
+					
+					sem_post( &sem_tx ); // 用于tnt.frame 指针的同步操作
+					continue;
+				}
+
+				if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+				{
+					pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
+					pthread_cond_signal( &send_wq->control.cond );
+					
+					sem_post( &sem_tx ); // 用于tnt.frame 指针的同步操作
+					continue;
+				}
+
+				memset( frame_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
+				memcpy( frame_buf, tnt.frame, tnt.frame_len );
+				tnt.frame = frame_buf;	//  change the tnt frame buf to heap space
 				send_work_queue_message_save( &tnt, send_wq );
+				
+				int queue_len = get_queue_length( &send_wq->work );
+				DEBUG_INFO( "save queue len = %d ", queue_len );
 
 				pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
 				pthread_cond_signal( &send_wq->control.cond );
-
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
-				sem_post( &sem_tx );
-#endif
+			
+				sem_post( &sem_tx ); // 用于tnt.frame 指针的同步操作, 必须使用，原因是写管道的线程与此线程使用了同一块内存
 			}
 			else 
 			{

@@ -5,10 +5,12 @@
 
 #include "profile_system.h"
 #include "terminal_common.h"
+
  // 配文件描述符，若系统文件第一次创建是以wb+的方式打开，
  //否则以rb+方式打开，此文件在系统运行过程中只以一种方式与只打开一次
 FILE *profile_file_fd = NULL;
 thost_system_set gset_sys; // 系统配置文件的格式
+struct inflight_timeout profile_timer; // 写入文件定时器
 
 int init_profile_system_file( void )
 {
@@ -64,13 +66,18 @@ int init_profile_system_file( void )
 		if( profile_system_file_read( fd, &gset_sys ) == -1)
 		{
 			DEBUG_INFO( "Read profile system Err!" );
-			Fclose( fd );
 			return -1;
 		}
 	}
 
 	profile_file_fd = fd;
 
+	// 初始化定时器profile_timer,定时写入文件
+	profile_timer.count_time = 10*1000; // 10 min 
+	profile_timer.elapsed = false;
+	profile_timer.running = true;
+	profile_timer.start_time = get_current_time();
+	
 	return 0;
 }
 
@@ -119,6 +126,77 @@ int profile_system_file_read( FILE* fd,  thost_system_set* system_set )
 	memcpy( system_set, &tmp_profile.set_sys, sizeof(thost_system_set));
 
 	return 0;
+}
+
+// 配置信息写入文件
+int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys )
+{
+	assert( fd && p_set_sys );
+	if( fd == NULL || NULL == p_set_sys)
+	{
+		return -1;
+	}
+	
+	int i = 0;
+	 thost_system_profile_form system_set_form;
+	memcpy( &system_set_form.set_sys, p_set_sys, sizeof(thost_system_set) );
+	for( i = 0; i < sizeof(thost_system_set); i++ )
+	{
+		uint8_t* p = ((uint8_t*)&(system_set_form.set_sys)) + i;
+		system_set_form.file_crc += *p;
+	}
+
+	// 设置文件指针在文件的开头处
+	if( Fseek( fd, 0, SEEK_SET ) == -1 )
+		return -1;
+	
+	if(Fwrite( fd, &system_set_form, sizeof(thost_system_profile_form), 1) != 1)
+	{
+		DEBUG_INFO( "init profile system file failed: write Err!" );
+		return -1;
+	}
+
+	return 0;
+}
+
+bool is_profile_system_file_write_timeouts( struct inflight_timeout *timer )
+{
+	if( timer->running && !timer->elapsed )
+        {
+        	uint32_t elapsed_ms;
+            	timetype current_time = get_current_time();
+            	elapsed_ms = (uint32_t)(current_time - timer->start_time);
+
+           	if(elapsed_ms > timer->count_time)
+            	{
+                	timer->elapsed = true;
+            	}
+	}
+
+	return timer->elapsed;
+}
+
+void profile_system_file_write_timeouts( void )
+{
+	if( is_profile_system_file_write_timeouts(&profile_timer) )
+	{
+		if( -1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
+		{
+			profile_timer.count_time = 10*1000; // 10 min update timer again
+			profile_timer.elapsed = false;
+			profile_timer.running = true;
+			profile_timer.start_time = get_current_time();
+		}
+		else
+		{
+			DEBUG_INFO( "err profile_system_file_write_timeouts" );
+			return;
+		}
+	}
+	else
+	{
+		return;
+	}
 }
 
 /*保存系统配置文件, 专门的写函数。适用于配置文件已存在,且以ab+打开文件, index 是save_value在文件结构体成员 thost_system_set 中的偏移*/

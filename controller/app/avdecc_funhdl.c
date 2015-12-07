@@ -5,6 +5,7 @@
 #include "send_pthread.h"
 #include "send_work_queue.h"
 #include "func_proccess.h"
+#include "profile_system.h"
 
 bool is_inflight_timeout = false;
 static bool system_stop = false; // 线程退出全局变量
@@ -43,6 +44,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
+	profile_system_file_write_timeouts();
 
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
