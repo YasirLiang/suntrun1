@@ -89,13 +89,11 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		// 保存配置文件
 		if( profile_dis_param_save_to_ram( &gset_sys, &set_dis_para ) != -1 )
 		{
-			/*// 设置系统状态
+			// 设置系统状态
 			uint8_t temp_status = set_dis_para.auto_close;
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				//DEBUG_INFO( "auto close = %d", temp_status );
-				//terminal_mic_auto_close( 0, NULL, 0 );
 				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
@@ -103,8 +101,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				//DEBUG_INFO( "discuss_mode = %d", temp_status );
-				//terminal_system_discuss_mode_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
@@ -112,8 +108,6 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
-				//DEBUG_INFO( "limit_speak_num = %d", temp_status );
-				//terminal_speak_limit_num_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
@@ -121,13 +115,10 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				//DEBUG_INFO( "limit_apply_num = %d", temp_status );
-				//terminal_apply_limit_num_set( 0, &temp_status, 1 );
 				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
-			}*/
+			}
 
 			// 限时设置
-			//DEBUG_INFO( " save limit_speak_time = %d", set_dis_para.limit_speak_time );
 			terminal_limit_speak_time_set( 0, NULL, 0 );
 			
 			// 设置会议讨论状态
@@ -239,7 +230,7 @@ int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *dat
 	uint16_t len_data_get = get_host_upper_cmpt_data_len( data, CMPT_HEAD_OFFSET );
 	get_host_upper_cmpt_data( &tmnl_type, data, CMPT_DATA_OFFSET, len_data_get );
 	
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET)
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) != CMPT_MSG_TYPE_SET )
 	{
 		return -1;
 	}
@@ -249,6 +240,7 @@ int proccess_upper_cmpt_conference_permission( uint16_t protocal_type, void *dat
 	terminal_type_set( tmnl_type );
 
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CONFERENCE_PERMISSION, NULL, 0 );
+	
 	return 0;
 }
 
@@ -810,7 +802,7 @@ int upper_cmpt_terminal_message_report( void* p_tmnl_msg, uint16_t msg_len, uint
 {
  	assert( p_tmnl_msg );
 	tcmp_report_terminal_message tmnl_msg;
-	memcpy( &tmnl_msg, p_tmnl_msg, msg_len );
+	memcpy( &tmnl_msg, p_tmnl_msg, msg_len ); // msg_len需要长度判断
 		
 	send_upper_computer_command(  CMPT_MSG_TYPE_REPORT, REPORT_ENDSTATION_MESSAGE, &tmnl_msg, msg_len );
 	

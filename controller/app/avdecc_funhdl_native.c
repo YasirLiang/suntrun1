@@ -88,7 +88,7 @@ int thread_pipe_fn( void *pgm )
 #else 
 /*2015-12-1注:使用此线程与发送队列线程发现了(即使用发送队列的发送网络数据的机制)发现了内存数据
 遭到破坏导致程序奔溃的现象，直到今天也未解决，因此使用定义宏__NOT_USE_SEND_QUEUE_PTHREAD__
-来直接通过管道发送数据(见上thread_pipe_fn)，(2015-12-6 重新使用此线程) (2015-12-6 重新使用此线程, 并且完全修复了
+来直接通过管道发送数据(见上thread_pipe_fn)，(2015-12-6 重新使用此线程) (2015-12-7 重新使用此线程, 并且完全修复了
 之前堆内存奔溃的现象，原因是原来对分配的对空间没有进行互斥的保护(在线程之间))*/
 int thread_pipe_fn( void *pgm )
 {
@@ -115,7 +115,7 @@ int thread_pipe_fn( void *pgm )
 				
 				pthread_mutex_lock( &send_wq->control.mutex );
 
-				// heap using later free by reading pipe thread.tran_buf space must to be free!
+				// heap using later free by sending thread.frame_buf space must to be free!
 				frame_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &frame_buf );
 				if( NULL == frame_buf )
 				{

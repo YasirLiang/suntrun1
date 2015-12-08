@@ -8,9 +8,9 @@
 #include "profile_system.h"
 
 bool is_inflight_timeout = false;
-static bool system_stop = false; // 线程退出全局变量
-extern bool acmp_recv_resp_err; // acmp 接收到命令但响应错误参数
-extern fcwqueue fcwork_queue;						// 函数命令消息工作队列
+static bool system_stop = false;	// 线程退出全局变量
+extern bool acmp_recv_resp_err;	// acmp 接收到命令但响应错误参数
+extern fcwqueue fcwork_queue;	// 函数命令消息工作队列
 
 void thread_fn_thread_stop( void )
 {

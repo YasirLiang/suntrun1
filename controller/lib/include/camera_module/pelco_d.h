@@ -46,7 +46,7 @@ typedef struct _pelco_d_command_form	// D型控制协议命令格式
 {
 	uint8_t sync;						// 同步字节
 	uint8_t bit_id;						// 地址码
-	uint16_t order;			// 指令码1  注: 当是预置点命令时 此元素为0  指令码2   注:当是预置点命令 03 07 分别为设置与调用预置点命令
+	uint16_t order;						// 指令码1  注: 当是预置点命令时 此元素为0  指令码2   注:当是预置点命令 03 07 分别为设置与调用预置点命令
 	control_lv_speed data_code_1;		// 数据码1 注: 当是预置点命令时 此元素为0
 	control_vtcl_speed data_code_2;		// 数据码2 注:当是预置点命令，此元素是代表预置点号 
 	uint8_t check_digit; 				// 校验码

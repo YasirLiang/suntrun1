@@ -193,7 +193,7 @@ void init_terminal_proccess_system( void )
 #ifdef __DEBUG__ // 输出终端信息的数据
 	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
 	if( tmnl_count != -1)
-			DEBUG_INFO( "terminal count num = %d", tmnl_count );
+		DEBUG_INFO( "terminal count num = %d", tmnl_count );
 #endif
 #endif
 	init_terminal_allot_address();
@@ -361,7 +361,7 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 			}
 
 			// save new addr to file
-			addr_file_fd = Fopen( ADDRESS_FILE, "ab+");
+			addr_file_fd = Fopen( ADDRESS_FILE, "ab+"); // -->>此流程可优化，改为直接操作内存
 			if( addr_file_fd == NULL )
 			{
 				DEBUG_ERR( "terminal_func_allot_address open fd  Err!" );

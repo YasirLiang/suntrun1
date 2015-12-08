@@ -104,7 +104,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		assert( p_send_wnode->job_data.frame == NULL ); // free successfully and result is NULL? 
 		if( NULL != p_send_wnode )
 		{
-			free( p_send_wnode );
+			free( p_send_wnode ); // ÊÍ·Å¶ÓÁÐ½Úµã
 			p_send_wnode = NULL;
 		}
 		

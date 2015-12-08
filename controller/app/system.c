@@ -32,9 +32,7 @@ void init_system( void )
 	init_func_command_work_queue();
 	init_sem_wait_can();
 	connect_table_info_init();/*初始化连接表*/ 
-#ifdef __PIPE_SEND_CONTROL_ENABLE__
 	init_sem_tx_can();
-#endif
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
 
