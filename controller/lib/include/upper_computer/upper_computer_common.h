@@ -213,6 +213,14 @@ typedef struct _type_current_camara
 	uint8_t camara_num;
 }tcmp_current_camara;
 
+inline static void upper_cmpt_current_cmrnum_get( const void *base, tcmp_current_camara *curcmr, uint16_t offset, uint16_t pos )
+{
+	uint8_t *p = (uint8_t*)base + pos + offset;
+	
+	curcmr->camara_num = p[0];
+}
+
+
 /*@}*/
 
 /*{@ wait allocation 待定位的终端应用地址*/ 
@@ -220,6 +228,15 @@ typedef struct _type_wait_allocation_address
 {
 	struct application_common_address addr;
 }tcmp_wait_allocation;
+
+inline static void upper_cmpt_camera_wait_allot_get( const void *base, tcmp_wait_allocation *wait_allot, uint16_t offset, uint16_t pos )
+{
+	uint8_t *p = (uint8_t*)base + pos + offset;
+
+	wait_allot->addr.low_addr = p[0];
+	wait_allot->addr.high_addr = p[1];
+}
+
 /*@}*/
 
 /*{@ camara controller*/
@@ -245,9 +262,14 @@ typedef struct _type_camara_controll
 	uint8_t level_speed;
 	uint8_t vertical_speed;
 }tcmp_camara_ctl;
+
+inline static void upper_cmpt_camera_controller_get( const void *base, tcmp_camara_ctl *camara_ctl, uint16_t offset, uint16_t pos )
+{
+	memcpy( camara_ctl, ((uint8_t*)base) + pos + offset, sizeof(tcmp_camara_ctl) );
+}
 /*@}*/
 
-/*{@*/
+/*{@预置位*/
 enum
 {
 	SAVE_PRESET_BIT, // 预置位保存
@@ -259,6 +281,11 @@ typedef struct _type_camara_bit_preset
 {
 	uint8_t camara_preset_flags;
 }tcmp_camara_bit_preset;
+
+inline static void upper_cmpt_camera_preset_flag_get( const void *base, tcmp_camara_bit_preset *preset, uint16_t offset, uint16_t pos )
+{
+	preset->camara_preset_flags = *((uint8_t*)base + pos + offset);
+}
 /*@}*/
 
 /*{@*/
@@ -268,6 +295,11 @@ typedef struct _type_camara_lock
 {
 	uint8_t camara_lock_flags; 
 }tcmp_camara_lock;
+
+inline static void upper_cmpt_camera_lock_flag_get( const void *base, tcmp_camara_lock *lock, uint16_t offset, uint16_t pos )
+{
+	lock->camara_lock_flags = *((uint8_t*)base + pos + offset);
+}
 /*@}*/
 
 /*{@*/
@@ -278,6 +310,14 @@ typedef struct _type_camara_output
 	uint8_t camara_output_1; 
 	uint8_t camara_output_2;
 }tcmp_camara_output;
+
+inline static void upper_cmpt_camera_output_flag_get( const void *base, tcmp_camara_output *output, uint16_t offset, uint16_t pos )
+{
+	uint8_t *p = (uint8_t*)base + pos + offset;
+	
+	output->camara_output_1 = p[0];
+	output->camara_output_2 = p[1];
+}
 /*@}*/
 
 /*{@ begin vote */

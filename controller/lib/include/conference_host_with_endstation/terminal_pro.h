@@ -85,6 +85,13 @@ typedef struct
 	uint16_t 	chmaddr;
 }tchairman_control_in;
 
+#define MAX_SPK_NUM 128
+typedef struct type_spktrack
+{
+	uint8_t spk_num;
+	uint16_t spk_addrlist[MAX_SPK_NUM];
+}type_spktrack;
+
 int init_terminal_discuss_param( void );
 int init_terminal_address_list_from_file( void );
 void init_terminal_address_list( void );
@@ -95,6 +102,7 @@ void print_out_terminal_addr_infomation( terminal_address_list* p, int num);
 void init_terminal_proccess_system( void );
 bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station );
 uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index);
+void terminal_speak_track_pro_init( void );
 
 /*{@命令处理函数，处理协议的命令数据或系统的命令*/
 int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len );
@@ -113,6 +121,8 @@ int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_end_sign( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len );
+int termianal_music_enable( uint16_t cmd, void *data, uint32_t data_len );
+int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len );
 
 /*@}*/
 
@@ -171,6 +181,8 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg );
 void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
+void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value );
+int terminal_speak_track( uint16_t addr, bool track_en );// 摄像跟踪接口
 
 /*@}*/
 

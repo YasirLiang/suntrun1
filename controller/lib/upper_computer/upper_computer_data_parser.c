@@ -105,4 +105,3 @@ void  unpack_payload_from_udp_client( struct host_upper_cmpt*outpack, const void
 							pos + HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH + data_size );
 }
 
-

@@ -1,6 +1,8 @@
 #include "data.h"
 #include "terminal_pro.h"
 #include "upper_computer_pro.h"
+#include "camera_pro.h"
+#include "terminal_system.h"
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
@@ -42,18 +44,23 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },
 	{ 0xffffffff, terminal_system_discuss_mode_set, FUNC_MENU_DISC_MODE_SET_CMD },
 	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET },
-	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET }
-/*	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , },
-	{ 0xffffffff, , }
-	*/
+	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
+	
+	{ 0xffffffff, termianal_music_enable, FUNC_MENU_MUSIC_EN_SET },
+	{ CAMERA_PRESET, camera_preset_save, FUNC_MENU_CMR_SAVE_PRESET },
+	{ CAMERA_PRESET, camera_select_num, FUNC_MENU_CMR_SEL_CMR },
+	{ CAMERA_PRESET, camera_control_rightleft, FUNC_MENU_CMR_CTRL_LR },
+	{ CAMERA_PRESET, camera_control_updown, FUNC_MENU_CMR_CTRL_UD },
+	{ CAMERA_PRESET, camera_control_fouce, FUNC_MENU_CMR_CTRL_FOUCE },
+	{ CAMERA_PRESET, camera_control_zoom, FUNC_MENU_CMR_CTRL_ZOOM },
+	{ CAMERA_PRESET, camera_control_iris, FUNC_MENU_CMR_CTRL_APERT },
+	{ CAMERA_PRESET, camera_control_align, FUNC_MENU_CMR_CTRL_ALIGN },
+	{ 0xffffffff, camera_control_full_view, FUNC_MENU_CMR_FULL_VIEW},
+	{ 0xffffffff, camera_preset_set, FUNC_MENU_CMR_CLR_PRESET },
+	{ 0xffffffff, termianal_chairman_prior_set, FUNC_MENU_PRIOR_EN_SET },
+	
+	{ 0xffffffff, camera_preset_addr_select, FUNC_SYS_PRESET_ADDR },
+	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }
 };
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
@@ -96,16 +103,21 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ MENU_USE, MENU_AUTO_CLOSE_CMD, FUNC_MENU_AUTO_CLOSE_CMD, 0},
 	{ MENU_USE, MENU_DISC_MODE_SET_CMD, FUNC_MENU_DISC_MODE_SET_CMD, 0},
 	{ MENU_USE, MENU_SPK_LIMIT_NUM_SET, FUNC_MENU_SPK_LIMIT_NUM_SET, 0},
-	{ MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, FUNC_MUNU_APPLY_LIMIT_NUM_SET, 0}
-	/*{ , , , 0},
-	 {, , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0},
-	{ , , , 0}
-	*/
+	{ MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, FUNC_MUNU_APPLY_LIMIT_NUM_SET, 0},
+	{ MENU_USE, MENU_MUSIC_EN_SET, FUNC_MENU_MUSIC_EN_SET, 0},
+	{ MENU_USE, MENU_CMR_SAVE_PRESET, FUNC_MENU_CMR_SAVE_PRESET, 0},
+	{ MENU_USE, MENU_CMR_SEL_CMR, FUNC_MENU_CMR_SEL_CMR, 0},
+	{ MENU_USE, MENU_CMR_CTRL_LR, FUNC_MENU_CMR_CTRL_LR, 0},
+	{ MENU_USE, MENU_CMR_CTRL_UD, FUNC_MENU_CMR_CTRL_UD, 0},
+	{ MENU_USE, MENU_CMR_CTRL_FOUCE, FUNC_MENU_CMR_CTRL_FOUCE, 0},
+	{ MENU_USE, MENU_CMR_CTRL_ZOOM, FUNC_MENU_CMR_CTRL_ZOOM, 0},
+	{ MENU_USE, MENU_CMR_CTRL_APERT, FUNC_MENU_CMR_CTRL_APERT, 0},
+	{ MENU_USE, MENU_CMR_CTRL_ALIGN, FUNC_MENU_CMR_CTRL_ALIGN, 0},
+	{ MENU_USE, MENU_CMR_FULL_VIEW, FUNC_MENU_CMR_FULL_VIEW, 0},
+	{ MENU_USE, MENU_CMR_CLR_PRESET, FUNC_MENU_CMR_CLR_PRESET, 0},
+	{ MENU_USE, MENU_PRIOR_EN_SET, FUNC_MENU_PRIOR_EN_SET, 0},
+
+	{ SYSTEM_USE, SYS_PRESET_ADDR, FUNC_SYS_PRESET_ADDR, 0},
+	{ SYSTEM_USE, SYS_GET_PRESET, FUNC_SYS_GET_PRESET, 0}
 };
 

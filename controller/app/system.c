@@ -12,6 +12,8 @@
 #include "stream_descriptor.h"
 #include "terminal_system.h"
 #include "profile_system.h"
+#include "camera_pro.h"
+#include "camera_common.h"
 
 void init_system( void )
 {
@@ -35,6 +37,9 @@ void init_system( void )
 	init_sem_tx_can();
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
+
+	camera_common_control_init(); // 串口初始化
+	camera_pro_init();// 初始化预置点配置文件
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
@@ -148,6 +153,9 @@ void system_close( struct threads_info *p_threads )
 	{
 		DEBUG_INFO( "write system profile Err! " );
 	}
+
+	camera_pro_system_close();// 摄像头相关的资源释放
+	camera_common_control_destroy(); // 串口资源释放
 
 	// 释放所有文件描述符
 	close( net_fd.raw_fd );

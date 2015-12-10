@@ -4,20 +4,37 @@
 #include "jdksavdecc_world.h"
 #include "func_proccess.h"
 
-#define MAX_FUNC_LINK_ITEMS 36
-#define MAX_PROCCESS_FUNC 36
+#define MAX_FUNC_LINK_ITEMS 50
+#define MAX_PROCCESS_FUNC 50
 
 #define TERMINAL_USE   (1<<0)
 #define MENU_USE  (1<<1)
 #define SYSTEM_USE   (1<<2)
 #define COMPUTER_USE   (1<<3)
 
-enum menu_command
+//系统命令宏定义
+#define SYS_PRESET_ADDR     0x01
+#define SYS_GET_PRESET        0x02
+
+enum menu_command//菜单相关命令定义
 {
 	MENU_AUTO_CLOSE_CMD,
 	MENU_DISC_MODE_SET_CMD,
 	MENU_SPK_LIMIT_NUM_SET,
-	MUNU_APPLY_LIMIT_NUM_SET
+	MUNU_APPLY_LIMIT_NUM_SET,
+
+	MENU_MUSIC_EN_SET,// 2015-12-09 add include all after
+	MENU_CMR_SAVE_PRESET,
+	MENU_CMR_SEL_CMR,
+	MENU_CMR_CTRL_LR,
+	MENU_CMR_CTRL_UD,
+	MENU_CMR_CTRL_FOUCE,
+	MENU_CMR_CTRL_ZOOM,
+	MENU_CMR_CTRL_APERT, // 光圈控制
+	MENU_CMR_CTRL_ALIGN, // 控制对齐
+	MENU_CMR_FULL_VIEW,
+	MENU_CMR_CLR_PRESET, // 预置点初始化
+	MENU_PRIOR_EN_SET // 主席优先
 };
 
 extern const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS];

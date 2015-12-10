@@ -17,33 +17,28 @@
 #include "terminal_command.h"
 #include "terminal_system.h"
 #include "upper_computer_pro.h"
+#include "camera_pro.h"
 
 FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
 tmnl_pdblist dev_terminal_list_guard = NULL; 				// 终端链表表头结点，对其正确地操作，必须先注册完终端
-
 bool reallot_flag = false; 									// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
-
 tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
-
 tchairman_control_in gchm_int_ctl; 						// 主席插话
-
 ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
-
 uint8_t speak_limit_time = 0; 								// 发言时长， 0表示无限时；1-63表示限时1-63分钟
-
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
-
 enum_signstate gtmnl_signstate;							// 签到的状态，也可为终端的签到状态
 uint8_t gsign_latetime; 									// 补签的超时时间
 uint8_t gsigned_flag = false;								// 签到标志
-
 evote_state_pro gvote_flag; 								// 投票处理
-bool gfirst_key_flag; 										// 真为投票首键有效
+bool gfirst_key_flag; 									// 真为投票首键有效
 tevote_type gvote_mode;									// 投票模式
+
+type_spktrack gspeaker_track;
 
 void init_terminal_proccess_fd( FILE ** fd )
 {
@@ -134,6 +129,17 @@ int init_terminal_discuss_param( void )
 	return 0;
 }
 
+void terminal_speak_track_pro_init( void )
+{
+	int i = 0;
+
+	gspeaker_track.spk_num = 0;
+	for( i = 0; i < MAX_SPK_NUM;i++ )
+	{
+		gspeaker_track.spk_addrlist[i] = 0xffff;
+	}
+}
+
 #ifdef __DEBUG__  // 模拟终端信息
 #define WRITE_ADDR_NUM 10
 // 测试接口的格式:test_interface_ + 实际会用到的接口
@@ -199,6 +205,7 @@ void init_terminal_proccess_system( void )
 	init_terminal_allot_address();
 	init_terminal_device_double_list();	
 	init_terminal_discuss_param();
+	terminal_speak_track_pro_init();
 }
 
 /*注册*/
@@ -414,6 +421,7 @@ int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 	struct endstation_to_host msg;
 	struct endstation_to_host_special spe_msg;
 	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
+	tmnl_pdblist cam_node = NULL;
 	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
 	uint8_t key_num = KEY_ACTION_KEY_NUM( msg.data );
 	uint8_t key_value = KEY_ACTION_KEY_VALUE( msg.data );
@@ -446,6 +454,12 @@ int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
 			break;
 		case CAMERA_PRESET:
+			cam_node = found_terminal_dblist_node_by_addr( addr );
+			if( cam_node != NULL )
+			{
+				terminal_key_action_host_common_reply( msg.data, cam_node );
+				terminal_key_preset( 0, addr, tmnl_state, key_num, key_value );
+			}
 			break;
 		default:
 			break;
@@ -760,7 +774,8 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 	assert( data && dev_terminal_list_guard );
 	uint8_t dis_mode = *((uint8_t*)data);
 	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
-		
+
+	terminal_speak_track_pro_init();
 	gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
 	gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
 	gdisc_flags.apply_num = 0;
@@ -878,6 +893,26 @@ int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len )
 	gvote_flag = NO_VOTE;// 结束投票
 
 	return 0;
+}
+
+int termianal_music_enable( uint16_t cmd, void *data, uint32_t data_len )
+{
+	bool music_en = false;
+	if( data_len != sizeof(uint8_t));
+		return -1;
+
+	music_en = *((uint8_t*)data)?true:false;
+	gset_sys.chman_music = music_en;
+}
+
+int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len )
+{
+	bool prior_en = false;
+	if( data_len != sizeof(uint8_t));
+		return -1;
+
+	prior_en = *((uint8_t*)data)?true:false;
+	gset_sys.chman_first = prior_en;
 }
 
 /*==================================================
@@ -3007,6 +3042,83 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	}
 
 	return ret;
+}
+
+void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value )
+{
+	uint16_t addr;
+	if( key_value )
+	{
+		addr = tmnl_addr;
+		find_func_command_link( SYSTEM_USE, SYS_PRESET_ADDR, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+	}
+}
+
+int terminal_speak_track( uint16_t addr, bool track_en )// 摄像跟踪接口
+{
+	uint16_t temp;
+	uint16_t i;
+	uint16_t index;
+	uint8_t cmr_track;
+
+	cmr_track = gset_sys.camara_track;
+ 	if( cmr_track )
+	{
+		return -1;
+	}
+	
+	for( i = 0; i <gspeaker_track.spk_num; i++)
+	{
+		if( addr == gspeaker_track.spk_addrlist[i])
+		{
+			break;
+		}
+	}
+	
+	index = i;
+	if( index < gspeaker_track.spk_num )
+	{
+		if( gspeaker_track.spk_num > 1)
+		{
+			for( i = index; i < (gspeaker_track.spk_num-1); i++)
+			{
+				gspeaker_track.spk_addrlist[i] = gspeaker_track.spk_addrlist[i+1];
+			}
+			
+			gspeaker_track.spk_num--;
+		}
+		else if( gspeaker_track.spk_num == 1 )
+		{
+			gspeaker_track.spk_addrlist[0] = 0xFFFF;
+			gspeaker_track.spk_num = 0;
+		}
+	}
+	
+	if( track_en )
+	{
+		if( gspeaker_track.spk_num < MAX_SPK_NUM )
+		{
+			gspeaker_track.spk_addrlist[gspeaker_track.spk_num] = addr;
+			gspeaker_track.spk_num++;
+			temp = addr;
+			find_func_command_link( SYSTEM_USE, SYS_GET_PRESET, 0, (uint8_t*)&temp,sizeof(uint16_t) );
+		}
+	}
+	else
+	{
+		if( 0 == gspeaker_track.spk_num )
+		{
+			temp = FULL_VIEW_ADDR;
+		}
+		else
+		{
+			temp = gspeaker_track.spk_addrlist[gspeaker_track.spk_num-1];
+		}
+		
+		find_func_command_link( SYSTEM_USE, SYS_GET_PRESET, 0, (uint8_t*)&temp,sizeof(uint16_t) );
+	}
+
+	return 0;
 }
 
 /*===================================================

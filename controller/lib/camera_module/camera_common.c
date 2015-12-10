@@ -46,6 +46,7 @@ int camera_common_control_init( void )
 
 int camera_common_control_destroy( void )
 {
+	uart_set_success = false;
 	UART0_Close( uart_fd );
 
 	return 0;

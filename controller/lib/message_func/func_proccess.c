@@ -5,7 +5,7 @@
 
 fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
-uint8_t globle_use_dis = TERMINAL_USE |COMPUTER_USE |MENU_USE; 	// 当前用户
+uint8_t globle_use_dis = TERMINAL_USE |COMPUTER_USE |MENU_USE|SYSTEM_USE; 	// 当前用户
 
 void init_func_command_work_queue( void )
 {
@@ -80,7 +80,7 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 	{
 #ifdef __DEBUG__
 		DEBUG_INFO( "globle_use_dis init err!" );
-		assert( globle_use_dis & user );
+		return false;
 #else
 		return false;
 #endif

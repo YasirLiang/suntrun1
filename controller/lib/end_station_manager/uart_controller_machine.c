@@ -11,11 +11,18 @@ int transmit_uart_control_packet_uart( uint8_t *frame, uint16_t frame_len, bool 
 {
 	int send_len = (int)frame_len;
 	int err = -1;
-	
-	err = UART0_Send( uart_fd, frame, send_len );
-	if( err == -1 )
+
+	if( uart_set_success )
 	{
-		DEBUG_INFO( "uart send Err!" );
+		err = UART0_Send( uart_fd, frame, send_len );
+		if( err == -1 )
+		{
+			DEBUG_ERR( "uart send Err!" );
+		}
+	}
+	else
+	{
+		DEBUG_INFO( "uart information not initalization success: Please Check!" );
 	}
 	
 	return err;

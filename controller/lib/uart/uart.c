@@ -54,7 +54,7 @@ int UART0_Open( int fd, char* port )
 *******************************************************************/  
 void UART0_Close(int fd)  
 {  
-	close(fd);  
+	close( fd );  
 }  
 
 /******************************************************************* 
@@ -212,13 +212,13 @@ int UART0_Set( int fd, int speed, int flow_ctrl, int databits, int stopbits, int
 *		  databits: 数据位 取值为7或者8 
 *		  stopbits: 停止位 取值为1或者2 
 *		  parity: 效验类型 取值为N,E,O,,S 
-* 出口参数：正确返回为1，错误返回为0 
+* 出口参数：正确返回为0，错误返回为-1
 *********************************************************************/  
-int UART0_Init( int fd, int speed, int flow_ctrl, int databits, int stopbits,int parity )
+int UART0_Init( int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity )
 {  
 	int err;  
 
-	if( ( err = UART0_Set( fd, 9600, 0, 8, 1, 'N' ) ) == FALSE )  //设置串口数据帧格式  
+	if( ( err = UART0_Set( fd, speed, flow_ctrl, databits, stopbits, parity ) ) == FALSE )  //设置串口数据帧格式  
 	{                                                           
 		return FALSE;  
 	}  

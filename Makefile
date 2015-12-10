@@ -50,8 +50,8 @@ ECHO:
 .PHONY:cleanall clean
 clean:
 	make -C controller clean
-	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump
+	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump preset_plist.dat
 cleanall:
 	make -C lib clean
 	make -C controller clean
-	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump
+	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump preset_plist.dat

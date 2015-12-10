@@ -18,6 +18,8 @@
 #include "upper_computer_data_form.h"
 #include "system_packet_tx.h"
 #include "terminal_system.h"
+#include "camera_pro.h"
+#include "camera_output.h"
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
 {
@@ -281,11 +283,7 @@ int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *dat
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, TABLE_TABLET_STANDS_MANAGER, NULL, 0 );
 	}
-	else
-	{
-		return -1;
-	}
-	
+
 	return 0;
 }
 
@@ -302,10 +300,6 @@ int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_
 		terminal_start_sign_in( sign_flag ); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
 	}
 	
 	return 0;
@@ -336,10 +330,6 @@ int proccess_upper_cmpt_sign_situation( uint16_t protocal_type, void *data, uint
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, SIGN_SITUATION,\
 			sign_list, sign_num* sizeof(tcmpt_sign_situation));
 	}
-	else
-	{
-		return -1;
-	}
 	
 	return 0;
 }
@@ -353,10 +343,6 @@ int proccess_upper_cmpt_end_of_sign( uint16_t protocal_type, void *data, uint32_
 		
 		/*处理结束签到*/
 		terminal_end_sign( 0, NULL, 0 ); 
-	}
-	else
-	{
-		return -1;
 	}
 	
 	return 0;
@@ -426,103 +412,143 @@ int proccess_upper_cmpt_endstation_register_status( uint16_t protocal_type, void
 		}
 	}
 
-	if( register_num <= SYSTEM_TMNL_MAX_NUM)
+	if( register_num <= SYSTEM_TMNL_MAX_NUM )
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, ENDSTATION_REGISTER_STATUS, regist_list, register_num * sizeof(tcmpt_end_register));
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uint32_t data_len )// 后期可能需要修改12-8
 {
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
+	tcmp_current_camara curcmr;
+	
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		upper_cmpt_current_cmrnum_get( data, &curcmr, CMPT_DATA_OFFSET, 0 );
+		curcmr.camara_num += 1;
+		camera_select_num( 0, &curcmr, sizeof(uint8_t) );
 		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, NULL, 0 );
 	}
 	else
 	{
-		return -1;
+		curcmr.camara_num = gcurpresetcmr.camera_num -1;
+		
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, &curcmr, sizeof(uint8_t));
 	}
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_endstation_address_undetermined_allocation( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_endstation_address_undetermined_allocation( uint16_t protocal_type, void *data, uint32_t data_len ) // 后期可能需要修改12-8
 {
+	tcmp_wait_allocation wait_allot;
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
-		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		upper_cmpt_camera_wait_allot_get( data, &wait_allot, CMPT_DATA_OFFSET, 0 );
+
+		// 处理等待定位的地址
+		find_func_command_link( SYSTEM_USE, SYS_PRESET_ADDR, 0, (uint8_t*)&wait_allot.addr, sizeof(uint16_t) );
+
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
+			ENDSTATION_ADDRESS_UNDETERMINED_ALLOCATION, NULL, 0 );
 	}
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uint32_t data_len )// 后期可能需要修改12-8
 {
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
+	tcmp_camara_ctl cmr_data;
+	uint8_t camera_address = 0;
+	uint16_t d_cmd = 0;
+	uint8_t speed_lv = 0;
+	uint8_t speed_vertical = 0;
+	
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		upper_cmpt_camera_controller_get( data, &cmr_data, CMPT_DATA_OFFSET, 0 );
+		camera_address = gcurpresetcmr.camera_num;
+		memcpy( &d_cmd, &cmr_data,  sizeof(uint16_t));
+		speed_lv = cmr_data.level_speed;
+		speed_vertical = cmr_data.vertical_speed;
+		camera_pro_control( camera_address, d_cmd, speed_lv, speed_vertical );
 		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
+			VIDICON_CONTROL, NULL, 0 );
 	}
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成12/8。
 {
+	tcmp_camara_bit_preset prs;
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		upper_cmpt_camera_preset_flag_get( data, &prs, CMPT_DATA_OFFSET, 0 );
+		switch(prs.camara_preset_flags)
+		{
+			case SAVE_PRESET_BIT:
+				if( CAMERA_PRESET == get_sys_state())
+				{
+					camera_preset_save( 0, NULL, 0 );
+				}
+				break;
+			case ENTER_PRESET_BIT:
+				camera_pro_enter_preset();
+				break;
+			case EXIT_PRESET_BIT:
+				camera_pro_esc_preset();
+				break;
+			case SAVE_CAMARA_ALLOCATION_ADJUST:
+				camera_save_Cmrpreset_direct();
+				break;
+			default:
+				break;
+		}
 		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			VIDICON_PRERATION_SET, NULL, 0 );
 	}
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_lock( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_vidicon_lock( uint16_t protocal_type, void *data, uint32_t data_len ) // 后期可能需要修改12-8
 {
+	tcmp_camara_lock cmr_lock;
+	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		upper_cmpt_camera_lock_flag_get( data, &cmr_lock, CMPT_DATA_OFFSET, 0 );
+		camera_pro_lock_flags( cmr_lock.camara_lock_flags );
 		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			VIDICON_LOCK, NULL, 0 );
 	}
 	
 	return 0;
 }
 
-int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成11/2。
+int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint32_t data_len )// 函数处理流程未完成12/8。
 {
+	tcmp_camara_output out_chn;
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		//terminal_start_sign_in( sign_flag ); 
+		upper_cmpt_camera_output_flag_get( data, &out_chn, CMPT_DATA_OFFSET, 0 );
+		if( out_chn.camara_output_1 )
+		{
+			camera_output_switch( out_chn.camara_output_1, 1, true );
+		}
+
+		if( out_chn.camara_output_2 )
+		{
+			camera_output_switch( out_chn.camara_output_2, 2, true );
+		}
 		
-		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
+			VIDICON_OUTPUT, NULL, 0 );
 	}
 	
 	return 0;
@@ -535,15 +561,12 @@ int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uin
 	vote_start_flag.vote_type = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x0f;
 	vote_start_flag.key_effective = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x10;
 	
-	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
+	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
-		terminal_begin_vote( vote_start_flag,  &sign_flag); 
+		terminal_begin_vote( vote_start_flag,  &sign_flag ); 
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
+			BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
 	}
 	
 	return 0;
@@ -555,11 +578,8 @@ int proccess_upper_cmpt_pause_vote( uint16_t protocal_type, void *data, uint32_t
 	{
 		terminal_pause_vote( 0, NULL, 0 );
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, PAUSE_VOTE, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			PAUSE_VOTE, NULL, 0 );
 	}
 	
 	return 0;
@@ -571,11 +591,8 @@ int proccess_upper_cmpt_regain_vote( uint16_t protocal_type, void *data, uint32_
 	{
 		terminal_regain_vote( 0, NULL, 0 );
 		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, REGAIN_VOTE, NULL, 0 );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			REGAIN_VOTE, NULL, 0 );
 	}
 	
 	return 0;
@@ -587,15 +604,12 @@ int proccess_upper_cmpt_end_vote( uint16_t protocal_type, void *data, uint32_t d
 	{
 		/*设置结束投票标志*/
 		terminal_end_vote( 0, NULL, 0); 
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, END_VOTE, NULL, 0 );
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			END_VOTE, NULL, 0 );
 
 		/*设置讨论模式的开始标志*/
 		set_terminal_system_state( DISCUSS_STATE, true );
 		terminal_start_discuss(false);
-	}
-	else
-	{
-		return -1;
 	}
 	
 	return 0;
@@ -629,7 +643,8 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 
 	send_data_len = sizeof(tcmp_vote_result) * addr_num;
 	DEBUG_INFO( "vote result data len = %d",  data_len );
-	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_QUERY, RESULT_VOTE, vote_result, send_data_len );
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_QUERY,\
+		RESULT_VOTE, vote_result, send_data_len );
 	
 	return 0;
 }
@@ -648,10 +663,6 @@ int proccess_upper_cmpt_transmit_to_endstation( uint16_t protocal_type, void *da
 		
 		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
 	}
-	else
-	{
-		return -1;
-	}
 	
 	return 0;
 }
@@ -665,11 +676,8 @@ int proccess_upper_cmpt_report_endstation_message( uint16_t protocal_type, void 
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_REPORT)
 	{	
-		send_upper_computer_command(  CMPT_MSG_TYPE_REPORT, REPORT_ENDSTATION_MESSAGE, &tmnl_msg, data_len );
-	}
-	else
-	{
-		return -1;
+		send_upper_computer_command(  CMPT_MSG_TYPE_REPORT, REPORT_ENDSTATION_MESSAGE,\
+			&tmnl_msg, data_len );
 	}
 	
 	return 0;
@@ -685,10 +693,6 @@ int proccess_upper_cmpt_hign_definition_switch_set( uint16_t protocal_type, void
 		//terminal_start_sign_in( sign_flag ); 
 		
 		//send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
-	}
-	else
-	{
-		return -1;
 	}
 	
 	return 0;
