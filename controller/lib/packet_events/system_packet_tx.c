@@ -12,6 +12,7 @@
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
 uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
+uint32_t send_interval_timeout = 25;// 25ms
 
 void init_sem_tx_can( void ) // 初始化管道传输信号量->控制pipe_buf
 {

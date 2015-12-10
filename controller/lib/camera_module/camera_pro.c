@@ -434,9 +434,11 @@ void camera_pro_lock_flags( uint8_t option )
 	}
 }
 
+// control the camera by comand and stop the camera
 int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uint8_t speed_vertical )
 {
-	return (camera_form_can_send( cmr_addr, d_cmd, speed_lv, speed_vertical ));
+	camera_form_can_send( cmr_addr, d_cmd, speed_lv, speed_vertical ); // control the camera
+	return (camera_form_can_send( cmr_addr, 0, 0, 0 )); // stop the camera
 }
 
 /*初始化预置点文件(系统第一次启动)与初始化预置点列表*/

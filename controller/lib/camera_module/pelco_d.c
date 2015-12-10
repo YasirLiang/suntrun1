@@ -22,7 +22,7 @@ int pelco_d_cammand_set( uint8_t camera_address,  uint16_t d_cmd, uint8_t speed_
 	askbuf->order = d_cmd;
 	askbuf->data_code_1.level_speed = speed_lv;
 	askbuf->data_code_2.vertical_speed = speed_vertical;
-	askbuf->check_digit = (uint8_t)CHECK_DIGIT_RESULT( camera_address, d_cmd, speed_lv, speed_vertical );
+	askbuf->check_digit = (uint8_t)CHECK_DIGIT_RESULT( camera_address, (uint8_t)(d_cmd&0x00ff), (d_cmd >> 8)&0x00ff, speed_lv, speed_vertical );
 	
 	return 0;
 }

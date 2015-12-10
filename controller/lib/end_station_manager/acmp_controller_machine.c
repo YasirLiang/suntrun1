@@ -193,7 +193,6 @@ void acmp_binflight_cmd_time_tick( void )
 	}
 }
 
-
 ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp )
 {
 	uint8_t sub_type = jdksavdecc_subtype_data_get_subtype(frame, ZERO_OFFSET_IN_PAYLOAD);

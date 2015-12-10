@@ -147,7 +147,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			{
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-				uart_resp_send_interval_timer_start(); // start timer
+				uart_resp_send_interval_timer_start(); // start timer useful as all response data
 				//sem_wait( &sem_waiting );
 				ret = sem_timedwait( &sem_waiting, &timeout );
 				if( ret == -1 )

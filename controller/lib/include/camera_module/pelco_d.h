@@ -53,7 +53,7 @@ typedef struct _pelco_d_command_form	// D型控制协议命令格式
 }pelco_d_format;
 
 #define DIVISOR_CHECK_COUNT 0x000000FF
-#define CHECK_DIGIT_RESULT(x,y,z,u) (((x)+(y)+(z)+(u))&(DIVISOR_CHECK_COUNT))// 计算校验码
+#define CHECK_DIGIT_RESULT( addr,cmd1,cmd2,data1,data2 ) (((addr)+(cmd1)+(cmd2)+(data1)+(data2))&(DIVISOR_CHECK_COUNT))// 计算校验码
 
 int pelco_d_cammand_set( uint8_t camera_address,  uint16_t d_cmd, uint8_t speed_lv, uint8_t speed_vertical, pelco_d_format* askbuf );
 
