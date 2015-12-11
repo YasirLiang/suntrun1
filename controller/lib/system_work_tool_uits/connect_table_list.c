@@ -28,7 +28,7 @@ void connect_table_double_list_init( connect_tbl_pdblist* guard_node )
 	assert( guard_node );
 
 	*guard_node = connect_table_dblist_node_create( guard_node );
-	if( NULL == guard_node )
+	if( NULL == *guard_node )
 	{
 		DEBUG_INFO( "init connect_table_double_list_init Err!" );
 		assert( NULL != *guard_node );

@@ -364,6 +364,10 @@ int connect_table_connect_callback( connect_tbl_pdblist p_cnnt_node, uint32_t ti
 	return 0;
 }
 
+/**
+ *这个函数可以修改作为有效通道的寻找函数接口，
+ *参数可能有会议的模式mode，通道的数量等等(2015-12-11)
+ */
 connect_tbl_pdblist found_connect_table_available_connect_node( const uint64_t utarker_id )
 {
 	int occupy_channal_num = 0;

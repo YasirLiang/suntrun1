@@ -35,7 +35,7 @@ int camera_common_control_init( void )
 		{
 			DEBUG_ERR( "set port information failed!check the permition or the right port file %s", CAMERA_UART_FILE );
 			UART0_Close( uart_fd );
-			return -1;
+			assert( err != -1 );
 		}
 
 		uart_set_success = true;

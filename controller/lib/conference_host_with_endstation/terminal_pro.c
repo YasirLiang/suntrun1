@@ -2541,12 +2541,16 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	uint16_t report_mic_num = 0;
 	thost_system_set set_sys; // 系统配置文件的格式
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+
+	assert( chman_node );
+	if( chman_node == NULL )
+		return;
 	
 	if( (key_down && gchm_int_ctl.is_int) ||\
 		((!key_down) && (!gchm_int_ctl.is_int)) ||\
 		((!key_down) && (gchm_int_ctl.chmaddr != addr)))
 	{
-		terminal_key_action_host_common_reply( recvdata,chman_node );
+		terminal_key_action_host_common_reply( recvdata, chman_node );
 		return;
 	}
 
@@ -2561,6 +2565,14 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 
 		terminal_key_action_host_special_num1_reply( recvdata, MIC_CHM_INTERPOSE_STATUS, chman_node );// 设置主席mic状态
 		terminal_mic_state_set( MIC_CHM_INTERPOSE_STATUS, BRDCST_ALL, BRDCST_1722_ALL, true, chman_node );
+
+		/**
+		 *2015-12-11
+		 *打开主席mic,不保存状态
+		 */
+		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS );
+			connect_table_tarker_connect( chman_node->tmnl_dev.entity_id,\
+				0, chman_node, false, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send ); // 这里不保存其mic open的状态2015-12-11
 
 		assert( dev_terminal_list_guard );
 		tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
@@ -2596,6 +2608,14 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		tmnl_pdblist end_node = dev_terminal_list_guard->next;
 		
 		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );
+
+		/**
+		 *2015-12-11
+		 *若主席mic的上一个状态是打开的状态不去管它，
+		 *否则断开其mic，而不重新设置保存
+		 */
+		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS )
+			connect_table_tarker_disconnect( chman_node->tmnl_dev.entity_id, chman_node, false, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 		
 		for( ;end_node != dev_terminal_list_guard; end_node = end_node->next )
 		{
@@ -2604,7 +2624,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 				(end_node->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS) &&\
 				((end_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST) ||(end_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP)))
 			{
-				connect_table_tarker_connect( end_node->tmnl_dev.entity_id, 0, end_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+				connect_table_tarker_connect( end_node->tmnl_dev.entity_id, set_sys.spk_limtime, end_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 			}
 		}
 
