@@ -6,8 +6,8 @@ export CC AR LD
 
 ROOTPATH = $(shell pwd)
 #CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-#CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+#CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -41,7 +41,8 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
-	@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
+	#@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
+	#@$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.txt
 	#@$(OBJDUMP) -d avdecc_ctl > avdecc_ctlDump
 
 ECHO:

@@ -15,6 +15,7 @@ ttcnn_table_call connet_table_connect_call_info; // 连接回调信息
 tdisconnect_connect_mic_main_set connect_mic_main_call; // 连接麦克风状态设置，主机发送状态回调。
 tdisconnect_connect_mic_main_set disconnect_mic_main_call; // 断开麦克风状态设置，主机发送状态回调。
 bool acmp_recv_resp_err = false; // acmp 接收到命令但响应错误参数
+muticast_conventioner_callback acmp_muticast_call;// 用于acmp发送数据的系统广播表的回调处理
 
 extern tsys_discuss_pro gdisc_flags; // 会讨参数
 
@@ -24,6 +25,8 @@ void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblis
 	acmp_inflight_guard = guard;
 	acmp_solid_guard = head;
 	acmp_desc_guard = desc_guard;
+	acmp_muticast_call.listener_stream_id = 0;
+	acmp_muticast_call.tarker_steam_id = 0;
 	acmp_connect_state_update.background_inflight_cmd_type = INPUT_OUTPUT_STREAM_DESCRIPTOR;
 	background_inflight_timer_start( (uint32_t)2*1500, &acmp_connect_state_update);// send the comand 2s later
 }
@@ -292,15 +295,32 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	if( is_retried )
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_listener_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
+		struct jdksavdecc_eui64 _end_station_tarker_id = jdksavdecc_acmpdu_get_talker_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
         	uint64_t end_station_entity_id = jdksavdecc_uint64_get( &_end_station_entity_id, 0 );
+		uint64_t tarker_id = jdksavdecc_uint64_get( &_end_station_tarker_id, 0 );
         	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
-			
+		
 		DEBUG_INFO( " [ COMMAND TIMEOUT: 0x%016llx, %s, %s,%d ]", 
 					end_station_entity_id,
 					acmp_cmd_value_to_name(msg_type),
 					"NULL",
 					 acmp_pstation->host_tx.inflight_frame.seq_id);
-
+		
+		// 广播表连线回调失败
+		if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_offline_func != NULL))
+		{
+			acmp_muticast_call.p_offline_func( tarker_id, acmp_muticast_call.p_cvnt_node, false );
+			acmp_muticast_call.p_cvnt_node = NULL;
+			acmp_muticast_call.p_offline_func = NULL;
+		}
+		
+		if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_online_func != NULL))
+		{
+			acmp_muticast_call.p_online_func( 0, 0, acmp_muticast_call.p_cvnt_node, false );
+			acmp_muticast_call.p_cvnt_node = NULL;
+			acmp_muticast_call.p_online_func = NULL;
+		}
+		
 		// free inflight command node in the system
 		release_heap_space( &acmp_pstation->host_tx.inflight_frame.frame);
 		delect_inflight_dblist_node( &acmp_pstation );
@@ -345,6 +365,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 	uint16_t seq_id = jdksavdecc_acmpdu_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t status = jdksavdecc_common_control_header_get_status(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint64_t end_station_entity_id;
+	struct jdksavdecc_eui64 stream_entity_station = jdksavdecc_common_control_header_get_stream_id( frame, ZERO_OFFSET_IN_PAYLOAD );
+	uint64_t end_stream_id = jdksavdecc_uint64_get(&stream_entity_station, 0);
 
 	if((notification_flag == CMD_WITH_NOTIFICATION) &&
 	((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||
@@ -360,7 +382,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
-
+		
 		if(status != ACMP_STATUS_SUCCESS)
 		{
 			DEBUG_INFO( "LOGGING_LEVEL_ERROR: RESPONSE_RECEIVED, 0x%016llx (talker), %s, %s, %s, %s, %d",
@@ -369,15 +391,26 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						"NULL",
 						"NULL", 
 						acmp_cmd_status_value_to_name(status),
-						seq_id);
-
+						seq_id );
+			
+			acmp_muticast_call.tarker_steam_id = 0;
 			acmp_recv_resp_err = true;
+		}
+
+		// 广播表更新回调，这里tx命令是更新命令rx tx 中最后发送的命令，所以在这里做成功的回调
+		if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_online_func != NULL))
+		{
+			uint64_t listen = acmp_muticast_call.listener_stream_id;
+			acmp_muticast_call.tarker_steam_id = end_stream_id;
+			acmp_muticast_call.tarker_steam_id = (status == ACMP_STATUS_SUCCESS)?end_stream_id:0;
+			acmp_muticast_call.p_online_func( end_stream_id, listen, acmp_muticast_call.p_cvnt_node, (status == ACMP_STATUS_SUCCESS)?true:false );
+			acmp_muticast_call.p_cvnt_node = NULL;
+			acmp_muticast_call.p_online_func = NULL;
 		}
 	}
 	else if((notification_flag == CMD_WITH_NOTIFICATION) &&
 	((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) ||
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE) ||
-	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE) ||
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE)))
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_listener_entity_id( frame, ZERO_OFFSET_IN_PAYLOAD );
@@ -397,9 +430,10 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
-
+			
+			
 			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
-			{
+			{// connect success
 				if( (connet_table_connect_call_info.p_cnnt_node != NULL) && (connet_table_connect_call_info.pc_callback != NULL ))
 				{
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
@@ -430,9 +464,17 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 					connect_mic_main_call.p_mian_state_send = NULL;
 					connect_mic_main_call.p_mic_set_callback = NULL;
 				}
+
+				// 广播表连线回调
+				if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_offline_func != NULL))
+				{
+					acmp_muticast_call.p_offline_func( tarker_id, acmp_muticast_call.p_cvnt_node, true );
+					acmp_muticast_call.p_cvnt_node = NULL;
+					acmp_muticast_call.p_offline_func = NULL;
+				}
 			}
 			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
-			{
+			{// disconnect success
 				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
 				{
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
@@ -463,8 +505,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 				}
 			}	
 		}
-		else if( (status == ACMP_STATUS_SUCCESS) && ((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE) ||
-			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE)))
+		else if( (status == ACMP_STATUS_SUCCESS) && \
+			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE))
 		{
 			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
@@ -473,6 +515,11 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
+			
+			if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_online_func != NULL))
+			{		
+				acmp_muticast_call.listener_stream_id = end_stream_id;// 广播连接表回调参数
+			}
 		}
 		else if( status != ACMP_STATUS_SUCCESS )
 		{
@@ -512,6 +559,14 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 					connect_mic_main_call.p_mian_state_send = NULL;
 					connect_mic_main_call.p_mic_set_callback = NULL;
 				}
+
+				// 广播表连线回调失败
+				if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_offline_func != NULL))
+				{
+					acmp_muticast_call.p_offline_func( tarker_id, acmp_muticast_call.p_cvnt_node, false );
+					acmp_muticast_call.p_cvnt_node = NULL;
+					acmp_muticast_call.p_offline_func = NULL;
+				}
 			}
 			else if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE )
 			{
@@ -539,7 +594,11 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 					disconnect_mic_main_call.p_mic_set_callback = NULL;
 				}
 			}
-
+			else if(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE )
+			{
+				acmp_muticast_call.listener_stream_id = 0;// 广播连接表回调参数
+			}
+			
 			acmp_recv_resp_err = true;
 		}
 	}
@@ -566,7 +625,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 								"NULL",
 								"NULL",
 								acmp_cmd_status_value_to_name(status),
-								seq_id);
+								seq_id );
 	}
 
 	return 0;
@@ -663,6 +722,63 @@ int acmp_connect_connect_table( uint8_t tarker_value[8],
 	}
 	
 	return 0;
+}
+
+/**********************************************
+*Date:2015-12-15
+*功能:
+*	用于连接广播连接表
+*
+***********************************************/
+void acmp_connect_muticastor_conventioner( uint64_t tarker_id, 
+			uint16_t tarker_index,
+			uint64_t listener_id, 
+			uint16_t listener_index,
+			muticast_offline_callback connect_callback, 
+			conventioner_cnnt_list_node* connect_node,
+			uint16_t sequence_id,
+			uint16_t count )
+{
+	struct jdksavdecc_eui64 talker_entity_id, listen_entity_id;
+	assert( connect_node && connect_callback );
+	if( (connect_callback != NULL) && (NULL != connect_node) )
+	{
+		acmp_muticast_call.p_cvnt_node = connect_node;
+		acmp_muticast_call.p_offline_func = connect_callback;
+		acmp_muticast_call.p_online_func = NULL;
+
+		convert_uint64_to_eui64( talker_entity_id.value, tarker_id );
+		convert_uint64_to_eui64( listen_entity_id.value, listener_id );
+		acmp_connect_avail( talker_entity_id.value, tarker_index, listen_entity_id.value, listener_index, count, sequence_id );
+	}
+}
+
+/**********************************************
+*Date:2015-12-15
+*功能:
+*	用于更新广播连接表
+*
+***********************************************/
+void acmp_update_muticastor_conventioner( uint64_t tarker_id, 
+			uint16_t tarker_index,
+			uint64_t listener_id, 
+			uint16_t listener_index,
+			muticast_online_callback proccess_online_callback, 
+			conventioner_cnnt_list_node* connect_node,
+			uint16_t sequence_id,
+			uint16_t count )
+{
+	assert( connect_node && proccess_online_callback );
+	if( (proccess_online_callback != NULL) && (NULL != connect_node) )
+	{
+		assert( connect_node );
+		acmp_muticast_call.p_cvnt_node = connect_node;
+		acmp_muticast_call.p_offline_func = NULL;
+		acmp_muticast_call.p_online_func = proccess_online_callback;
+
+		acmp_rx_state_avail( listener_id, listener_index );
+		acmp_tx_state_avail( tarker_id, tarker_index );
+	}
 }
 
 

@@ -6,6 +6,7 @@
 #include "linked_list_unit.h"
 #include "system_packet_tx.h"
 #include "raw.h"
+#include "muticast_connector.h" // 广播连接表相关处理定义
 
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard );
 void acmp_frame_init( void );
@@ -44,6 +45,22 @@ int acmp_disconnect_connect_table( uint8_t tarker_value[8],
 									ttcnn_table_call *discnnt_callback_save , 
 									int (*disconnect_callback_func)( connect_tbl_pdblist p_cnnt_node ),
 									tdisconnect_connect_mic_main_set *p_mic_main_set );
+void acmp_connect_muticastor_conventioner( uint64_t tarker_id, 
+			uint16_t tarker_index,
+			uint64_t listener_id, 
+			uint16_t listener_index,
+			muticast_offline_callback connect_callback, 
+			conventioner_cnnt_list_node* connect_node,
+			uint16_t sequence_id,
+			uint16_t count );
+void acmp_update_muticastor_conventioner( uint64_t tarker_id, 
+			uint16_t tarker_index,
+			uint64_t listener_id, 
+			uint16_t listener_index,
+			muticast_online_callback proccess_online_callback, 
+			conventioner_cnnt_list_node* connect_node,
+			uint16_t sequence_id,
+			uint16_t count );
 
 #endif
 

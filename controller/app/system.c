@@ -14,6 +14,7 @@
 #include "profile_system.h"
 #include "camera_pro.h"
 #include "camera_common.h"
+#include "muticast_connector.h"
 
 void init_system( void )
 {
@@ -33,7 +34,14 @@ void init_system( void )
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
+	
 	connect_table_info_init();/*初始化连接表*/ 
+	if( -1 == muticast_connector_init())// 初始广播表
+	{
+		DEBUG_INFO( "init mitucast conventionr list failed" );
+		exit( -1 );
+	}
+	
 	init_sem_tx_can();
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
@@ -100,17 +108,19 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
-
 	sleep(2);
 	
-	connect_table_get_information( descptor_guard );
-	
 	/*获取系统的终端连接信息*/ 
+	connect_table_get_information( descptor_guard );
 	background_read_descriptor_input_output_stream();
-
+	sleep(2);
+	
 	/* 设置连接表*/
-	sleep(1);
 	connect_table_info_set( descptor_guard, true );
+	sleep(1);
+	
+	// 设置广播连接表的信息
+	muticast_connector_connect_table_set( descptor_guard );
 	
 	// 注册会议终端, 维持5s
 }
@@ -147,6 +157,7 @@ void system_close( struct threads_info *p_threads )
 	// 释放系统队列资源
 	destroy_func_command_work_queue();
 	destroy_network_send_work_queue();
+	muticast_connector_destroy();// 释放广播表资源
 
 	// 保存配置文件的信息
 	if( -1 == profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
