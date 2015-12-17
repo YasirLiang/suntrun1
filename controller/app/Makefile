@@ -15,8 +15,7 @@ ifeq ($(BIN), $(wildcard $(BIN)))
 else
 	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
 endif
-
-	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
+	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CFG_INC)
 	@cp $(BIN) $(ROOTPATH) 
 
 sinclude $(CUR_OBJS:.o=.d)

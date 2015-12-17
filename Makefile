@@ -5,6 +5,9 @@ OBJDUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
+#CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+#CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -24,9 +27,6 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/send_module\
 		   -I$(ROOTPATH)/controller/lib/include/camera_module\
 		   -I$(ROOTPATH)/controller/lib/include/uart
-#CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-#CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib $(CFG_INC)
 export CFG_INC CFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
