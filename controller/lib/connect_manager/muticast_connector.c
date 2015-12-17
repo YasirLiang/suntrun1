@@ -302,18 +302,17 @@ int muticast_connector_time_tick( void )
 				DEBUG_INFO( "conventioner state is wrong:Please check the right conventioner state!" );
 				break;
 		}
+	}
 
-		if( (*p_current_index >= (total_num - 1 )) || \
-			((*p_current_index + 1) >= MAX_BD_CONNECT_NUM) )// last index,make zero at the begining
-		{
-			*p_current_index = 0;
-		}
-		else
-		{
-			(*p_current_index)++; // 这里是解引用自加
-		}
-		
-		DEBUG_INFO( "muticast table current index = %d", *p_current_index );
+	/*move to next muticast node or begin the head*/
+	if( (*p_current_index >= (total_num - 1 )) || \
+		((*p_current_index + 1) >= MAX_BD_CONNECT_NUM) )// last index,make zero at the begining
+	{
+		*p_current_index = 0;
+	}
+	else
+	{
+		(*p_current_index)++; // 这里是解引用自加
 	}
 
 	return 0;
