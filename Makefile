@@ -27,8 +27,6 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 #CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 #CFLAGS = -Wall -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib $(CFG_INC)
-
-
 export CFG_INC CFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
@@ -41,9 +39,9 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
-	#@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
-	#@$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.txt
-	#@$(OBJDUMP) -d avdecc_ctl > avdecc_ctlDump
+#@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
+#@$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.txt
+#@$(OBJDUMP) -d avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)

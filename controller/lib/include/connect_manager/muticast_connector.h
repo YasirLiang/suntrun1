@@ -15,7 +15,7 @@
 
 #define MAX_BD_CONNECT_NUM (SYSTEM_TMNL_MAX_NUM) // 最大连接数
 #define MAX_CVNT_CONNECT_NUM		5 // 最大的与会连接失败的次数
-#define CVNT_CONNECT_TIME_OUT  	12
+#define CVNT_CONNECT_TIME_OUT  	10
 #define CVNT_ONLINE_TIME_OUT  		30
 #define CVNT_OUTLINE_TIME_OUT  	60
 

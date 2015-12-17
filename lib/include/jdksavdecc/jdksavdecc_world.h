@@ -44,7 +44,7 @@
 #include "us_allocator.h"
 #endif
 
-//#include <stdlib.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>

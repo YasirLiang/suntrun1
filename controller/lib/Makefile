@@ -1,8 +1,5 @@
-LIB=libavdecc-host.a
-all:LIB
-
 SUBDIRS=$(shell ls -l |grep ^d | awk '{if($$9 == "uart") print $$9}')
-SRC_FILE += $(wildcard avdecc/*.c) $(wildcard camera_module/*.c)\
+SRC_FILE = $(wildcard avdecc/*.c) $(wildcard camera_module/*.c)\
 		    $(wildcard common/*.c) $(wildcard upper_computer/*.c)\
 		    $(wildcard conference_host_with_endstation/*.c) $(wildcard conference_network/*.c)\
 		    $(wildcard connect_manager/*.c) $(wildcard end_station_manager/*.c)\
@@ -13,19 +10,22 @@ DEPS = $(patsubst %.c, %.d, $(SRC_FILE))
 OBJS = $(patsubst %.c, %.o, $(SRC_FILE))
 DIR = $(notdir $(OBJS))
 
+LIB=libavdecc-host.a
+all:LIB
+
 LIB:$(OBJS)
+ifeq ($(LIB), $(wildcard $(LIB)))
+else
+	@echo $(AR) rc $(LIB) $(DIR)
+endif
 	@$(AR) rc $(LIB) $(OBJS)
 
-$(OBJS):%o:%c
+$(OBJS):%.o:%.c
 	@echo "\033[32m$(CC) -o $@ $< \033[0m"
-	$(CC) -c $(CFG_INC) $(CFLAGS) $< -o $@
+	@$(CC) -MM $(CFG_INC) -MT"$*.d" -MT"$(<:.c=.o)" $< > $*.d
+	@$(CC) -c $(CFG_INC) $(CFLAGS) $< -o $@
 	
--include $(OBJS:.o=.d)
-%.d:%.c
-	set -e; rm -f $@; \
-	$(CC) -MM $(CFG_INC) $< > $@.$$$$; \
-	sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-	rm -f $@.$$$$
+sinclude $(DEPS)
 
 $(SUBDIRS):ECHO
 	make -C $@
