@@ -84,10 +84,3 @@ int conference_host_to_upper_computer_form_msg( struct host_upper_cmpt_frame *fr
 	// 把协议数据写入负载,并返回
 	return (int)conference_host_to_upper_computer_frame_write( frame->payload, phost, upper_data_len, 0, sizeof(frame->payload) );
 }
-
-inline void conference_host_upper_computer_set_upper_message_form( void *data_msg, const void* base, uint16_t offset, uint16_t len )
-{
-	memcpy( data_msg, ((uint8_t*)base) + offset, len );
-}
-
-

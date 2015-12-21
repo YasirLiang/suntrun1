@@ -6,6 +6,11 @@
 #include "jdksavdecc_util.h"
 #include "upper_computer_common.h"
 
+static void conference_host_upper_computer_set_upper_message_form( void *data_msg, const void* base, uint16_t offset, uint16_t len )
+{
+	memcpy( data_msg, ((uint8_t*)base) + offset, len );
+}
+
 extern void set_upper_cmpt_check( struct host_upper_cmpt *p );
 extern void host_upper_cmpt_common_header_write( const struct host_upper_cmpt_common* common_header, void* base, ssize_t pos );
 extern void host_upper_cmpt_data_write( const uint8_t *pdata, void* base, ssize_t pos, const uint16_t data_len );

@@ -8,6 +8,20 @@
 #include "jdksavdecc_aecp_vendor.h"
 #include "jdksavdecc_aecp_print.h"
 
+// 从buf中获取两个字节的数据，并返回
+static inline uint16_t get_uint16_data_from_buf( void* base, uint16_t offset )
+{
+	uint8_t* p = (uint8_t*)base + offset;
+	return (((uint16_t)((p[0]&0x00ff) << 0))|((uint16_t)((p[1]&0x00ff) << 8)));
+}
+
+// 从base中获取一个字节的数据，并返回
+static inline uint8_t get_uint8_data_value_from_buf( void* base, uint16_t offset )
+{
+	uint8_t* p = (uint8_t*)base + offset;
+	return p[0];
+}
+
 uint32_t get_udp_client_timeout_table(uint8_t msg_type );
 void convert_eui48_to_uint64(const uint8_t value[6], uint64_t *new_value);
 void convert_eui64_to_uint64(const uint8_t value [8], uint64_t * new_value);
@@ -35,9 +49,6 @@ const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value );
 bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *msg_code );
 bool is_terminal_command( void *base, uint16_t offset );
 bool is_terminal_response( void *base, uint16_t offset );
-inline uint16_t get_uint16_data_from_buf( void* base, uint16_t offset );
-inline uint8_t get_uint8_data_value_from_buf( void* base, uint16_t offset );
-
 
 #endif
 

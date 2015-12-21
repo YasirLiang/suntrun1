@@ -298,18 +298,18 @@ int set_connect_flag_endpoint_dblist( solid_pdblist head, uint64_t entity_id, in
 	return 0;
 }
 
-inline uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target )
+uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target )
 {
 	return target->solid.available_index;
 }
 
-inline const  struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target)
+const  struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target)
 {
 	return (&target->solid.entity_model_id);
 
 }
 
-inline void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target)
+void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target)
 {
 	target->solid.available_index = util->available_index;
 	target->solid.entity_model_id = util->entity_model_id;

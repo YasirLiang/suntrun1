@@ -1,21 +1,7 @@
 #include "conference_end_to_host.h"
 
-//读取校验
-inline static void conference_common_end_to_host_crc_read(uint8_t *d, const void *base, size_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	*d = p[0];
-}
-
 //读取数据
-inline static void conference_common_end_to_host_data_read(uint8_t *d, const void *base, size_t offset)
-{
-	uint8_t *p = ( ( uint8_t * )base ) + offset;
-	*d = p[0];
-}
-
-//读取数据
-inline static void conference_common_end_to_host_data_msg_read(uint8_t *d, const void *base, size_t offset, ssize_t data_len )
+void conference_common_end_to_host_data_msg_read(uint8_t *d, const void *base, size_t offset, ssize_t data_len )
 {
 	uint8_t *p = ( ( uint8_t * )base ) + offset;
 
@@ -26,8 +12,9 @@ inline static void conference_common_end_to_host_data_msg_read(uint8_t *d, const
 	}
 }
 
+
 //读取特殊命令响应的数据格式
-inline static void conference_common_end_to_host_spe_data_read(uint8_t *d, const void *base, size_t offset,  ssize_t len_data)
+void conference_common_end_to_host_spe_data_read(uint8_t *d, const void *base, size_t offset,  ssize_t len_data)
 {
 	uint8_t *p = ((uint8_t *)base) + offset;
 	ssize_t len = len_data;
@@ -37,38 +24,6 @@ inline static void conference_common_end_to_host_spe_data_read(uint8_t *d, const
 	{
 		d[i] = p[i];
 	}
-}
-
-// 读取协议类型
-inline uint8_t conference_common_header_type_read(void *base, size_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	
-	return p[0];
-}
-
-//读取头部信息
-inline static void  conference_common_header_read(struct conference_common_header *hdr, const void *base, size_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	hdr->byte_guide = p[0];
-	hdr->command_control = p[1];
-	hdr->address = ((p[2] & 0x00ff) << 0) | ((p[3] & 0x00ff) << 8);// 地址在负载中低字节在前
-}
-
-inline static ssize_t conference_end_to_host_spe_data_len_read(uint8_t *d, const void *base, const size_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	*d = p[0];
-
-	return (ssize_t)(*d);
-}
-
-inline uint8_t get_conference_guide_type( const void *base, ssize_t pos)
-{
-	uint8_t *p = (( uint8_t * )base) + pos;
-
-	return p[0];
 }
 
 //判断主机是否接收特殊命令
@@ -120,11 +75,6 @@ int conference_end_to_host_frame_read(const void *v_payload, struct endstation_t
 	return -1;
 }
 
-inline static void conference_common_end_to_host_data_len_set( uint8_t *out_data_len, uint8_t input_data_len )
-{
-	*out_data_len = input_data_len;
-}
-
 /********************************
 *write:YasirLiang
 *Date:2015/10/20
@@ -159,14 +109,6 @@ ssize_t conference_end_to_host_deal_recv_msg_read( ttmnl_recv_msg *p_tt, const v
 	}
 
 	return r;
-}
-
-//读终端地址
-inline void conference_end_to_host_endstation_address_read(struct conference_end_address_euint16 *addr,
-													struct conference_common_header *hdr)
-{
-	assert( addr != NULL && hdr != NULL );
-	memcpy( addr, &hdr->address,  sizeof(struct conference_end_address_euint16) );
 }
 
 //是否是终端上发, 是->终端上发;否->主机下发
@@ -251,6 +193,4 @@ bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos)
 	else
 		return false;
 }
-
-
 

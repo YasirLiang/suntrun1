@@ -594,20 +594,6 @@ bool is_terminal_response( void *base, uint16_t offset )
 	return (p[1]&0x40);	//位7
 }
 
-// 从buf中获取两个字节的数据，并返回
-inline uint16_t get_uint16_data_from_buf( void* base, uint16_t offset )
-{
-	uint8_t* p = (uint8_t*)base + offset;
-	return (((uint16_t)((p[0]&0x00ff) << 0))|((uint16_t)((p[1]&0x00ff) << 8)));
-}
-
-// 从base中获取一个字节的数据，并返回
-inline uint8_t get_uint8_data_value_from_buf( void* base, uint16_t offset )
-{
-	uint8_t* p = (uint8_t*)base + offset;
-	return p[0];
-}
-
 // 将48位转换为64位
 void convert_eui48_to_uint64( const uint8_t value[6], uint64_t *new_value )
 {

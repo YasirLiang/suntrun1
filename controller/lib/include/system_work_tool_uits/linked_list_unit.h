@@ -17,9 +17,9 @@
 #define SEARCH_ENTITY_ID_ENDPOINT_NODE( head, pnode, entity_id )\
 	for( ; (pnode != head) && (pnode->solid.entity_id != entity_id ); pnode = pnode->next )
 		
-inline uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target );
-inline const struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target);
-inline void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target);
+uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target );
+const struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target);
+void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target);
 uint8_t *allot_heap_space( int size, uint8_t ** pout);
 void release_heap_space( uint8_t **p );
 solid_pdblist  create_endpoint_new_node( solid_pdblist* node_new );

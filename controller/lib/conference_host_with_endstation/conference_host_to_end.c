@@ -85,15 +85,8 @@ void conference_common_header_write(const struct conference_common_header phdr, 
 	p[3] = (0xff00 & phdr.address) >> 8;//地址高八位(高字节在后)
 }
 
-//写入会议协议的数据长度
-static inline void conference_host_to_end_datalen_write(const uint8_t lendata, void*base, ssize_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	p[0] = lendata;
-}
-
 //写入会议协议的数据部分
-static inline void conference_host_to_end_data_write(const uint8_t data[], void*base, ssize_t offset, ssize_t len)
+void conference_host_to_end_data_write(const uint8_t data[], void*base, ssize_t offset, ssize_t len)
 {
 	uint8_t *p = ((uint8_t *)base) + offset;
 	int i = 0;
@@ -105,13 +98,6 @@ static inline void conference_host_to_end_data_write(const uint8_t data[], void*
 		for( i = 0; i < len; i++ )
 			p[i] = data[i];	
 	}
-}
-
-//写入会议协议的校验
-static inline void conference_host_to_end_crc_write(const uint8_t crc, void*base, ssize_t offset)
-{
-	uint8_t *p = ((uint8_t *)base) + offset;
-	p[0] = crc; 
 }
 
 /***
@@ -305,12 +291,6 @@ bool conference_host_to_end_address_allbroadcast_set(uint16_t *endaddr,
 
 	fprintf(stdout, "%s():invalid num->%d\n", __func__, num);
 	return false;
-}
-
-//设置数据长度位的值
-inline void conference_host_to_end_datalen_set(ssize_t* data_len, uint8_t dlgh)
-{
-	*data_len = (ssize_t)dlgh;
 }
 
 //设置数据位的数据
