@@ -39,7 +39,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	{
 		conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
-		timeout = get_host_endstation_command_timeout( cmd_type );
+		timeout = get_host_endstation_command_timeout( conference_cmd );
 	}
 
 	assert( interval_time );

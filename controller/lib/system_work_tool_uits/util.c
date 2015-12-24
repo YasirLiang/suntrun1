@@ -333,7 +333,7 @@ uint32_t get_host_endstation_command_timeout( uint32_t cmd_value )
 
 	while( p->cmd != CONFERENCE_HOST_AND_END_CMD_ERROR )
 	{
-		if( p->timeout_ms == cmd_value )
+		if( p->cmd == cmd_value )
 		{
 			return p->timeout_ms;
 		}
