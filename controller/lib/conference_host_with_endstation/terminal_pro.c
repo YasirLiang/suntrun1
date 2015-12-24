@@ -658,7 +658,6 @@ int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
 			}
 		}
 	}
-
 	
 	return 0;
 }
@@ -792,7 +791,7 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 	}
 
 	/*·¢ËÍÖ÷»ú×´Ì¬*/
-	//terminal_main_state_send( 0, NULL, 0 );
+	terminal_main_state_send( 0, NULL, 0 );
 
 	return 0;
 }
@@ -1528,7 +1527,7 @@ bool addr_queue_delect_by_value( uint16_t *addr_queue, uint8_t *queue_len, uint1
 		return false;
 	}
 	
-	if(0==*queue_len)
+	if( 0 == *queue_len )
 	{
 		return false;
 	}
@@ -1766,8 +1765,6 @@ void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
 		{
 			terminal_chairman_apply_type_clear( addr );
 		}
-
-		
 	}
 	else if(tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST ||\
 		tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP)

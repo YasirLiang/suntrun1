@@ -63,9 +63,9 @@ bool is_send_interval_timer_timeout( void )
 }
 
 /*用于所有的响应数据的发送间隔的设置*/
-void uart_resp_send_interval_timer_start( void )
+void resp_send_interval_timer_start( uint32_t send_interval_time )
 {
-	send_interval_timer_start( SEND_INTERVAL_TIME, &send_interval_pro );
+	send_interval_timer_start( send_interval_time, &send_interval_pro );
 }
 
 /*用于所有的响应数据的发送间隔的设置*/

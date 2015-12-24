@@ -41,7 +41,7 @@ void send_interval_timer_stop(  tsend_interval_native* target );
 void send_interval_timer_update( timetype timeout, tsend_interval_native* target );
 bool send_interval_timer_timeout( tsend_interval_native* target );
 bool is_send_interval_timer_timeout( void );
-void uart_resp_send_interval_timer_start( void );
+void resp_send_interval_timer_start( uint32_t send_interval_time );
 void send_interval_init( void );
 int set_send_interval_idle_state( void );
 int set_send_interval_primed_state( void );
@@ -50,6 +50,5 @@ bool is_send_interval_idle_state( void );
 bool is_send_interval_primed_state( void );
 bool is_send_interval_wait_state( void );
 void resp_send_interval_timer_stop( void );
-
 
 #endif

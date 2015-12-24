@@ -27,3 +27,8 @@ int pelco_d_cammand_set( uint8_t camera_address,  uint16_t d_cmd, uint8_t speed_
 	return 0;
 }
 
+uint16_t pelco_d_cammand_get( const uint8_t* frame, uint16_t pos )
+{
+	return (((uint16_t)frame[1]) |((uint16_t)frame[2] << 8));
+}
+

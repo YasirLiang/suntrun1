@@ -17,27 +17,25 @@ void init_udp_client_controller_endstation( int fd, struct sockaddr_in *sin )
 }
 
 // used for host and upper computer, only have one this type inflight in the double list
-int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, struct sockaddr_in* sin, bool resp )
+int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, struct sockaddr_in* sin, bool resp, uint32_t *interval_time )
 {
 	uint8_t cfc_type = get_host_upper_cmpt_guide_type( frame, UPPER_HOST_CONFERENCE_HEADER_TYPE_OFFSET );
 	uint8_t cfc_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
-	uint32_t timeout = get_udp_client_timeout_table( cfc_cmd );
 	inflight_plist inflight_station = NULL;
 	uint8_t dest_mac[6] = {0};
-	//bool is_exist_udp_client_inflight = false;
+	uint32_t timeout = get_udp_client_timeout_table( cfc_cmd );
 
+	assert( interval_time );
+	*interval_time = timeout;
+	
 	assert( sin );
 	struct sockaddr_in sin_event;
 	memcpy(&sin_event, sin, sizeof(struct sockaddr_in));
-
-	//is_exist_udp_client_inflight = is_exist_udp_client_inflight_type_node( guard, cfc_type );
 			
 	if( !resp ) // not a response data 
 	{
 		if( !resend )// data first send
 		{
-			//if( !is_exist_udp_client_inflight )
-			//{
 				inflight_station = create_inflight_dblist_new_node( &inflight_station );
 				if( NULL == inflight_station )
 				{
@@ -71,12 +69,6 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 					DEBUG_INFO("Err frame malloc !");
 					assert( NULL != inflight_station->host_tx.inflight_frame.frame );
 				}
-			//}
-			//else
-			//{
-			//	DEBUG_INFO(" inflight list already has udp client inflight node");
-			//	return -1;
-			//}
 		}
 		else
 		{
@@ -119,6 +111,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	inflight_plist udp_client_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
+	uint32_t interval_time = 0;
          
 	if( inflight_station != NULL )
 	{
@@ -157,7 +150,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	{
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
-		transmit_udp_client_packet( server_fd.s_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false );
+		transmit_udp_client_packet( server_fd.s_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false, &interval_time );
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
 	}

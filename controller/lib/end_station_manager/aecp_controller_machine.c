@@ -19,7 +19,7 @@ void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_gua
 }
 
 // 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界，其他的发送函数同理
-int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp )
+int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
 {
 	uint8_t subtype = jdksavdecc_subtype_data_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD ); // msg_type in there is sbu
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
@@ -29,15 +29,21 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
         cmd_type &= 0x7FFF;
 	uint8_t conference_cmd = 0;
 	uint16_t terminal_address = 0;
-		
+
 	if( (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND) &&(cmd_type == JDKSAVDECC_AEM_COMMAND_READ_DESCRIPTOR) )
+	{
 		timeout = 750;	// 750 ms timeout (1722.1 timeout is 250ms)
+	}
 		
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// conference data in this subtype data payload
 	{
 		conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		timeout = get_host_endstation_command_timeout( cmd_type );
 	}
+
+	assert( interval_time );
+	*interval_time = timeout;
 	
 	if(!resp )	// not a response data 
 	{
@@ -121,6 +127,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	inflight_plist aecp_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
+	uint32_t interval_time = 0;
          
 	if( aecp_sta != NULL )
 	{
@@ -168,7 +175,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else
 	{
-		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false );
+		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 	}
 }
 

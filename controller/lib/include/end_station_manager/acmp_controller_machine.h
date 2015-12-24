@@ -12,7 +12,7 @@ void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblis
 void acmp_frame_init( void );
 void acmp_disconnect_avail( uint8_t output_id[8], uint16_t talker_unique_id, uint8_t input_id[8] , uint16_t listener_unique_id, uint16_t connection_count, uint16_t sequence_id);
 void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8_t input_id[8] , uint16_t listener_unique_id, uint16_t connection_count, uint16_t sequence_id );
-ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp );
+ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp, uint32_t *interval_time );
 void acmp_inflight_time_tick( inflight_plist inflight_list_guard );
 void acmp_inflight_station_timeouts( inflight_plist acmp_sta, inflight_plist hdr );
 int acmp_callback(  uint32_t notification_flag, uint8_t *frame);

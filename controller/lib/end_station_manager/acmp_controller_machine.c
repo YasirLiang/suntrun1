@@ -196,13 +196,15 @@ void acmp_binflight_cmd_time_tick( void )
 	}
 }
 
-ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp )
+ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
 {
 	uint8_t sub_type = jdksavdecc_subtype_data_get_subtype(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint16_t seq_id = jdksavdecc_acmpdu_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD);
-	uint32_t timeout = get_acmp_timeout( msg_type );
 	inflight_plist inflight_station = NULL;
+	uint32_t timeout = get_acmp_timeout( msg_type );
+	assert( interval_time );
+	*interval_time = timeout;
 
 	if(!resp )// not a response data
 	{
@@ -277,6 +279,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	inflight_plist acmp_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
+	uint32_t interval_timeout = 0;
          
 	if( acmp_sta != NULL )
 	{
@@ -331,7 +334,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	else
 	{
 		DEBUG_INFO( "acmp resended " );
-		transmit_acmp_packet_network( frame, frame_len, hdr, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false);
+		transmit_acmp_packet_network( frame, frame_len, hdr, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_timeout );
 	}
 }
 

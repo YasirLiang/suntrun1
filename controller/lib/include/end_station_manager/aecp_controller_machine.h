@@ -9,7 +9,7 @@
 #include "raw.h"
 
 void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_guard, inflight_plist inflight_guard );
-int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp );
+int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time );
 void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr );
 int aecp_read_desc_init(uint16_t desc_type, uint16_t desc_index, uint64_t target_entity_id);
 int aecp_callback( uint32_t notification_flag, uint8_t *frame);

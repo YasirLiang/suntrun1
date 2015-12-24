@@ -13,7 +13,7 @@
 extern int uart_fd; // ´®¿ÚÎÄ¼şÃèÊö·û
 extern bool uart_set_success;
 
-int transmit_uart_control_packet_uart( uint8_t *frame, uint16_t frame_len, bool isresend, bool isresp );
+int transmit_uart_control_packet_uart( uint8_t *frame, uint16_t frame_len, bool isresend, bool isresp, uint32_t *interval_time );
 
 
 #endif

@@ -238,7 +238,16 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 *返回值:无
 *state: 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界.
 *****************************/
-void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uint16_t frame_len, struct fds *file_dec, inflight_plist guard, const uint8_t dest_mac[6], struct sockaddr_in* sin, const bool resp )
+void tx_packet_event( uint8_t type,
+					bool notification_flag,  
+					uint8_t *frame, 
+					uint16_t frame_len, 
+					struct fds *file_dec, 
+					inflight_plist guard, 
+					const uint8_t dest_mac[6], 
+					struct sockaddr_in* sin, 
+					const bool resp, 
+					uint32_t *interval_time )
 {
 	int server_fd = 0;
 	int client_fd = 0;
@@ -262,37 +271,38 @@ void tx_packet_event( uint8_t type, bool notification_flag,  uint8_t *frame, uin
 		memcpy( &dest, dest_mac, 6 );
 	else
 		memcpy( &dest, jdksavdecc_multicast_adp_acmp.value, 6 );
-	
+
+	assert( interval_time );
 	if( istx )
 	{
 		if( type == TRANSMIT_TYPE_ADP )
 		{
-			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest.value, resp );
+			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest.value, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_ACMP )
 		{
-			transmit_acmp_packet_network( frame, frame_len, guard, false, dest.value, resp );
+			transmit_acmp_packet_network( frame, frame_len, guard, false, dest.value, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_AECP )
 		{
-			transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp );
+			transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_SVR )// host as client send data to udp server using client fd
 		{ 
-			transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp );// 未完成，原因是协议没定
+			transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp, interval_time );// 未完成，原因是协议没定
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_CLT )// host as server send data to udp client using server fd
 		{ 
-			transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp );
+			transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UART_CTRL )
 		{ 
-			transmit_uart_control_packet_uart( frame, frame_len, false, resp ); 
+			transmit_uart_control_packet_uart( frame, frame_len, false, resp, interval_time ); 
 			right_packet = true;
 		}
 		else 

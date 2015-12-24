@@ -8,6 +8,8 @@
 #include "jdksavdecc_aecp_vendor.h"
 #include "jdksavdecc_aecp_print.h"
 
+#define GET_ARRAY_ELEM_NUM( array, elem_type ) (((sizeof(array)))/((sizeof(elem_type))))// get the num of a array
+
 // 从buf中获取两个字节的数据，并返回
 static inline uint16_t get_uint16_data_from_buf( void* base, uint16_t offset )
 {
@@ -49,6 +51,9 @@ const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value );
 bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *msg_code );
 bool is_terminal_command( void *base, uint16_t offset );
 bool is_terminal_response( void *base, uint16_t offset );
+uint32_t get_host_endstation_command_timeout( uint32_t cmd_value );
+uint32_t get_send_respons_interval_timeout( uint8_t data_type, uint32_t command );
+
 
 #endif
 

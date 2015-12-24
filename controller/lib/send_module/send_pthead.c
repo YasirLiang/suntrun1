@@ -72,9 +72,11 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
 		}
 
-		// »ñÈ¡¶ÓÁĞÊı¾İ
 		p_sdpqueue_wnode p_send_wnode = NULL;
 		bool is_resp_data = false;
+		uint32_t resp_interval_time;
+
+		// »ñÈ¡¶ÓÁĞÊı¾İ
 		p_send_wnode = send_queue_message_get( p_send_wq );
 		if( NULL == p_send_wnode )
 		{
@@ -98,7 +100,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 							     command_send_guard,
 							     p_send_wnode->job_data.raw_dest.value,
 							     &p_send_wnode->job_data.udp_sin,
-							     is_resp_data );
+							     is_resp_data,
+							     &resp_interval_time );
 
 		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
 		assert( p_send_wnode->job_data.frame == NULL ); // free successfully and result is NULL? 
@@ -147,7 +150,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			{
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-				uart_resp_send_interval_timer_start(); // start timer useful as all response data
+				resp_send_interval_timer_start( resp_interval_time ); // start timer useful as all response data
 				//sem_wait( &sem_waiting );
 				ret = sem_timedwait( &sem_waiting, &timeout );
 				if( ret == -1 )

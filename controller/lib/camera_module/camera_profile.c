@@ -63,7 +63,7 @@ int camera_profile_fill_check( camera_profile_format *set_buf, const int preset_
 	{
 		for( i = 0; i < (sizeof(preset_point_format) * preset_num); i++ )
 		{
-			set_buf->file_chk += *p_buf++;
+			set_buf->file_chk += *p_buf++; // 先解引用指针再自加
 		}
 
 		ret = i;

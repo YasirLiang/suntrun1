@@ -467,7 +467,7 @@ int camera_pro_preset_file_list_init( void )
 			gcurpresetcmr.preset_point_num = 0;
 			gcurpresetcmr.tmnl_addr = 0xffff;
 			memcpy( cmr_file.cmr_preset_list, gpresetcmr_list, write_byte );
-			if( !camera_profile_fill_check( &cmr_file, PRESET_NUM_MAX ) == write_byte )
+			if( camera_profile_fill_check( &cmr_file, PRESET_NUM_MAX ) == -1 )
 			{
 				DEBUG_INFO( "write camera preset information Err !" );
 				ret = -1;
