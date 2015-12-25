@@ -1,5 +1,4 @@
 #include <signal.h>
-
 #include "avdecc_main.h"
 #include "avdecc_funhdl.h"
 #include "avdecc_funhdl_native.h"
@@ -53,7 +52,7 @@ int main( int argc, char *argv[] )
 		perror( "sigaction: " );
 		exit( -1 );
 	}
-
+	
 	init_system();	// 初始化系统，包括系统管理终端链表,inflight命令链表
 	build_socket( &net_fd, &net, NETWORT_INTERFACE, &udp_net ); // 建立raw, udp server, udp client socket
 	build_pipe( net_fd.tx_pipe );	// 创建无名管道
