@@ -13,9 +13,9 @@ $(CUR_OBJS):%.o:%.c
 BIN:$(CUR_OBJS)
 ifeq ($(BIN), $(wildcard $(BIN)))
 else
-	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS)
+	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CCFLAGS)
 endif
-	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CFG_INC)
+	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CCFLAGS) $(CFG_INC)
 	@cp $(BIN) $(ROOTPATH) 
 
 sinclude $(CUR_OBJS:.o=.d)

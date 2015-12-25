@@ -6,7 +6,7 @@
 #include "jdksavdecc_util.h"
 #include "upper_computer_common.h"
 
-static void conference_host_upper_computer_set_upper_message_form( void *data_msg, const void* base, uint16_t offset, uint16_t len )
+static inline void conference_host_upper_computer_set_upper_message_form( void *data_msg, const void* base, uint16_t offset, uint16_t len )
 {
 	memcpy( data_msg, ((uint8_t*)base) + offset, len );
 }

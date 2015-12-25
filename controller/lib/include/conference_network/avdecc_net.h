@@ -15,14 +15,14 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 #include <sys/mman.h>
-#include <sys/timerfd.h>
+//#include <sys/timerfd.h>
 #include <sys/user.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <net/ethernet.h>
 #include <sys/un.h>
-#include <sys/eventfd.h>
+//#include <sys/eventfd.h>
 #include <sys/epoll.h>
 
 #include "jdksavdecc_world.h"

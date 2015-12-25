@@ -1097,7 +1097,7 @@ void cmd_terminal_proccess( const char *opt )
 			MSGINFO( "clear\nlist\nls\nq\nquit\nquery\nallot\nreAllot\nsetState\nsetMic\nsetIndicator\nnewAllot\nsetLcd\nsetled\nchairManControl\nvoteResult\nlimitSpkTime\nhostSendState\nsendEndLcd\noptionEndpoint\nspecialEventReply\ntnmtCmptMsg\nreplyEndMessage\nqueryVoteSign");
 		}
 		
-		 free(cmd_buf);
+		free(cmd_buf);
 	}
 }
 /*===================================
