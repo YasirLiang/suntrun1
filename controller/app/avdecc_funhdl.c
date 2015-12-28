@@ -34,7 +34,9 @@ int timer_start_interval(int timerfd)
         itimer_new.it_value = itimer_new.it_interval;
 
 	// 设置新的超时时间，并开始计时。
-        return timerfd_settime(timerfd, 0, &itimer_new, &itimer_old);
+        //return timerfd_settime(timerfd, 0, &itimer_new, &itimer_old);
+
+	return 0;
 }
 
 int fn_timer_cb( struct epoll_priv*priv )
@@ -169,22 +171,20 @@ int thread_fn(void *pgm)
 	epollfd = epoll_create( POLL_COUNT );
 
 	//注册新的fd与处理函数到ev中
-	prep_evt_desc( timerfd_create( CLOCK_MONOTONIC, 0 ), &fn_timer_cb, &fd_fns[0],  &ev );
-	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[0].fd, &ev );
+	//prep_evt_desc( timerfd_create( CLOCK_MONOTONIC, 0 ), &fn_timer_cb, &fd_fns[0],  &ev );
+	//epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[0].fd, &ev );
 
-	prep_evt_desc( fn_fds->raw_fd, &fn_netif_cb, &fd_fns[1], &ev );
-	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[1].fd, &ev );
+	prep_evt_desc( fn_fds->raw_fd, &fn_netif_cb, &fd_fns[0], &ev );
+	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[0].fd, &ev );
 
-	prep_evt_desc( fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[2],
-			&ev );
-	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
+	prep_evt_desc( fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[1],&ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[1].fd, &ev );
 
-	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3],
-			&ev );
-	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
+	//prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[1], &ev );
+	//epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
-	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
-	timer_start_interval( fd_fns[0].fd );
+	//fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
+	//timer_start_interval( fd_fns[0].fd );
 
 	//开始循环
 	do

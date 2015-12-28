@@ -15,6 +15,7 @@
 #include "camera_pro.h"
 #include "camera_common.h"
 #include "muticast_connector.h"
+#include "check_timer.h"
 
 void init_system( void )
 {
@@ -147,6 +148,9 @@ void system_close( struct threads_info *p_threads )
 			}
 		}
 	}
+
+	// 退出检查定时器线程
+	check_timer_destroy();
 
 	// 释放所有系统链表
 	destroy_endpoint_dblist( endpoint_list );

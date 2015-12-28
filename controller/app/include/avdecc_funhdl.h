@@ -36,5 +36,4 @@ int thread_fn( void *pgm );
 int pthread_handle_create( pthread_t *h_trd, struct fds *kfds );
 //void set_UDP_parameter(struct host_upper_cmpt_frame *frame, struct sockaddr_in *sin, int len );
 
-
 #endif

@@ -26,7 +26,7 @@ enum useful_enums
 {
 	PIPE_RD = 0,
 	PIPE_WR = 1,
-	POLL_COUNT = 4,
+	POLL_COUNT = 2,
 	TIME_PERIOD_25_MILLISECONDS = 25
 };
        

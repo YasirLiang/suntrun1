@@ -51,7 +51,7 @@ FILE * Fopen( const char *file_name, const char* mode )
 	fd = fopen( file_name, mode );
 	if( NULL == fd )
 	{
-		DEBUG_ERR( "open %s address Err", file_name );
+		//DEBUG_ERR( "open %s address Err", file_name );
 	}
 	
 	return fd;

@@ -6,6 +6,7 @@
 #include "system.h"
 #include "controller_command.h"
 #include "send_pthread.h"
+#include "check_timer.h"
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
 struct raw_context net;				// 原始套接字
@@ -93,6 +94,10 @@ int main( int argc, char *argv[] )
 	threads.tid[threads.pthread_nums++] = test_cm_thread;
 	pthread_detach( test_cm_thread );
 #endif
+
+	// check timer 线程
+	pthread_t timer_pthread;
+	check_timer_create( &timer_pthread );
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
