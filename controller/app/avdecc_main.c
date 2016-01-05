@@ -95,10 +95,6 @@ int main( int argc, char *argv[] )
 	pthread_detach( test_cm_thread );
 #endif
 
-	// check timer Ïß³Ì
-	pthread_t timer_pthread;
-	check_timer_create( &timer_pthread );
-
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	

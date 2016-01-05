@@ -5,10 +5,9 @@ OBJDUMP = arm-linux-objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-#CFLAGS = -Wall -O -O2 -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-CFLAGS = -Wall -static
+CFLAGS = -Wall
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-#CFLAGS = -Wall -g -lavdecc-host -ljdksavdecc -lpthread -lreadline -lrt -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+#CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib -L/home/lyf/sdb2/working/suntrun_company/opt/ti3354/tool/opt/EmbedSky/4.4.6/lib/
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -29,6 +28,7 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/camera_module\
 		   -I$(ROOTPATH)/controller/lib/include/uart\
 		   -I$(ROOTPATH)/controller/lib/include/timer_pthread
+#		   -I/home/lyf/sdb2/working/suntrun_company/opt/ti3354/tool/opt/EmbedSky/4.4.6/include
 export CFG_INC CFLAGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')

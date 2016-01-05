@@ -1,7 +1,9 @@
 /*
 **check_timer.c 系统检查定时器线程及其处理
 **2015-12-28
-**
+**注:可通过如下方式使定时器线程工作:	
+	pthread_t timer_pthread;
+	check_timer_create( &timer_pthread );在timerfd可用的情况下，没有必要这么做。
 */
 
 #include "check_timer.h"
