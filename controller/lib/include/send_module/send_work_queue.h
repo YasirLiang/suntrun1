@@ -10,6 +10,8 @@
 #include "circular_link_queue.h"
 #include "system_packet_tx.h"
 
+#define SEND_QUEUE_MAX_SIZE 30 // 最大的队列元素
+
 typedef struct _tsend_data_pthread_queue_work_node   // 会议协议命令数据发送队列的工作节点
 {
 	queue_node *next; 			// 工作队列节点的链表区(即队列节点)

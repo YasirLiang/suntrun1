@@ -63,11 +63,13 @@ int main( int argc, char *argv[] )
 	pthread_handle_create( &h_thread, &net_fd ); // 创建接收数据处理线程
 	threads.tid[threads.pthread_nums++] = h_thread;
 	pthread_detach( h_thread );
-
+	
+#if 0
 	pthread_t p_thread;
 	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
 	threads.tid[threads.pthread_nums++] = p_thread;
 	pthread_detach( p_thread );
+#endif
 
 	pthread_t f_thread;	// 接收命令处理函数
 	pthread_handle_cmd_func( &f_thread, proccess_func_link_tables );
@@ -98,7 +100,7 @@ int main( int argc, char *argv[] )
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
-	controller_proccess();
+	//controller_proccess();
 
 	pthread_exit( NULL );
 }

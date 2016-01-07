@@ -105,8 +105,7 @@ int thread_pipe_fn( void *pgm )
 		{
 			tx_data tnt;
 			int result = read_pipe_tx( &tnt, sizeof(tx_data) );
-			//DEBUG_INFO( "frame len = %d ", tnt.frame_len );
-			
+#if 0			
 			if( result > 0 )
 			{
 				// 加入网络数据发送队列
@@ -153,6 +152,29 @@ int thread_pipe_fn( void *pgm )
 			{
 				assert( tnt.frame && (result >= 0) );
 			}
+
+#else
+		if( result > 0 )
+		{
+			uint32_t resp_interval_time = 0;
+			tx_packet_event( tnt.data_type, 
+								     tnt.notification_flag, 
+								     tnt.frame, 
+								     tnt.frame_len, 
+								     &net_fd,// network fds
+								     command_send_guard,
+								     tnt.raw_dest.value,
+								     &tnt.udp_sin,
+								     tnt.resp,
+								     &resp_interval_time );
+			sem_post( &sem_tx );
+		}
+		else 
+		{
+			sem_post( &sem_tx );
+			assert( tnt.frame && (result >= 0) );
+		}	
+#endif
 		}
 		else
 		{

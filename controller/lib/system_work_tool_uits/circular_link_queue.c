@@ -64,3 +64,9 @@ void init_queue( queue *root )
 	root->rear = NULL;
 }
 
+int queue_size( queue* root )
+{
+	assert( root );
+	return get_queue_length( root );
+}
+

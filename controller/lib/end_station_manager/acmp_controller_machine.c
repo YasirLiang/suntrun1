@@ -247,6 +247,7 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 		}
 		else
 		{
+			DEBUG_INFO( " acmp seq id = %d, subtype = %d", seq_id, sub_type );
 			inflight_station = search_node_inflight_from_dblist( guard, seq_id, sub_type);
 			if( inflight_station != NULL ) //already search it
 			{

@@ -55,7 +55,7 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 			return -1;
 		}
 
-		memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
+		//memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
 		memset( tran_buf, 0, sizeof(pipe_buf) );
 		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
@@ -64,14 +64,16 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = isresp;
-		
+#if 0		
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
+#else
+		system_packet_save_send_queue( tx );
+#endif
 
-		sem_wait( &sem_tx );
 	}
 	else
 	{
@@ -115,7 +117,7 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx_data tx;
 		uint8_t *tran_buf = pipe_buf;
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
-		memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
+		//memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
 		
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
@@ -131,14 +133,16 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 		memcpy( &tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
-
+#if 0
 		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
 			assert(-1 != ret);
 		}
-		
-		sem_wait( &sem_tx );
+#else
+		system_packet_save_send_queue( tx );
+#endif
+
 	}
 	else
 	{
@@ -189,7 +193,7 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx_data tx;
 		uint8_t *tran_buf = pipe_buf;
 		bool resp = isresp; // no need camera response data 
-		memset( tx.raw_dest.value, 0, 6 );
+		//memset( tx.raw_dest.value, 0, 6 );
 
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
@@ -204,8 +208,8 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
-		memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
-		
+		//memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
+#if 0	
 		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
@@ -213,6 +217,9 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		}
 		
 		sem_wait( &sem_tx );
+#else
+		system_packet_save_send_queue( tx );
+#endif
 	}
 	else
 	{
@@ -310,13 +317,14 @@ void tx_packet_event( uint8_t type,
 			DEBUG_INFO("NO match transmit data type, Please check!");
 			right_packet = false;
 		}
-		
+#if 1		
 		if( right_packet )
 		{
 			int status = 0;
 			status = set_wait_message_primed_state();
 			assert( status == 0 );
 		}
+#endif
 	}
 	else
 	{
@@ -325,3 +333,24 @@ void tx_packet_event( uint8_t type,
 	}
 }
 
+void system_packet_save_send_queue( tx_data tnt )
+{
+	// 加入网络数据发送队列
+	uint16_t frame_len = tnt.frame_len;
+
+	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len < 0) )
+	{
+		return ;
+	}
+
+	sdpwqueue*  send_wq = &net_send_queue;
+	pthread_mutex_lock( &send_wq->control.mutex );
+	
+	send_work_queue_message_save( &tnt, send_wq );
+
+	int queue_len = get_queue_length( &send_wq->work );
+	DEBUG_INFO( "save queue len = %d ", queue_len );
+
+	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
+	pthread_cond_signal( &send_wq->control.cond );
+}

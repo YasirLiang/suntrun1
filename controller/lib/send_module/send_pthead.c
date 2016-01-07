@@ -51,7 +51,7 @@ void destroy_network_send_work_queue( void )
 	pthread_mutex_unlock( &net_send_queue.control.mutex );
 	
 	controll_deactivate( &net_send_queue.control );
-	/*is_su = controll_destroy( &net_send_queue.control ); // »á±»ÏµÍ³µ÷ÓÃ´ò¶Ï
+	/*is_su = controll_destroy( &net_send_queue.control ); // »á±»ĞÅºÅ´ò¶Ï
 	if( !is_su )
 	{
 		DABORT( is_su );
@@ -87,11 +87,11 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 
 		int queue_len = get_queue_length( &p_send_wq->work );
 		DEBUG_INFO( "after get queue len = %d ", queue_len );
-		
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		// ready to sending data
 		is_resp_data = p_send_wnode->job_data.resp;
+		DEBUG_SEND( p_send_wnode->job_data.frame, p_send_wnode->job_data.frame_len, "Tx Pack:" );
 		tx_packet_event( p_send_wnode->job_data.data_type, 
 							     p_send_wnode->job_data.notification_flag, 
 							     p_send_wnode->job_data.frame, 
@@ -105,6 +105,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 
 		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
 		assert( p_send_wnode->job_data.frame == NULL ); // free successfully and result is NULL? 
+		DEBUG_INFO( "release success!" );
 		if( NULL != p_send_wnode )
 		{
 			free( p_send_wnode ); // ÊÍ·Å¶ÓÁĞ½Úµã
@@ -129,7 +130,9 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			{
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-				//sem_wait( &sem_waiting );
+#if 1
+				sem_wait( &sem_waiting );
+#else
 				ret = sem_timedwait( &sem_waiting, &timeout );
 				if( ret == -1 )
 				{
@@ -143,6 +146,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 						perror( "sem_timedwait():" );
 					}
 				}
+#endif
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
 			}

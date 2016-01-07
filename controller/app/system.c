@@ -130,7 +130,7 @@ void system_close( struct threads_info *p_threads )
 {	
 	int can_num = p_threads->pthread_nums;
 	int i = 0, ret;
-	
+
 	// 退出线程
 	sem_post( &sem_waiting );
 	for( i = 0; i < can_num; i++ )
@@ -150,7 +150,10 @@ void system_close( struct threads_info *p_threads )
 	}
 
 	// 退出检查定时器线程
+
+#if 0
 	check_timer_destroy();
+#endif
 
 	// 释放所有系统链表
 	destroy_endpoint_dblist( endpoint_list );
@@ -160,7 +163,11 @@ void system_close( struct threads_info *p_threads )
 	
 	// 释放系统队列资源
 	destroy_func_command_work_queue();
+	
+#if 0
 	destroy_network_send_work_queue();
+#endif
+
 	muticast_connector_destroy();// 释放广播表资源
 
 	// 保存配置文件的信息

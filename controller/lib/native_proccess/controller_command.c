@@ -11,6 +11,7 @@
 #include "upper_computer_command.h"
 #include "terminal_system_func.h"
 #include "terminal_common.h"
+#include "system.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -988,7 +989,6 @@ void cmd_terminal_proccess( const char *opt )
 		 
 	         if ( strlen(cmd_buf) == 0 )
 		{
-			free(cmd_buf);
 			continue;
 		}
 		else
@@ -1012,7 +1012,6 @@ void cmd_terminal_proccess( const char *opt )
 			if( ret == -1 || ret == 127 )
 			{
 				DEBUG_INFO( "shell exec excute failed!or system func run fork() failed!" );
-				free(cmd_buf);
 				break;
 			}
 		}
@@ -1199,7 +1198,6 @@ void cmd_udp_client( void )
 	            break;
 	         if ( strlen(cmd_buf) == 0 )
 	         {
-	         	free(cmd_buf);
 			continue;
 	         }
 		else
@@ -1241,7 +1239,6 @@ void cmd_host_func_proccess( void )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
 		{
-			free(cmd_buf);
 	        	continue;
 	        }
 		else
@@ -1270,6 +1267,7 @@ void cmd_host_func_proccess( void )
 *结束-主机功能
 *====================================*/
 
+extern struct threads_info threads;
 void controller_proccess( void )
 {
 	end_list_guard = endpoint_list;
@@ -1282,7 +1280,6 @@ void controller_proccess( void )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
 	        {
-	        	free(cmd_buf);
 	        	continue;
 	        }
 		else
@@ -1340,7 +1337,8 @@ void controller_proccess( void )
 		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
 			free(cmd_buf);
-			exit(1);
+			system_close( &threads );
+			break;
 		}
 		else if(!isspace(cmd_buf[0]))
 		{

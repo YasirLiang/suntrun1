@@ -13,7 +13,7 @@
 #define DEBUG_LINE() fprintf( stdout,"\033[32m[%s:%s] line = %d\033[0m\r\n", __FILE__, __func__, __LINE__ )
 #define DEBUG_ERR(fmt, args...) fprintf(  stdout,"\033[46;31m[%s:%s:%d]\033[0m "fmt" errno=%d\r\n", __FILE__, __func__, __LINE__, ##args, errno ); \
 		perror(fmt);
-#define DEBUG_INFO(fmt, args...) fprintf(  stdout,"\033[32m[%s:%s:%d]\033[0m "fmt"\r\n", __FILE__, __func__, __LINE__, ##args)
+#define DEBUG_INFO(fmt, args...) fprintf(  stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args)
 #define DEBUG_ONINFO(fmt, args...) fprintf(  stdout,"\033[34m"fmt"\033[0m\r\n", ##args)
 #define DEBUG_MSGINFO(fmt, args...) fprintf(  stdout,"%s:%s:%d: "fmt"\r\n", __FILE__, __func__, __LINE__, ##args)
 #define DEBUG_RECV( buf, n, arg )\
