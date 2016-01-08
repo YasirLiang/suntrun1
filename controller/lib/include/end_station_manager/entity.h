@@ -20,12 +20,14 @@ struct entity_timeout
 
 struct entity
 {
+	struct jdksavdecc_eui64 entity_model_id;
+	uint8_t keep_value1;			// 保留值1，用于字节对齐
 	bool connect_flag;				// 实体连接属性，
 	struct entity_timeout time;		// 实体的超时信息
+	uint32_t keep_value2;			// 保留值2，用于字节对齐
 	uint32_t entity_index;			// 实体索引(这里由系统分配, 且从 0 开始)
-	uint64_t entity_id;				// 实体ID
 	uint32_t available_index;
-	struct jdksavdecc_eui64 entity_model_id;
+	uint64_t entity_id;				// 实体ID
 	//struct jdksavdecc_adpdu adpdu;
 };
 

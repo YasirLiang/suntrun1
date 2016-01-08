@@ -11,7 +11,6 @@
 bool is_inflight_timeout = false;
 static bool system_stop = false;	// 线程退出全局变量
 extern bool acmp_recv_resp_err;	// acmp 接收到命令但响应错误参数
-extern fcwqueue fcwork_queue;	// 函数命令消息工作队列
 
 void thread_fn_thread_stop( void )
 {
@@ -48,7 +47,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
-	muticast_connector_time_tick();
+	//muticast_connector_time_tick();
 
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
@@ -90,7 +89,6 @@ int fn_netif_cb( struct epoll_priv *priv )
 	       	bool is_operation_id_valid = false;
 
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
-
 		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			int msr_status = 0;
@@ -137,6 +135,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	else
 	{
 		DEBUG_INFO("recv UDP packet len is zero or recv error!");
+		is_upper_udp_client_connect = false;
 		assert( recv_len >= 0);
 	}
 
@@ -181,7 +180,7 @@ int thread_fn(void *pgm)
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
 	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3], &ev );
-	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[4].fd, &ev );
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );

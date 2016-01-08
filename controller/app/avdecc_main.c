@@ -97,6 +97,11 @@ int main( int argc, char *argv[] )
 	pthread_detach( test_cm_thread );
 #endif
 
+#if 0
+	pthread_t timer_pthread;
+	check_timer_create( &timer_pthread );
+#endif 
+
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	

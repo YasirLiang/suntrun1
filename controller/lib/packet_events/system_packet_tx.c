@@ -349,8 +349,8 @@ void system_packet_save_send_queue( tx_data tnt )
 	send_work_queue_message_save( &tnt, send_wq );
 
 	int queue_len = get_queue_length( &send_wq->work );
-	DEBUG_INFO( "save queue len = %d ", queue_len );
-
-	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
+	
+	//DEBUG_INFO( "save queue len = %d ", queue_len );
 	pthread_cond_signal( &send_wq->control.cond );
+	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
 }

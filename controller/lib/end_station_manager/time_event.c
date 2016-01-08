@@ -29,11 +29,11 @@ void inflight_time_tick( inflight_plist guard )
 				release_heap_space( &inflight_station->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 				delect_inflight_dblist_node( &inflight_station );
 			}
-		}/*
+		}
 		else
 		{
 			break; // only check the head
-		}*/
+		}
 	}
 }
 

@@ -203,6 +203,7 @@ int thread_func_fn( void * pgm )
 		while( p_func_wq->control.active && (p_func_wq->work.front == NULL) )
 		{
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
+			DEBUG_INFO( "func proccess avtice = %d ", p_func_wq->control.active );
 		}
 
 		if( !p_func_wq->control.active )
@@ -210,7 +211,18 @@ int thread_func_fn( void * pgm )
 			pthread_mutex_unlock( &p_func_wq->control.mutex );
 			break;
 		}
+
+		pthread_mutex_lock( &net_send_queue.control.mutex );
+		if( queue_size(&net_send_queue.work) > 0 )
+		{
+			//DEBUG_INFO( " system current command is running, can't run next! " );
+			pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
+			pthread_mutex_unlock( &net_send_queue.control.mutex ); // unlock mutex
+			continue;
+		}
+		pthread_mutex_unlock( &net_send_queue.control.mutex );
 		
+		DEBUG_INFO( "============>>>will Run next Recv command " );
 		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
 		if( NULL == p_msg_wnode )
 		{
@@ -226,8 +238,9 @@ int thread_func_fn( void * pgm )
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
 		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
 		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
-		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
 		
+		DEBUG_INFO( " Run Recv command = %d ",  func_index );
+		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
 		if( NULL != p_msg_wnode )
 		{
 			free( p_msg_wnode );

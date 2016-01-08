@@ -26,7 +26,14 @@ int send_work_queue_message_save( tx_data* p_queue_msg, sdpwqueue *sd_work_quue 
 		return -1;
 	}
 
-	DEBUG_INFO( "=====================11111111======================" );
+	//DEBUG_INFO( "send queue frame len = %d ", p_queue_msg->frame_len );
+	frame_len = p_queue_msg->frame_len;
+	if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+	{
+		DEBUG_INFO( " out of brank! ", frame_len );
+		return -1;
+	}
+	
 	save_queue_node = (p_sdpqueue_wnode)malloc( sizeof(sdpqueue_wnode) ); // free by send thread!
 	if( NULL == save_queue_node )
 	{
@@ -34,17 +41,6 @@ int send_work_queue_message_save( tx_data* p_queue_msg, sdpwqueue *sd_work_quue 
 		return -1;
 	}
 
-	// heap using later free by sending thread.frame_buf space must to be free!
-	DEBUG_INFO( "=====================22222222======================" );
-	frame_len = p_queue_msg->frame_len;
-	save_queue_node->job_data.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &save_queue_node->job_data.frame );
-	if( NULL == save_queue_node->job_data.frame )
-	{
-		DEBUG_INFO( "send_work_queue_message_save Err: allot space for frame failed!" );
-		return -1;
-	}
-
-	DEBUG_INFO( "queue_buf allot success!>>>>frame len = %d", frame_len );
 	save_queue_node->job_data.data_type = p_queue_msg->data_type;
 	save_queue_node->job_data.frame_len = frame_len;
 	memcpy( save_queue_node->job_data.frame, p_queue_msg->frame, frame_len );

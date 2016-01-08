@@ -956,10 +956,10 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 	}
 
 	terminal_set_mic_status( mic_status, addr, tarker_id );
-	if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) && tmnl_node != NULL)
+	upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
+	if( (is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) && tmnl_node != NULL) )
 	{
 		tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
-		upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
 	}
 }
 

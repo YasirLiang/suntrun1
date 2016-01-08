@@ -147,7 +147,7 @@ void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len, int *status )
 	if(  !(protocol_type & CMPT_MSG_TYPE_RESPONSE) ) // not a response data
 	{
 		// proccess upper computer data 
-		if( find_func_command_link( COMPUTER_USE, cmpt_cmd, protocol_type, frame, (uint16_t)frame_len ) == -1 )
+		if( !find_func_command_link( COMPUTER_USE, cmpt_cmd, protocol_type, frame, (uint16_t)frame_len ) )
 		{
 			// send proccess err
 			upper_computer_reply_error( frame );

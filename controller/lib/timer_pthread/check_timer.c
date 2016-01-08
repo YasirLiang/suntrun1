@@ -36,7 +36,7 @@ void check_timer_proccess( void )
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
-	muticast_connector_time_tick();
+	//muticast_connector_time_tick();
 
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{

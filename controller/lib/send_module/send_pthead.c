@@ -86,12 +86,13 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		}
 
 		int queue_len = get_queue_length( &p_send_wq->work );
-		DEBUG_INFO( "after get queue len = %d ", queue_len );
+		
+		//DEBUG_INFO( "after get queue len = %d ", queue_len );
 		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		// ready to sending data
 		is_resp_data = p_send_wnode->job_data.resp;
-		DEBUG_SEND( p_send_wnode->job_data.frame, p_send_wnode->job_data.frame_len, "Tx Pack:" );
+		//DEBUG_SEND( p_send_wnode->job_data.frame, p_send_wnode->job_data.frame_len, "Tx Pack:" );
 		tx_packet_event( p_send_wnode->job_data.data_type, 
 							     p_send_wnode->job_data.notification_flag, 
 							     p_send_wnode->job_data.frame, 
@@ -102,15 +103,13 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 							     &p_send_wnode->job_data.udp_sin,
 							     is_resp_data,
 							     &resp_interval_time );
-
-		release_heap_space( &p_send_wnode->job_data.frame ); // free heap space mallo by write pipe thread
-		assert( p_send_wnode->job_data.frame == NULL ); // free successfully and result is NULL? 
-		DEBUG_INFO( "release success!" );
+		
 		if( NULL != p_send_wnode )
 		{
 			free( p_send_wnode ); // ÊÍ·Å¶ÓÁĞ½Úµã
 			p_send_wnode = NULL;
 		}
+		//DEBUG_INFO( "release success!" );
 		
 		/*·¢ËÍÏÂÒ»ÌõÊı¾İµÄÌõ¼ş-Êı¾İ»ñµÃÏìÓ¦»òÊı¾İ³¬Ê±»òÊ±¼ä¼ä¸ôµ½ÁË(×¢:Ê±¼ä¼ä¸ôÖ»ÊÊÓÃÓÚÏµÍ³ÏìÓ¦Êı¾İ»òÉãÏñÍ·¿ØÖÆÊı¾İµÄ·¢ËÍ)*/
 		if( is_wait_messsage_primed_state() ) 

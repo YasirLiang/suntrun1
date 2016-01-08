@@ -38,8 +38,10 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// conference data in this subtype data payload
 	{
 		conference_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
+		conference_cmd &= 0x1f;
 		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		timeout = get_host_endstation_command_timeout( conference_cmd );
+		//DEBUG_INFO( "interval time = %d ", timeout );
 	}
 
 	assert( interval_time );

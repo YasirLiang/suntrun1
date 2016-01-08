@@ -274,9 +274,9 @@ int set_connect_flag_endpoint_dblist( solid_pdblist head, uint64_t entity_id, in
 		if( pnode != head )
 		{
 			if( flags == 0 )
-				pnode->solid.connect_flag = DISCONNECT;
+				pnode->solid.connect_flag = false;
 			else if(flags == 1)
-				pnode->solid.connect_flag = CONNECT;
+				pnode->solid.connect_flag = true;
 			else
 			{
 				DEBUG_INFO( "error connect flag: %d", flags );
@@ -317,11 +317,12 @@ void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_p
 
 void endpoint_dblist_show( solid_pdblist head )
 {
+	assert( head != NULL );
 	solid_pdblist p = head->next;
 
 	while( p != head )
 	{
-		DEBUG_INFO("[ END_STATION ID: 0x%llx entity_index:%d connect_flag = %d ] ",\
+		DEBUG_INFO("[ END_STATION ID: 0x%016llx entity_index:%d connect_flag = %d ] ",\
 				p->solid.entity_id, p->solid.entity_index, p->solid.connect_flag  );
 		p = p->next;
 	}
