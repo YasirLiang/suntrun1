@@ -30,7 +30,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 	struct sockaddr_in sin_event;
 	memcpy(&sin_event, sin, sizeof(struct sockaddr_in));
 
-	DEBUG_INFO( "udp packet size = %d", frame_len );
+	//DEBUG_INFO( "udp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
 		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
@@ -60,8 +60,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 					inflight_station->host_tx.inflight_frame.seq_id = cfc_cmd;	// Ð­ÒéÃüÁî
 					inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;
 					memcpy( inflight_station->host_tx.inflight_frame.raw_dest.value, dest_mac , 6 );
-					memcpy( &inflight_station->host_tx.inflight_frame.sin_in, &sin_event , sizeof(struct sockaddr_in) );
-					
+					memcpy( &inflight_station->host_tx.inflight_frame.sin_in, &sin_event , sizeof(struct sockaddr_in) );	
 					inflight_station->host_tx.command_type = TRANSMIT_TYPE_UDP_CLT;
 					inflight_station->host_tx.flags.retried = 1;	// meaning send once
 					inflight_station->host_tx.flags.resend = false;

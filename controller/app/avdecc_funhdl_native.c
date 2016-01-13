@@ -276,8 +276,7 @@ int thread_func_fn( void * pgm )
 		
 		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 
-		DEBUG_INFO( " Run Recv command = %d ",  func_index );
-		p_func_items[func_index].cmd_proccess( func_cmd, func_data, data_len );
+		p_func_items[func_index].cmd_proccess( func_cmd, func_data, data_len );// run command
 	}
 	
 	return 0;

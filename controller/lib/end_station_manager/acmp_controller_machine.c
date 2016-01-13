@@ -206,7 +206,7 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 	assert( interval_time );
 	*interval_time = timeout;
 
-	DEBUG_INFO( "acmp packet size = %d", frame_len );
+	//DEBUG_INFO( "acmp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
 		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
@@ -239,7 +239,7 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 					inflight_station->host_tx.inflight_frame.notification_flag = CMD_WITHOUT_NOTIFICATION;
 				else
 					inflight_station->host_tx.inflight_frame.notification_flag = CMD_WITH_NOTIFICATION;
-				
+
 				inflight_station->host_tx.command_type = TRANSMIT_TYPE_ACMP;
 				inflight_station->host_tx.flags.retried = 1;	// meaning send once
 				inflight_station->host_tx.flags.resend = false;

@@ -23,7 +23,6 @@ void init_func_command_work_queue( void )
 
 void destroy_func_command_work_queue( void )
 {
-	//bool is_su = false;
 	p_fcqueue_wnode q_node = NULL;
 
 	pthread_mutex_lock( &fcwork_queue.control.mutex );
@@ -37,11 +36,17 @@ void destroy_func_command_work_queue( void )
 			q_node = NULL;	
 		}
 	}
+
+	if( is_queue_empty(&fcwork_queue.work) )
+	{
+		if( fcwork_queue.work.trail != NULL )
+			fcwork_queue.work.trail = NULL;
+	}
 	
 	pthread_mutex_unlock( &fcwork_queue.control.mutex );
 	
 	controll_deactivate( &fcwork_queue.control );
-	/*is_su = controll_destroy( &fcwork_queue.control );
+	/*bool is_su = controll_destroy( &fcwork_queue.control );
 	if( !is_su )
 		DABORT( is_su );*/
 }

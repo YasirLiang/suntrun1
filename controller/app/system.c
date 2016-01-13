@@ -112,20 +112,15 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	sleep(2);
 	
 	/*获取系统的终端连接信息*/ 
-	DEBUG_LINE();
 	connect_table_get_information( descptor_guard );
-	DEBUG_LINE();
 	background_read_descriptor_input_output_stream();
-	DEBUG_LINE();
 	sleep(2);
 	
 	/* 设置连接表*/
-	DEBUG_LINE();
 	connect_table_info_set( descptor_guard, true );
 	sleep(1);
 	
 	// 设置广播连接表的信息
-	DEBUG_LINE();
 	muticast_connector_connect_table_set( descptor_guard );
 	
 	// 注册会议终端, 维持5s
@@ -155,7 +150,6 @@ void system_close( struct threads_info *p_threads )
 	}
 
 	// 退出检查定时器线程
-
 #if 0
 	check_timer_destroy();
 #endif
@@ -168,12 +162,12 @@ void system_close( struct threads_info *p_threads )
 	
 	// 释放系统队列资源
 	destroy_func_command_work_queue();
-	
-#if 0
+#if 1
 	destroy_network_send_work_queue();
 #endif
 
-	muticast_connector_destroy();// 释放广播表资源
+	// 释放广播表资源
+	muticast_connector_destroy();
 
 	// 保存配置文件的信息
 	if( -1 == profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )

@@ -47,7 +47,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	assert( interval_time );
 	*interval_time = timeout;
 
-	DEBUG_INFO( "aecp packet size = %d", frame_len );
+	//DEBUG_INFO( "aecp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
 		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",

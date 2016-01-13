@@ -33,7 +33,6 @@ void init_network_send_queue( void )
 // 摧毁发送队列
 void destroy_network_send_work_queue( void )
 {
-	//bool is_su = false;
 	p_sdpqueue_wnode q_node = NULL;
 
 	pthread_mutex_lock( &net_send_queue.control.mutex );
@@ -47,11 +46,17 @@ void destroy_network_send_work_queue( void )
 			q_node = NULL;	
 		}
 	}
+
+	if( is_queue_empty(&net_send_queue.work) )
+	{
+		if( net_send_queue.work.trail != NULL )
+			net_send_queue.work.trail = NULL;
+	}
 	
 	pthread_mutex_unlock( &net_send_queue.control.mutex );
 	
 	controll_deactivate( &net_send_queue.control );
-	/*is_su = controll_destroy( &net_send_queue.control ); // 会被信号打断
+	/*bool is_su = controll_destroy( &net_send_queue.control ); 
 	if( !is_su )
 	{
 		DABORT( is_su );

@@ -12,7 +12,6 @@
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
 uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
-uint32_t send_interval_timeout = 25;// 25ms
 
 void init_sem_tx_can( void ) // 初始化管道传输信号量->控制pipe_buf
 {
@@ -56,7 +55,6 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		}
 
 		memset( tran_buf, 0, sizeof(pipe_buf) );
-		DEBUG_INFO( "sizeof jdksavdecc_eui48 = %d", sizeof(struct jdksavdecc_eui48) );
 		memcpy( tx.raw_dest, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
@@ -64,16 +62,8 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = isresp;
-#if 0		
-		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert(-1 != ret);
-		}
-#else
-		system_packet_save_send_queue( tx );
-#endif
 
+		system_packet_save_send_queue( tx );
 	}
 	else
 	{
@@ -132,16 +122,8 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 		memcpy( &tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
-#if 0
-		if( (ret = write_pipe_tx(&tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert(-1 != ret);
-		}
-#else
-		system_packet_save_send_queue( tx );
-#endif
 
+		system_packet_save_send_queue( tx );
 	}
 	else
 	{
@@ -206,17 +188,8 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
-#if 0
-		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
-		{
-			DEBUG_INFO( "ERR transmit data to PIPE" );
-			assert( -1 != ret );
-		}
-		
-		sem_wait( &sem_tx );
-#else
+
 		system_packet_save_send_queue( tx );
-#endif
 	}
 	else
 	{
@@ -314,14 +287,13 @@ void tx_packet_event( uint8_t type,
 			DEBUG_INFO("NO match transmit data type, Please check!");
 			right_packet = false;
 		}
-#if 1		
+		
 		if( right_packet )
 		{
 			int status = 0;
 			status = set_wait_message_primed_state();
 			assert( status == 0 );
 		}
-#endif
 	}
 	else
 	{
@@ -344,9 +316,6 @@ void system_packet_save_send_queue( tx_data tnt )
 	pthread_mutex_lock( &send_wq->control.mutex );
 	
 	send_work_queue_message_save( tnt, send_wq );
-
-	//int queue_len = get_queue_length( &send_wq->work );
-	//DEBUG_INFO( "save queue len = %d ", queue_len );
 	
 	pthread_cond_signal( &send_wq->control.cond );
 	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
