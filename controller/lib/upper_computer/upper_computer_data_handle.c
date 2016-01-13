@@ -40,8 +40,7 @@ int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe
 	
 	//DEBUG_INFO( "CoLoad = %02x",  cpy_frame.payload[0] );
 	if( pframe->payload[0] == UPPER_COMPUTER_DATA_LOADER )
-	{
-	
+	{	
 		if( !check_crc( pframe->payload, frame_len) )
 		{
 			*status = 0;

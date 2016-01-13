@@ -24,7 +24,7 @@ endif
 $(OBJS):%.o:%.c
 	@echo "\033[32m$(CC) -o $@ $< \033[0m"
 	@$(CC) -MM $(CFG_INC) -MT"$*.d" -MT"$(<:.c=.o)" $< > $*.d
-	@$(CC) -c $(CFG_INC) $(CFLAGS) $< -o $@
+	@$(CC) -c $(CFG_INC) $(CFGS) $< -o $@
 	
 sinclude $(DEPS)
 

@@ -112,15 +112,20 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	sleep(2);
 	
 	/*获取系统的终端连接信息*/ 
+	DEBUG_LINE();
 	connect_table_get_information( descptor_guard );
+	DEBUG_LINE();
 	background_read_descriptor_input_output_stream();
+	DEBUG_LINE();
 	sleep(2);
 	
 	/* 设置连接表*/
+	DEBUG_LINE();
 	connect_table_info_set( descptor_guard, true );
 	sleep(1);
 	
 	// 设置广播连接表的信息
+	DEBUG_LINE();
 	muticast_connector_connect_table_set( descptor_guard );
 	
 	// 注册会议终端, 维持5s

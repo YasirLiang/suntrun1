@@ -306,7 +306,6 @@ uint32_t get_available_index_endpoint_dblist_node( solid_pdblist target )
 const  struct jdksavdecc_eui64* get_entity_model_id_endpoint_dblist_node( solid_pdblist target)
 {
 	return (&target->solid.entity_model_id);
-
 }
 
 void  update_entity_adpdu_endpoint_dblist(struct jdksavdecc_adpdu *util, solid_pdblist target)

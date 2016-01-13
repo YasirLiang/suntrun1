@@ -82,6 +82,7 @@ struct inflight_flag
 	uint8_t retried;					// 发送的最大次数为2(可以改变)，每发送一次+1		
 };
 
+//#pragma pack(1)
 struct inflight
 {
 	uint32_t command_type;				// 主机发送数据的数据类型，有acmp、aecp、udp client、udp server inflight_command_type
@@ -89,6 +90,7 @@ struct inflight
 	struct inflight_timeout timeout;		// inflight 命令的超时信息
 	struct _inflight_frame inflight_frame;	// 网络数据参数
 };
+//#pragma pack()
 
 typedef struct _inflight
 {

@@ -8,8 +8,8 @@
 #include <time.h>
 
 sem_t sem_waiting; // ·¢ËÍµÈ´ýÐÅºÅÁ¿£¬ËùÓÐÏß³Ì¿É¼û
-
 sdpwqueue net_send_queue;// ÍøÂçÊý¾Ý·¢ËÍ¹¤×÷¶ÓÁÐ
+static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// ±¾µØ·¢ËÍ»º³åÇø
 
 void init_sem_wait_can( void )
 {
@@ -65,19 +65,28 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 	
 	while( 1 )
 	{
+		uint8_t dest_raw[6] = {0};
+		struct sockaddr_in udp_sin;
+		uint32_t resp_interval_time = 0;
+		p_sdpqueue_wnode p_send_wnode = NULL;
+		
 		pthread_mutex_lock( &p_send_wq->control.mutex ); // lock mutex
-		while( p_send_wq->work.front == NULL && p_send_wq->control.active )
+		while( p_send_wq->work.head == NULL && p_send_wq->control.active )
 		{
 			DEBUG_INFO( "active = %d", p_send_wq->control.active );
 			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
 		}
 
-		p_sdpqueue_wnode p_send_wnode = NULL;
-		bool is_resp_data = false;
-		uint32_t resp_interval_time;
-
 		// »ñÈ¡¶ÓÁÐÊý¾Ý
 		p_send_wnode = send_queue_message_get( p_send_wq );
+		if( p_send_wq->work.head == NULL )
+		{ // while queue isempty,make sure the queue trail not to be used again!!!!  
+			if( p_send_wq->work.trail != NULL )
+			{
+				p_send_wq->work.trail = NULL;
+			}
+		}
+		
 		if( NULL == p_send_wnode )
 		{
 			DEBUG_INFO( "No send queue message: ERROR!" );
@@ -85,31 +94,56 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			continue;
 		}
 
-		int queue_len = get_queue_length( &p_send_wq->work );
-		
-		//DEBUG_INFO( "after get queue len = %d ", queue_len );
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+		uint16_t send_frame_len = p_send_wnode->job_data.frame_len;
+		uint8_t data_type = p_send_wnode->job_data.data_type;
+		bool notification_flag = p_send_wnode->job_data.notification_flag;
+		bool is_resp_data = p_send_wnode->job_data.resp;
+		if( send_frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+		{
+			if( p_send_wnode->job_data.frame != NULL )
+			{
+				free( p_send_wnode->job_data.frame );
+				p_send_wnode->job_data.frame = NULL;
+			}
+			
+			if( NULL != p_send_wnode )
+			{
+				free( p_send_wnode ); // ÊÍ·Å¶ÓÁÐ½Úµã
+				p_send_wnode = NULL;
+			}
 
-		// ready to sending data
-		is_resp_data = p_send_wnode->job_data.resp;
-		//DEBUG_SEND( p_send_wnode->job_data.frame, p_send_wnode->job_data.frame_len, "Tx Pack:" );
-		tx_packet_event( p_send_wnode->job_data.data_type, 
-							     p_send_wnode->job_data.notification_flag, 
-							     p_send_wnode->job_data.frame, 
-							     p_send_wnode->job_data.frame_len, 
-							     &net_fd,// network fds
-							     command_send_guard,
-							     p_send_wnode->job_data.raw_dest.value,
-							     &p_send_wnode->job_data.udp_sin,
-							     is_resp_data,
-							     &resp_interval_time );
+			pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+			continue;
+		}
+
+		memcpy( send_frame, p_send_wnode->job_data.frame, send_frame_len );
+		memcpy( dest_raw, p_send_wnode->job_data.raw_dest, 6 );
+		memcpy( &udp_sin, &p_send_wnode->job_data.udp_sin, sizeof(struct sockaddr_in));
+		if( p_send_wnode->job_data.frame != NULL )
+		{
+			free( p_send_wnode->job_data.frame );
+			p_send_wnode->job_data.frame = NULL;
+		}
 		
 		if( NULL != p_send_wnode )
 		{
 			free( p_send_wnode ); // ÊÍ·Å¶ÓÁÐ½Úµã
 			p_send_wnode = NULL;
 		}
-		//DEBUG_INFO( "release success!" );
+
+		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
+
+		// ready to sending data
+		tx_packet_event( data_type, 
+					    notification_flag, 
+					    send_frame, 
+					    send_frame_len, 
+					    &net_fd, 
+					    command_send_guard, 
+					    dest_raw, 
+					    &udp_sin, 
+					    is_resp_data, 
+					    &resp_interval_time );
 		
 		/*·¢ËÍÏÂÒ»ÌõÊý¾ÝµÄÌõ¼þ-Êý¾Ý»ñµÃÏìÓ¦»òÊý¾Ý³¬Ê±»òÊ±¼ä¼ä¸ôµ½ÁË(×¢:Ê±¼ä¼ä¸ôÖ»ÊÊÓÃÓÚÏµÍ³ÏìÓ¦Êý¾Ý»òÉãÏñÍ·¿ØÖÆÊý¾ÝµÄ·¢ËÍ)*/
 		if( is_wait_messsage_primed_state() ) 
@@ -153,26 +187,32 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			{
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-				resp_send_interval_timer_start( resp_interval_time ); // start timer useful as all response data
-				//sem_wait( &sem_waiting );
-				ret = sem_timedwait( &sem_waiting, &timeout );
-				if( ret == -1 )
+				if( resp_interval_time > 0 )
 				{
-					if( errno == ETIMEDOUT )
+					resp_send_interval_timer_start( resp_interval_time ); // start timer useful as all response data
+					//sem_wait( &sem_waiting );
+					ret = sem_timedwait( &sem_waiting, &timeout );
+					if( ret == -1 )
 					{
-						DEBUG_INFO( "sem_timedwait(): time out! send pthread proccess continue" );
-						sem_post( &sem_waiting );
+						if( errno == ETIMEDOUT )
+						{
+							DEBUG_INFO( "sem_timedwait(): time out! send pthread proccess continue" );
+							sem_post( &sem_waiting );
+						}
+						else
+						{
+							perror( "sem_timedwait():" );
+						}
 					}
-					else
-					{
-						perror( "sem_timedwait():" );
-					}
+
+					resp_send_interval_timer_stop();
 				}
-				
-				resp_send_interval_timer_stop();
+
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
 			}
+
+			//DEBUG_INFO( "send queue node END!<<<<<<<<<<<<<<<<<<<<<<<<<" );
 		}
 		else
 		{

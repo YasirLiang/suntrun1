@@ -9,8 +9,11 @@ int camera_form_can_send( uint8_t camera_address, uint16_t d_cmd, uint8_t speed_
 	pelco_d_format askbuf;
 	
 	pelco_d_cammand_set( camera_address, d_cmd, speed_lv, speed_vertical, &askbuf );
+	
+#ifdef __CAM_PRINTF__
 	DEBUG_SEND( &askbuf, CAMERA_PELCO_D_DEAL_LEN, "Cam Data");
-		
+#endif
+
 	system_uart_packet_tx( &askbuf, CAMERA_PELCO_D_DEAL_LEN, RUNINFLIGHT, TRANSMIT_TYPE_UART_CTRL, true );
 
 	return 0;

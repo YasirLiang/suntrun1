@@ -100,12 +100,12 @@ int main( int argc, char *argv[] )
 #if 0
 	pthread_t timer_pthread;
 	check_timer_create( &timer_pthread );
-#endif 
+#endif
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 	
-	//controller_proccess();
+	controller_proccess();
 
 	pthread_exit( NULL );
 }

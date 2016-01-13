@@ -169,17 +169,26 @@ int proccess_upper_cmpt_miscrophone_status( uint16_t protocal_type, void *data, 
 		
 		if( p_tmnl_tmp->tmnl_dev.address.addr != 0xffff && p_tmnl_tmp->tmnl_dev.tmnl_status.is_rgst )
 		{
-			uint8_t low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0);
-			uint8_t high_addr =  (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8);
-			uint8_t mic_state = p_tmnl_tmp->tmnl_dev.tmnl_status.mic_state;
-			mic_list[addr_num].addr_flag[0] = low_addr;
-			mic_list[addr_num].addr_flag[1] = high_addr;
-			mic_list[addr_num].addr_flag[2] = mic_state;
-			addr_num++;
+			if( addr_num < SYSTEM_TMNL_MAX_NUM )// not = SYSTEM_TMNL_MAX_NUM
+			{
+				uint8_t low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0);
+				uint8_t high_addr =  (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8);
+				uint8_t mic_state = p_tmnl_tmp->tmnl_dev.tmnl_status.mic_state;
+				mic_list[addr_num].addr_flag[0] = low_addr;
+				mic_list[addr_num].addr_flag[1] = high_addr;
+				mic_list[addr_num].addr_flag[2] = mic_state;
+				addr_num++;
+			}
+			else
+			{
+				DEBUG_INFO( "mic num bigger system terminal num!" );\
+				return -1;
+			}
 		}
 	}
-
-	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, MISCROPHONE_STATUS, mic_list, addr_num * sizeof(tdata_addr_and_flag) );
+	
+	DEBUG_INFO( "sizeof tdata_addr_and_flag = %d, addr_num = %d", sizeof(tdata_addr_and_flag), addr_num );
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, MISCROPHONE_STATUS, addr_num>0?mic_list:NULL, addr_num*sizeof(tdata_addr_and_flag) );
 	
 	return 0;
 }
@@ -469,7 +478,7 @@ int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uin
 	{
 		upper_cmpt_camera_controller_get( data, &cmr_data, CMPT_DATA_OFFSET, 0 );
 		camera_address = gcurpresetcmr.camera_num;
-		memcpy( &d_cmd, &cmr_data,  sizeof(uint16_t));
+		upper_computer_set_camera_d_command( &d_cmd , &cmr_data );
 		speed_lv = cmr_data.level_speed;
 		speed_vertical = cmr_data.vertical_speed;
 		camera_pro_control( camera_address, d_cmd, speed_lv, speed_vertical );
@@ -813,6 +822,28 @@ int upper_cmpt_terminal_message_report( void* p_tmnl_msg, uint16_t msg_len, uint
 	return 0;
 }
 
+int upper_computer_set_camera_d_command( uint16_t* d_cmd, tcmp_camara_ctl* cmr_data )
+{
+	assert( d_cmd && cmr_data );
+	if( d_cmd == NULL || cmr_data == NULL )
+	{
+		return -1;
+	}
+
+	*d_cmd &= 0x0000;
+	*d_cmd |= ((uint16_t)cmr_data->close_focus_flags << 0);
+	*d_cmd |= ((uint16_t)cmr_data->aperture_amplification_flags << 1);
+	*d_cmd |= ((uint16_t)cmr_data->aperture_shrinks_flags << 2);
+	*d_cmd |= ((uint16_t)cmr_data->right_flags << 9);
+	*d_cmd |= ((uint16_t)cmr_data->left_flags << 10);
+	*d_cmd |= ((uint16_t)cmr_data->up_flags << 11);
+	*d_cmd |= ((uint16_t)cmr_data->down_flags << 12);
+	*d_cmd |= ((uint16_t)cmr_data->close_object << 13);
+	*d_cmd |= ((uint16_t)cmr_data->remote_object << 14);
+	*d_cmd |= ((uint16_t)cmr_data->remote_focus_flags << 15);
+	
+	return 0;
+}
 /*==================================================
 					结束上位机处理流程
 ====================================================*/

@@ -8,7 +8,7 @@
 #include "avdecc_net.h"
 #include <semaphore.h>
 
-#define TRANSMIT_DATA_BUFFER_SIZE 2048
+#define TRANSMIT_DATA_BUFFER_SIZE 10240
 #define CONFERENCE_RESPONSE_POS 1
 
 enum transmit_data_type
@@ -28,7 +28,8 @@ typedef struct transmit_data
 	bool notification_flag;	// 发送标志
 	bool resp;				// 响应数据
 	uint8_t *frame;		// 需发送的数据缓冲区,大小为2048，这里使用堆空间，原因是函数结束后栈空间会被释放
-	struct jdksavdecc_eui48 raw_dest;	//raw packet
+	uint8_t raw_dest[6];
+	//struct jdksavdecc_eui48 raw_dest;	//raw packet
 	uint16_t frame_len;		// 缓冲区大小
 	struct sockaddr_in udp_sin;//udp addr
 }tx_data,*ptr_tx_data;
@@ -49,10 +50,11 @@ void tx_packet_event( uint8_t type,
 					uint16_t frame_len, 
 					struct fds *file_dec, 
 					inflight_plist guard, 
-					const uint8_t dest_mac[6], 
+					uint8_t dest_mac[6], 
 					struct sockaddr_in* sin, 
-					const bool resp, 
+					bool resp, 
 					uint32_t *interval_time );
+void system_packet_save_send_queue( tx_data tnt );
 
 
 #endif

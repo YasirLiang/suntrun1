@@ -11,7 +11,7 @@ all:LIB
 %.o:%.c
 	@echo "\033[32m$(CC) -o $@ $< \033[0m"
 	@$(CC) -MM $(CFG_INC) -MT"$*.d" -MT"$(<:.c=.o)" $< > $*.d
-	@$(CC) $(CFLAGS) $(CFG_INC) -c -o $@ $<
+	@$(CC) $(CFGS) $(CFG_INC) -c -o $@ $<
 
 LIB:$(OBJS)
 ifeq ($(LIB), $(wildcard $(LIB)))

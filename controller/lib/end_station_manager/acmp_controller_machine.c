@@ -206,6 +206,14 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 	assert( interval_time );
 	*interval_time = timeout;
 
+	DEBUG_INFO( "acmp packet size = %d", frame_len );
+	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
+	{
+		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
+			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
+		return -1;
+	}
+
 	if(!resp )// not a response data
 	{
 		if( !resend )// data first send
@@ -218,11 +226,12 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			}
 			memset(inflight_station, 0, sizeof(inflight_list));
 			
-			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &inflight_station->host_tx.inflight_frame.frame );
+			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( frame_len, &inflight_station->host_tx.inflight_frame.frame );
 			if( NULL != inflight_station->host_tx.inflight_frame.frame )
 			{
-				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
+				memset(inflight_station->host_tx.inflight_frame.frame, 0, frame_len );
 				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
+				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len);
 				inflight_station->host_tx.inflight_frame.data_type = sub_type; //Ð­Òé
 				inflight_station->host_tx.inflight_frame.seq_id = seq_id;
 				memcpy(&inflight_station->host_tx.inflight_frame.raw_dest, dest_mac , 6 );

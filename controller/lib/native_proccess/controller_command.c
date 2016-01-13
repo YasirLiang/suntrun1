@@ -17,7 +17,7 @@ static solid_pdblist end_list_guard = NULL;
 
 /*====================补全命令===============*/
 #define COMMANDS_MAX_NUM 64
-static char *commands_list[COMMANDS_MAX_NUM] = 
+static const char *commands_list[COMMANDS_MAX_NUM] = 
 {
 	"adp",
 	"connect",
@@ -55,10 +55,10 @@ static char *commands_list[COMMANDS_MAX_NUM] =
 	
 	// 开始-系统功能
 	"hostFunc",
-	"reAllot",
+	"reAllot"
 	// 结束-系统功能
 	
-	NULL
+	//NULL
 };
 
 static char* command_generator(const char *text, int state)

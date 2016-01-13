@@ -6,7 +6,7 @@
 struct udp_client upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;
 
-
+#ifdef __PRINTF_UPD_PACKET__
 void test_udp_printf(const void *pri_load, size_t load_len, char *msg)
 {
 	uint8_t *p = ( uint8_t * )pri_load;
@@ -17,6 +17,7 @@ void test_udp_printf(const void *pri_load, size_t load_len, char *msg)
 		fprintf( stdout, "%02x ", *(p + i) );
 	fprintf( stdout, "\n" );
 }
+#endif
 
 void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
 {
@@ -48,16 +49,15 @@ void upper_cmpt_command_askbuf_set( struct host_upper_cmpt *askbuf, uint8_t deal
 *Return value: real ready send frame data lenght
 *	
 */
-int upper_computer_send( void* data_send )
+int upper_computer_send( struct host_upper_cmpt* data_send )
 {
 	assert( data_send );
-	struct host_upper_cmpt *askbuf = (struct host_upper_cmpt*)data_send;
 	struct host_upper_cmpt_frame upper_send_frame;
 	int ret = 0;
 
 	memset( &upper_send_frame, 0, sizeof(struct host_upper_cmpt_frame) );
-	upper_send_frame.payload_len = OTHER_DATA_LENGHT + askbuf->common_header.data_len;
-	ret = conference_host_to_upper_computer_form_msg( &upper_send_frame, askbuf );// need to set check first in this function
+	upper_send_frame.payload_len = OTHER_DATA_LENGHT + data_send->common_header.data_len;
+	ret = conference_host_to_upper_computer_form_msg( &upper_send_frame, data_send );// need to set check first in this function
 	if( ret < 0 )
 	{
 		DEBUG_INFO( "computer frame form failed!");
@@ -66,7 +66,7 @@ int upper_computer_send( void* data_send )
 
 	if( is_upper_udp_client_connect )
 	{
-#ifdef __DEBUG__
+#ifdef __PRINTF_UPD_PACKET__
 		//DEBUG_INFO( " (ret =%d)?= (pay len = %d)", ret, upper_send_frame.payload_len );
 		test_udp_printf( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data:" );
 #endif
@@ -87,6 +87,7 @@ int upper_computer_send( void* data_send )
 int  send_upper_and_host_deal_command( uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len )
 {
 	struct host_upper_cmpt askbuf;
+	//DEBUG_INFO( "sizeof struct host_upper_cmpt = %d ", sizeof(struct host_upper_cmpt) );
 	memset( &askbuf, 0, sizeof(struct host_upper_cmpt));
 	
 	upper_cmpt_command_askbuf_set( &askbuf, deal_type, command, data, data_len);

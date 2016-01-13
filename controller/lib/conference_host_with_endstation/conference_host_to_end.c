@@ -1,6 +1,7 @@
 #include "conference.h"
 #include "conference_host_to_end.h"
 
+#ifdef _CONFERENCE_INFO__
 void test_conf_printf(const void *pri_load, size_t load_len, char *msg)
 {
 	uint8_t *p = ( uint8_t * )pri_load;
@@ -11,6 +12,7 @@ void test_conf_printf(const void *pri_load, size_t load_len, char *msg)
 		fprintf( stdout, "%02x ", *(p + i) );
 	fprintf( stdout, "\n" );
 }
+#endif
 
 //设置发送数据
 static ssize_t set_data( uint8_t frame_data[], uint8_t rdata[], uint8_t ndata )
@@ -164,7 +166,9 @@ int conference_host_to_end_form_msg(struct jdksavdecc_frame *frame, struct host_
 	frame->length = ( uint16_t )cfc_dlgh + 24;
 
 #ifdef __DEBUG__
+#ifdef _CONFERENCE_INFO__
 	test_conf_printf( frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET, cfc_dlgh,  CONFERENCE_DATA_MSG);
+#endif
 #endif
 
 	 return ( int )cfc_dlgh;

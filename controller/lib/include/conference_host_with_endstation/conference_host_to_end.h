@@ -5,9 +5,13 @@
 #include "jdksavdecc_aecp_aem.h"
 #include "conference.h"
 
+#ifdef __DEBUG__
+#define _CONFERENCE_INFO__
+#endif
+
 #define CONFERENCE_DATA_MSG "Conference Data:"
 #define CONFERENCE_CONTROL_DATA_MSG "Conference Control Header:"
-#define READY_SEND_FRAME_DATA "Ready Send Frame:"\
+#define READY_SEND_FRAME_DATA "Ready Send Frame:"
 
 //写入会议协议的数据长度
 static inline void conference_host_to_end_datalen_write(const uint8_t lendata, void*base, ssize_t offset)

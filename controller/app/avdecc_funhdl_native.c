@@ -154,8 +154,10 @@ int thread_pipe_fn( void *pgm )
 			}
 
 #else
+#if 0
 		if( result > 0 )
 		{
+			
 			uint32_t resp_interval_time = 0;
 			tx_packet_event( tnt.data_type, 
 								     tnt.notification_flag, 
@@ -163,17 +165,30 @@ int thread_pipe_fn( void *pgm )
 								     tnt.frame_len, 
 								     &net_fd,// network fds
 								     command_send_guard,
-								     tnt.raw_dest.value,
+								     tnt.raw_dest,
 								     &tnt.udp_sin,
 								     tnt.resp,
 								     &resp_interval_time );
+			sem_post( &sem_tx );			
+		}
+		else 
+		{
+			sem_post( &sem_tx );
+			assert( tnt.frame && (result >= 0) );
+		}
+#else		
+		if( result > 0 )
+		{			
+			system_packet_save_send_queue( tnt );
 			sem_post( &sem_tx );
 		}
 		else 
 		{
 			sem_post( &sem_tx );
 			assert( tnt.frame && (result >= 0) );
-		}	
+		}
+#endif
+
 #endif
 		}
 		else
@@ -200,10 +215,9 @@ int thread_func_fn( void * pgm )
 	{
 		pthread_mutex_lock( &p_func_wq->control.mutex );
 		
-		while( p_func_wq->control.active && (p_func_wq->work.front == NULL) )
+		while( p_func_wq->control.active && (p_func_wq->work.head == NULL) )
 		{
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
-			DEBUG_INFO( "func proccess avtice = %d ", p_func_wq->control.active );
 		}
 
 		if( !p_func_wq->control.active )
@@ -213,39 +227,57 @@ int thread_func_fn( void * pgm )
 		}
 
 		pthread_mutex_lock( &net_send_queue.control.mutex );
-		if( queue_size(&net_send_queue.work) > 0 )
+		if( !is_queue_empty( &net_send_queue.work ) )
 		{
-			//DEBUG_INFO( " system current command is running, can't run next! " );
 			pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 			pthread_mutex_unlock( &net_send_queue.control.mutex ); // unlock mutex
 			continue;
 		}
 		pthread_mutex_unlock( &net_send_queue.control.mutex );
 		
-		DEBUG_INFO( "============>>>will Run next Recv command " );
 		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
+		if( p_func_wq->work.head == NULL )
+		{
+			if( p_func_wq->work.trail != NULL ) 
+			{// while queue isempty,make sure the queue trail not to be used again!!!!
+				p_func_wq->work.trail = NULL;
+			}
+		}
 		if( NULL == p_msg_wnode )
 		{
 			DEBUG_INFO( "func work queue no node!" );
 			pthread_mutex_unlock( &p_func_wq->control.mutex );
 			continue;
 		}
-
-		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
-
-		// proccess func command queue message
+		
+		// save func command queue message
 		uint16_t func_index = p_msg_wnode->job_data.func_msg_head.func_index;
 		uint16_t func_cmd = p_msg_wnode->job_data.func_msg_head.func_cmd;
 		uint32_t data_len = p_msg_wnode->job_data.meet_msg.data_len;
-		uint8_t *p_data = p_msg_wnode->job_data.meet_msg.data_buf;
+		uint8_t func_data[SUB_DATA_TYPE_SIZE] = {0};
+		if( data_len > SUB_DATA_TYPE_SIZE )
+		{
+			if( NULL != p_msg_wnode )
+			{
+				free( p_msg_wnode );
+				p_msg_wnode = NULL;
+			}
 		
-		DEBUG_INFO( " Run Recv command = %d ",  func_index );
-		p_func_items[func_index].cmd_proccess( func_cmd, p_data, data_len );
+			pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
+			continue;
+		}
+		
+		memcpy( func_data, p_msg_wnode->job_data.meet_msg.data_buf, data_len );
 		if( NULL != p_msg_wnode )
 		{
 			free( p_msg_wnode );
 			p_msg_wnode = NULL;
 		}
+		
+		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
+
+		DEBUG_INFO( " Run Recv command = %d ",  func_index );
+		p_func_items[func_index].cmd_proccess( func_cmd, func_data, data_len );
 	}
 	
 	return 0;

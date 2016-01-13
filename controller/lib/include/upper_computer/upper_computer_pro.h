@@ -45,7 +45,7 @@ int cmpt_miscrophone_status_list( void );
 int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr );
 int upper_cmpt_sign_situation_report( uint8_t vote_rlst, uint16_t addr );
 int upper_cmpt_terminal_message_report( void* p_tmnl_msg, uint16_t msg_len, uint16_t addr );
-
+int upper_computer_set_camera_d_command( uint16_t* d_cmd, tcmp_camara_ctl* cmr_data );
 /*@上位机处理函数流程}*/
 
 

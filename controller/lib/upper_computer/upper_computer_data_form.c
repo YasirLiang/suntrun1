@@ -5,18 +5,20 @@
 void set_upper_cmpt_check( struct host_upper_cmpt *p )
 {
 	uint8_t crc = 0;
-	uint8_t data_len = p->common_header.data_len;
+	uint16_t data_len = p->common_header.data_len;
 	uint8_t *p_data = p->data_payload;
 
-	crc = p->common_header.state_loader + p->common_header.command \
-		+ p->common_header.deal_type + p->common_header.data_len;
-	if( data_len != 0 )
+	crc = p->common_header.state_loader + p->common_header.deal_type\
+		+ p->common_header.command + ((uint8_t)((data_len & 0x00ff) >> 0)) \
+		+ ((uint8_t)((data_len & 0xff00 ) >> 8));
+	
+	if( (data_len > 0) && (p_data != NULL) )
 	{
 		int i = 0;
-		for( i = 0; i < data_len; i++)
+		for( i = 0; i < data_len; i++ )
 			crc += p_data[i];
 	}
-
+	
 	p->deal_crc = crc;
 }
 
@@ -38,7 +40,7 @@ void host_upper_cmpt_data_write( const uint8_t *pdata, void* base, ssize_t pos, 
 	uint8_t *p = ((uint8_t *)base + pos);
 	int i = 0;
 
-	if( data_len > 0)
+	if( (data_len > 0) && (pdata != NULL))
 	{
 		for( i = 0; i < data_len; i++ )
 		{	

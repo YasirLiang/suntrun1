@@ -46,6 +46,14 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 
 	assert( interval_time );
 	*interval_time = timeout;
+
+	DEBUG_INFO( "aecp packet size = %d", frame_len );
+	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
+	{
+		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
+			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
+		return -1;
+	}
 	
 	if(!resp )	// not a response data 
 	{
@@ -59,16 +67,16 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			}
 			
 			memset(inflight_station, 0, sizeof(inflight_list));
-			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &inflight_station->host_tx.inflight_frame.frame );
-			memset(inflight_station->host_tx.inflight_frame.frame, 0, TRANSMIT_DATA_BUFFER_SIZE);
+			inflight_station->host_tx.inflight_frame.frame = allot_heap_space( frame_len, &inflight_station->host_tx.inflight_frame.frame );
 			if( NULL != inflight_station->host_tx.inflight_frame.frame )
 			{
-				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len > 50?frame_len:50;
-				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len > 50?frame_len:50 );
+				memset(inflight_station->host_tx.inflight_frame.frame, 0, frame_len );
+				inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
+				memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len );
 				inflight_station->host_tx.inflight_frame.data_type = subtype; 	//协议aecp acmp adp udpclient udpserver (fb fc fa ac )
 				inflight_station->host_tx.inflight_frame.seq_id = aecp_seq_id;	// 初始为零
+				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id, inflight_station->host_tx.inflight_frame.frame, 0 );
 				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id++, frame, 0 );
-				jdksavdecc_aecpdu_common_set_sequence_id( aecp_seq_id-1, inflight_station->host_tx.inflight_frame.frame, 0 );
 				inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;
 				memcpy( &inflight_station->host_tx.inflight_frame.raw_dest, dest_mac , 6 );
 				
@@ -113,7 +121,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 	}
 	
-	ssize_t send_len = raw_send( &net, dest_mac, frame, (frame_len >= 50)?frame_len: 50 );// at lease 50+14
+	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
 	if( send_len < 0 )
 	{
 		DEBUG_INFO( "Err raw send data!");
@@ -167,7 +175,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 			MSGINFO( "[ UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx, %s(0x%02x) ( data len = %d ) ]", dest_id, get_host_and_end_conference_string_value(cfc_cmd), cfc_cmd,cmd_type );
 		}
 
-		// free inflight command node in the system
+		//free inflight command node in the system
 		//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
@@ -263,7 +271,7 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 		}
 		else
 		{
-			aecp_state_rcvd_resp( cmd_frame);
+			aecp_state_rcvd_resp( cmd_frame );
 		}
 		break;
 		default:

@@ -55,9 +55,9 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 			return -1;
 		}
 
-		//memset( &tx.udp_sin, 0, sizeof(struct sockaddr_in) );
 		memset( tran_buf, 0, sizeof(pipe_buf) );
-		memcpy( tx.raw_dest.value, dest_mac, sizeof(struct jdksavdecc_eui48) );
+		DEBUG_INFO( "sizeof jdksavdecc_eui48 = %d", sizeof(struct jdksavdecc_eui48) );
+		memcpy( tx.raw_dest, dest_mac, sizeof(struct jdksavdecc_eui48) );
 		memcpy( tran_buf, (uint8_t*)frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -117,7 +117,6 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 		tx_data tx;
 		uint8_t *tran_buf = pipe_buf;
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
-		//memset( tx.raw_dest.value, 0, sizeof(struct jdksavdecc_eui48) );
 		
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
@@ -193,7 +192,6 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx_data tx;
 		uint8_t *tran_buf = pipe_buf;
 		bool resp = isresp; // no need camera response data 
-		//memset( tx.raw_dest.value, 0, 6 );
 
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
@@ -208,8 +206,7 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
-		//memset(&tx.udp_sin, 0, sizeof( struct sockaddr_in ) );
-#if 0	
+#if 0
 		if( (ret = write_pipe_tx( &tx, sizeof(tx_data))) == -1 )
 		{
 			DEBUG_INFO( "ERR transmit data to PIPE" );
@@ -251,9 +248,9 @@ void tx_packet_event( uint8_t type,
 					uint16_t frame_len, 
 					struct fds *file_dec, 
 					inflight_plist guard, 
-					const uint8_t dest_mac[6], 
+					uint8_t dest_mac[6], 
 					struct sockaddr_in* sin, 
-					const bool resp, 
+					bool resp, 
 					uint32_t *interval_time )
 {
 	int server_fd = 0;
@@ -272,29 +269,29 @@ void tx_packet_event( uint8_t type,
 
 	// check the valid address,if not valid use the whole values
 	uint64_t dest_addr = 0;
-	struct jdksavdecc_eui48 dest;
+	uint8_t dest[6];
 	convert_eui48_to_uint64(dest_mac, &dest_addr);
 	if( dest_addr != 0)
-		memcpy( &dest, dest_mac, 6 );
+		memcpy( dest, dest_mac, 6 );
 	else
-		memcpy( &dest, jdksavdecc_multicast_adp_acmp.value, 6 );
+		memcpy( dest, jdksavdecc_multicast_adp_acmp.value, 6 );
 
 	assert( interval_time );
 	if( istx )
 	{
 		if( type == TRANSMIT_TYPE_ADP )
 		{
-			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest.value, resp, interval_time );
+			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_ACMP )
 		{
-			transmit_acmp_packet_network( frame, frame_len, guard, false, dest.value, resp, interval_time );
+			transmit_acmp_packet_network( frame, frame_len, guard, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_AECP )
 		{
-			transmit_aecp_packet_network( frame, frame_len, guard, false, dest.value, resp, interval_time );
+			transmit_aecp_packet_network( frame, frame_len, guard, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_SVR )// host as client send data to udp server using client fd
@@ -346,11 +343,11 @@ void system_packet_save_send_queue( tx_data tnt )
 	sdpwqueue*  send_wq = &net_send_queue;
 	pthread_mutex_lock( &send_wq->control.mutex );
 	
-	send_work_queue_message_save( &tnt, send_wq );
+	send_work_queue_message_save( tnt, send_wq );
 
-	int queue_len = get_queue_length( &send_wq->work );
-	
+	//int queue_len = get_queue_length( &send_wq->work );
 	//DEBUG_INFO( "save queue len = %d ", queue_len );
+	
 	pthread_cond_signal( &send_wq->control.cond );
 	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
 }

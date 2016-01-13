@@ -25,12 +25,18 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 	uint8_t dest_mac[6] = {0};
 	uint32_t timeout = get_udp_client_timeout_table( cfc_cmd );
 
-	assert( interval_time );
+	assert( interval_time && sin );
 	*interval_time = timeout;
-	
-	assert( sin );
 	struct sockaddr_in sin_event;
 	memcpy(&sin_event, sin, sizeof(struct sockaddr_in));
+
+	DEBUG_INFO( "udp packet size = %d", frame_len );
+	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
+	{
+		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
+			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
+		return -1;
+	}
 			
 	if( !resp ) // not a response data 
 	{
@@ -43,13 +49,13 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 					return -1;
 				}
 				memset(inflight_station, 0, sizeof(inflight_list));
-				inflight_station->host_tx.inflight_frame.frame = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &inflight_station->host_tx.inflight_frame.frame );
+				inflight_station->host_tx.inflight_frame.frame = allot_heap_space( frame_len, &inflight_station->host_tx.inflight_frame.frame );
 				if( NULL != inflight_station->host_tx.inflight_frame.frame )
 				{
 					//DEBUG_INFO( "udp cmd =%02x type = %02x ", cfc_cmd, cfc_type );
+					memset(inflight_station->host_tx.inflight_frame.frame, 0, frame_len );
 					inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
 					memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len );
-					
 					inflight_station->host_tx.inflight_frame.data_type = cfc_type; //协议类型(ac)
 					inflight_station->host_tx.inflight_frame.seq_id = cfc_cmd;	// 协议命令
 					inflight_station->host_tx.inflight_frame.notification_flag = RUNINFLIGHT;

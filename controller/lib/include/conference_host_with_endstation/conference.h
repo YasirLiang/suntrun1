@@ -6,7 +6,7 @@
 #include "jdksavdecc_aecp_aem.h"
 
 #define CONFERENCE_TYPE 0xAB
-#define DATAMAXLENGTH 64
+#define DATAMAXLENGTH 256
 #define TERMINAL_MESSAGE_MAX_LEN 64
 
 //协议头部长度
@@ -189,8 +189,8 @@ struct host_to_endstation
 {
 	struct conference_common_header cchdr;	// 公共头部
 	uint8_t data_len;						// 数据长度
-	uint8_t data[DATAMAXLENGTH];			// 数据区
 	uint8_t crc;							// 校验解惑(值为前面数据的异或)
+	uint8_t data[DATAMAXLENGTH];			// 数据区
 	uint8_t deal_backups[DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN];	// 协议的备份
 };
 
@@ -206,8 +206,8 @@ struct endstation_to_host_special			// 终端特殊命令格式
 {
 	struct conference_common_header cchdr;
 	uint8_t data_len;
-	uint8_t data[DATAMAXLENGTH];
 	uint8_t crc;
+	uint8_t data[DATAMAXLENGTH];
 	uint8_t deal_backups[DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN];	// 协议的备份
 };
 
@@ -215,7 +215,7 @@ struct terminal_deal_frame // aecp data conference data frame
 {
 	struct jdksavdecc_aecpdu_aem aecpdu_aem_header;
 	uint16_t payload_len;
-	uint8_t payload[ (TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
+	uint8_t payload[(TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
 };
 
 typedef struct _tterminal_recv_msg // 会讨命令

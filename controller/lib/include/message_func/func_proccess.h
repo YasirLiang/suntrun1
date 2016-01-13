@@ -66,7 +66,7 @@ extern uint8_t get_sys_state( void );
 extern void init_func_command_work_queue( void );
 extern void destroy_func_command_work_queue( void );
 extern int func_command_find_and_run( proccess_func_items * func_tables, fcwqueue*  p_func_wq );
-extern bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, const uint8_t *pdata, const uint16_t data_len );
+extern bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, uint8_t *pdata, uint16_t data_len );
 extern bool use_dis_set( uint8_t  user, bool set );
 
 #endif

@@ -180,7 +180,7 @@ int thread_fn(void *pgm)
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
 	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3], &ev );
-	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[4].fd, &ev );
+	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );

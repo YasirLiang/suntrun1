@@ -20,8 +20,8 @@ typedef struct queue_node // 队列节点
 
 typedef struct queue // 队列
 {
-	queue_node *front;
-	queue_node *rear;
+	queue_node *head;
+	queue_node *trail;
 }queue;
 
 queue_node* queue_get( queue *root );
@@ -29,5 +29,7 @@ void queue_push( queue *root, queue_node *node );
 bool is_queue_empty( queue* root );
 void init_queue( queue *root );
 int get_queue_length( queue* root );
+int queue_size( queue* root );
+
 
 #endif

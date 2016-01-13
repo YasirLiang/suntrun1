@@ -55,13 +55,14 @@ void destroy_func_command_work_queue( void )
 **		并存入循环队列fcwork_queue后通知
 **		命令处理线程
 **************************************/
-bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, const uint8_t *pdata, const uint16_t data_len )
+bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, uint8_t *pdata, uint16_t data_len )
 {
 	int i = 0;
 	enum_func_link func_link = 0xffff;
   	uint16_t func_cmd_pre = 0xFFFF;
   	uint16_t index=0;
   	fcqueue_data_elem queue_data_elem;
+	//DEBUG_INFO( "sizeof fcqueue_data_elem = %d ", sizeof(fcqueue_data_elem) );
   	
 	if( !fcwork_queue.control.active )
 		return false;
@@ -153,7 +154,6 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 #endif
 	}
 	
-	DEBUG_INFO( "==================>>func command save succcess <<============" );
 	return true; 
 }
 

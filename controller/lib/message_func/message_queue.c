@@ -22,7 +22,7 @@ int func_command_work_queue_messag_save( fcqueue_data_elem *p_node, fcwqueue *p_
 		return -1;
 	}
 
-	//DEBUG_INFO( "fcqueue_wnode size = %d", sizeof(fcqueue_wnode) );
+	DEBUG_INFO( "fcqueue_wnode size = %d", sizeof(fcqueue_wnode) );
 	p_fcqueue_wnode p_work_node = NULL;
 	p_work_node = (p_fcqueue_wnode)malloc( sizeof(fcqueue_wnode) );
 	if( NULL == p_work_node )
@@ -35,10 +35,11 @@ int func_command_work_queue_messag_save( fcqueue_data_elem *p_node, fcwqueue *p_
 #endif
 	}
 
+	DEBUG_INFO( "msg_len = %d", msg_len );
 	p_work_node->job_data.func_msg_head.func_index = p_node->func_msg_head.func_index;
 	p_work_node->job_data.func_msg_head.func_cmd = p_node->func_msg_head.func_cmd;
 	p_work_node->job_data.meet_msg.data_len = msg_len;
-	memcpy( p_work_node->job_data.meet_msg.data_buf,  p_node->meet_msg.data_buf, msg_len );
+	memcpy( p_work_node->job_data.meet_msg.data_buf, p_node->meet_msg.data_buf, msg_len );
 
 	queue_push( &p_fcwq->work, (struct queue_node *)p_work_node );
 

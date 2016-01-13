@@ -12,6 +12,10 @@
 #include "inflight.h"
 #include "host_controller_debug.h"
 
+#ifdef __DEBUG__
+//#define __PRINTF_UPD_PACKET__
+#endif
+
 /*{@上位机与主机协议的报文类型*/ 
 #define CMPT_MSG_TYPE_RESPONSE	0x80 	 // 响应
 #define CMPT_MSG_TYPE_CPT_DIS		0x01 	 // 主机菜单正在操作,上位机被屏蔽
@@ -411,7 +415,7 @@ typedef struct _type_set_camara_switch
 }tcmp_set_camara_switch;
 /*@}*/
 
-extern int upper_computer_send( void* data_send );
+extern int upper_computer_send( struct host_upper_cmpt* data_send );
 extern void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len, int *status );
 extern int  send_upper_and_host_deal_command( uint8_t deal_type, uint8_t command, const void *data, uint16_t data_len );
 

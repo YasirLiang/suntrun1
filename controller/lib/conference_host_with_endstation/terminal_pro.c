@@ -829,7 +829,8 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 {
 	tmnl_limit_spk_time spk_time;
 	thost_system_set set_sys; // 系统配置文件的格式
-	
+
+	//DEBUG_INFO( "SIZE OF SYS SET = %d", sizeof(thost_system_set) );
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	spk_time.limit_time = set_sys.spk_limtime;
 	speak_limit_time = (uint8_t)spk_time.limit_time;
@@ -855,7 +856,6 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 		
 		if( set_sys.chman_limitime ) // 主席限时
 		{
-			
 			limit_addr |= BRDCST_CHM |BRDCST_EXE;
 		}
 		else

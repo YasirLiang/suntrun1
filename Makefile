@@ -5,7 +5,7 @@ OBJDUMP = arm-linux-objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFLAGS = -Wall
+CFGS = -Wall 
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
@@ -27,7 +27,7 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/camera_module\
 		   -I$(ROOTPATH)/controller/lib/include/uart\
 		   -I$(ROOTPATH)/controller/lib/include/timer_pthread
-export CFG_INC CFLAGS CCFLAGS ROOTPATH
+export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
 APP_SUB=$(shell ls -l | grep ^d | awk '{if($$9 == "controller") print $$9}')

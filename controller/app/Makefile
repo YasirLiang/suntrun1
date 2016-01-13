@@ -8,14 +8,14 @@ all:$(CUR_OBJS) BIN
 
 $(CUR_OBJS):%.o:%.c
 	@echo "\033[32m$(CC) -o $@ $< \033[0m"
-	@$(CC) $(CFLAGS) $(CFG_INC) -c  -o $@ $<
+	@$(CC) $(CFGS) $(CFG_INC) -c  -o $@ $<
 
 BIN:$(CUR_OBJS)
 ifeq ($(BIN), $(wildcard $(BIN)))
 else
-	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CCFLAGS)
+	@echo $(CC) -o $(BIN) $(CUR_OBJS) $(CFGS) $(CCFLAGS)
 endif
-	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFLAGS) $(CCFLAGS) $(CFG_INC)
+	@$(CC) -o $(BIN) $(CUR_OBJS) $(CFGS) $(CCFLAGS) $(CFG_INC)
 	@cp $(BIN) $(ROOTPATH) 
 
 sinclude $(CUR_OBJS:.o=.d)
