@@ -987,8 +987,9 @@ void cmd_terminal_proccess( const char *opt )
 		 if ( !cmd_buf )
 	            break;
 		 
-	         if ( strlen(cmd_buf) == 0 )
+	         if( strlen(cmd_buf) == 0 )
 		{
+			free(cmd_buf);
 			continue;
 		}
 		else
@@ -1198,6 +1199,7 @@ void cmd_udp_client( void )
 	            break;
 	         if ( strlen(cmd_buf) == 0 )
 	         {
+	         	free(cmd_buf);
 			continue;
 	         }
 		else
@@ -1239,7 +1241,8 @@ void cmd_host_func_proccess( void )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
 		{
-	        	continue;
+			free(cmd_buf);
+			continue;
 	        }
 		else
 		{
@@ -1280,6 +1283,7 @@ void controller_proccess( void )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
 	        {
+	        	free(cmd_buf);
 	        	continue;
 	        }
 		else

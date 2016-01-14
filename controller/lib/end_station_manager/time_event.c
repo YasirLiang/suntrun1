@@ -3,8 +3,11 @@
 
 void inflight_time_tick( inflight_plist guard )
 {
+	inflight_plist inflight_station = NULL;
+	inflight_plist tmp_inflight = NULL;
 	assert( guard );
-	inflight_plist inflight_station = NULL, tmp_inflight = NULL;
+	if( guard == NULL )
+		return;
 	
 	// check timeout and proccess with match type, only check the list of head node
 	for( inflight_station = guard->next; inflight_station != guard; inflight_station = tmp_inflight )

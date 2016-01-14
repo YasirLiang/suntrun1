@@ -22,14 +22,15 @@ int timer_start_interval(int timerfd)
 {
 	struct itimerspec itimer_new;
         struct itimerspec itimer_old;
-        unsigned long ns_per_ms = 1000000;
-        unsigned long interval_ms = TIME_PERIOD_25_MILLISECONDS;
+        //unsigned long ns_per_ms = 1000000;
+        unsigned long ns_per_us = 1000;
+        unsigned long interval_ms = TIME_PERIOD_1_MILLISECONDS;
 
         memset(&itimer_new, 0, sizeof(itimer_new));
         memset(&itimer_old, 0, sizeof(itimer_old));
 
         itimer_new.it_interval.tv_sec = interval_ms / 1000;
-        itimer_new.it_interval.tv_nsec = (interval_ms % 1000) * ns_per_ms;
+        itimer_new.it_interval.tv_nsec = (interval_ms % 1000) * ns_per_us;
         itimer_new.it_value = itimer_new.it_interval;
 
 	// 设置新的超时时间，并开始计时。
@@ -116,16 +117,15 @@ int udp_server_fn(struct epoll_priv *priv )
 	if( recv_len > 0)
 	{
 		// 设置全局参数
-		upper_udp_client.c_fd = priv->fd;
-		memcpy( &upper_udp_client.cltaddr, &sin_in, sizeof(struct sockaddr_in) );
-		upper_udp_client.cltlen = sin_len;
+		upper_udp_client.sock_fd = priv->fd;
+		memcpy( &upper_udp_client.sock_addr, &sin_in, sizeof(struct sockaddr_in) );
+		upper_udp_client.sock_len = sin_len;
 		is_upper_udp_client_connect = true;
 		recv_frame.payload_len = recv_len;
 		int rx_status = -1;
 
 		// 处理接收的上位机发送过来的数据包
 		handle_upper_computer_conference_data( &recv_frame, &rx_status );
-				
 		if( rx_status && is_wait_messsage_active_state() )
 		{
 			set_wait_message_status( 0 );

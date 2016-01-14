@@ -39,6 +39,13 @@
 #define ETHER_HDR_SIZE 14
 #define ZERO_OFFSET_IN_PAYLOAD 0
 
+#define PERROR(ret, str)\
+if(-1 == ret)\
+{\
+	perror(str);\
+	exit(1);\
+}
+
 int send_udp_frame(int fd, void *pout, int length, const struct sockaddr_in* sin);
 int recv_udp_packet( int fd, void *pout, int length, struct sockaddr_in *sin, socklen_t *sin_length );
 int conference_host_raw_receive( int sockfd, uint16_t *ethertype, uint8_t src_mac[6], uint8_t dest_mac[6], void *payload_buf, ssize_t payload_buf_max_size  );

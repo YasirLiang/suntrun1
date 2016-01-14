@@ -5,7 +5,7 @@ OBJDUMP = arm-linux-objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFGS = -Wall 
+CFGS = -Wall
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \

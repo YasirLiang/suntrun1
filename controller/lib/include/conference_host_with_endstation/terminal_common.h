@@ -179,7 +179,6 @@ typedef struct _tkey_action_common_reply// 按键动作特殊响应2数据区 6个字节
 
 /*@}*/
 
-
 /*@}*/
 
 #define LCD_OR_LED_DIS_DATA_ADD_SCREEN 0
@@ -445,8 +444,6 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data );
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
 void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint16_t data_len );
-
-
 
 #endif
 

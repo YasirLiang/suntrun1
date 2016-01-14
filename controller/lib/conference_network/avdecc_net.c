@@ -72,18 +72,19 @@ int conference_host_raw_receive( int sockfd, uint16_t *ethertype, uint8_t src_ma
 // 创建主机与上位机，主机与pc控制主机之间的套接字
 int udp_socket( struct udp_context *self, const int port, bool isserver, const char *interface)
 {
-	int fd;
-	int ret;
+	int fd = -1;
+	int ret = -1;
 	struct ifreq ifr;
-	struct sockaddr_in sin;
 	char ip[32] = {0};
+	struct sockaddr_in sin;
+	struct socket_info_s *socket_class = NULL;
 	
 	fd = socket( AF_INET,  SOCK_DGRAM, 0 );
-	if( fd == -1 )
-	{
-		DEBUG_INFO("udp socket failed!" );
-		assert(fd != -1);
-	}
+	PERROR( fd, "socket" );
+
+	int on = 1;
+	ret = setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+	PERROR( ret, "setsockopt" );
 
 	strcpy(ifr.ifr_name, interface);
 	if( (ret = ioctl( fd, SIOCGIFHWADDR, &ifr )) < 0 )	// 获取本机mac地址
@@ -102,42 +103,27 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 	memcpy(&sin, &ifr.ifr_addr, sizeof( sin ));
 	strcpy(ip, inet_ntoa(sin.sin_addr));
 
+	assert( self );
 	if( isserver )
-	{
-		self->udp_srv.s_fd = fd;
-		self->udp_srv.srvlen = sizeof( struct sockaddr_in );
-		self->udp_srv.srvaddr.sin_family = AF_INET;
-		self->udp_srv.srvaddr.sin_port = htons( port );
-		inet_aton( ip, &self->udp_srv.srvaddr.sin_addr );
-		ret = bind( fd, (struct sockaddr *)&(self->udp_srv.srvaddr), \
-				self->udp_srv.srvlen );
-		if( ret == -1 )
-		{
-			DEBUG_ERR( "udp server:" );
-			DEBUG_ONINFO( "erro udp bind" );
-			assert( ret != -1);
-		}
-		
-		DEBUG_INFO("host server bind-> address = %s:%d sfd =  %d", inet_ntoa( self->udp_srv.srvaddr.sin_addr ), ntohs( self->udp_srv.srvaddr.sin_port ), self->udp_srv.s_fd);
-	}
+		socket_class = &self->udp_srv;
 	else
-	{
-		self->udp_clt.c_fd = fd;
-		self->udp_clt.cltlen = sizeof( struct sockaddr_in );
-		self->udp_clt.cltaddr.sin_family = AF_INET;
-		self->udp_clt.cltaddr.sin_port = htons( port );
-		inet_aton( ip, &self->udp_clt.cltaddr.sin_addr );
-		ret = bind( fd, (struct sockaddr *)&self->udp_clt.cltaddr, \
-				self->udp_clt.cltlen);
-		if( ret == -1 )
-		{
-			DEBUG_ERR( "udp client:" );
-			DEBUG_ONINFO( "erro udp bind" );
-			assert( ret != -1);
-		}
+		socket_class = &self->udp_clt;
 
-		DEBUG_INFO("host client bind-> address = %s:%d sfd =  %d", inet_ntoa( self->udp_srv.srvaddr.sin_addr ), ntohs( self->udp_clt.cltaddr.sin_port ), self->udp_clt.c_fd);
+	socket_class->sock_fd = fd;
+	socket_class->sock_len = sizeof( struct sockaddr_in );
+	socket_class->sock_addr.sin_family = AF_INET;
+	socket_class->sock_addr.sin_port = htons( port );
+	inet_aton( ip, &socket_class->sock_addr.sin_addr );
+	ret = bind( fd, (struct sockaddr*)&(socket_class->sock_addr), socket_class->sock_len );
+	if( ret == -1 )
+	{
+		DEBUG_ERR( "udp %s", isserver ? "server" : "client" );
+		PERROR( ret, "bind" );
 	}
+
+	DEBUG_INFO("host %s bind-> address = %s: %d-> sfd =  %d", isserver ? "server" : "client",\
+				inet_ntoa( socket_class->sock_addr.sin_addr ), \
+				ntohs( socket_class->sock_addr.sin_port ), socket_class->sock_fd );
 	
 	return fd;
 }

@@ -20,6 +20,9 @@ inline void adp_entity_post_timeout_msr( solid_pdblist target )
 void adp_entity_time_tick( solid_pdblist guard )
 {
 	solid_pdblist ptr = NULL;
+
+	if( guard == NULL )
+		return;
 	
 	for( ptr = guard->next; ptr != NULL && ptr != guard; ptr = ptr->next )
 	{

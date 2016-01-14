@@ -3,7 +3,7 @@
 #include "udp_client_controller_machine.h"
 #include "upper_computer_data_form.h"
 
-struct udp_client upper_udp_client;		    // 上位机的通信信息
+struct socket_info_s upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;
 
 #ifdef __PRINTF_UPD_PACKET__
@@ -70,7 +70,7 @@ int upper_computer_send( struct host_upper_cmpt* data_send )
 		//DEBUG_INFO( " (ret =%d)?= (pay len = %d)", ret, upper_send_frame.payload_len );
 		test_udp_printf( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data:" );
 #endif
-		system_udp_packet_tx( &upper_udp_client.cltaddr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );
+		system_udp_packet_tx( &upper_udp_client.sock_addr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );
 	}
 
 	return (upper_send_frame.payload_len);

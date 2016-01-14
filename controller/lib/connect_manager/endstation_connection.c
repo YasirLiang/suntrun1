@@ -457,6 +457,24 @@ int connect_table_timeouts_image( void )
 
 void connect_table_destroy( void )
 {
+	connect_tbl_pdblist connect_pnode = NULL;
+	pthread_mutex_lock( &cnnt_mutex );
+	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+	{
+		if( connect_pnode != NULL )
+			free( connect_pnode );
+		connect_pnode = NULL;
+	}
+
+	if( cnnt_list_guard->list.prev == cnnt_list_guard->list.next )
+	{
+		free( cnnt_list_guard );
+		cnnt_list_guard = NULL;
+	}
+	else
+		DEBUG_INFO( "free list Failed!or is bad list!" );
+	
+	pthread_mutex_unlock( &cnnt_mutex );
 	pthread_mutex_destroy( &cnnt_mutex );
 }
 

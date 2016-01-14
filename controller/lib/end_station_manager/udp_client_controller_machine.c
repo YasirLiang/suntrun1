@@ -3,14 +3,14 @@
 #include "wait_message.h"
 #include "send_pthread.h"
 
-static struct udp_server server_fd; // host udp as udp server information
+static struct socket_info_s server_fd; // host udp as udp server information
 static inflight_plist udp_client_inflight = NULL;
 
 void init_udp_client_controller_endstation( int fd, struct sockaddr_in *sin )
 {
-	server_fd.s_fd = fd;
-	memcpy( &server_fd.srvaddr, sin, sizeof(struct sockaddr_in));
-	server_fd.srvlen = sizeof(struct sockaddr_in);
+	server_fd.sock_fd = fd;
+	memcpy( &server_fd.sock_addr , sin, sizeof(struct sockaddr_in));
+	server_fd.sock_len = sizeof(struct sockaddr_in);
 
 	udp_client_inflight = command_send_guard;
 	assert( udp_client_inflight );
@@ -155,7 +155,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	{
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
-		transmit_udp_client_packet( server_fd.s_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false, &interval_time );
+		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false, &interval_time );
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
 	}

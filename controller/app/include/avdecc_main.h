@@ -27,6 +27,7 @@ enum useful_enums
 	PIPE_RD = 0,
 	PIPE_WR = 1,
 	POLL_COUNT = 4,
+	TIME_PERIOD_1_MILLISECONDS = 1,
 	TIME_PERIOD_25_MILLISECONDS = 25
 };
        
@@ -38,24 +39,16 @@ struct fds
 	int tx_pipe[2];		// pipe
 };
 
-struct udp_server
+struct socket_info_s
 {
-	int s_fd;
-	struct sockaddr_in srvaddr;
-	socklen_t srvlen;
-};
-
-struct udp_client
-{
-	int c_fd;
-	struct sockaddr_in cltaddr;
-	socklen_t cltlen;
+	int sock_fd;
+	struct sockaddr_in sock_addr;
+	socklen_t sock_len;
 };
 
 struct udp_context
 {
-	struct udp_server udp_srv;
-	struct udp_client udp_clt;
+	struct socket_info_s udp_srv, udp_clt;
 };
 
 #define THREADS_MUX_NUM 16
@@ -66,8 +59,8 @@ struct threads_info
 };
 
 extern struct fds net_fd;						// 网络通信套接字与线程间通信套接字
-extern struct udp_client upper_udp_client;		// 上位机的通信信息
-extern struct udp_server pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
+extern struct socket_info_s upper_udp_client;		// 上位机的通信信息
+extern struct socket_info_s pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
 extern solid_pdblist endpoint_list;				// 系统中终端链表哨兵节点
 extern inflight_plist command_send_guard;		// 系统中发送网络数据命令链表哨兵节点
 extern struct raw_context net;				// 原始套接字
