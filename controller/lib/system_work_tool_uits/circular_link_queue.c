@@ -1,6 +1,6 @@
 /*注:此算法的空队列为队列头为空，而队尾不为空,若对列为空则必须同时把
-队尾指针置为空，防止其成为垂悬指针再被引用!!!!!!,如15 27行,且在获取
-队列元素若队列为空，队列尾应该马上置为空 2016-1-13*/
+队尾指针置为空，防止其成为垂悬指针再被引用!!!!!!,如17/29行,且在获取
+队列元素若队列为空，队列尾必须马上置为空 2016-1-13*/
 
 #include "circular_link_queue.h"
 
@@ -13,11 +13,12 @@ queue_node* queue_get( queue *root )
 	{
 		root->head = root->head->next;
 	}
-	else
+	else// 此处防止队列为空时队尾不为空!但执行对队列操作正确即当队列为空时，必须执行队列为空的操作的前提下,此处可省略
 	{
 		if( root->trail != NULL )
 			root->trail = NULL;
 	}
+
 
 	return node_get;
 }
@@ -26,7 +27,7 @@ void queue_push( queue *root, queue_node *node )
 {
 	assert( node );
 	if( is_queue_empty( root ) )
-	{
+	{// 此处防止队列为空时队尾不为空!但执行对队列操作正确即当队列为空时，必须执行队列为空的操作的前提下,此处可省略
 		if( root->trail != NULL )
 			root->trail = NULL;
 	}

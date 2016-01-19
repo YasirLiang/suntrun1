@@ -1842,7 +1842,7 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 		return -1;
 	}
 
-	memset( addr_list, 0xff, sizeof(terminal_address_list)*SYSTEM_TMNL_MAX_NUM);
+	memset( addr_list, 0xff, sizeof(terminal_address_list)*SYSTEM_TMNL_MAX_NUM );
 	if( terminal_address_list_read_file( fd, addr_list ) == -1 ) // ∂¡»° ß∞‹
 	{
 		DEBUG_INFO( "type save read file Err!");

@@ -35,6 +35,7 @@ void init_system( void )
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
 	init_sem_wait_can();
+	upper_computer_common_init();
 	
 	connect_table_info_init();/*初始化连接表*/ 
 	if( -1 == muticast_connector_init())// 初始广播表

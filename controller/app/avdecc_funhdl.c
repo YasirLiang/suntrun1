@@ -116,21 +116,8 @@ int udp_server_fn(struct epoll_priv *priv )
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
 	if( recv_len > 0)
 	{
-		// 设置全局参数
-		upper_udp_client.sock_fd = priv->fd;
-		memcpy( &upper_udp_client.sock_addr, &sin_in, sizeof(struct sockaddr_in) );
-		upper_udp_client.sock_len = sin_len;
-		is_upper_udp_client_connect = true;
-		recv_frame.payload_len = recv_len;
-		int rx_status = -1;
-
-		// 处理接收的上位机发送过来的数据包
-		handle_upper_computer_conference_data( &recv_frame, &rx_status );
-		if( rx_status && is_wait_messsage_active_state() )
-		{
-			set_wait_message_status( 0 );
-			sem_post( &sem_waiting );
-		}
+		// 保存接收数据到缓冲区
+		upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
 	}
 	else
 	{
@@ -176,7 +163,7 @@ int thread_fn(void *pgm)
 	prep_evt_desc( fn_fds->raw_fd, &fn_netif_cb, &fd_fns[1], &ev );
 	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[1].fd, &ev );
 
-	prep_evt_desc( fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[2],&ev );
+	prep_evt_desc( fn_fds->udp_server_fd, &udp_server_fn, &fd_fns[2], &ev );
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[2].fd, &ev );
 
 	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3], &ev );

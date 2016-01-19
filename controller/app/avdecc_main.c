@@ -63,6 +63,11 @@ int main( int argc, char *argv[] )
 	pthread_handle_create( &h_thread, &net_fd ); // 创建接收数据处理线程
 	threads.tid[threads.pthread_nums++] = h_thread;
 	pthread_detach( h_thread );
+
+	pthread_t proccess_thread;
+	pthread_proccess_recv_data_create( &proccess_thread, NULL );
+	threads.tid[threads.pthread_nums++] = proccess_thread;
+	pthread_detach( proccess_thread );
 	
 #if 0
 	pthread_t p_thread;

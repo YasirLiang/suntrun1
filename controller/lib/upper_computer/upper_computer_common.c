@@ -2,9 +2,18 @@
 #include "upper_computer_data_parser.h"
 #include "udp_client_controller_machine.h"
 #include "upper_computer_data_form.h"
+#include "ring_buf.h"
+#include "time_handle.h"
+#include "wait_message.h"
+#include "send_pthread.h"
 
+tchar_ring_buf grecv_ucmpt_buf_pro;// 上位机环形接受缓冲区 处理参数
+#define RECV_FROM_UPPTER_BUF_SIZE 2048 // 上位机环形接受缓冲区 大小
+uint8_t grecv_from_uppter_buf[RECV_FROM_UPPTER_BUF_SIZE];//上位机环形接受缓冲区
 struct socket_info_s upper_udp_client;		    // 上位机的通信信息
 bool  is_upper_udp_client_connect = false;
+thost_upper_cmpt_msg grecv_upper_cmpt_msg;// 上位机消息结构体
+trecv_cmpt_pro grecv_cmpt_msg_pro;//  处理上位机结构
 
 #ifdef __PRINTF_UPD_PACKET__
 void test_udp_printf(const void *pri_load, size_t load_len, char *msg)
@@ -134,7 +143,7 @@ void upper_computer_reply_error( uint8_t *recv_msg )
 *Func: proccess data recv from udp client
 *Param:
 *	frame:receive data buf
-*	frame_len: receive data 
+*	frame_len: receive data(execpt check data 2016/1/19 )
 *return value:
 *		none
 **************************************************/
@@ -158,5 +167,163 @@ void proccess_udp_client_msg_recv( uint8_t *frame, int frame_len, int *status )
 	{
 		udp_client_update_inflight_comand( frame, frame_len );
 	}
+}
+
+/*************************************************
+*Writer:	YasirLiang
+*Date: 2016/1/19
+*Name:upper_computer_common_recvmesssage_save
+*Func: save recv data from udp client
+*Param:
+*	frame:receive data buf
+*	frame_len: receive data 
+*return value:0:normal
+*		-1:error
+***************************************************/
+int upper_computer_common_recv_messsage_save( int fd, struct sockaddr_in *sin_in, bool udp_exist, socklen_t sin_len, uint8_t *frame, uint16_t frame_len )
+{
+	int ret = -1;
+	const uint16_t msg_len = frame_len;
+	uint16_t point = 0;
+	
+	if( sin_in == NULL || frame == NULL )
+		return ret;
+
+	if( msg_len <= UPPER_RECV_BUF_MAX )
+	{
+		upper_udp_client.sock_fd = fd;
+		memcpy( &upper_udp_client.sock_addr, sin_in, sizeof(struct sockaddr_in) );
+		upper_udp_client.sock_len = sin_len;
+		is_upper_udp_client_connect = udp_exist;
+
+		point = 0;
+		while( point < msg_len )
+		{
+			char_ring_buf_save( &grecv_ucmpt_buf_pro, frame[point++] );
+		}
+	}
+	
+	return ret;
+}
+
+/*************************************************
+*Writer:	YasirLiang
+*Date: 2016/1/19
+*Name:upper_computer_recv_message_get_pro
+*Func: get recv ring buf data and proccess it
+*Param:none 
+*return value:none
+***************************************************/
+void upper_computer_recv_message_get_pro( void )
+{
+	uint8_t ch_temp;
+	bool ret = false;
+	while( char_ring_buf_get( &grecv_ucmpt_buf_pro, &ch_temp ))
+	{
+		ret = upper_computer_comm_recv_msg_pro( &grecv_upper_cmpt_msg, ch_temp );
+		over_time_set( CPT_RCV_GAP, 10 );
+	}
+
+	if( over_time_listen(CPT_RCV_GAP) )
+	{
+		grecv_cmpt_msg_pro.msg_len = 0;
+		over_time_stop(CPT_RCV_GAP);
+	}
+}
+
+bool upper_computer_comm_recv_msg_pro( thost_upper_cmpt_msg *pmsg, uint8_t save_char )
+{
+	if( pmsg == NULL )
+	{
+		grecv_cmpt_msg_pro.msg_len = 0;
+		return false;
+	}
+
+	if( (grecv_cmpt_msg_pro.msg_len == 0) && (save_char == UPPER_COMPUTER_DATA_LOADER) )
+	{
+		pmsg->state_loader = save_char;
+		grecv_cmpt_msg_pro.msg_len = 1;
+	}
+	else if( grecv_cmpt_msg_pro.msg_len == 1 )
+	{
+		pmsg->deal_type = save_char;
+		grecv_cmpt_msg_pro.msg_len = 2;
+	}
+	else if( grecv_cmpt_msg_pro.msg_len == 2 )
+	{
+		pmsg->command = save_char;
+		grecv_cmpt_msg_pro.msg_len = 3;
+	}
+	else if( grecv_cmpt_msg_pro.msg_len == 3 )
+	{
+		pmsg->data_len = save_char;
+		grecv_cmpt_msg_pro.msg_len = 4;
+	}
+	else if( grecv_cmpt_msg_pro.msg_len == 4 )
+	{
+		pmsg->data_len |= (save_char << 8);
+		if( pmsg->data_len <= UPPER_RECV_BUF_MAX )
+		{
+			grecv_cmpt_msg_pro.msg_len = 5;
+			grecv_cmpt_msg_pro.data_len = 0;
+		}
+		else
+		{
+			grecv_cmpt_msg_pro.msg_len = 0;
+		}
+	}
+	else if( grecv_cmpt_msg_pro.msg_len >= HOST_UPPER_COMPUTER_COMMON_LEN )
+	{
+		if( grecv_cmpt_msg_pro.data_len < pmsg->data_len )
+		{
+			pmsg->data_payload[grecv_cmpt_msg_pro.data_len] = save_char;
+			grecv_cmpt_msg_pro.msg_len++;
+		}
+		else if( grecv_cmpt_msg_pro.data_len == pmsg->data_len )
+		{
+			uint8_t *p = (uint8_t*)pmsg;
+			uint8_t count_chk = 0, recv_chk = save_char;
+			uint16_t msg_len = grecv_cmpt_msg_pro.msg_len;
+			if( msg_len == (HOST_UPPER_COMPUTER_COMMON_LEN + pmsg->data_len) )
+			{
+				int i = 0;
+				for( i = 0; i < msg_len; i++ )
+				{
+					count_chk += *(p++);
+				}
+
+				if( recv_chk == count_chk )
+				{
+					// 处理接收的上位机发送过来的数据包
+					int rx_status = -1;
+					proccess_udp_client_msg_recv((uint8_t*)pmsg, msg_len, &rx_status );
+					if( rx_status && is_wait_messsage_active_state() )
+					{
+						set_wait_message_status( 0 );
+						sem_post( &sem_waiting );
+						return true;
+					}
+				}
+			}
+
+			grecv_cmpt_msg_pro.msg_len = 0;
+		}
+
+		grecv_cmpt_msg_pro.data_len++;
+	}
+
+	return false;
+}
+
+void upper_computer_common_init( void )
+{
+	grecv_ucmpt_buf_pro.empty = true;
+	grecv_ucmpt_buf_pro.buf_size = RECV_FROM_UPPTER_BUF_SIZE;
+	grecv_ucmpt_buf_pro.head = 0;
+	grecv_ucmpt_buf_pro.trail = 0;
+	grecv_ucmpt_buf_pro.pring_buf = grecv_from_uppter_buf;
+
+	grecv_cmpt_msg_pro.data_len = 0;
+	grecv_cmpt_msg_pro.msg_len = 0;
 }
 

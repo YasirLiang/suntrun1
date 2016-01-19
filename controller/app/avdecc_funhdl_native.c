@@ -311,3 +311,48 @@ int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items 
 	return 0;
 }
 
+#define SYS_BUF_RECV_COUNT 2
+int pthread_recv_data_fn( void *pgm )
+{
+	int buf_num = 0;
+	while( 1 )
+	{
+		unsigned long us_per_ms = 1000;
+        	unsigned long interval_ms = TIME_PERIOD_1_MILLISECONDS;
+		struct timeval tempval;
+	        tempval.tv_sec = interval_ms/1000;  
+	        tempval.tv_usec = (interval_ms%1000)*us_per_ms;
+	        select( 0, NULL, NULL, NULL, &tempval );
+
+		if( buf_num >= SYS_BUF_RECV_COUNT )
+			buf_num = 0;
+		switch( (buf_num++) % SYS_BUF_RECV_COUNT )
+		{
+			case 0:// buffer 1
+				upper_computer_recv_message_get_pro();
+			break;
+			case 1:// buffer 2
+			break;
+			default:
+				break;
+		}
+	}
+	
+	return 0;
+}
+
+int pthread_proccess_recv_data_create( pthread_t *pid, void * pgm )
+{
+	assert( pid );
+	int rc = 0;
+
+	rc = pthread_create( pid, NULL, (void*)&pthread_recv_data_fn, NULL );
+	if( rc )
+	{
+		DEBUG_INFO(" pthread_proccess_recv_data_create ERROR; return code from pthread_create() is %d\n", rc);
+		assert( rc == 0 );
+	}
+
+	return 0;
+}
+

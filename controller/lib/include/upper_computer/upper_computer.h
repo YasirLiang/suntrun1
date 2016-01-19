@@ -8,7 +8,7 @@
 #define UPPER_PAYLOAD_DATA_MAX_LEN ( DATA_PAYLOAD_LEN_MAX + OTHER_DATA_LENGHT)
 #define UPPER_COMPUTER_DATA_LOADER 0xac
 
-#define UPPER_RECV_BUF_MAX 1024
+#define UPPER_RECV_BUF_MAX 2048
 
 #define HOST_UPPER_COMPUTER_COMMON_HEAD_LENGTH 5
 #define CMPT_HEAD_OFFSET 0
@@ -64,6 +64,15 @@ struct host_upper_cmpt
 	struct host_upper_cmpt_common common_header;
 	uint8_t data_payload[DATA_PAYLOAD_LEN_MAX];
 };
+
+typedef struct _type_host_upper_cmpt_msg
+{
+	uint8_t state_loader;			// 引导字节，固定内容为0xAC
+	uint8_t deal_type;				// 报文类型
+	uint8_t command;				// 命令	
+	uint16_t data_len;				// 数据长度高字节负载中低位
+	uint8_t data_payload[DATA_PAYLOAD_LEN_MAX];
+}__attribute__((packed)) thost_upper_cmpt_msg;
 
 struct host_upper_cmpt_frame		// 接受udp数据的信息结构体
 {
