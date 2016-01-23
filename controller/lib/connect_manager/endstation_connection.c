@@ -459,21 +459,30 @@ void connect_table_destroy( void )
 {
 	connect_tbl_pdblist connect_pnode = NULL;
 	pthread_mutex_lock( &cnnt_mutex );
-	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+	/*	list_for_each( &connect_pnode->list, &cnnt_list_guard->list )
 	{
-		if( connect_pnode != NULL )
-			free( connect_pnode );
-		connect_pnode = NULL;
+		list_entry( ,list );
 	}
 
+	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+	{DEBUG_LINE();
+		// delect node
+		if( (connect_pnode != NULL) && (connect_pnode != cnnt_list_guard) )
+		{DEBUG_LINE();
+			list_del( &connect_pnode->list );
+			free( connect_pnode );
+			connect_pnode = NULL;
+		}
+	}
+DEBUG_LINE();*/
 	if( cnnt_list_guard->list.prev == cnnt_list_guard->list.next )
-	{
+	{DEBUG_LINE();
 		free( cnnt_list_guard );
 		cnnt_list_guard = NULL;
 	}
 	else
 		DEBUG_INFO( "free list Failed!or is bad list!" );
-	
+	DEBUG_LINE();
 	pthread_mutex_unlock( &cnnt_mutex );
 	pthread_mutex_destroy( &cnnt_mutex );
 }

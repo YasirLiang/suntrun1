@@ -123,6 +123,7 @@ int terminal_end_sign( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len );
 int termianal_music_enable( uint16_t cmd, void *data, uint32_t data_len );
 int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len );
+int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len );//2016/1/23
 
 /*@}*/
 
@@ -183,6 +184,11 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
 void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value );
 int terminal_speak_track( uint16_t addr, bool track_en );// ÉãÏñ¸ú×Ù½Ó¿Ú
+
+void terminal_register_init();
+void system_register_terminal_pro( void );
+void terminal_begin_register( void );
+void terminal_proccess_system_close( void );
 
 /*@}*/
 

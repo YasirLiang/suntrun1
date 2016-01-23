@@ -434,7 +434,7 @@ int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uin
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
 		upper_cmpt_current_cmrnum_get( data, &curcmr, CMPT_DATA_OFFSET, 0 );
-		curcmr.camara_num += 1;
+		curcmr.camara_num += 1; // change;2016-1-21
 		camera_select_num( 0, &curcmr, sizeof(uint8_t) );
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, NULL, 0 );
@@ -477,7 +477,7 @@ int proccess_upper_cmpt_vidicon_control( uint16_t protocal_type, void *data, uin
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{
 		upper_cmpt_camera_controller_get( data, &cmr_data, CMPT_DATA_OFFSET, 0 );
-		camera_address = gcurpresetcmr.camera_num;
+		camera_address = gcurpresetcmr.camera_num; 
 		upper_computer_set_camera_d_command( &d_cmd , &cmr_data );
 		speed_lv = cmr_data.level_speed;
 		speed_vertical = cmr_data.vertical_speed;

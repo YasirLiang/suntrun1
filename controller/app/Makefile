@@ -29,3 +29,4 @@ sinclude $(CUR_OBJS:.o=.d)
 clean:
 	@echo $(RM) $(CUR_OBJS) $(BIN) $(DUMPTXT) .*.sw?
 	@$(RM) $(CUR_OBJS) $(BIN) $(DUMPTXT) $(CUR_OBJS) $(DEPS) .*.sw?
+

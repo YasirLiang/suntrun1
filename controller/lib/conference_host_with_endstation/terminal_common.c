@@ -84,7 +84,7 @@ int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_ad
 	if( write_counts <= SYSTEM_TMNL_MAX_NUM )
 	{
 		int write_num = Fwrite( fd, ptmnl_addr, sizeof(terminal_address_list), write_counts );
-		if( (write_num < write_counts) || ferror( fd ) )
+		if( (write_num != write_counts) || ferror( fd ) )
 		{
 			DEBUG_INFO( " write terminal address Err: ret = %d", ret );
 			return -1;
@@ -108,13 +108,15 @@ int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_ad
 *	ptmnl_addr: the buf of reading  from stream
 *return value:
 *	-1:error
-*	else: the right terminal num of reading from stream
+*	else: the right terminal num of reading from stream( change data 2016-1-23)
 *******************************************************************/ 
 int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_addr )
 {
 	assert( fd && ptmnl_addr );
 	bool is_crc_right = false;
+	terminal_address_list temp_addr_list[SYSTEM_TMNL_MAX_NUM];
 
+	memset( temp_addr_list, 0, sizeof(terminal_address_list)*SYSTEM_TMNL_MAX_NUM);
 	if( Fseek( fd, 0, SEEK_SET ) == -1 ) // 从文件开始的地方读
 		return -1;
 	
@@ -146,15 +148,18 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 
 	if( Fseek( fd, 4, SEEK_SET ) == -1 ) // 从文件的终端地址信息开始的地方读
 		return -1;
-	
+
 	uint16_t count_crc = 0; // 计算的crc
 	if( (tmnl_num > 0) && (tmnl_num <= SYSTEM_TMNL_MAX_NUM ))
 	{
-		// count the crc of the data
+		// read the file data and  count the crc of the data
+#if 0
 		while( !feof( fd ) )
 		{
+		
 			uint8_t byte = 0;
 			int ret = 0;
+			
 			ret = Fread( fd, &byte, sizeof(byte), 1 );
 			if( ferror( fd ) ) // 读取错误
 			{	
@@ -166,7 +171,22 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 				count_crc += byte;
 			}
 		}
-
+#else
+		uint16_t rount_num = 0;
+		uint16_t real_num = Fread( fd, temp_addr_list, sizeof(terminal_address_list), tmnl_num );
+		if( real_num != tmnl_num )
+		{
+			DEBUG_INFO( "Err  real terminal num in addess file!" );
+			return -1;
+		}
+		
+		uint8_t *p = (uint8_t*)temp_addr_list;
+		for( rount_num = 0; rount_num < real_num*sizeof(terminal_address_list); rount_num++ )
+		{
+			count_crc +=p[rount_num];
+		}
+		
+#endif
 		if( count_crc == read_crc )
 			is_crc_right = true;
 	}
@@ -176,6 +196,7 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 	int tmnl_counts = 0;
 	if( is_crc_right )
 	{
+#if 0
 		if( Fseek( fd, 4, SEEK_SET ) == -1 ) // 从文件的终端地址信息开始的地方读
 			return -1;
 		
@@ -195,6 +216,10 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 				tmnl_counts++;
 			}
 		}
+#else
+		tmnl_counts = tmnl_num;
+		memcpy( ptmnl_addr, temp_addr_list, tmnl_counts*sizeof(terminal_address_list) );
+#endif
 	}
 	else
 	{
@@ -295,7 +320,8 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		ttmnl_recv_msg recv_data;
 		ssize_t ret = 0;
 
-		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data" );
+		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
+		DEBUG_ONINFO( "=========>>>>target id = 0x%016llx", target_id  );
 		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
 		if( ret < 0 )
 		{
@@ -355,5 +381,25 @@ void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint
 	ternminal_send( &askbuf, asklen, target_zero, true );
 }
 
+extern volatile ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
+void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  target_id )
+{
+	tmnl_pdblist tmnl_list_station = search_terminal_dblist_entity_id_node( target_id, dev_terminal_list_guard );
+	if( NULL == tmnl_list_station )
+	{
+		DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id );
+		tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
+		if( NULL == tmnl_list_station )
+		{
+			DEBUG_INFO( "create new terminal dblist node failed!" );
+			return;
+		}
 
+		init_terminal_dblist_node_info( tmnl_list_station );
+		tmnl_list_station->tmnl_dev.entity_id = target_id; 
+		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
+	}
+
+	gregister_tmnl_pro.rgs_state = RGST_WAIT;
+}
 

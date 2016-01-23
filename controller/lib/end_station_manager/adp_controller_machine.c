@@ -5,6 +5,7 @@
 #include "adp_controller_machine.h"
 #include "jdksavdecc_aem_descriptor.h"
 #include "aecp_controller_machine.h"
+#include "terminal_common.h" // add date:2016/1/23 ;for register terminal;func interface:terminal_common_create_node_by_adp_discover_can_regist
 
 void adp_entity_state_avail( solid_pdblist guard,  solid_pdblist exist_node, const struct jdksavdecc_adpdu_common_control_header *adp_hdr )
 {
@@ -101,7 +102,8 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 		DEBUG_INFO( "list lenght = %d", list_len + 1 );// 新创建节点插入到链表前链表长度为原来的长度
 		endpoint_dblist_show( guard );
 		aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, entity_entity_id );
-		
+		terminal_common_create_node_by_adp_discover_can_regist(entity_entity_id); // 创建终端链表
+
 		return success_node;
 	}
 	else

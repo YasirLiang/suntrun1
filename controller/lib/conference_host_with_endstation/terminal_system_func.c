@@ -29,6 +29,9 @@ void terminal_system_reallot_addr( void )
 	/* 打开地址文件，并清除文件内容 */
 	terminal_open_addr_file_wt_wb();
 
+	/*清除注册处理*/
+	terminal_register_init();
+
 	terminal_reallot_address();
 }
 

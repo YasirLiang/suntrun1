@@ -452,6 +452,7 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data );
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame );
 void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint16_t data_len );
+void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  target_id );
 
 int upper_computer_common_recv_messsage_save( int fd, struct sockaddr_in *sin_in, bool udp_exist, socklen_t sin_len, uint8_t *frame, uint16_t frame_len );
 void upper_computer_recv_message_get_pro( void );

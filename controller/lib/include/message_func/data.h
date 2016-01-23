@@ -4,8 +4,8 @@
 #include "jdksavdecc_world.h"
 #include "func_proccess.h"
 
-#define MAX_FUNC_LINK_ITEMS 50
-#define MAX_PROCCESS_FUNC 50
+#define MAX_FUNC_LINK_ITEMS 51
+#define MAX_PROCCESS_FUNC 51
 
 #define TERMINAL_USE   (1<<0)
 #define MENU_USE  (1<<1)
@@ -34,7 +34,9 @@ enum menu_command//菜单相关命令定义
 	MENU_CMR_CTRL_ALIGN, // 控制对齐
 	MENU_CMR_FULL_VIEW,
 	MENU_CMR_CLR_PRESET, // 预置点初始化
-	MENU_PRIOR_EN_SET // 主席优先
+	MENU_PRIOR_EN_SET, // 主席优先
+	MENU_TERMINAL_SYS_REGISTER, // 系统注册终端
+	MENU_FUNC_NUM
 };
 
 extern const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS];

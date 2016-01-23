@@ -132,7 +132,7 @@ typedef enum enum_func_link // conferenc command functions command link
 	FUNC_CMPT_SELECT_PROPOSER, 		// 选择申请人		
 	FUNC_CMPT_EXAMINE_APPLICATION,	// 审批申请
 	FUNC_CMPT_CONFERENCE_PERMISSION,	// 会议权限
-	FUNC_CMPT_SENDDOWN_MESSAGE,		// 下发短消息
+	FUNC_CMPT_SENDDOWN_MESSAGE,		// 下发短消息 11
 	FUNC_CMPT_TABLE_TABLET_STANDS_MANAGER, // 桌牌管理, 设置lcd的显示方式
 	FUNC_CMPT_BEGIN_SIGN,			// 开始签到
 	FUNC_CMPT_SIGN_SITUATION,			// 签到情况
@@ -171,9 +171,10 @@ typedef enum enum_func_link // conferenc command functions command link
 	FUNC_MENU_CMR_FULL_VIEW,
 	FUNC_MENU_CMR_CLR_PRESET,
 	FUNC_MENU_PRIOR_EN_SET,
+	FUNC_MENU_TERMINAL_SYS_REGISTER,
 	/*@}*/
 	/*{@系统命令*/
-	FUNC_SYS_PRESET_ADDR,
+	FUNC_SYS_PRESET_ADDR,// 50
 	FUNC_SYS_GET_PRESET,
 	/*@}*/
 	FUNC_PROCCESS_NUM

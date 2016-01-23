@@ -107,6 +107,7 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 	}
 	
 	addr = *(uint16_t *)data;
+	//DEBUG_INFO( "preset select addr = %04x, gcurpresetcmr.tmnl_addr= %04x", addr, gcurpresetcmr.tmnl_addr );
 	if(addr>FULL_VIEW_ADDR)
 	{
 		return false;
@@ -118,8 +119,11 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 		if( gcurpresetcmr.tmnl_addr != 0xFFFF )
 		{
 			tmnl_pdblist close_node = found_terminal_dblist_node_by_addr( gcurpresetcmr.tmnl_addr ); // ×¢: ====>>>ÕâÀïÒ²²Ù×÷ÁËÖÕ¶ËÁ´±í<<<<<<<<=====
-			connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, close_node,\
-				true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+			if( close_node != NULL )
+			{
+				connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, close_node,\
+					true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+			}
 		}
 	}
 	
@@ -127,9 +131,12 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 	{
 		if( addr != 0xFFFF )
 		{
-			tmnl_pdblist peset_node = found_terminal_dblist_node_by_addr( gcurpresetcmr.tmnl_addr ); // ×¢: ====>>>ÕâÀïÒ²²Ù×÷ÁËÖÕ¶ËÁ´±í<<<<<<<<=====
-			terminal_mic_state_set( MIC_PRESET_BIT_STATUS, peset_node->tmnl_dev.address.addr, \
-				peset_node->tmnl_dev.entity_id, true, peset_node );
+			tmnl_pdblist peset_node = found_terminal_dblist_node_by_addr( addr ); // ×¢: ====>>>ÕâÀïÒ²²Ù×÷ÁËÖÕ¶ËÁ´±í<<<<<<<<=====
+			if( peset_node != NULL )
+			{
+				 terminal_mic_state_set( MIC_PRESET_BIT_STATUS, peset_node->tmnl_dev.address.addr, \
+					peset_node->tmnl_dev.entity_id, true, peset_node );
+			}	
 		}
 	}
 	
@@ -149,6 +156,7 @@ int camera_select_num( uint16_t cmd, void *data, uint32_t data_len )// ´Ëº¯ÊıÎ´Í
 	
 	curcmr = *((uint8_t*)data);
 	gcurpresetcmr.camera_num = curcmr;
+	DEBUG_INFO( "curcamera Num = %d", gcurpresetcmr.camera_num );
 
 	// ÇĞ»»ÉãÏñÍ·......
 	camera_output_switch( gcurpresetcmr.camera_num, CAMERA_OUT_TRACK_VIEW, true );
@@ -439,6 +447,7 @@ int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uin
 {
 	camera_form_can_send( cmr_addr, d_cmd, speed_lv, speed_vertical ); // control the camera
 	return (camera_form_can_send( cmr_addr, 0, 0, 0 )); // stop the camera
+	return 0;
 }
 
 /*³õÊ¼»¯Ô¤ÖÃµãÎÄ¼ş(ÏµÍ³µÚÒ»´ÎÆô¶¯)Óë³õÊ¼»¯Ô¤ÖÃµãÁĞ±í*/

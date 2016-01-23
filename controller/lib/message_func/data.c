@@ -58,6 +58,7 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, camera_control_full_view, FUNC_MENU_CMR_FULL_VIEW},
 	{ 0xffffffff, camera_preset_set, FUNC_MENU_CMR_CLR_PRESET },
 	{ 0xffffffff, termianal_chairman_prior_set, FUNC_MENU_PRIOR_EN_SET },
+	{ 0Xffffffff, terminal_system_register, FUNC_MENU_TERMINAL_SYS_REGISTER},// 2016/1/23 add
 	
 	{ 0xffffffff, camera_preset_addr_select, FUNC_SYS_PRESET_ADDR },
 	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }
@@ -116,6 +117,7 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ MENU_USE, MENU_CMR_FULL_VIEW, FUNC_MENU_CMR_FULL_VIEW, 0},
 	{ MENU_USE, MENU_CMR_CLR_PRESET, FUNC_MENU_CMR_CLR_PRESET, 0},
 	{ MENU_USE, MENU_PRIOR_EN_SET, FUNC_MENU_PRIOR_EN_SET, 0},
+	{ MENU_USE, MENU_TERMINAL_SYS_REGISTER, FUNC_MENU_TERMINAL_SYS_REGISTER },// 2016/1/23 add
 
 	{ SYSTEM_USE, SYS_PRESET_ADDR, FUNC_SYS_PRESET_ADDR, 0},
 	{ SYSTEM_USE, SYS_GET_PRESET, FUNC_SYS_GET_PRESET, 0}

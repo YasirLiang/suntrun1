@@ -48,7 +48,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
-	muticast_connector_time_tick();
+	//muticast_connector_time_tick();
 
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
@@ -82,7 +82,13 @@ int fn_netif_cb( struct epoll_priv *priv )
 	convert_eui48_to_uint64( frame.dest_address.value, &dest_addr );
 	convert_eui48_to_uint64( jdksavdecc_multicast_adp_acmp.value, &default_native_dest );
 	if( (status > 0) && ( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE ) )
-	{
+	{	
+#if 0
+		if( frame.payload[0] != 0xfa )
+		{
+			DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data===>>" );
+		}
+#endif
 		solid_pdblist list_head = endpoint_list;
 	       	int rx_status = -1;
 	       	bool is_notification_id_valid = false;// 这里没有任何意义，因为系统中没有实现发送数据的命令的管理机制，这里的管理机制是指管理机制主机的一个管理终端与用户交互的过程，即发送数据后有一个特定的ID来标识其命令的
@@ -117,6 +123,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	if( recv_len > 0)
 	{
 		// 保存接收数据到缓冲区
+		DEBUG_RECV( recv_frame.payload, recv_len, "Begin udp Recv" );
 		upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
 	}
 	else

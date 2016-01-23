@@ -18,6 +18,7 @@
 #include "terminal_system.h"
 #include "upper_computer_pro.h"
 #include "camera_pro.h"
+#include "time_handle.h"
 
 FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
@@ -27,7 +28,7 @@ bool reallot_flag = false; 									// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
 tchairman_control_in gchm_int_ctl; 						// 主席插话
-ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
+volatile ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 uint8_t speak_limit_time = 0; 								// 发言时长， 0表示无限时；1-63表示限时1-63分钟
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
@@ -37,6 +38,8 @@ uint8_t gsigned_flag = false;								// 签到标志
 evote_state_pro gvote_flag; 								// 投票处理
 bool gfirst_key_flag; 									// 真为投票首键有效
 tevote_type gvote_mode;									// 投票模式
+volatile uint16_t gnoregister_index;						// 未注册地址列表索引
+bool gafter_allot_register = false;							// 分配地址后注册标志
 
 type_spktrack gspeaker_track;
 
@@ -70,12 +73,13 @@ int init_terminal_address_list_from_file( void )
 	ret = terminal_address_list_read_file( addr_file_fd, tmnl_addr_list );
 	if( ret == -1 )
 	{
-		DEBUG_INFO( "init tmnl_addr_list from address file!need to reallot terminal address");
+		DEBUG_INFO( "init tmnl_addr_list from address file!need to reallot terminal address\n\t\tPlease send reAllot command by command line!!!");
 		reallot_flag = true;
 	}
 
 	return ret;
 }
+
 void init_terminal_address_list( void )
 {
 	int i = 0;
@@ -89,7 +93,6 @@ void init_terminal_address_list( void )
 	}
 }
 
-
 /*==============================================
 结束初始化终端地址列表
 ================================================*/
@@ -100,6 +103,7 @@ inline void init_terminal_allot_address( void )
 	allot_addr_pro.addr_start = 0;
 	allot_addr_pro.index = 0;
 	allot_addr_pro.renew_flag= 0;
+	reallot_flag = false; // disable reallot
 }
 
 inline void init_terminal_device_double_list( void )
@@ -179,7 +183,7 @@ void print_out_terminal_addr_infomation( terminal_address_list* p, int num )
 void init_terminal_proccess_system( void )
 {
 	int tmnl_count = 0;
-	init_terminal_proccess_fd(  &addr_file_fd );
+	init_terminal_proccess_fd( &addr_file_fd );
 	if( NULL == addr_file_fd )
 		return;
 #if 0	
@@ -193,19 +197,31 @@ void init_terminal_proccess_system( void )
 		tmnl_count = init_terminal_address_list_from_file();
 		if( tmnl_count != -1)
 			DEBUG_INFO( "terminal count num = %d", tmnl_count );
-		Fclose( addr_file_fd ); // 关闭文件描述符
+
+		gregister_tmnl_pro.tmn_total = tmnl_count;
 	}
-#if 1	
+
 #ifdef __DEBUG__ // 输出终端信息的数据
 	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
-	if( tmnl_count != -1)
+	if( tmnl_count != -1 )
 		DEBUG_INFO( "terminal count num = %d", tmnl_count );
 #endif
-#endif
+
 	init_terminal_allot_address();
 	init_terminal_device_double_list();	
 	init_terminal_discuss_param();
 	terminal_speak_track_pro_init();
+}
+
+/*释放终端资源2016-1-23*/
+void terminal_proccess_system_close( void )
+{
+	if( addr_file_fd != NULL )
+	{
+		Fclose( addr_file_fd );// 关闭文件描述符
+		if( addr_file_fd != NULL )
+			addr_file_fd = NULL;
+	}
 }
 
 /*注册*/
@@ -222,27 +238,122 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 		bret = false;
 #endif
 	}
-	
-	if( !p_tmnl_station->tmnl_dev.tmnl_status.is_rgst )
+	else
 	{
-		for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
+		if( !p_tmnl_station->tmnl_dev.tmnl_status.is_rgst )
 		{
-			if( (address & TMN_ADDR_MASK) == (tmnl_addr_list[i].addr))
+			for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
 			{
-				DEBUG_INFO( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
-				p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
-				p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
-			        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
-				p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
-				bret = true;
-				break;
+				if( (address & TMN_ADDR_MASK) == (tmnl_addr_list[i].addr))
+				{
+					DEBUG_INFO( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
+					p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
+					p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
+				        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
+					p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
+					gregister_tmnl_pro.tmn_rgsted++;
+					set_terminal_system_state( DISCUSS_STATE, true );
+					bret = true;
+					break;
+				}
 			}
 		}
 	}
 
-	set_terminal_system_state( DISCUSS_STATE, true );
-
 	return bret;
+}
+
+// 开始注册函数
+void terminal_begin_register( void )
+{
+	gregister_tmnl_pro.tmn_rgsted = 0;
+	gnoregister_index = gregister_tmnl_pro.tmn_rgsted;
+	gregister_tmnl_pro.rgs_state = RGST_QUERY;
+	over_time_set( TRGST_OTIME_HANDLE, 5000 );
+}
+
+/******************************************
+*Auther:YasirLiang
+*Date:2016/1/23
+*Name:system_register_terminal_pro
+*Func:register terminal proccess
+*Paramer:
+*		None
+*******************************************/
+void system_register_terminal_pro( void )
+{
+	register_state reg_state =  gregister_tmnl_pro.rgs_state;
+	if( reallot_flag )
+	{// reallot time, can't register
+		return;
+	}
+
+	if( reg_state == RGST_IDLE )
+		return;
+	else if( reg_state == RGST_WAIT )
+	{
+		int i = 0;
+		uint16_t tmn_total = gregister_tmnl_pro.tmn_total;
+		if( tmn_total < SYSTEM_TMNL_MAX_NUM )
+		{
+			uint16_t addr = 0;
+			tmnl_pdblist register_node = NULL;
+			if( gafter_allot_register && (NULL != found_terminal_dblist_node_by_addr( tmnl_addr_list[gnoregister_index].addr)))
+			{
+				if( !register_node->tmnl_dev.tmnl_status.is_rgst && (addr != 0xffff) && gafter_allot_register )
+				{// 分配地址时注册
+					addr = tmnl_addr_list[gnoregister_index].addr;
+					find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+					over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
+				}
+				
+				gregister_tmnl_pro.rgs_state = RGST_QUERY;
+				over_time_set( TRGST_OTIME_HANDLE, 5000 );
+				return;
+			}
+			else if( !gafter_allot_register )
+			{// 对于系统保存的终端应用地址，但未注册可遍历地址表注册所有未注册的终端
+				for( i = 0; i < tmn_total; i++ )
+				{
+					addr = tmnl_addr_list[i].addr;
+					register_node = found_terminal_dblist_node_by_addr( addr );
+					if( addr != 0xffff )
+					{
+						if( (register_node != NULL) && !register_node->tmnl_dev.tmnl_status.is_rgst )
+						{
+							find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+							over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
+						}
+						else if( register_node == NULL )
+						{
+							find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+							over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续5s	
+						}
+					}
+				}
+
+				gregister_tmnl_pro.rgs_state = RGST_QUERY;
+				over_time_set( TRGST_OTIME_HANDLE, 5000 );
+			}
+		}
+	}
+	else if(reg_state == RGST_QUERY)
+	{
+		if( (gregister_tmnl_pro.tmn_rgsted == gregister_tmnl_pro.tmn_total) /*||over_time_listen(QUERY_TMN_GAP)*/ ||\
+			over_time_listen(TRGST_OTIME_HANDLE))
+		{
+			DEBUG_INFO( "tmn_rgsted =%d, tmn_total = %d", gregister_tmnl_pro.tmn_rgsted, gregister_tmnl_pro.tmn_total );
+			gregister_tmnl_pro.rgs_state = RGST_IDLE;
+			over_time_stop( TRGST_OTIME_HANDLE );
+		}
+	}
+}
+
+void terminal_register_init()
+{
+	gregister_tmnl_pro.rgs_state = RGST_IDLE;
+	gregister_tmnl_pro.tmn_rgsted = 0;
+	gregister_tmnl_pro.tmn_total = 0;
 }
 
 void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
@@ -251,7 +362,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 
 	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
 	{
-		if( address == (tmnl_addr_list[i].addr))
+		if( ( address != 0xffff) && (address == (tmnl_addr_list[i].addr)))
 		{
 			DEBUG_INFO( "terminal(--%04x--) save type = %d ", address, tmnl_type );
 
@@ -367,19 +478,15 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 				DEBUG_INFO( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
 			}
 
-			// save new addr to file
-			addr_file_fd = Fopen( ADDRESS_FILE, "ab+"); // -->>此流程可优化，改为直接操作内存
-			if( addr_file_fd == NULL )
-			{
-				DEBUG_ERR( "terminal_func_allot_address open fd  Err!" );
-				assert( NULL != addr_file_fd );
-			}
-
 			terminal_address_list tmp_addr;
 			tmp_addr.addr = p_addr_list[p_allot->index].addr;
 			tmp_addr.tmn_type = p_addr_list[p_allot->index].tmn_type;
-			terminal_address_list_write_file( addr_file_fd, &tmp_addr, 1 );
-			Fclose( addr_file_fd );
+			if( 1 == terminal_address_list_write_file( addr_file_fd, &tmp_addr, 1 ) )
+			{// 正常保存，则开始注册终端,用于有终端链表但没有注册的节点
+				gregister_tmnl_pro.tmn_total++;
+				gnoregister_index = p_allot->index;
+				gregister_tmnl_pro.rgs_state = RGST_WAIT;
+			}
 		}
 	}
 	else
@@ -912,6 +1019,28 @@ int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len )
 
 	prior_en = *((uint8_t*)data)?true:false;
 	gset_sys.chman_first = prior_en;
+}
+
+/******************************************
+*Auther:YasirLiang
+*Date:2016/1/23
+*Name:terminal_system_register
+*Func:register terminal
+*Paramer:
+*		cmd;data;data_len
+*******************************************/
+int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data );
+	if( data != NULL )
+	{
+		uint16_t address = *((uint16_t*)data);
+		terminal_query_endstation( address, BRDCST_1722_ALL );
+		
+		return 0;
+	}
+	
+	return 0;
 }
 
 /*==================================================
@@ -1585,12 +1714,12 @@ bool addr_queue_find_by_value( uint16_t *addr_queue, uint8_t queue_len, uint16_t
 tmnl_pdblist found_terminal_dblist_node_by_addr( uint16_t addr )
 {
 	assert( dev_terminal_list_guard );
-	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
 	
-	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
 	{
-		if( tmp->tmnl_dev.address.addr == addr )
-			return tmp;
+		if( tmp_node->tmnl_dev.address.addr == addr )
+			return tmp_node;
 	}
 
 	return NULL;
@@ -2179,7 +2308,7 @@ void terminal_vote_state_set( uint16_t addr )
 			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SELECT;
 			terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
 			terminal_lcd_display_num_send( addr, LCD_OPTION_DISPLAY, SLCT_LV_4_INTERFACE );
-			terminal_led_set_save( addr,TLED_KEY1, TLED_ON );
+			terminal_led_set_save( addr, TLED_KEY1, TLED_ON );
 			terminal_led_set_save( addr, TLED_KEY2, TLED_ON );
 			terminal_led_set_save( addr, TLED_KEY3, TLED_ON );
 			terminal_led_set_save( addr, TLED_KEY4, TLED_ON );
@@ -3157,14 +3286,15 @@ tmnl_pdblist terminal_system_dblist_except_free( void )
 
 void terminal_open_addr_file_wt_wb( void )
 {
+	if( addr_file_fd != NULL )
+		Fclose( addr_file_fd );// 先关闭
+		
 	addr_file_fd = Fopen( ADDRESS_FILE, "wb+");
 	if( addr_file_fd == NULL )
 	{
 		DEBUG_ERR( "terminal_open_addr_file_wt_wb open fd  Err!" );
 		assert( NULL != addr_file_fd );
-	}
-	
-	Fclose( addr_file_fd );	
+	}	
 }
 
 // 摧毁终端链表

@@ -7,7 +7,7 @@
 #include "uart.h"
 
 #ifdef __DEBUG__
-//#define __CAM_PRINTF__
+#define __CAM_PRINTF__
 #endif
 
 #define CAMERA_UART_FILE "/dev/ttySAC1" // 串口设备文件

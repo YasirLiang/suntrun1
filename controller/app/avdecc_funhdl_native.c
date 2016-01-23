@@ -276,6 +276,7 @@ int thread_func_fn( void * pgm )
 		
 		pthread_mutex_unlock( &p_func_wq->control.mutex ); // unlock mutex
 
+		DEBUG_INFO( "Run func comand index = %d", func_index );
 		p_func_items[func_index].cmd_proccess( func_cmd, func_data, data_len );// run command
 	}
 	
@@ -323,6 +324,9 @@ int pthread_recv_data_fn( void *pgm )
 	        tempval.tv_sec = interval_ms/1000;  
 	        tempval.tv_usec = (interval_ms%1000)*us_per_ms;
 	        select( 0, NULL, NULL, NULL, &tempval );
+
+		// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
+		system_register_terminal_pro();
 
 		if( buf_num >= SYS_BUF_RECV_COUNT )
 			buf_num = 0;
