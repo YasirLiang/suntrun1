@@ -55,9 +55,17 @@ typedef enum
 
 typedef struct _type_tmnl_register_pro
 {
-  register_state rgs_state;
-  uint16_t tmn_total;
-  uint16_t tmn_rgsted;
+	bool unregister_list_full;// 注册地址满
+	bool register_list_full;
+	register_state rgs_state;// 注册的标识位
+	uint16_t tmn_total;// 终端的总数
+	uint16_t tmn_rgsted;// 已注册的终端数量
+	uint16_t rgsted_head;// 已注册的表头
+	uint16_t rgsted_trail;// 已注册的表尾 (其值+1 =  noregister_head)
+	uint16_t noregister_head;// 未注册表头
+	uint16_t noregister_trail;// 未注册表尾
+	uint16_t list_size;// 表总长度
+	uint16_t register_pro_addr_list[SYSTEM_TMNL_MAX_NUM];// 注册地址列表(注册与未注册的);在各自的区间内表示
 }ttmnl_register_proccess;
 
 typedef enum _enum_apply_pro

@@ -38,8 +38,6 @@ uint8_t gsigned_flag = false;								// 签到标志
 evote_state_pro gvote_flag; 								// 投票处理
 bool gfirst_key_flag; 									// 真为投票首键有效
 tevote_type gvote_mode;									// 投票模式
-volatile uint16_t gnoregister_index;						// 未注册地址列表索引
-bool gafter_allot_register = false;							// 分配地址后注册标志
 
 type_spktrack gspeaker_track;
 
@@ -182,7 +180,10 @@ void print_out_terminal_addr_infomation( terminal_address_list* p, int num )
 
 void init_terminal_proccess_system( void )
 {
-	int tmnl_count = 0;
+	int tmnl_count = 0, i = 0;
+	uint16_t addr = 0xffff;
+	
+	terminal_register_init();
 	init_terminal_proccess_fd( &addr_file_fd );
 	if( NULL == addr_file_fd )
 		return;
@@ -196,9 +197,17 @@ void init_terminal_proccess_system( void )
 	{
 		tmnl_count = init_terminal_address_list_from_file();
 		if( tmnl_count != -1)
+		{
 			DEBUG_INFO( "terminal count num = %d", tmnl_count );
 
-		gregister_tmnl_pro.tmn_total = tmnl_count;
+			gregister_tmnl_pro.tmn_total = tmnl_count;// 保存到未注册列表
+			for( i = 0; i < tmnl_count; i++ )
+			{
+				addr = tmnl_addr_list[i].addr;
+				if( addr != 0xffff )
+					terminal_register_pro_address_list_save( &gregister_tmnl_pro, addr, false );
+			}
+		}		
 	}
 
 #ifdef __DEBUG__ // 输出终端信息的数据
@@ -222,6 +231,144 @@ void terminal_proccess_system_close( void )
 		if( addr_file_fd != NULL )
 			addr_file_fd = NULL;
 	}
+}
+/*********************************************
+=注册处理相关函数开始
+**********************************************/
+// 终端注册保存地址到已注册或未注册列表,注:保存已注册与未注册终端的算法不同
+bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_pro, uint16_t addr_save, bool is_register_save )
+{
+	if( (p_regist_pro != NULL) && (addr_save != 0xffff))
+	{
+		if( !is_register_save )
+		{
+			uint16_t *p_unregister_trail = &p_regist_pro.noregister_trail;
+			bool *p_unregister_full = &p_regist_pro.unregister_list_full;
+			if(  *p_unregister_trail < p_regist_pro.list_size )
+			{
+				p_regist_pro.register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下表
+				if( *p_unregister_trail >= p_regist_pro.list_size )
+				{
+					*p_unregister_full = true;
+				}
+
+				return true;
+			}
+		}
+		else
+		{
+			/*
+			**1、将未注册列表头的元素插入未注册的尾部
+			**2、未注册的头部加1
+			**3、往已注册列表的尾部插入需保存的地址
+			*/ 
+			if( terminal_register_pro_address_list_save( p_regist_pro, p_regist_pro->register_pro_addr_list[p_regist_pro->noregister_head], false ) )
+			{
+				p_regist_pro->noregister_head++;
+				p_regist_pro.register_pro_addr_list[++p_regist_pro->rgsted_trail] = addr_save;
+			}
+		}
+	}
+
+	return false;
+}
+
+// 从未注册列表中删除已注册终端:addr_delect是已注册的地址
+bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect )
+{
+	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
+	{
+		// 寻找删除的节点
+		int i = 0, delect_index;
+		bool found_dl = false;
+		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
+		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->rgsted_trail + 1)) )
+		{
+			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+				*p_head, *p_trail, p_regist_pro->rgsted_trail );
+			return false;
+		}
+
+		for( i = *p_head; i <= *p_trail; i++ )
+		{
+			if( p_regist_pro->register_pro_addr_list[i] == addr_delect )
+			{
+				delect_index = i;
+				found_dl = true;
+				break;
+			}
+		}
+
+		if( found_dl )
+		{
+			// 将其与未注册列表的头的数据交换
+			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			{
+				/*
+				**1: 移动已注册表尾到未注册表头
+				**2:移动未注册表头到未注册的表头的下一个未注册元素
+				*/
+				p_regist_pro->rgsted_trail = *p_head;
+				(*p_head)++;
+				if( *p_head > *p_trail )
+					*p_trail = *p_head;// 移动尾指针
+
+				return true;
+			}
+		}
+		
+	}
+
+	return false;
+}
+
+// 删除终端已注册地址
+bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect )
+{
+	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
+	{
+		// 寻找删除的节点
+		int i = 0, delect_index = -1;
+		bool found_dl = false;
+		uint16_t *p_head = &p_regist_pro->rgsted_head, *p_trail = &p_regist_pro->rgsted_trail;
+		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail >= (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->noregister_head - 1)) )
+		{
+			DEBUG_INFO( "Err delect register address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+				*p_head, *p_trail, p_regist_pro->rgsted_trail );
+			return false;
+		}
+
+		for( i = *p_head; i <= *p_trail; i++ )
+		{
+			if( p_regist_pro->register_pro_addr_list[i] == addr_delect )
+			{
+				delect_index = i;
+				found_dl = true;
+				break;
+			}
+		}
+
+		if( found_dl )
+		{
+			// 将其与已注册列表的尾的数据交换
+			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			{
+				/*
+				**1: 移动未注册表头到已注册表尾
+				**2: 移动已注册表尾到已注册的表尾的上一个已注册元素
+				*/
+				p_regist_pro->noregister_head = *p_trail;
+				(*p_trail)--;
+
+				return true;
+			}
+		}
+		
+	}
+
+	return false;
 }
 
 /*注册*/
@@ -268,7 +415,7 @@ void terminal_begin_register( void )
 {
 	gregister_tmnl_pro.tmn_rgsted = 0;
 	gnoregister_index = gregister_tmnl_pro.tmn_rgsted;
-	gregister_tmnl_pro.rgs_state = RGST_QUERY;
+	gregister_tmnl_pro.rgs_state = RGST_WAIT;
 	over_time_set( TRGST_OTIME_HANDLE, 5000 );
 }
 
@@ -349,12 +496,24 @@ void system_register_terminal_pro( void )
 	}
 }
 
-void terminal_register_init()
+void terminal_register_init( void )
 {
-	gregister_tmnl_pro.rgs_state = RGST_IDLE;
+	int i = 0;
+	gregister_tmnl_pro.list_size = SYSTEM_TMNL_MAX_NUM;
+	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
+		gregister_tmnl_pro.register_pro_addr_list[i] = 0xffff;
+
 	gregister_tmnl_pro.tmn_rgsted = 0;
 	gregister_tmnl_pro.tmn_total = 0;
+	gregister_tmnl_pro.noregister_head = 0;
+	gregister_tmnl_pro.noregister_trail = 0;
+	gregister_tmnl_pro.rgsted_head = 0;
+	gregister_tmnl_pro.noregister_trail = 0;
+	gregister_tmnl_pro.rgs_state = RGST_IDLE;
 }
+/*********************************************
+=注册处理相关函数结束
+**********************************************/
 
 void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 {
@@ -2195,8 +2354,7 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	gfirst_key_flag = key_effective; // true = 首次按键有效；
 	*sign_flag = gsigned_flag; 
 
-	assert( dev_terminal_list_guard );
-	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	assert( dev_terminal_list_guamp = dev_terminal_list_guard->next;
 
 	gvote_mode = (tevote_type)vote_type;
 	if( vote_type ==  VOTE_MODE )
