@@ -453,7 +453,8 @@ void system_register_terminal_pro( void )
 					find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
 					over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
 				}
-				
+
+				gafter_allot_register = false;
 				gregister_tmnl_pro.rgs_state = RGST_QUERY;
 				over_time_set( TRGST_OTIME_HANDLE, 5000 );
 				return;
@@ -644,6 +645,7 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 			{// 正常保存，则开始注册终端,用于有终端链表但没有注册的节点
 				gregister_tmnl_pro.tmn_total++;
 				gnoregister_index = p_allot->index;
+				gafter_allot_register = true;
 				gregister_tmnl_pro.rgs_state = RGST_WAIT;
 			}
 		}
