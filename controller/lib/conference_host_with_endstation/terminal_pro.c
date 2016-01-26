@@ -28,7 +28,7 @@ bool reallot_flag = false; 									// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
 tchairman_control_in gchm_int_ctl; 						// 主席插话
-volatile ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
+ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 uint8_t speak_limit_time = 0; 								// 发言时长， 0表示无限时；1-63表示限时1-63分钟
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
@@ -242,12 +242,12 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 	{
 		if( !is_register_save )
 		{
-			uint16_t *p_unregister_trail = &p_regist_pro.noregister_trail;
-			bool *p_unregister_full = &p_regist_pro.unregister_list_full;
-			if(  *p_unregister_trail < p_regist_pro.list_size )
+			uint16_t *p_unregister_trail = &p_regist_pro->noregister_trail;
+			bool *p_unregister_full = &p_regist_pro->unregister_list_full;
+			if(  *p_unregister_trail < p_regist_pro->list_size )
 			{
-				p_regist_pro.register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下表
-				if( *p_unregister_trail >= p_regist_pro.list_size )
+				p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下表
+				if( *p_unregister_trail >= p_regist_pro->list_size )
 				{
 					*p_unregister_full = true;
 				}
@@ -265,7 +265,7 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 			if( terminal_register_pro_address_list_save( p_regist_pro, p_regist_pro->register_pro_addr_list[p_regist_pro->noregister_head], false ) )
 			{
 				p_regist_pro->noregister_head++;
-				p_regist_pro.register_pro_addr_list[++p_regist_pro->rgsted_trail] = addr_save;
+				p_regist_pro->register_pro_addr_list[++p_regist_pro->rgsted_trail] = addr_save;
 			}
 		}
 	}
@@ -358,7 +358,7 @@ bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist
 				/*
 				**1: 直接把尾节点置为不可用地址0xffff,并将尾指针向前移一元素
 				*/
-				p_regist_pro->register_pro_addr_list[(*p_trail)--];
+				p_regist_pro->register_pro_addr_list[(*p_trail)--] = 0xffff;
 				DEBUG_INFO( "noregister list trail index = %d-trail  emlem value = %d", *p_trail, p_regist_pro->register_pro_addr_list[(*p_trail)] );
 
 				return true;
@@ -537,9 +537,9 @@ void system_register_terminal_pro( void )
 #ifdef __DEBUG__
 			int unregister_index = gregister_tmnl_pro.noregister_head;
 			printf( "No Register List :\t" );
-			for( ; unregister_index < = gregister_tmnl_pro.noregister_trail; unregister_index++ )
-				fprintf( stdout, "%04x\t", gregister_tmnl_pro.register_pro_addr_list[unregister_index]);
-			fprintf("\n");
+			for( ; unregister_index <= gregister_tmnl_pro.noregister_trail; unregister_index++ )
+				fprintf( stdout, "%04x\t", gregister_tmnl_pro.register_pro_addr_list[unregister_index] );
+			fprintf( stdout,"\n" );
 #endif
 		}
 	}
@@ -2414,7 +2414,12 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	gfirst_key_flag = key_effective; // true = 首次按键有效；
 	*sign_flag = gsigned_flag; 
 
-	assert( dev_terminal_list_guamp = dev_terminal_list_guard->next;
+	tmnl_pdblist tmp = NULL;
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard != NULL )
+	{
+		tmp = dev_terminal_list_guard->next;	
+	}
 
 	gvote_mode = (tevote_type)vote_type;
 	if( vote_type ==  VOTE_MODE )

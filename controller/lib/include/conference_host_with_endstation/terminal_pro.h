@@ -197,6 +197,11 @@ void terminal_register_init();
 void system_register_terminal_pro( void );
 void terminal_begin_register( void );
 void terminal_proccess_system_close( void );
+bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_pro, uint16_t addr_save, bool is_register_save );
+bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uint16_t register_addr_delect );
+bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist_pro, uint16_t unregister_addr_delect );
+bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect );
+
 
 /*@}*/
 
