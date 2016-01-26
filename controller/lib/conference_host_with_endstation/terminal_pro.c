@@ -207,6 +207,15 @@ void init_terminal_proccess_system( void )
 				if( addr != 0xffff )
 					terminal_register_pro_address_list_save( &gregister_tmnl_pro, addr, false );
 			}
+
+#ifdef __DEBUG__
+				int unregister_index = gregister_tmnl_pro.noregister_head;
+
+				printf( "No Register List : (head index = %d)---(trail index = %d)\n\t", unregister_index, gregister_tmnl_pro.noregister_trail );
+				for( ; unregister_index <= gregister_tmnl_pro.noregister_trail; unregister_index++ )
+					fprintf( stdout, "%04x  ", gregister_tmnl_pro.register_pro_addr_list[unregister_index] );
+				fprintf( stdout,"\n" );
+#endif
 		}		
 	}
 
@@ -246,7 +255,16 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 			bool *p_unregister_full = &p_regist_pro->unregister_list_full;
 			if(  *p_unregister_trail < p_regist_pro->list_size )
 			{
-				p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下表
+				if( (p_regist_pro->register_pro_addr_list[*p_unregister_trail] == 0xffff) &&\
+					(*p_unregister_trail == p_regist_pro->noregister_head ) )
+				{// 当前列表无未注册的地址
+					p_regist_pro->register_pro_addr_list[*p_unregister_trail] = addr_save;//  先保存，这是列表无未注册的地址
+				}
+				else if( p_regist_pro->register_pro_addr_list[*p_unregister_trail] != 0xffff )
+				{
+					p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下标
+				}
+				
 				if( *p_unregister_trail >= p_regist_pro->list_size )
 				{
 					*p_unregister_full = true;
@@ -273,7 +291,7 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 	return false;
 }
 
-// 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址
+// 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址(经测试暂时没有发现问题2016/01/26)
 bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uint16_t register_addr_delect )
 {
 	if( (p_regist_pro != NULL) && (register_addr_delect != 0xffff))
@@ -282,8 +300,8 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 		int i = 0, delect_index;
 		bool found_dl = false;
 		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
-		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->rgsted_trail + 1)) )
+		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
 			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
@@ -303,18 +321,30 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 		if( found_dl )
 		{
 			// 将其与未注册列表的头的数据交换
-			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			DEBUG_INFO( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+			register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
+			if( *p_head > *p_trail )
+				return false;
+			else
 			{
-				/*
-				**1: 移动已注册表尾到未注册表头
-				**2:移动未注册表头到未注册的表头的下一个未注册元素
-				*/
-				p_regist_pro->rgsted_trail = *p_head;
-				(*p_head)++;
-				if( *p_head > *p_trail )
-					*p_trail = *p_head;// 移动尾指针
-
-				return true;
+				if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
+				{
+					/*
+					**1: 移动已注册表尾到未注册表头
+					**2:移动未注册表头到未注册的表头的下一个未注册元素
+					*/
+					p_regist_pro->rgsted_trail = *p_head;
+					if( *p_head == *p_trail )
+					{
+						*p_trail = ++(*p_head);
+					}
+					else
+					{
+						++(*p_head);
+					}
+				
+					return true;
+				}
 			}
 		}
 		
@@ -323,7 +353,7 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 	return false;
 }
 
-// 从未注册列表中清除未注册地址
+// 从未注册列表中清除未注册地址(未进行测试2016/01/26)
 bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist_pro, uint16_t unregister_addr_delect )
 {
 	if( (p_regist_pro != NULL) && (unregister_addr_delect != 0xffff))
@@ -332,8 +362,8 @@ bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist
 		int i = 0, delect_index;
 		bool found_dl = false;
 		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
-		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->rgsted_trail + 1)) )
+		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) ||  ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
 			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
@@ -370,7 +400,7 @@ bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist
 	return false;
 }
 
-// 删除终端已注册地址，并将其放入未注册的地址列表表头中
+// 删除终端已注册地址，并将其放入未注册的地址列表表头中(未进行测试2016/01/26)
 bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect )
 {
 	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
@@ -447,7 +477,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 					p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
 					gregister_tmnl_pro.tmn_rgsted++;
 					// 保存已注册地址，并清理在未注册列表中的相应的地址
-					terminal_delect_unregister_addr( &gregister_tmnl_pro, p_tmnl_station->tmnl_dev.address.addr );
+					terminal_delect_unregister_addr( &gregister_tmnl_pro, p_tmnl_station->tmnl_dev.address.addr );// 此函数已测试成功(2016/01/26)
 					set_terminal_system_state( DISCUSS_STATE, true );
 					bret = true;
 					break;
@@ -497,22 +527,26 @@ void system_register_terminal_pro( void )
 				unregister_list_index <= gregister_tmnl_pro.noregister_trail;\
 				unregister_list_index++ )
 			{
+				DEBUG_INFO( "noregister list index = %d", unregister_list_index );
 				if( unregister_list_index < SYSTEM_TMNL_MAX_NUM )
-				{
+				{	
 					addr = gregister_tmnl_pro.register_pro_addr_list[unregister_list_index];
-					if( (NULL == found_terminal_dblist_node_by_addr(addr)) && (addr != 0xffff))
+
+					DEBUG_INFO( "query address %04x----index = %d", addr, unregister_list_index );
+					if( addr != 0xffff )
 					{
-						find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER,\
-							0, (uint8_t*)&addr, sizeof(uint16_t) );
-						over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
-					}
-					else
-					{
-						if( !register_node->tmnl_dev.tmnl_status.is_rgst && (addr != 0xffff) )
+						if( NULL == found_terminal_dblist_node_by_addr(addr) )
 						{
-							find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER,\
-								0, (uint8_t*)&addr, sizeof(uint16_t) );
+							find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
 							over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
+						}
+						else
+						{
+							if( !register_node->tmnl_dev.tmnl_status.is_rgst )
+							{
+								find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+								over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
+							}
 						}
 					}
 				}
@@ -536,9 +570,19 @@ void system_register_terminal_pro( void )
 			over_time_stop( TRGST_OTIME_HANDLE );
 #ifdef __DEBUG__
 			int unregister_index = gregister_tmnl_pro.noregister_head;
-			printf( "No Register List :\t" );
+
+			printf( "No Register List : (head index = %d)---(trail index = %d)\n\t", unregister_index, gregister_tmnl_pro.noregister_trail );
 			for( ; unregister_index <= gregister_tmnl_pro.noregister_trail; unregister_index++ )
-				fprintf( stdout, "%04x\t", gregister_tmnl_pro.register_pro_addr_list[unregister_index] );
+				fprintf( stdout, "%04x  ", gregister_tmnl_pro.register_pro_addr_list[unregister_index] );
+			fprintf( stdout,"\n" );
+
+			int register_index = gregister_tmnl_pro.rgsted_head;
+
+			printf( "Register List : (head index = %d)---(trail index = %d)\n\t", register_index, gregister_tmnl_pro.rgsted_trail );
+			for( ; register_index <= gregister_tmnl_pro.rgsted_trail; register_index++ )
+			{
+				fprintf( stdout, "%04x  ", gregister_tmnl_pro.register_pro_addr_list[register_index] );
+			}
 			fprintf( stdout,"\n" );
 #endif
 		}
@@ -704,6 +748,10 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 				if (terminal_register_pro_address_list_save( &gregister_tmnl_pro, tmp_addr.addr, false ) )
 				{
 					terminal_begin_register();
+				}
+				else
+				{
+					DEBUG_INFO( "allot address register Not begin!new allot address = --0x%04x--", tmp_addr.addr );
 				}
 			}
 		}

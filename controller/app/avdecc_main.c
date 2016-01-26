@@ -35,7 +35,9 @@ void signal_handle_main( int signum )
 {
 	if( SIGINT == signum )
 	{
+		DEBUG_INFO( "System Close......" );
 		system_close( &threads );
+		DEBUG_INFO( "System Close Success!" );
 		exit(0);
 	}
 }

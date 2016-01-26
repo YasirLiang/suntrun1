@@ -134,11 +134,6 @@ int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys )
 	{
 		return -1;
 	}
-
-	// 设置文件指针在文件的开头处
-	if( Fseek( fd, 0, SEEK_SET ) == -1 )
-		return -1;
-	
 	
 	thost_system_profile_form system_set_form;
 	system_set_form.file_crc = 0;
@@ -148,6 +143,10 @@ int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys )
 		uint8_t* p = ((uint8_t*)&(system_set_form.set_sys)) + i;
 		system_set_form.file_crc += *p;
 	}
+
+	// 设置文件指针在文件的开头处
+	if( Fseek( fd, 0, SEEK_SET ) == -1 )
+		return -1;
 	
 	if(Fwrite( fd, &system_set_form, sizeof(thost_system_profile_form), 1) != 1)
 	{
@@ -181,6 +180,7 @@ void profile_system_file_write_timeouts( void )
 	{
 		if( -1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
 		{
+			Fflush( profile_file_fd ); // 刷新到文件中
 			profile_timer.count_time = 10*1000; // 10 min update timer again
 			profile_timer.elapsed = false;
 			profile_timer.running = true;
@@ -322,5 +322,22 @@ int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint1
 	}
 
 	return 0;
+}
+
+void profile_system_close( void )
+{
+	if( -1 == profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
+	{
+		DEBUG_INFO( "write system profile Err! " );
+	}
+	
+	Fflush( profile_file_fd );
+
+	/*2016-1-26不能正常关闭*/ 
+	//Fclose( profile_file_fd );
+	//if( profile_file_fd != NULL )
+	//{
+	//	profile_file_fd = NULL;
+	//}
 }
 

@@ -837,10 +837,15 @@ bool swap_uint16( uint16_t *p_sw1, uint16_t *p_sw2 )
 	assert( p_sw1 && p_sw2 );
 	if( p_sw1 == NULL || p_sw2 == NULL )
 		return false;
+
+	if( *p_sw1 == *p_sw2 || (p_sw1 == p_sw2))
+	{// 相等不用交换
+		return true;
+	}
 	
-	*p_sw1 = *p_sw1 ^ *p_sw2;
-	*p_sw2 = *p_sw1 ^ *p_sw2;
-	*p_sw1 = *p_sw1 ^ *p_sw2;
+	*p_sw1 ^= *p_sw2;
+	*p_sw2 ^= *p_sw1;
+	*p_sw1 ^= *p_sw2;
 
 	return true;
 }

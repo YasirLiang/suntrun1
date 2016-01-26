@@ -151,34 +151,20 @@ void system_close( struct threads_info *p_threads )
 		}
 	}
 
-	// 退出检查定时器线程
-#if 0
-	check_timer_destroy();
-#endif
-
 	// 释放所有系统链表
 	destroy_endpoint_dblist( endpoint_list );
 	destroy_inflight_dblist( command_send_guard );
 	destroy_descptor_dblist( descptor_guard );
-	terminal_system_dblist_destroy();DEBUG_LINE();
+	terminal_system_dblist_destroy();
 	
 	// 释放系统队列资源
-	destroy_func_command_work_queue();DEBUG_LINE();
-#if 1
-	destroy_network_send_work_queue();DEBUG_LINE();
-#endif
+	destroy_func_command_work_queue();
+	destroy_network_send_work_queue();
 
-	// 释放连接表资源
-	connect_table_destroy();DEBUG_LINE();DEBUG_LINE();
-	// 释放广播表资源
-	muticast_connector_destroy();DEBUG_LINE();
+	connect_table_destroy();// 释放连接表资源
+	muticast_connector_destroy();// 释放广播表资源
 
-	// 保存配置文件的信息
-	if( -1 == profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
-	{
-		DEBUG_INFO( "write system profile Err! " );
-	}
-
+	profile_system_close();// 保存配置文件的信息
 	camera_pro_system_close();// 摄像头相关的资源释放
 	camera_common_control_destroy(); // 串口资源释放
 
@@ -191,7 +177,6 @@ void system_close( struct threads_info *p_threads )
 	close( net_fd.tx_pipe[PIPE_WR]);
 	close( net_fd.udp_client_fd );
 	close( net_fd.udp_server_fd );
-	Fclose( profile_file_fd );
 }
 
 

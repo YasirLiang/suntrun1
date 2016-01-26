@@ -37,10 +37,15 @@ int  Fread( FILE* fd, void *read_buf, size_t size_member, size_t read_counts )
 
 int Fwrite( FILE* fd, void* write_buf, size_t size_member, size_t write_counts )
 {
-	int write_num = 0;
-	write_num = fwrite( write_buf, size_member, write_counts, fd );
+	if( fd != NULL )
+	{
+		int write_num = 0;
+		write_num = fwrite( write_buf, size_member, write_counts, fd );
 
-	return write_num;
+		return write_num;
+	}
+	else
+		return -1;
 }
 
 FILE * Fopen( const char *file_name, const char* mode )
@@ -51,7 +56,7 @@ FILE * Fopen( const char *file_name, const char* mode )
 	fd = fopen( file_name, mode );
 	if( NULL == fd )
 	{
-		//DEBUG_ERR( "open %s address Err", file_name );
+		DEBUG_ERR( "open file %s Err", file_name );
 	}
 	
 	return fd;
@@ -59,12 +64,20 @@ FILE * Fopen( const char *file_name, const char* mode )
 
 void Fflush( FILE* fd )
 {
-	fflush( fd );
+	if( fd != NULL )
+		fflush( fd );
 }
 
 int Fclose( FILE *fd )
 {
-	fclose( fd );
+	if( fd != NULL )
+	{
+		fclose( fd );	
+	}
+	else
+	{
+		return -1;
+	}
 
 	return 0;
 }

@@ -528,7 +528,7 @@ void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
 }
 
 
-/*清除摄像头系统信息*/ 
+/*清除摄像头系统信息, 这里把内存的对应的所有数据都保存到了文件中*/ 
 void camera_pro_system_close( void )
 {
 	camera_profile_format cmr_file;
@@ -538,8 +538,14 @@ void camera_pro_system_close( void )
 	memcpy( cmr_file.cmr_preset_list, gpresetcmr_list, write_byte );
 	camera_profile_fill_check( &cmr_file, PRESET_NUM_MAX );
 	camera_profile_write( gpreset_fd, &cmr_file );
-	
-	camera_profile_close( gpreset_fd );
+	Fflush( gpreset_fd );
+
+	/*2016-1-26不能正常关闭*/ 
+	//camera_profile_close( gpreset_fd );
+	//if( gpreset_fd != NULL )
+	//{
+	//	gpreset_fd = NULL;
+	//}
 }
 
 /*=============================
