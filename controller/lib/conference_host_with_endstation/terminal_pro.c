@@ -323,7 +323,54 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 	return false;
 }
 
-// 删除终端已注册地址
+// 从未注册列表中清除未注册地址
+bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist_pro, uint16_t unregister_addr_delect )
+{
+	if( (p_regist_pro != NULL) && (unregister_addr_delect != 0xffff))
+	{
+		// 寻找删除的节点
+		int i = 0, delect_index;
+		bool found_dl = false;
+		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
+		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->rgsted_trail + 1)) )
+		{
+			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+				*p_head, *p_trail, p_regist_pro->rgsted_trail );
+			return false;
+		}
+
+		for( i = *p_head; i <= *p_trail; i++ )
+		{
+			if( p_regist_pro->register_pro_addr_list[i] == unregister_addr_delect )
+			{
+				delect_index = i;
+				found_dl = true;
+				break;
+			}
+		}
+
+		if( found_dl )
+		{
+			// 将其与未注册列表的头的数据交换
+			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			{
+				/*
+				**1: 直接把尾节点置为不可用地址0xffff,并将尾指针向前移一元素
+				*/
+				p_regist_pro->register_pro_addr_list[(*p_trail)--];
+				DEBUG_INFO( "noregister list trail index = %d-trail  emlem value = %d", *p_trail, p_regist_pro->register_pro_addr_list[(*p_trail)] );
+
+				return true;
+			}
+		}
+		
+	}
+
+	return false;
+}
+
+// 删除终端已注册地址，并将其放入未注册的地址列表表头中
 bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect )
 {
 	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
