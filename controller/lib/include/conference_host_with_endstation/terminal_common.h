@@ -341,10 +341,14 @@ typedef struct _tterminal_state_set // 终端状态的设置
 	
 	uint8_t keyup:5;
 	uint8_t :3;
-	
-	uint8_t VoteType:5;
-	uint8_t :2;
+
+	uint8_t VoteType:4;// 根据黄工代码改为4, 2016/1/27
+	uint8_t :3;// 根据黄工代码改为3, 2016/1/27
 	uint8_t MicClose:1;
+	
+	//uint8_t VoteType:5;
+	//uint8_t :2;
+	//uint8_t MicClose:1;
 }tmnl_state_set;
 
 typedef struct _tterminal_led_show_stype // 设置终端 led 显示方式

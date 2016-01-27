@@ -28,18 +28,20 @@ bool reallot_flag = false; 									// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
 tchairman_control_in gchm_int_ctl; 						// 主席插话
-ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
+volatile ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 uint8_t speak_limit_time = 0; 								// 发言时长， 0表示无限时；1-63表示限时1-63分钟
 uint8_t glcd_num = 0; 									// lcd 显示的屏号
 uint8_t gled_buf[2] = {0}; 								// 终端指示灯
 enum_signstate gtmnl_signstate;							// 签到的状态，也可为终端的签到状态
 uint8_t gsign_latetime; 									// 补签的超时时间
-uint8_t gsigned_flag = false;								// 签到标志
-evote_state_pro gvote_flag; 								// 投票处理
-bool gfirst_key_flag; 									// 真为投票首键有效
+bool gsigned_flag = false;								// 签到标志
+volatile evote_state_pro gvote_flag; 						// 投票处理
+volatile bool gfirst_key_flag; 								// 真为投票首键有效
 tevote_type gvote_mode;									// 投票模式
 
 type_spktrack gspeaker_track;
+
+tquery_svote  gquery_svote_pro;						// 查询签到表决结果
 
 void init_terminal_proccess_fd( FILE ** fd )
 {
@@ -205,7 +207,7 @@ void init_terminal_proccess_system( void )
 			{
 				addr = tmnl_addr_list[i].addr;
 				if( addr != 0xffff )
-					terminal_register_pro_address_list_save( &gregister_tmnl_pro, addr, false );
+					terminal_register_pro_address_list_save( addr, false );
 			}
 
 #ifdef __DEBUG__
@@ -229,6 +231,7 @@ void init_terminal_proccess_system( void )
 	init_terminal_device_double_list();	
 	init_terminal_discuss_param();
 	terminal_speak_track_pro_init();
+	terminal_query_proccess_init();
 }
 
 /*释放终端资源2016-1-23*/
@@ -245,14 +248,15 @@ void terminal_proccess_system_close( void )
 =注册处理相关函数开始
 **********************************************/
 // 终端注册保存地址到已注册或未注册列表,注:保存已注册与未注册终端的算法不同
-bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_pro, uint16_t addr_save, bool is_register_save )
+bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_register_save )
 {
+	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (addr_save != 0xffff))
 	{
 		if( !is_register_save )
 		{
-			uint16_t *p_unregister_trail = &p_regist_pro->noregister_trail;
-			bool *p_unregister_full = &p_regist_pro->unregister_list_full;
+			volatile uint16_t *p_unregister_trail = &p_regist_pro->noregister_trail;
+			volatile bool *p_unregister_full = &p_regist_pro->unregister_list_full;
 			if(  *p_unregister_trail < p_regist_pro->list_size )
 			{
 				if( (p_regist_pro->register_pro_addr_list[*p_unregister_trail] == 0xffff) &&\
@@ -280,7 +284,7 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 			**2、未注册的头部加1
 			**3、往已注册列表的尾部插入需保存的地址
 			*/ 
-			if( terminal_register_pro_address_list_save( p_regist_pro, p_regist_pro->register_pro_addr_list[p_regist_pro->noregister_head], false ) )
+			if( terminal_register_pro_address_list_save( p_regist_pro->register_pro_addr_list[p_regist_pro->noregister_head], false ) )
 			{
 				p_regist_pro->noregister_head++;
 				p_regist_pro->register_pro_addr_list[++p_regist_pro->rgsted_trail] = addr_save;
@@ -292,14 +296,16 @@ bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_
 }
 
 // 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址(经测试暂时没有发现问题2016/01/26)
-bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uint16_t register_addr_delect )
+bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 {
+	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (register_addr_delect != 0xffff))
 	{
 		// 寻找删除的节点
 		int i = 0, delect_index;
 		bool found_dl = false;
-		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
+		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
+		volatile uint16_t *p_trail = &p_regist_pro->noregister_trail;
 		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
@@ -322,12 +328,12 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 		{
 			// 将其与未注册列表的头的数据交换
 			DEBUG_INFO( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
-			register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
+				register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			if( *p_head > *p_trail )
 				return false;
-			else
+			else 
 			{
-				if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
+				if( swap_valtile_uint16( &p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
 				{
 					/*
 					**1: 移动已注册表尾到未注册表头
@@ -342,7 +348,7 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 					{
 						++(*p_head);
 					}
-				
+					
 					return true;
 				}
 			}
@@ -354,14 +360,16 @@ bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uin
 }
 
 // 从未注册列表中清除未注册地址(未进行测试2016/01/26)
-bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist_pro, uint16_t unregister_addr_delect )
+bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 {
+	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (unregister_addr_delect != 0xffff))
 	{
 		// 寻找删除的节点
 		int i = 0, delect_index;
 		bool found_dl = false;
-		uint16_t *p_head = &p_regist_pro->noregister_head, *p_trail = &p_regist_pro->noregister_trail;
+		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
+		volatile uint16_t *p_trail = &p_regist_pro->noregister_trail;
 		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) ||  ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
@@ -383,7 +391,7 @@ bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist
 		if( found_dl )
 		{
 			// 将其与未注册列表的头的数据交换
-			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
 			{
 				/*
 				**1: 直接把尾节点置为不可用地址0xffff,并将尾指针向前移一元素
@@ -401,14 +409,16 @@ bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist
 }
 
 // 删除终端已注册地址，并将其放入未注册的地址列表表头中(未进行测试2016/01/26)
-bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect )
+bool terminal_delect_register_addr( uint16_t addr_delect )
 {
+	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
 	{
 		// 寻找删除的节点
 		int i = 0, delect_index = -1;
 		bool found_dl = false;
-		uint16_t *p_head = &p_regist_pro->rgsted_head, *p_trail = &p_regist_pro->rgsted_trail;
+		volatile uint16_t *p_head = &p_regist_pro->rgsted_head;
+		volatile uint16_t *p_trail = &p_regist_pro->rgsted_trail;
 		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail >= (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->noregister_head - 1)) )
 		{
@@ -430,7 +440,7 @@ bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16
 		if( found_dl )
 		{
 			// 将其与已注册列表的尾的数据交换
-			if( swap_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
+			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
 			{
 				/*
 				**1: 移动未注册表头到已注册表尾
@@ -475,9 +485,12 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 					p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
 				        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
 					p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
-					gregister_tmnl_pro.tmn_rgsted++;
 					// 保存已注册地址，并清理在未注册列表中的相应的地址
-					terminal_delect_unregister_addr( &gregister_tmnl_pro, p_tmnl_station->tmnl_dev.address.addr );// 此函数已测试成功(2016/01/26)
+					if( terminal_delect_unregister_addr( p_tmnl_station->tmnl_dev.address.addr ) )// 此函数已测试成功(2016/01/26)
+					{
+						gregister_tmnl_pro.tmn_rgsted++;
+					}
+					
 					set_terminal_system_state( DISCUSS_STATE, true );
 					bret = true;
 					break;
@@ -499,7 +512,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 *******************************************/
 void system_register_terminal_pro( void )
 {
-	register_state reg_state =  gregister_tmnl_pro.rgs_state;
+	volatile register_state reg_state =  gregister_tmnl_pro.rgs_state;
 	if( reallot_flag )
 	{// reallot time, can't register
 		return;
@@ -515,10 +528,11 @@ void system_register_terminal_pro( void )
 			(gregister_tmnl_pro.tmn_rgsted >= tmn_total) )
 		{
 			DEBUG_INFO( "terminal register complet!total = %d", tmn_total );
+			gregister_tmnl_pro.rgs_state = RGST_QUERY;
 			return;
 		}
-
-		// 遍历未注册列表注册
+	
+			// 遍历未注册列表注册
 		if( tmn_total < SYSTEM_TMNL_MAX_NUM )
 		{
 			uint16_t addr = 0, unregister_list_index = 0xffff;
@@ -556,10 +570,10 @@ void system_register_terminal_pro( void )
 					break;
 				}
 			}
-			
-			gregister_tmnl_pro.rgs_state = RGST_QUERY;
-			over_time_set( TRGST_OTIME_HANDLE, 5000 );
 		}
+		
+		gregister_tmnl_pro.rgs_state = RGST_QUERY;
+		over_time_set( TRGST_OTIME_HANDLE, 3000 );
 	}
 	else if ( reg_state == RGST_QUERY )
 	{
@@ -745,7 +759,7 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 			if( 1 == terminal_address_list_write_file( addr_file_fd, &tmp_addr, 1 ) )
 			{// 正常保存，则开始注册终端,用于有终端链表但没有注册的节点
 				gregister_tmnl_pro.tmn_total++;
-				if (terminal_register_pro_address_list_save( &gregister_tmnl_pro, tmp_addr.addr, false ) )
+				if (terminal_register_pro_address_list_save( tmp_addr.addr, false ) )
 				{
 					terminal_begin_register();
 				}
@@ -2377,6 +2391,11 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 	}
 
 	terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+	
+	// 设置查询签到投票结果(2016-1-27添加)
+	gquery_svote_pro.running = true;
+	gquery_svote_pro.index = 0;
+	host_timer_start( 100, &gquery_svote_pro.query_timer );
 }
 
 // 主席控制终端签到
@@ -2454,6 +2473,11 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	}
 
 	terminal_vote_state_set( BRDCST_ALL );
+
+	// 设置查询签到投票结果 (2016-1-27)
+	gquery_svote_pro.running = true;
+	gquery_svote_pro.index = 0;
+	host_timer_start( 100, &gquery_svote_pro.query_timer );
 }
 
 void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
@@ -2740,7 +2764,7 @@ void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t t
 		terminal_key_action_host_common_reply( recvdata, tmp_node );
 	}
 
-	upper_cmpt_sign_situation_report( tmp_node->tmnl_dev.tmnl_status.vote_state, tmp_node->tmnl_dev.address.addr );
+	upper_cmpt_vote_situation_report( tmp_node->tmnl_dev.tmnl_status.vote_state, tmp_node->tmnl_dev.address.addr );
 
 	// 检查是否所有投票完成
 	tmnl_pdblist tmp = tmp_head;
@@ -3537,6 +3561,210 @@ int terminal_speak_track( uint16_t addr, bool track_en )// 摄像跟踪接口
 
 	return 0;
 }
+
+/*************************************************************
+*==开始查询处理
+*/
+/*************************************************************
+*Date:2016/1/27
+*Name:terminal_query_vote_ask
+*功能:保存终端签到、表决结果
+*Param:
+*	address :terminal application address
+*	vote_state:终端签到表决按键结果
+*Return:None
+**************************************************************/
+void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
+{
+	tmnl_pdblist vote_node = found_terminal_dblist_node_by_addr( address );
+	if( NULL == vote_node )
+	{
+		DEBUG_INFO( "no such address 0x%04x node ", address );
+		return;
+	}
+
+	uint8_t sys_state = get_sys_state();
+	if( (SIGN_STATE == sys_state ) && (vote_state & 0x80) )
+	{// sign complet
+		if( gtmnl_signstate == SIGN_IN_ON_TIME )// 设置签到标志
+		{
+			vote_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;
+		}
+		else if( gtmnl_signstate == SIGN_IN_BE_LATE && (vote_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN) )
+		{
+			vote_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;
+		}
+
+		upper_cmpt_report_sign_in_state( vote_node->tmnl_dev.tmnl_status.sign_state, vote_node->tmnl_dev.address.addr );
+	}
+	else if ( ((VOTE_STATE == sys_state) || (GRADE_STATE == sys_state) \
+		||(ELECT_STATE == sys_state)) && ((vote_state & TVOTE_KEY_MARK )))
+	{
+		if ( gfirst_key_flag )
+		{
+			int i = 0, vote_num = 0;
+			for ( i = 0; i < 5; i++ )
+			{
+				if( vote_node->tmnl_dev.tmnl_status.vote_state& (1<<i) )
+				{
+					vote_num++;
+				}
+			}
+#if 0
+			uint8_t key_num = 0;
+			terminal_vote_mode_max_key_num( &key_num, gvote_mode );
+			if ( vote_num >= key_num )
+			{// 投票完成，相应的终端停止查询投票结果
+				vote_node->tmnl_dev.tmnl_status.vote_state &= (~TWAIT_VOTE_FLAG);
+			}
+#else
+			if ( vote_num >= gvote_mode )
+			{// 投票完成，相应的终端停止查询投票结果
+				vote_node->tmnl_dev.tmnl_status.vote_state &= (~TWAIT_VOTE_FLAG);
+			}
+#endif
+		}
+		
+		vote_node->tmnl_dev.tmnl_status.vote_state &= (~TVOTE_KEY_MARK);
+		vote_node->tmnl_dev.tmnl_status.vote_state |= vote_state & TVOTE_KEY_MARK;
+		upper_cmpt_vote_situation_report( vote_node->tmnl_dev.tmnl_status.vote_state, vote_node->tmnl_dev.address.addr );
+	}
+}
+
+void terminal_vote_mode_max_key_num( uint8_t *key_num, tevote_type vote_mode  )
+{
+	assert( key_num );
+	switch( vote_mode )
+	{
+		case VOTE_MODE:
+		case GRADE_MODE:
+		case SLCT_2_1:
+		case SLCT_3_1:
+		case SLCT_4_1:
+		case SLCT_5_1:
+		{
+			*key_num = 1;
+		}
+		
+		case SLCT_2_2:
+		case SLCT_3_2:
+		case SLCT_4_2:
+		case SLCT_5_2:
+		{
+			*key_num = 2;
+		}
+		case SLCT_3_3:
+		case SLCT_4_3:
+		case SLCT_5_3:
+		{
+			*key_num = 3;
+		}
+		case SLCT_4_4:
+		case SLCT_5_4:
+		{
+			*key_num = 4;
+		}
+		case SLCT_5_5:
+		{
+			*key_num = 5;
+		}
+		default:
+		{
+			*key_num = 0;
+		}
+	}
+}
+
+// 主机查询签到投票结果
+void terminal_query_sign_vote_pro( void )
+{
+	bool sending = false;
+	uint16_t index;
+	uint8_t sys_state = get_sys_state();
+	tmnl_pdblist tmp_node = NULL;
+	uint16_t addr = 0xffff;
+	
+	if ( (gquery_svote_pro.running) && host_timer_timeout(&gquery_svote_pro.query_timer))
+	{
+		host_timer_update( 100, &gquery_svote_pro.query_timer );
+		if( sys_state == SIGN_STATE )
+		{
+			index = gquery_svote_pro.index;
+			do
+			{
+				addr = tmnl_addr_list[index].addr;
+				if( addr != 0xffff )
+				{
+					tmp_node = found_terminal_dblist_node_by_addr( addr );
+					if( (tmp_node != NULL) && (tmp_node->tmnl_dev.address.addr != 0xffff) &&\
+						(tmp_node->tmnl_dev.tmnl_status.is_rgst) &&\
+						(tmp_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN ) )
+					{
+						terminal_query_vote_sign_result( tmp_node->tmnl_dev.entity_id, addr );
+						sending = true;
+						break;
+					}
+				}
+
+				index++;
+				index %= SYSTEM_TMNL_MAX_NUM;
+			}while( index != gquery_svote_pro.index );
+
+			if( sending )
+			{
+				gquery_svote_pro.index = (index + 1)%SYSTEM_TMNL_MAX_NUM;
+			}
+			else
+			{
+				gquery_svote_pro.running = false;
+			}
+		}
+		else if( (sys_state == VOTE_STATE ) || (sys_state == GRADE_STATE) ||(ELECT_STATE))
+		{
+			index = gquery_svote_pro.index;
+			do
+			{
+				addr = tmnl_addr_list[index].addr;
+				if( addr != 0xffff )
+				{
+					tmp_node = found_terminal_dblist_node_by_addr( addr );
+					if( (tmp_node != NULL) && (tmp_node->tmnl_dev.address.addr != 0xffff) &&\
+						(tmp_node->tmnl_dev.tmnl_status.is_rgst) &&\
+						(tmp_node->tmnl_dev.tmnl_status.sign_state && TWAIT_VOTE_FLAG ) )
+					{
+						terminal_query_vote_sign_result( tmp_node->tmnl_dev.entity_id, addr );
+						sending = true;
+						break;
+					}
+				}
+
+				index++;
+				index %= SYSTEM_TMNL_MAX_NUM;
+			}while( index != gquery_svote_pro.index );
+
+			if( sending )
+			{
+				gquery_svote_pro.index = (index + 1)%SYSTEM_TMNL_MAX_NUM;
+			}
+			else
+			{
+				terminal_option_endpoint( BRDCST_1722_ALL, BRDCST_EXE, OPT_TMNL_ALL_VOTE );
+				gquery_svote_pro.running = false;
+			}
+		}
+	}
+}
+
+void terminal_query_proccess_init( void )
+{
+	gquery_svote_pro.index = 0;
+	gquery_svote_pro.running = false;
+	host_timer_stop(&gquery_svote_pro.query_timer );
+}
+
+/*************************************************************
+*==结束查询处理
+*/
 
 /*===================================================
 终端处理流程@}

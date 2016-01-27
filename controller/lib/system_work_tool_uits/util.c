@@ -832,7 +832,7 @@ uint32_t get_send_respons_interval_timeout( uint8_t data_type, uint32_t command 
 }
 
 // 交换两个的数值
-bool swap_uint16( uint16_t *p_sw1, uint16_t *p_sw2 )
+bool swap_valtile_uint16( volatile uint16_t *p_sw1, volatile uint16_t *p_sw2 )
 {
 	assert( p_sw1 && p_sw2 );
 	if( p_sw1 == NULL || p_sw2 == NULL )

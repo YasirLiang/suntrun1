@@ -347,7 +347,8 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 			}
 			else if( (recv_data.cchdr.command_control & COMMAND_TMN_MASK) == CHECK_END_RESULT )
 			{
-				//query_vote_ask( recv_data.cchdr.address, recv_data.data[0]);
+				// 主机查询终端响应函数
+				terminal_query_vote_ask( recv_data.cchdr.address, recv_data.data[0] );
 			}
 		}
 

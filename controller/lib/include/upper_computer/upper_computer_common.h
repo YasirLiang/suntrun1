@@ -13,7 +13,7 @@
 #include "host_controller_debug.h"
 
 #ifdef __DEBUG__
-//#define __PRINTF_UPD_PACKET__
+#define __PRINTF_UPD_PACKET__
 #endif
 
 /*{@上位机与主机协议的报文类型*/ 

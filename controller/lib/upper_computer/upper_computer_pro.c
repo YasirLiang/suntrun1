@@ -305,10 +305,11 @@ int proccess_upper_cmpt__begin_sign( uint16_t protocal_type, void *data, uint32_
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-		/*系统开始签到*/
-		terminal_start_sign_in( sign_flag ); 
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, BEGIN_SIGN, NULL, 0 );
+		
+		/*系统开始签到*/
+		terminal_start_sign_in( sign_flag ); 
 	}
 	
 	return 0;
@@ -778,7 +779,7 @@ int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
 {
 	tcmpt_sign_situation sign_flag_station;
 
-	if( TMNL_SIGN_BE_LATE == sign_status ||TMNL_SIGN_BE_LATE == sign_status || TMNL_SIGN_BE_LATE == sign_status )
+	if( (TMNL_NO_SIGN_IN == sign_status) ||(TMNL_SIGN_ON_TIME == sign_status) || (TMNL_SIGN_BE_LATE == sign_status) )
 	{
 		sign_flag_station.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0);
 		sign_flag_station.addr.high_addr = (uint8_t)((addr &0xff00) >> 8);
@@ -795,7 +796,8 @@ int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
 	return 0;
 }
 
-int upper_cmpt_sign_situation_report( uint8_t vote_rlst, uint16_t addr )
+// 上报终端投票情况
+int upper_cmpt_vote_situation_report( uint8_t vote_rlst, uint16_t addr )
 {
 	tcmp_vote_result vote_data;
 
@@ -803,7 +805,7 @@ int upper_cmpt_sign_situation_report( uint8_t vote_rlst, uint16_t addr )
 	{
 		vote_data.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0); // low addr
 		vote_data.addr.high_addr = (uint8_t)(( addr &0xff00) >> 8); // hight addr
-		vote_data.key_value= vote_rlst & TVOTE_KEY_MARK;
+		vote_data.key_value= vote_rlst;
 	}
 	
 	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, RESULT_VOTE, &vote_data, sizeof(tcmp_vote_result));

@@ -327,6 +327,7 @@ int pthread_recv_data_fn( void *pgm )
 
 		// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
 		system_register_terminal_pro();
+		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
 
 		if( buf_num >= SYS_BUF_RECV_COUNT )
 			buf_num = 0;

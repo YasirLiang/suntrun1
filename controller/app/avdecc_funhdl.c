@@ -84,9 +84,9 @@ int fn_netif_cb( struct epoll_priv *priv )
 	if( (status > 0) && ( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE ) )
 	{	
 #if 0
-		if( frame.payload[0] != 0xfa )
+		if( (frame.payload[0] != 0xfe) && (frame.payload[0] != 0xfa) && (frame.payload[0] != 0xfc))
 		{
-			DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data===>>" );
+			DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data" );
 		}
 #endif
 		solid_pdblist list_head = endpoint_list;

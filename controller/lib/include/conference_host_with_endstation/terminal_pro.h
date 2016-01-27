@@ -7,6 +7,7 @@
 #include "terminal_common.h"
 #include "profile_system.h"
 #include "upper_computer_common.h"
+#include "host_timer.h"
 
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
@@ -25,9 +26,9 @@ typedef enum // 签到
 
 /*{@终端表决标志*/
 #define TVOTE_KEY_MARK	0x1F // 键的掩码
-#define TVOTE_EN         		0x80 // 投票使能位
-#define TVOTE_SET_FLAG   	0x40 // 未签到标志
-#define TWAIT_VOTE_FLAG  	0x20 // 签到允许投票标志
+#define TVOTE_EN         		0x80 // 投票使能位 ,用于 签到完成后设置投票终端的状态信息
+#define TVOTE_SET_FLAG   	0x40 // 未签到标志 // 投票设置标志
+#define TWAIT_VOTE_FLAG  	0x20 // 签到允许投票标志, 投票等待标志，用于查询终端投票的结果
 
 #define TVOTE_KEY1_ENABLE 0x01
 #define TVOTE_KEY2_ENABLE 0x02
@@ -55,9 +56,9 @@ typedef enum
 
 typedef struct _type_tmnl_register_pro
 {
+	register_state rgs_state;// 注册的标识位
 	bool unregister_list_full;// 注册地址满
 	bool register_list_full;
-	register_state rgs_state;// 注册的标识位
 	uint16_t tmn_total;// 终端的总数
 	uint16_t tmn_rgsted;// 已注册的终端数量
 	uint16_t rgsted_head;// 已注册的表头
@@ -99,6 +100,13 @@ typedef struct type_spktrack
 	uint8_t spk_num;
 	uint16_t spk_addrlist[MAX_SPK_NUM];
 }type_spktrack;
+
+typedef struct type_query_sign_vote // 2016/1/27
+{
+	uint16_t index;
+	bool running;// 查询处理标志
+	host_timer query_timer;// 查询定时器
+}tquery_svote;
 
 int init_terminal_discuss_param( void );
 int init_terminal_address_list_from_file( void );
@@ -197,11 +205,15 @@ void terminal_register_init();
 void system_register_terminal_pro( void );
 void terminal_begin_register( void );
 void terminal_proccess_system_close( void );
-bool terminal_register_pro_address_list_save( ttmnl_register_proccess *p_regist_pro, uint16_t addr_save, bool is_register_save );
-bool terminal_delect_unregister_addr( ttmnl_register_proccess *p_regist_pro, uint16_t register_addr_delect );
-bool terminal_clear_from_unregister_addr_list( ttmnl_register_proccess *p_regist_pro, uint16_t unregister_addr_delect );
-bool terminal_delect_register_addr(ttmnl_register_proccess *p_regist_pro, uint16_t addr_delect );
+bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_register_save );
+bool terminal_delect_unregister_addr( uint16_t register_addr_delect );
+bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect );
+bool terminal_delect_register_addr( uint16_t addr_delect );
 
+void terminal_query_proccess_init( void );
+void terminal_query_sign_vote_pro( void );
+void terminal_vote_mode_max_key_num( uint8_t *key_num, tevote_type vote_mode  );
+void terminal_query_vote_ask( uint16_t address, uint8_t vote_state );
 
 /*@}*/
 
