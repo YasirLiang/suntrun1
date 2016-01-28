@@ -252,6 +252,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			{
 				DEBUG_INFO("Err frame malloc !");
 				assert( NULL != inflight_station->host_tx.inflight_frame.frame );
+				if( NULL == inflight_station->host_tx.inflight_frame.frame )
+					return -1;
 			}
 		}
 		else
@@ -268,6 +270,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			{
 				DEBUG_INFO( "nothing to be resend!" );
 				assert(inflight_station != NULL);
+				if( inflight_station == NULL )
+					return -1;
 			}
 		}
 	}
@@ -278,6 +282,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 	{
 		DEBUG_INFO( "Err raw send data!");
 		assert( send_len >= 0);
+		if( send_len < 0 )
+			return -1;
 	}
 	
 	return send_len;

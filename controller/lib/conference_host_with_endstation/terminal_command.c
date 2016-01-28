@@ -7,7 +7,7 @@
 #include "terminal_command.h"
 #include "terminal_common.h"
 
-// 查询终端, addr是未注册的但是终端已分配了的地址(0x1)
+// 查询终端, addr是未注册的但是终端已分配了的地址(0x1),可以全广播
 void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
 {
 	struct host_to_endstation askbuf;
@@ -17,8 +17,14 @@ void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
 	askbuf.cchdr.command_control = HOST_TO_ENDSTATION_COMMAND_TYPE_QUERY_END;
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
+
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
 	
-	ternminal_send( &askbuf, asklen, entity_id, false );
+	ternminal_send( &askbuf, asklen, entity_id, noneed_resp );
 }
 
 // 终端分配地址(0x2)
@@ -126,7 +132,13 @@ void terminal_new_endstation_allot_address( uint64_t target_id )
 	askbuf.cchdr.address = 0x8000;
 	askbuf.data_len = 0; // data lenght of the conference deal is 0
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;// 不需要响应
+	if( (askbuf.cchdr.address & BRDCST_ALL) && !(askbuf.cchdr.address & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
+
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 设置终端的LCD显示方式(0x09)
@@ -141,7 +153,13 @@ void terminal_set_lcd_play_stype( uint64_t target_id, uint16_t addr, uint8_t lcd
 	askbuf.data_len = sizeof( uint8_t ); // data lenght of the conference deal is 1
 	askbuf.data[0] = lcd_stype;
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
+
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 设置终端LED显示方式(0x0B)
@@ -191,8 +209,14 @@ void terminal_send_vote_result( uint64_t target_id, uint16_t addr, tmnl_vote_res
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = sizeof( tmnl_vote_result ); // data lenght of the conference deal is 8
 	memcpy( askbuf.data, &vote_rslt, sizeof( tmnl_vote_result ));// it will copy from low bit of one data
+
+	bool noneed_resp = false;// 不需要响应
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 发言限制时长（0x0F）
@@ -304,8 +328,14 @@ void terminal_transmit_upper_cmpt_message( uint64_t target_id, uint16_t addr, ui
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = msg_len;
 	memcpy( askbuf.data, msg, msg_len );
+
+	bool noneed_resp = false;
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;// 不需要响应
+	}
 	
-	ternminal_send( &askbuf, asklen, target_id, false );
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 转发终端短消息（0x1F）主机响应
@@ -333,7 +363,13 @@ void terminal_query_vote_sign_result( uint64_t target_id, uint16_t addr )
 	askbuf.cchdr.address = addr;
 	askbuf.data_len = 0;
 
-	ternminal_send( &askbuf, asklen, target_id, false );
+	bool noneed_resp = false;
+	if( (addr & BRDCST_ALL) && !(addr & BRDCST_NEED_RESPONSE ) )
+	{
+		noneed_resp = true;// 不需要响应
+	}
+
+	ternminal_send( &askbuf, asklen, target_id, noneed_resp );
 }
 
 // 终端按键动作(0x05 主机响应) 此函数数据区只能一个数据指针不为空，且其余两个必须为空

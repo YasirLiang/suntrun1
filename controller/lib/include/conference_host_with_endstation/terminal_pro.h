@@ -209,11 +209,17 @@ bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_regist
 bool terminal_delect_unregister_addr( uint16_t register_addr_delect );
 bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect );
 bool terminal_delect_register_addr( uint16_t addr_delect );
-
+/*{@*/
+void terminal_vote_proccess( void );
+/*@}*/
 void terminal_query_proccess_init( void );
 void terminal_query_sign_vote_pro( void );
 void terminal_vote_mode_max_key_num( uint8_t *key_num, tevote_type vote_mode  );
 void terminal_query_vote_ask( uint16_t address, uint8_t vote_state );
+
+/*{@*/
+void terminal_sign_in_pro( void );
+/*@}*/
 
 /*@}*/
 

@@ -315,7 +315,7 @@ int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items 
 #define SYS_BUF_RECV_COUNT 2
 int pthread_recv_data_fn( void *pgm )
 {
-	int buf_num = 0;
+	static int static_buf_num = 0;
 	while( 1 )
 	{
 		unsigned long us_per_ms = 1000;
@@ -325,13 +325,9 @@ int pthread_recv_data_fn( void *pgm )
 	        tempval.tv_usec = (interval_ms%1000)*us_per_ms;
 	        select( 0, NULL, NULL, NULL, &tempval );
 
-		// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
-		system_register_terminal_pro();
-		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
-
-		if( buf_num >= SYS_BUF_RECV_COUNT )
-			buf_num = 0;
-		switch( (buf_num++) % SYS_BUF_RECV_COUNT )
+		if( static_buf_num >= SYS_BUF_RECV_COUNT )
+			static_buf_num = 0;
+		switch( (static_buf_num++) % SYS_BUF_RECV_COUNT )
 		{
 			case 0:// buffer 1
 				upper_computer_recv_message_get_pro();
@@ -341,6 +337,11 @@ int pthread_recv_data_fn( void *pgm )
 			default:
 				break;
 		}
+
+		system_register_terminal_pro();
+		terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
+		terminal_vote_proccess();// 终端投票处理
+		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
 	}
 	
 	return 0;

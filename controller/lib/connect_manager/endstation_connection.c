@@ -457,19 +457,31 @@ int connect_table_timeouts_image( void )
 
 void connect_table_destroy( void )
 {
+	struct list_head* list_loop = NULL, *tmp_list = NULL;
 	connect_tbl_pdblist connect_pnode = NULL;
 	pthread_mutex_lock( &cnnt_mutex );
-
-	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+#if 1
+	for( list_loop = cnnt_list_guard->list.next; list_loop != &cnnt_list_guard->list; list_loop = tmp_list )
 	{
+		tmp_list = list_loop->next;
+		connect_pnode = list_entry( list_loop, connect_tbl_dblist, list );
+		list_del( &connect_pnode->list );
+		free( connect_pnode );
+		connect_pnode = NULL;
+	}
+#else
+	list_for_each_entry( connect_pnode, &cnnt_list_guard->list, list )
+	{DEBUG_LINE();
 		// delect node
 		if( (connect_pnode != NULL) && (connect_pnode != cnnt_list_guard) )
 		{
+			DEBUG_LINE();
 			list_del( &connect_pnode->list );
 			free( connect_pnode );
 			connect_pnode = NULL;
 		}
 	}
+#endif
 
 	if( cnnt_list_guard->list.prev == cnnt_list_guard->list.next )
 	{

@@ -69,6 +69,7 @@ int profile_system_file_read_byte( FILE* fd, void *out_data, size_t index, uint1
 void profile_system_file_write_timeouts( void );
 bool is_profile_system_file_write_timeouts( struct inflight_timeout *timer );
 int profile_system_file_write_gb_param( FILE* fd, thost_system_set *p_set_sys );
+void profile_system_close( void );
 
 
 #endif

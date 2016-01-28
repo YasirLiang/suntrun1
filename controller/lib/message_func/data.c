@@ -11,34 +11,34 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, terminal_func_key_action, FUNC_TMNL_KEY_ACTION},
 	{ 0xffffffff, terminal_func_chairman_control, FUNC_TMNL_CHAIRMAN_CONTROL},
 	{ 0xffffffff, terminal_func_send_main_state, FUNC_TMNL_SEND_MAIN_STATE},
-	{ 0xffffffff, terminal_func_cmd_event, FUNC_TMNL_EVENT},
+	{ 0xffffffff, terminal_func_cmd_event, FUNC_TMNL_EVENT},// 4
 	
-	{ 0xffffffff, proccess_upper_cmpt_discussion_parameter, FUNC_CMPT_DISCUSS_PARAMETER },
-	{ 0xffffffff, proccess_upper_cmpt_microphone_switch, FUNC_CMPT_MISCROPHONE_SWITCH},
-	{ 0xffffffff, proccess_upper_cmpt_miscrophone_status, FUNC_CMPT_MISCROPHONE_STATUS},
-	{ 0xffffffff, proccess_upper_cmpt_select_proposer, FUNC_CMPT_SELECT_PROPOSER},
+	{ 0xffffffff, proccess_upper_cmpt_discussion_parameter, FUNC_CMPT_DISCUSS_PARAMETER },//5
+	{ 0xffffffff, proccess_upper_cmpt_microphone_switch, FUNC_CMPT_MISCROPHONE_SWITCH},//6
+	{ 0xffffffff, proccess_upper_cmpt_miscrophone_status, FUNC_CMPT_MISCROPHONE_STATUS},//7
+	{ 0xffffffff, proccess_upper_cmpt_select_proposer, FUNC_CMPT_SELECT_PROPOSER},//8
 	{ 0xffffffff, proccess_upper_cmpt_examine_application, FUNC_CMPT_EXAMINE_APPLICATION},
-	{ 0xffffffff, proccess_upper_cmpt_conference_permission, FUNC_CMPT_CONFERENCE_PERMISSION},
+	{ 0xffffffff, proccess_upper_cmpt_conference_permission, FUNC_CMPT_CONFERENCE_PERMISSION},//10
 	{ 0xffffffff, proccess_upper_cmpt_senddown_message, FUNC_CMPT_SENDDOWN_MESSAGE},
-	{ 0xffffffff, proccess_upper_cmpt_tablet_stands_manager, FUNC_CMPT_TABLE_TABLET_STANDS_MANAGER},
+	{ 0xffffffff, proccess_upper_cmpt_tablet_stands_manager, FUNC_CMPT_TABLE_TABLET_STANDS_MANAGER},//12
 	{ 0xffffffff, proccess_upper_cmpt__begin_sign, FUNC_CMPT_BEGIN_SIGN},
-	{ 0xffffffff, proccess_upper_cmpt_sign_situation, FUNC_CMPT_SIGN_SITUATION},
+	{ 0xffffffff, proccess_upper_cmpt_sign_situation, FUNC_CMPT_SIGN_SITUATION},//14
 	{ 0xffffffff, proccess_upper_cmpt_end_of_sign, FUNC_CMPT_END_OF_SIGN},
-	{ 0xffffffff, proccess_upper_cmpt_endtation_allocation_address, FUNC_CMPT_ENDSTATION_ALLOCATION_APPLICATION_ADDRESS},
+	{ 0xffffffff, proccess_upper_cmpt_endtation_allocation_address, FUNC_CMPT_ENDSTATION_ALLOCATION_APPLICATION_ADDRESS},//16
 	{ 0xffffffff, proccess_upper_cmpt_endstation_register_status, FUNC_CMPT_ENDSTATION_REGISTER_STATUS},
-	{ 0xffffffff, proccess_upper_cmpt_current_vidicon, FUNC_CMPT_CURRENT_VIDICON},
+	{ 0xffffffff, proccess_upper_cmpt_current_vidicon, FUNC_CMPT_CURRENT_VIDICON},//18
 	{ 0xffffffff, proccess_upper_cmpt_endstation_address_undetermined_allocation, FUNC_CMPT_ENDSTATION_ADDRESS_UNDETERMINED_ALLOCATION},
-	{ 0xffffffff, proccess_upper_cmpt_vidicon_control, FUNC_CMPT_VIDICON_CONTROL},
+	{ 0xffffffff, proccess_upper_cmpt_vidicon_control, FUNC_CMPT_VIDICON_CONTROL},//20
 	{ 0xffffffff, proccess_upper_cmpt_vidicon_preration_set, FUNC_CMPT_VIDICON_PRERATION_SET},
-	{ 0xffffffff, proccess_upper_cmpt_vidicon_lock, FUNC_CMPT_VIDICON_LOCK},
+	{ 0xffffffff, proccess_upper_cmpt_vidicon_lock, FUNC_CMPT_VIDICON_LOCK},//22
 	{ 0xffffffff, proccess_upper_cmpt_vidicon_output, FUNC_CMPT_VIDICON_OUTPUT},
-	{ 0xffffffff, proccess_upper_cmpt_cmpt_begin_vote, FUNC_CMPT_BEGIN_VOTE},
+	{ 0xffffffff, proccess_upper_cmpt_cmpt_begin_vote, FUNC_CMPT_BEGIN_VOTE},//24
 	{ 0xffffffff, proccess_upper_cmpt_pause_vote, FUNC_CMPT_PAUSE_VOTE},
-	{ 0xffffffff, proccess_upper_cmpt_regain_vote, FUNC_CMPT_REGAIN_VOTE},
+	{ 0xffffffff, proccess_upper_cmpt_regain_vote, FUNC_CMPT_REGAIN_VOTE},//26
 	{ 0xffffffff, proccess_upper_cmpt_end_vote, FUNC_CMPT_END_VOTE},
-	{ 0xffffffff, proccess_upper_cmpt_result_vote, FUNC_CMPT_RESULT_VOTE},
+	{ 0xffffffff, proccess_upper_cmpt_result_vote, FUNC_CMPT_RESULT_VOTE},//28
 	{ 0xffffffff, proccess_upper_cmpt_transmit_to_endstation, FUNC_CMPT_TRANSMIT_TO_ENDSTATION},
-	{ 0xffffffff, proccess_upper_cmpt_report_endstation_message, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE},
+	{ 0xffffffff, proccess_upper_cmpt_report_endstation_message, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE},//3 // 30
 	{ 0xffffffff, proccess_upper_cmpt_hign_definition_switch_set, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET},
 	
 	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },

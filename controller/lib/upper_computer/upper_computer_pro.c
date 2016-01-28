@@ -266,11 +266,11 @@ int proccess_upper_cmpt_senddown_message( uint16_t protocal_type, void *data, ui
 		return -1;
 	}
 
+	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, SENDDOWN_MESSAGE, NULL, 0 );
+
 	/*主机发送上位机信息*/
 	conference_host_upper_computer_set_upper_message_form( &data_msg, data, CMPT_DATA_OFFSET, lenght );
 	terminal_send_upper_message( ((uint8_t*)&data_msg) + sizeof(uint16_t), address, lenght - sizeof(uint16_t) );
-
-	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, SENDDOWN_MESSAGE, NULL, 0 );
 	
 	return 0;
 }
@@ -567,16 +567,19 @@ int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint
 int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uint32_t data_len )//后期可能需要修改11/10。
 {
 	tcmp_vote_start vote_start_flag;
-	uint8_t sign_flag = 0; // 响应的签到标志
-	vote_start_flag.vote_type = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x0f;
-	vote_start_flag.key_effective = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET ) & 0x10;
+	uint8_t sign_flag = 0, recv_data; // 响应的签到标志
+	recv_data = get_uint8_data_value_from_buf( data, CMPT_DATA_OFFSET );
+	vote_start_flag.vote_type = recv_data & 0x0f;
+	vote_start_flag.key_effective = (recv_data & 0x10 )?1:0;
+	DEBUG_INFO( " recv vote data = 0x%02x, key effective = %d, vote type = %d", \
+		vote_start_flag.key_effective, vote_start_flag.vote_type, vote_start_flag.key_effective );
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
-	{
-		terminal_begin_vote( vote_start_flag,  &sign_flag ); 
-		
+	{ 	
+		terminal_begin_vote( vote_start_flag,  &sign_flag );
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
 			BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
+		
 	}
 	
 	return 0;

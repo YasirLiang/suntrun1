@@ -100,6 +100,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			{
 				DEBUG_INFO("Err frame malloc !");
 				assert( NULL != inflight_station->host_tx.inflight_frame.frame );
+				if( NULL == inflight_station->host_tx.inflight_frame.frame )
+					return -1;
 			}
 		}
 		else
@@ -117,6 +119,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			{
 				DEBUG_INFO( "nothing to be resend: subtype = 0x%02x, seq_id = %d ", subtype, seq_id );
 				assert(inflight_station != NULL);
+				if( inflight_station == NULL )
+					return -1;
 			}
 		}
 	}
@@ -126,6 +130,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	{
 		DEBUG_INFO( "Err raw send data!");
 		assert( send_len >= 0);
+		if( send_len < 0 )
+			return -1;
 	}
 	
 	return send_len;
