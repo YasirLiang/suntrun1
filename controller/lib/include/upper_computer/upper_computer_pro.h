@@ -48,6 +48,8 @@ int upper_cmpt_terminal_message_report( void* p_tmnl_msg, uint16_t msg_len, uint
 int upper_computer_set_camera_d_command( uint16_t* d_cmd, tcmp_camara_ctl* cmr_data );
 int upper_cmpt_vote_situation_report( uint8_t vote_rlst, uint16_t addr );
 
+void proccess_upper_cmpt_sign_state_list( void );
+
 /*@上位机处理函数流程}*/
 
 

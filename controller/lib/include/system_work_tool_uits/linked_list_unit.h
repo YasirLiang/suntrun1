@@ -103,6 +103,10 @@ tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblis
 tmnl_pdblist search_terminal_dblist_entity_id_node( uint64_t entity_id, tmnl_pdblist guard ); 
 tmnl_pdblist terminal_dblist_except_free( tmnl_pdblist guard );
 tmnl_pdblist destroy_terminal_dblist( tmnl_pdblist guard );
+tmnl_pdblist move_node_from_terminal_dblist( tmnl_pdblist get_node );
+int sort_terminal_dblist_node( tmnl_pdblist guard );
+int show_terminal_dblist( tmnl_pdblist guard );
+
 /*@}*/
 
 #endif

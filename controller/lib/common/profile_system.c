@@ -181,7 +181,7 @@ void profile_system_file_write_timeouts( void )
 		if( -1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys ) )
 		{
 			Fflush( profile_file_fd ); // 刷新到文件中
-			profile_timer.count_time = 10*1000; // 10 min update timer again
+			profile_timer.count_time = 2*1000; // 5 min update timer again
 			profile_timer.elapsed = false;
 			profile_timer.running = true;
 			profile_timer.start_time = get_current_time();

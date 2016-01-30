@@ -89,7 +89,7 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 			else
 			{
 				DEBUG_INFO( "udp server nothing to be resend!" );
-				assert(inflight_station != NULL);
+				//assert(inflight_station != NULL);
 				if( inflight_station == NULL )
 					return -1;
 			}
@@ -138,6 +138,9 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	}
 	
 	assert( frame && inflight_station != NULL );
+	if( frame == NULL || inflight_station == NULL )
+		return;
+	
 	if( is_retried )
 	{
 		uint8_t upper_cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
@@ -197,6 +200,7 @@ int udp_client_proc_resp( uint8_t *frame, int frame_len  )
 		udp_client_callback( CMD_WITH_NOTIFICATION, frame );
 		release_heap_space( &inflight_udp_client->host_tx.inflight_frame.frame ); // must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &inflight_udp_client );	// delect aecp inflight node
+		DEBUG_INFO( " after inflight length = %d", get_inflight_dblist_length(udp_client_inflight));
 	}
 	else
 	{

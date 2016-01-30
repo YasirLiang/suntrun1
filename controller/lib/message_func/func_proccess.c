@@ -106,12 +106,10 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 
 	if( i >= MAX_FUNC_LINK_ITEMS )
 	{
-#ifdef __DEBUG__
+#ifdef __FUNC_LINK_PROCCESS__
 		DEBUG_INFO( " func command link and cmd not found: check user or cfc_cmd" );
-		return false;
-#else
-		return false;
 #endif
+		return false;
 	}
 
 	index = MAX_PROCCESS_FUNC;
@@ -125,7 +123,9 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 	}
 
 	// save message
+#ifdef __FUNC_LINK_PROCCESS__
 	DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
+#endif
 	if( ( NULL != pdata ) && (data_len >0) && (index <  MAX_PROCCESS_FUNC) && (proccess_func_link_tables[i].permit & get_sys_state()))
 	{
 		queue_data_elem.func_msg_head.func_index = index;

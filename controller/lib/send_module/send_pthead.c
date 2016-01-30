@@ -168,7 +168,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			{
 				status = set_wait_message_active_state();
 				assert( status == 0 );
-#if 1
+#if 0
 				sem_wait( &sem_waiting );
 #else
 				ret = sem_timedwait( &sem_waiting, &timeout );

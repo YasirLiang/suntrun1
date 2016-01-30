@@ -11,7 +11,7 @@
 #include "udp_client_controller_machine.h"
 
 extern void time_tick_event( solid_pdblist guard, inflight_plist inflight_guard );
-extern bool is_inflight_timeout;
+extern volatile bool is_inflight_timeout;
 
 #endif
 

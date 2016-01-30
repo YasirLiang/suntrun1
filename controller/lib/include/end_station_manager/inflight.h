@@ -99,7 +99,7 @@ typedef struct _inflight
 }inflight_list,*inflight_plist;
 
 extern struct raw_context net;			// Ô­Ê¼Ì×½Ó×Ö
-extern bool is_inflight_timeout;
+extern volatile bool is_inflight_timeout;
 
 bool is_inflight_cmds_retried( inflight_plist station );
 void inflight_timer_state_avail( timetype timeout, inflight_plist target );

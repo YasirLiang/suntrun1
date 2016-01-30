@@ -319,7 +319,7 @@ int pthread_recv_data_fn( void *pgm )
 	while( 1 )
 	{
 		unsigned long us_per_ms = 1000;
-        	unsigned long interval_ms = TIME_PERIOD_1_MILLISECONDS;
+        	unsigned long interval_ms = 0/*TIME_PERIOD_1_MILLISECONDS*/;
 		struct timeval tempval;
 	        tempval.tv_sec = interval_ms/1000;  
 	        tempval.tv_usec = (interval_ms%1000)*us_per_ms;

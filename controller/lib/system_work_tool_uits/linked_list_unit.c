@@ -754,6 +754,8 @@ void destroy_terminal_dblist_node( tmnl_pdblist* node_dstry )
 void insert_terminal_dblist_trail( tmnl_pdblist head, tmnl_pdblist new_node )
 {
 	assert( head && new_node );
+	if( head == NULL || (new_node == NULL))
+		return;
 	
 	new_node->prior = head->prior;
 	head->prior->next = new_node;
@@ -869,6 +871,131 @@ tmnl_pdblist destroy_terminal_dblist( tmnl_pdblist guard )
 	return p_free;
 }
 
+// 从链表取出节点2016/1/30
+tmnl_pdblist move_node_from_terminal_dblist( tmnl_pdblist get_node )
+{
+	assert( get_node );
+	if( get_node == NULL )
+	{
+		return NULL;
+	}
+	
+	get_node->next->prior = get_node->prior;
+	get_node->prior->next = get_node->next;
+
+	return get_node;
+}
+
+// 根据地址的大小进行排序，从小到大。经过的测试此接口暂时没发现什么问题--2016/1/30
+int sort_terminal_dblist_node( tmnl_pdblist guard )
+{
+	assert( guard );
+	if( guard == NULL )
+	{
+		DEBUG_INFO( "sort terminal dblist err: guard NULL" );
+		return -1;
+	}
+
+	/*
+	**1、从链表中找到最大的，放到头结点后面，并标志
+	**2、从剩余中找最大的，放到上次最大的前面，并标志。直到头结点
+	**3、前提是尾节点是最大的
+	*/
+	tmnl_pdblist key_node = guard->next, remainder_max_node = guard->next;
+	tmnl_pdblist next_node = NULL, tmp_node = NULL, loop_node = NULL;
+	/**/
+	bool found_max_node = false;
+	for( tmp_node =  guard->next; (tmp_node != guard) ; tmp_node = tmp_node->next )
+	{// 找到最大节点
+		next_node = tmp_node->next;
+		if( (next_node != guard)  )
+		{
+			if( tmp_node->tmnl_dev.address.addr > next_node->tmnl_dev.address.addr )
+			{
+				remainder_max_node = tmp_node;
+			}
+			else
+			{
+				remainder_max_node = next_node;
+			}
+
+			found_max_node = true;
+		}
+	}
+
+	// 剪切remainder_max_node 到表尾
+	if( found_max_node )
+	{
+		remainder_max_node->prior->next = remainder_max_node->next;
+		remainder_max_node->next->prior = remainder_max_node->prior;
+		remainder_max_node->prior = guard->prior;
+		guard->prior->next = remainder_max_node;
+		remainder_max_node->next = guard;
+		guard->prior = remainder_max_node;
+	}
+	
+	found_max_node = false;
+	for( loop_node = guard->next; (loop_node != guard) &&  (remainder_max_node != loop_node ) && (remainder_max_node->prior != loop_node );\
+		loop_node = guard->next )
+	{// 排序只剩表头即表示排序完成
+		for( tmp_node =  guard->next; (tmp_node != guard) && (tmp_node != remainder_max_node); tmp_node = tmp_node->next )
+		{// 找到最大节点
+			next_node = tmp_node->next;
+			if( (next_node != guard) && (next_node != remainder_max_node) )
+			{
+				if( tmp_node->tmnl_dev.address.addr > next_node->tmnl_dev.address.addr )
+				{
+					key_node = tmp_node;
+				}
+				else
+				{
+					key_node = next_node;
+				}
+
+				found_max_node = true;
+			}
+		}
+
+		if( found_max_node )
+		{
+			// 剪切key_node 
+			key_node->prior->next = key_node->next;
+			key_node->next->prior = key_node->prior;
+
+			// 插到上次找到最大节点的前面
+			key_node->prior = remainder_max_node->prior;
+			remainder_max_node->prior->next = key_node;
+			key_node->next = remainder_max_node;
+			remainder_max_node->prior = key_node;
+
+			// 更新本次找到的最大节点
+			remainder_max_node = key_node;
+			found_max_node = false;
+		}
+	}
+
+	return 0;
+}
+
+//2016/1/30
+int show_terminal_dblist( tmnl_pdblist guard )
+{
+	assert( guard );
+	if( guard == NULL )
+		return -1;
+
+	tmnl_pdblist loop_node = NULL;
+	
+	printf( "\n-----------------------------------terminal double list table----------------------------------\n\t" );
+	for( loop_node = guard->next; loop_node != guard; loop_node = loop_node->next )
+	{
+		printf( "0x%04x\t", loop_node->tmnl_dev.address.addr );
+	}
+
+	printf("\n-----------------------------------------------------------------------------------------------\n");
+
+	return 0;
+}
 
 /*===============================================================
 *					end terminal double list

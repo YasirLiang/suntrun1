@@ -35,7 +35,7 @@ volatile uint8_t gled_buf[2] = {0}; 							// 终端指示灯
 volatile enum_signstate gtmnl_signstate;					// 签到的状态，也可为终端的签到状态
 volatile uint8_t gsign_latetime; 							// 补签的超时时间
 volatile bool gsigned_flag = false;							// 签到标志
-volatile evote_state_pro gvote_flag; 						// 投票处理
+volatile evote_state_pro gvote_flag = NO_VOTE; 						// 投票处理
 volatile uint16_t gvote_index;								// 投票偏移
 volatile bool gfirst_key_flag; 								// 真为投票首键有效
 volatile tevote_type gvote_mode;							// 投票模式
@@ -486,6 +486,13 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 					p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
 				        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
 					p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
+
+					if( -1 == sort_terminal_dblist_node(dev_terminal_list_guard) )
+					{
+						DEBUG_INFO( "insert  register node is Err!................" );
+					}
+					show_terminal_dblist( dev_terminal_list_guard );
+					
 					// 保存已注册地址，并清理在未注册列表中的相应的地址
 					if( terminal_delect_unregister_addr( p_tmnl_station->tmnl_dev.address.addr ) )// 此函数已测试成功(2016/01/26)
 					{
@@ -533,7 +540,7 @@ void system_register_terminal_pro( void )
 			return;
 		}
 	
-			// 遍历未注册列表注册
+		// 遍历未注册列表注册
 		if( tmn_total < SYSTEM_TMNL_MAX_NUM )
 		{
 			uint16_t addr = 0, unregister_list_index = 0xffff;
@@ -1153,6 +1160,11 @@ int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
 int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 {
 	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_RECOVER_VOTE );
+
+#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
+	gvote_flag = VOTE_SET;
+	over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );// 设置上报终端签到情况的初始超时时间
+#endif
 
 	return 0;
 }
@@ -2407,7 +2419,7 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 	// 设置查询签到投票结果(2016-1-27添加)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
-	host_timer_start( 100, &gquery_svote_pro.query_timer );
+	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
 // 主席控制终端签到
@@ -2444,7 +2456,7 @@ void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 	// 设置查询签到投票结果(2016-1-28添加)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
-	host_timer_start( 100, &gquery_svote_pro.query_timer );
+	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
 void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
@@ -2492,7 +2504,11 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	// 设置查询签到投票结果 (2016-1-27)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
-	host_timer_start( 100, &gquery_svote_pro.query_timer );
+	host_timer_start( 500, &gquery_svote_pro.query_timer );
+	
+#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
+	over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );// 设置上报终端签到情况的初始超时时间
+#endif
 }
 
 void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
@@ -3716,6 +3732,7 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 		
 		vote_node->tmnl_dev.tmnl_status.vote_state &= (~TVOTE_KEY_MARK);
 		vote_node->tmnl_dev.tmnl_status.vote_state |= (vote_state & TVOTE_KEY_MARK);
+
 		upper_cmpt_vote_situation_report( vote_node->tmnl_dev.tmnl_status.vote_state, vote_node->tmnl_dev.address.addr );
 	}
 }
@@ -3804,7 +3821,6 @@ void terminal_query_sign_vote_pro( void )
 						(tmp_node->tmnl_dev.tmnl_status.is_rgst) &&\
 						(tmp_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN ) )
 					{
-						DEBUG_LINE();
 						terminal_query_vote_sign_result( tmp_node->tmnl_dev.entity_id, addr );
 						sending = true;
 						break;
@@ -3875,14 +3891,38 @@ void terminal_query_proccess_init( void )
 */
 
 // 补签处理
+//#define __MIND_UPPER_CMPT_SIGN_RESULT__
 void terminal_sign_in_pro( void )
 {
 	uint8_t sign_type;
 	int i = 0;
-	
+
+#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
+	/*
+	* 1、为了解决在主机正常上报签到状态而上位机还不停
+	*提醒签到的问题。2016/1/29
+	*2、这里被注释了，不用的根本原因是经过调试不起任何作用。这个
+	*修改了上报投票情况的超时时间从50ms改为150ms
+	*/
+	static int report_num = 0;
+	if( gvote_flag != NO_VOTE )
+	{// 投票时期
+		if( over_time_listen( MIND_UPPER_CMPT_SIGN_RESULT ))
+		{
+			over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );
+			proccess_upper_cmpt_sign_state_list();
+			if( (++report_num) == 5 )
+			{
+				report_num = 0;
+				over_time_stop( MIND_UPPER_CMPT_SIGN_RESULT );
+			}
+		}
+	}
+#endif
+
 	if( (gtmnl_signstate == SIGN_IN_BE_LATE)  )
 	{
-		if(!over_time_listen( SIGN_IN_LATE_HANDLE ))
+		if(over_time_listen( SIGN_IN_LATE_HANDLE ))
 		{
 			gtmnl_signstate = SIGN_IN_OVER;
 			sign_type = gset_sys.sign_type;
@@ -3907,6 +3947,8 @@ void terminal_sign_in_pro( void )
 					}
 				}
 			}
+
+			over_time_stop( SIGN_IN_LATE_HANDLE );
 		}
 	}
 }

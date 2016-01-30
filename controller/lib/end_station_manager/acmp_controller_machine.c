@@ -269,7 +269,7 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			else
 			{
 				DEBUG_INFO( "nothing to be resend!" );
-				assert(inflight_station != NULL);
+				//assert(inflight_station != NULL);
 				if( inflight_station == NULL )
 					return -1;
 			}

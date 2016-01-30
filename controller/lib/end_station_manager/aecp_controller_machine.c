@@ -118,7 +118,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			else
 			{
 				DEBUG_INFO( "nothing to be resend: subtype = 0x%02x, seq_id = %d ", subtype, seq_id );
-				assert(inflight_station != NULL);
+				//assert(inflight_station != NULL);
 				if( inflight_station == NULL )
 					return -1;
 			}
@@ -316,12 +316,10 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 		{
 			if( (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address == CONFERENCE_BROADCAST_ADDRESS) || (terminal_address == inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address) )
 			{
-				DEBUG_LINE();
 				notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 				aecp_callback( notification_flag, cmd_frame->payload );
 				release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
 				delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
-				DEBUG_LINE();
 			}
 			else
 			{

@@ -321,7 +321,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		ssize_t ret = 0;
 
 		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
-		DEBUG_ONINFO( "=========>>>>target id = 0x%016llx", target_id  );
+		//DEBUG_ONINFO( "=========>>>>target id = 0x%016llx", target_id  );
 		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
 		if( ret < 0 )
 		{
@@ -329,7 +329,7 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 			assert( ret >=0 );
 		}
 
-		DEBUG_INFO( "data length = %d ",  recv_data.data_len );
+		//DEBUG_INFO( "data length = %d ",  recv_data.data_len );
 		if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
 		{
 			return; 

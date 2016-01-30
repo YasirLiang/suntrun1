@@ -89,8 +89,9 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 				
 		// 保存配置文件
-		if( profile_dis_param_save_to_ram( &gset_sys, &set_dis_para ) != -1 )
+		if( (profile_dis_param_save_to_ram( &gset_sys, &set_dis_para ) != -1) && (-1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys )) )
 		{
+			Fflush( profile_file_fd );
 			// 设置系统状态
 			uint8_t temp_status = set_dis_para.auto_close;
 			if( temp_status != set_sys.auto_close )
@@ -572,14 +573,13 @@ int proccess_upper_cmpt_cmpt_begin_vote( uint16_t protocal_type, void *data, uin
 	vote_start_flag.vote_type = recv_data & 0x0f;
 	vote_start_flag.key_effective = (recv_data & 0x10 )?1:0;
 	DEBUG_INFO( " recv vote data = 0x%02x, key effective = %d, vote type = %d", \
-		vote_start_flag.key_effective, vote_start_flag.vote_type, vote_start_flag.key_effective );
+		recv_data, vote_start_flag.key_effective, vote_start_flag.vote_type );
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET )
 	{ 	
 		terminal_begin_vote( vote_start_flag,  &sign_flag );
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
 			BEGIN_VOTE, &sign_flag, sizeof(uint8_t));
-		
 	}
 	
 	return 0;
@@ -645,12 +645,15 @@ int proccess_upper_cmpt_result_vote( uint16_t protocal_type, void *data, uint32_
 	
 	for( ; p_tmnl_tmp != tmnl_list_head; p_tmnl_tmp = p_tmnl_tmp->next )
 	{
-		if((p_tmnl_tmp->tmnl_dev.address.addr != 0xffff) && (p_tmnl_tmp->tmnl_dev.tmnl_status.is_rgst))
+		if( addr_num < SYSTEM_TMNL_MAX_NUM )
 		{
-			vote_result[addr_num].addr.low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0); // low addr
-			vote_result[addr_num].addr.high_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8); // hight addr
-			vote_result[addr_num].key_value= p_tmnl_tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK;
-			addr_num++;
+			if((p_tmnl_tmp->tmnl_dev.address.addr != 0xffff) && (p_tmnl_tmp->tmnl_dev.tmnl_status.is_rgst))
+			{
+				vote_result[addr_num].addr.low_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0x00ff) >> 0); // low addr
+				vote_result[addr_num].addr.high_addr = (uint8_t)((p_tmnl_tmp->tmnl_dev.address.addr &0xff00) >> 8); // hight addr
+				vote_result[addr_num].key_value= p_tmnl_tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK;
+				addr_num++;
+			}
 		}
 	}
 
@@ -799,6 +802,62 @@ int upper_cmpt_report_sign_in_state( uint8_t sign_status, uint16_t addr )
 	return 0;
 }
 
+/*上报终端签到情况(不需要响应 2016/1/29)*/
+int upper_cmpt_report_sign_in_state_as_response( uint8_t sign_status, uint16_t addr )
+{
+	tcmpt_sign_situation sign_flag_station;
+
+	if( (TMNL_NO_SIGN_IN == sign_status) ||(TMNL_SIGN_ON_TIME == sign_status) || (TMNL_SIGN_BE_LATE == sign_status) )
+	{
+		sign_flag_station.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0);
+		sign_flag_station.addr.high_addr = (uint8_t)((addr &0xff00) >> 8);
+		sign_flag_station.sign_situation = sign_status;
+		send_upper_computer_command( CMPT_MSG_TYPE_REPORT |CMPT_MSG_TYPE_RESPONSE, \
+			SIGN_SITUATION, &sign_flag_station, sizeof(tcmpt_sign_situation));
+	}
+	else
+	{
+		DEBUG_INFO( "not valid rang sign flag!" );
+		return -1;
+	}
+
+	return 0;
+}
+
+/*上报终端签到情况 2016/1/29*/
+void proccess_upper_cmpt_sign_state_list( void )
+{
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+	{
+		return;
+	}
+	
+	tmnl_pdblist tmnl_list_head = dev_terminal_list_guard;
+	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;
+	tcmpt_sign_situation sign_list[SYSTEM_TMNL_MAX_NUM];
+	uint16_t sign_num = 0;
+	
+	for( ; p_tmnl_list != tmnl_list_head; p_tmnl_list = p_tmnl_list->next )
+	{
+		if( sign_num < SYSTEM_TMNL_MAX_NUM )
+		{
+			if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && p_tmnl_list->tmnl_dev.tmnl_status.is_rgst ) 
+			{
+				sign_list[sign_num].addr.low_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0x00ff) >> 0); // low addr
+				sign_list[sign_num].addr.high_addr = (uint8_t)((p_tmnl_list->tmnl_dev.address.addr &0xff00) >> 8); // ligh addr
+				sign_list[sign_num].sign_situation = p_tmnl_list->tmnl_dev.tmnl_status.sign_state;
+				sign_num++;
+			}
+		}
+	}
+
+	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, SIGN_SITUATION,\
+		sign_list, sign_num* sizeof(tcmpt_sign_situation));
+	
+}
+
+
 // 上报终端投票情况
 int upper_cmpt_vote_situation_report( uint8_t vote_rlst, uint16_t addr )
 {
@@ -812,6 +871,24 @@ int upper_cmpt_vote_situation_report( uint8_t vote_rlst, uint16_t addr )
 	}
 	
 	send_upper_computer_command( CMPT_MSG_TYPE_REPORT, RESULT_VOTE, &vote_data, sizeof(tcmp_vote_result));
+
+	return 0;
+}
+
+
+// 上报终端投票情况(不需要响应 2016/1/29)
+int upper_cmpt_vote_situation_report_as_response( uint8_t vote_rlst, uint16_t addr )
+{
+	tcmp_vote_result vote_data;
+
+	if( addr != 0xffff )
+	{
+		vote_data.addr.low_addr = (uint8_t)((addr &0x00ff) >> 0); // low addr
+		vote_data.addr.high_addr = (uint8_t)(( addr &0xff00) >> 8); // hight addr
+		vote_data.key_value= vote_rlst;
+	}
+	
+	send_upper_computer_command( CMPT_MSG_TYPE_REPORT|CMPT_MSG_TYPE_RESPONSE, RESULT_VOTE, &vote_data, sizeof(tcmp_vote_result));
 
 	return 0;
 }

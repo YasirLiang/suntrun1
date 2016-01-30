@@ -6,7 +6,7 @@
 #include "conference.h"
 
 #ifdef __DEBUG__
-#define _CONFERENCE_INFO__
+//#define _CONFERENCE_INFO__
 #endif
 
 #define CONFERENCE_DATA_MSG "Conference Data:"

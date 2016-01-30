@@ -8,7 +8,7 @@
 #include "profile_system.h"
 #include "muticast_connector.h"
 
-bool is_inflight_timeout = false;
+volatile bool is_inflight_timeout = false;
 static bool system_stop = false;	// 线程退出全局变量
 extern bool acmp_recv_resp_err;	// acmp 接收到命令但响应错误参数
 
@@ -123,7 +123,7 @@ int udp_server_fn(struct epoll_priv *priv )
 	if( recv_len > 0)
 	{
 		// 保存接收数据到缓冲区
-		DEBUG_RECV( recv_frame.payload, recv_len, "Begin udp Recv" );
+		//DEBUG_RECV( recv_frame.payload, recv_len, "Begin udp Recv" );
 		upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
 	}
 	else
