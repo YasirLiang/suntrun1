@@ -24,12 +24,12 @@ typedef struct queue // ╤сап
 	queue_node *trail;
 }queue;
 
-queue_node* queue_get( queue *root );
-void queue_push( queue *root, queue_node *node );
-bool is_queue_empty( queue* root );
-void init_queue( queue *root );
-int get_queue_length( queue* root );
-int queue_size( queue* root );
-
+extern queue_node* queue_get_value( queue *root );
+extern queue_node* queue_get( queue *root );
+extern void queue_push( queue *root, queue_node *node );
+extern bool is_queue_empty( queue* root );
+extern void init_queue( queue *root );
+extern int get_queue_length( queue* root );
+extern int queue_size( queue* root );
 
 #endif

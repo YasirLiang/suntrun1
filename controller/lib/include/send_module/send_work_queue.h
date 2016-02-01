@@ -38,8 +38,8 @@ typedef struct _tsend_data_pthread_work_queue // 系统数据发送队列
 	queue work;			// 工作队列
 }sdpwqueue;
 
+extern uint8_t get_send_queue_message_type( sdpwqueue* send_wq );
 extern p_sdpqueue_wnode send_queue_message_get( sdpwqueue* send_wq );
-int send_work_queue_message_save( tx_data p_queue_msg, sdpwqueue *sd_work_quue );// 注:p_queue_msg中的frame元素是指向已分配堆空间的空间
-
+extern int send_work_queue_message_save( tx_data p_queue_msg, sdpwqueue *sd_work_quue );// 注:p_queue_msg中的frame元素是指向已分配堆空间的空间
 
 #endif

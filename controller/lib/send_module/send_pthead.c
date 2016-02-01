@@ -163,7 +163,6 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			assert( nowait_status == 0 );
 			nowait_status = set_wait_message_idle_state();
 			assert( nowait_status == 0 );
-			DEBUG_INFO( "=======================Next Port======================" );
 			continue;
 		}
 		
@@ -233,8 +232,6 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				status = set_wait_message_idle_state();
 				assert( status == 0 );
 			}
-
-			//DEBUG_INFO( "send queue node END!<<<<<<<<<<<<<<<<<<<<<<<<<" );
 		}
 		else
 		{
