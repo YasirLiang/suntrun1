@@ -4,6 +4,14 @@
 
 #include "circular_link_queue.h"
 
+queue_node* queue_get_value( queue *root )
+{
+	if( root == NULL )
+		return NULL;
+
+	return (root->head != NULL)?root->head:NULL;
+}
+
 queue_node* queue_get( queue *root )
 {
 	assert( root );
@@ -18,7 +26,6 @@ queue_node* queue_get( queue *root )
 		if( root->trail != NULL )
 			root->trail = NULL;
 	}
-
 
 	return node_get;
 }

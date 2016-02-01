@@ -74,6 +74,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		struct sockaddr_in udp_sin;
 		uint32_t resp_interval_time = 0;
 		p_sdpqueue_wnode p_send_wnode = NULL;
+		uint8_t cur_msg_type = 0xff;
+		uint8_t next_msg_type = 0xff;
 		
 		pthread_mutex_lock( &p_send_wq->control.mutex ); // lock mutex
 		while( p_send_wq->work.head == NULL && p_send_wq->control.active )
@@ -120,7 +122,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 			continue;
 		}
-
+		
 		memcpy( send_frame, p_send_wnode->job_data.frame, send_frame_len );
 		memcpy( dest_raw, p_send_wnode->job_data.raw_dest, 6 );
 		memcpy( &udp_sin, &p_send_wnode->job_data.udp_sin, sizeof(struct sockaddr_in));
@@ -136,6 +138,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			p_send_wnode = NULL;
 		}
 
+		cur_msg_type = data_type;
+		next_msg_type = get_send_queue_message_type( p_send_wq );
 		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		// ready to sending data
@@ -149,6 +153,19 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 					    &udp_sin, 
 					    is_resp_data, 
 					    &resp_interval_time );
+
+		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
+			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\
+			||((next_msg_type == TRANSMIT_TYPE_UDP_CLT) && (cur_msg_type != TRANSMIT_TYPE_UDP_CLT))\
+			||((next_msg_type == TRANSMIT_TYPE_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_UART_CTRL)))
+		{// µ±Ç°·¢ËÍÏûÏ¢µÄ¶Ë¿ÚÓëÏÂÒ»¸ö·¢ËÍÏûÏ¢µÄ¶Ë¿Ú²»Í¬£¬¼´¿ªÊ¼ÏÂÒ»¸öÏûÏ¢µÄ·¢ËÍ
+			int nowait_status = set_wait_message_active_state();
+			assert( nowait_status == 0 );
+			nowait_status = set_wait_message_idle_state();
+			assert( nowait_status == 0 );
+			DEBUG_INFO( "=======================Next Port======================" );
+			continue;
+		}
 		
 		/*·¢ËÍÏÂÒ»ÌõÊı¾İµÄÌõ¼ş-Êı¾İ»ñµÃÏìÓ¦»òÊı¾İ³¬Ê±»òÊ±¼ä¼ä¸ôµ½ÁË(×¢:Ê±¼ä¼ä¸ôÖ»ÊÊÓÃÓÚÏµÍ³ÏìÓ¦Êı¾İ»òÉãÏñÍ·¿ØÖÆÊı¾İµÄ·¢ËÍ)*/
 		if( is_wait_messsage_primed_state() ) 

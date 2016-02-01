@@ -6,6 +6,12 @@
 
 #include "send_work_queue.h"
 
+uint8_t get_send_queue_message_type( sdpwqueue* send_wq )
+{
+	p_sdpqueue_wnode send_qnode = (p_sdpqueue_wnode)queue_get_value( &send_wq->work );
+	return (send_qnode != NULL)?send_qnode->job_data.data_type:0xff;// 0xff means noting in the queue
+}
+
 p_sdpqueue_wnode send_queue_message_get( sdpwqueue* send_wq )
 {
 	return (p_sdpqueue_wnode)queue_get( &send_wq->work );

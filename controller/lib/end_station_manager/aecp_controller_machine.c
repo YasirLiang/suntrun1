@@ -13,13 +13,16 @@ static inflight_plist aecp_inflight_guard = NULL;
 void aecp_controller_init( solid_pdblist solid_guard_node, desc_pdblist desc_guard, inflight_plist inflight_guard )
 {
 	assert( solid_guard_node && desc_guard && inflight_guard);
+	if( solid_guard_node == NULL || desc_guard == NULL || inflight_guard == NULL )
+		return;
+	
 	aecp_solid_guard = solid_guard_node;
 	aecp_desc_guard = desc_guard;
 	aecp_inflight_guard = inflight_guard;
 }
 
 // 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界，其他的发送函数同理
-int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
+int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_plist resend_node, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
 {
 	uint8_t subtype = jdksavdecc_subtype_data_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD ); // msg_type in there is sbu
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
@@ -92,9 +95,8 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 				}
 
 				// 将新建的inflight命令结点插入链表结尾中
-				insert_inflight_dblist_trail( guard, inflight_station );
-
-				//DEBUG_INFO( "subtype = 0x%02x ", inflight_station->host_tx.inflight_frame.data_type );
+				if( aecp_inflight_guard != NULL )
+					insert_inflight_dblist_trail( aecp_inflight_guard, inflight_station );
 			}
 			else
 			{
@@ -106,20 +108,16 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 		else
 		{
-			uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id( frame, ZERO_OFFSET_IN_PAYLOAD);
-			inflight_station = search_node_inflight_from_dblist( guard, seq_id , subtype);
-			
-			if( inflight_station != NULL ) // already search it
+			if( resend_node != NULL ) // already search it
 			{
-				inflight_station->host_tx.flags.resend = true;
-				inflight_station->host_tx.flags.retried++ ;
-				inflight_timer_state_avail( timeout, inflight_station );
+				resend_node->host_tx.flags.resend = true;
+				resend_node->host_tx.flags.retried++ ;
+				inflight_timer_state_avail( timeout, resend_node );
 			}
 			else
 			{
-				DEBUG_INFO( "nothing to be resend: subtype = 0x%02x, seq_id = %d ", subtype, seq_id );
-				//assert(inflight_station != NULL);
-				if( inflight_station == NULL )
+				assert(inflight_station != NULL);
+				if( resend_node == NULL )
 					return -1;
 			}
 		}
@@ -191,7 +189,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else
 	{
-		transmit_aecp_packet_network( frame, frame_len, hdr, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
+		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 	}
 }
 
@@ -304,6 +302,9 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 	inflight_plist inflight_aecp = NULL;
 	uint8_t conference_cmd = 0;
 	uint16_t terminal_address = 0;
+
+	if( aecp_inflight_guard == NULL )
+		return -1;
 
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{

@@ -12,12 +12,15 @@ void init_udp_client_controller_endstation( int fd, struct sockaddr_in *sin )
 	memcpy( &server_fd.sock_addr , sin, sizeof(struct sockaddr_in));
 	server_fd.sock_len = sizeof(struct sockaddr_in);
 
+	assert( command_send_guard );
+	if( command_send_guard == NULL )
+		return;
+	
 	udp_client_inflight = command_send_guard;
-	assert( udp_client_inflight );
 }
 
 // used for host and upper computer, only have one this type inflight in the double list
-int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, inflight_plist guard, bool resend, struct sockaddr_in* sin, bool resp, uint32_t *interval_time )
+int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, inflight_plist resend_node, bool resend, struct sockaddr_in* sin, bool resp, uint32_t *interval_time )
 {
 	uint8_t cfc_type = get_host_upper_cmpt_guide_type( frame, UPPER_HOST_CONFERENCE_HEADER_TYPE_OFFSET );
 	uint8_t cfc_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
@@ -67,7 +70,8 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 					inflight_timer_start( timeout, inflight_station );
 					
 					// 将新建的inflight命令结点插入链表结尾中
-					insert_inflight_dblist_trail( guard, inflight_station );
+					if( udp_client_inflight != NULL )
+						insert_inflight_dblist_trail( udp_client_inflight, inflight_station );
 				}
 				else
 				{
@@ -79,18 +83,18 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 		}
 		else
 		{
-			inflight_station = search_node_inflight_from_dblist( guard, cfc_cmd, cfc_type );
-			if( inflight_station != NULL ) //already search it
+			if( resend_node != NULL ) //already search it
 			{
-				inflight_station->host_tx.flags.resend = true;
-				inflight_station->host_tx.flags.retried++ ;
-				inflight_timer_state_avail( timeout, inflight_station );
+				resend_node->host_tx.flags.resend = true;
+				resend_node->host_tx.flags.retried++ ;
+				DEBUG_INFO( "timeout = %d, retried = %d", timeout, resend_node->host_tx.flags.retried );
+				inflight_timer_state_avail( timeout, resend_node );
 			}
 			else
 			{
 				DEBUG_INFO( "udp server nothing to be resend!" );
-				//assert(inflight_station != NULL);
-				if( inflight_station == NULL )
+				assert(resend_node != NULL);
+				if( resend_node == NULL )
 					return -1;
 			}
 		}
@@ -119,17 +123,16 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inflight_plist guard )
 {
 	bool is_retried = false;
-	inflight_plist udp_client_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
 	uint32_t interval_time = 0;
          
 	if( inflight_station != NULL )
 	{
-		udp_client_pstation = inflight_station;
-		is_retried = is_inflight_cmds_retried( udp_client_pstation );
-		frame = udp_client_pstation->host_tx.inflight_frame.frame;
-		frame_len = udp_client_pstation->host_tx.inflight_frame.inflight_frame_len;
+		is_retried = is_inflight_cmds_retried( inflight_station );
+		DEBUG_INFO( "======================is retried = %d retried NUM = %d=======================", is_retried, inflight_station->host_tx.flags.retried );
+		frame = inflight_station->host_tx.inflight_frame.frame;
+		frame_len = inflight_station->host_tx.inflight_frame.inflight_frame_len;
 	}
 	else 
 	{
@@ -149,13 +152,13 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 			
 		MSGINFO( "[ UPPER COMMAND TIMEOUT: %s, %s, %s, %d (data len = %d )]", 
 					upper_cmpt_cmd_value_to_string_name( upper_cmpt_cmd ),
-					upper_cmpt_cmd_value_to_string_name( udp_client_pstation->host_tx.inflight_frame.seq_id ),
+					upper_cmpt_cmd_value_to_string_name( inflight_station->host_tx.inflight_frame.seq_id ),
 					"NULL",
 					upper_cmpt_deal_type, data_len );
 
 		// free inflight command node in the system
-		release_heap_space( &udp_client_pstation->host_tx.inflight_frame.frame );
-		delect_inflight_dblist_node( &udp_client_pstation );
+		release_heap_space( &inflight_station->host_tx.inflight_frame.frame );
+		delect_inflight_dblist_node( &inflight_station );
 		
 		is_inflight_timeout = true; // 设置超时
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
@@ -164,7 +167,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	{
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
-		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, guard, true, &udp_client_pstation->host_tx.inflight_frame.sin_in, false, &interval_time );
+		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
 	}
@@ -184,6 +187,9 @@ int udp_client_proc_resp( uint8_t *frame, int frame_len  )
         uint8_t upper_cmpt_deal_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 	inflight_plist inflight_udp_client = NULL;
 	bool is_found_inflight_stations = false;
+
+	if( udp_client_inflight == NULL )
+		return -1;
 
 	if( (subtype == UPPER_COMPUTER_DATA_LOADER) && (upper_cmpt_deal_type & CMPT_MSG_TYPE_RESPONSE) )// 是响应报文
 	{

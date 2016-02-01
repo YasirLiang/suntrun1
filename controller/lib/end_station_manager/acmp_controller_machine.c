@@ -22,6 +22,9 @@ extern tsys_discuss_pro gdisc_flags; // 会讨参数
 void acmp_endstation_init( inflight_plist guard, solid_pdblist head, desc_pdblist desc_guard )
 {
 	assert( guard && head && desc_guard );
+	if( guard == NULL || head == NULL || desc_guard == NULL )
+		return;
+	
 	acmp_inflight_guard = guard;
 	acmp_solid_guard = head;
 	acmp_desc_guard = desc_guard;
@@ -196,7 +199,7 @@ void acmp_binflight_cmd_time_tick( void )
 	}
 }
 
-ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist guard, bool resend ,const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
+ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist resend_node, bool resend ,const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
 {
 	uint8_t sub_type = jdksavdecc_subtype_data_get_subtype(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
@@ -246,7 +249,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 				inflight_timer_start(timeout, inflight_station );
 
 				// 将新建的inflight命令结点插入链表结尾中
-				insert_inflight_dblist_trail( guard, inflight_station );
+				if( acmp_inflight_guard != NULL )
+					insert_inflight_dblist_trail( acmp_inflight_guard, inflight_station );
 			}
 			else
 			{
@@ -259,18 +263,17 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 		else
 		{
 			DEBUG_INFO( " acmp seq id = %d, subtype = %d", seq_id, sub_type );
-			inflight_station = search_node_inflight_from_dblist( guard, seq_id, sub_type);
-			if( inflight_station != NULL ) //already search it
+			if( resend_node != NULL ) //already search it
 			{
-				inflight_station->host_tx.flags.resend = true;
-				inflight_station->host_tx.flags.retried++ ;
-				inflight_timer_state_avail( timeout, inflight_station );
+				resend_node->host_tx.flags.resend = true;
+				resend_node->host_tx.flags.retried++ ;
+				inflight_timer_state_avail( timeout, resend_node );
 			}
 			else
 			{
 				DEBUG_INFO( "nothing to be resend!" );
-				//assert(inflight_station != NULL);
-				if( inflight_station == NULL )
+				assert(resend_node != NULL);
+				if( resend_node == NULL )
 					return -1;
 			}
 		}
@@ -350,7 +353,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	else
 	{
 		DEBUG_INFO( "acmp resended " );
-		transmit_acmp_packet_network( frame, frame_len, hdr, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_timeout );
+		transmit_acmp_packet_network( frame, frame_len, acmp_pstation, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_timeout );
 	}
 }
 
@@ -360,6 +363,9 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	uint16_t seq_id = jdksavdecc_acmpdu_get_sequence_id( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD);
 	uint32_t notification_flag = 0;
 	inflight_plist inflight_est = NULL;
+
+	if( acmp_inflight_guard == NULL )
+		return -1;
 
 	inflight_est = search_node_inflight_from_dblist( acmp_inflight_guard, seq_id, subtype );	// found?
 	if( NULL != inflight_est )

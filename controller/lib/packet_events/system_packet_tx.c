@@ -254,27 +254,27 @@ void tx_packet_event( uint8_t type,
 	{
 		if( type == TRANSMIT_TYPE_ADP )
 		{
-			transmit_adp_packet_to_net( frame, frame_len, guard, false, dest, resp, interval_time );
+			transmit_adp_packet_to_net( frame, frame_len, NULL, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_ACMP )
 		{
-			transmit_acmp_packet_network( frame, frame_len, guard, false, dest, resp, interval_time );
+			transmit_acmp_packet_network( frame, frame_len, NULL, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_AECP )
 		{
-			transmit_aecp_packet_network( frame, frame_len, guard, false, dest, resp, interval_time );
+			transmit_aecp_packet_network( frame, frame_len, NULL, false, dest, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_SVR )// host as client send data to udp server using client fd
 		{ 
-			transmit_udp_packet_server( client_fd, frame, frame_len, guard, false, &sin_event, resp, interval_time );// 未完成，原因是协议没定
+			transmit_udp_packet_server( client_fd, frame, frame_len, NULL, false, &sin_event, resp, interval_time );// 未完成，原因是协议没定
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_CLT )// host as server send data to udp client using server fd
 		{ 
-			transmit_udp_client_packet( server_fd, frame, frame_len, guard, false, &sin_event, resp, interval_time );
+			transmit_udp_client_packet( server_fd, frame, frame_len, NULL, false, &sin_event, resp, interval_time );
 			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UART_CTRL )

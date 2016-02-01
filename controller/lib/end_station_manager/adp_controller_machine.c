@@ -116,7 +116,7 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 }
 
 // not add to inflight cmd
-ssize_t transmit_adp_packet_to_net( uint8_t* frame,  uint32_t frame_len, inflight_plist guard, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
+ssize_t transmit_adp_packet_to_net( uint8_t* frame,  uint32_t frame_len, inflight_plist resend_node, bool resend, const uint8_t dest_mac[6], bool resp, uint32_t *interval_time )
 {
 	assert( interval_time );
 	*interval_time = 0;
