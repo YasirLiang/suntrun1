@@ -2379,7 +2379,6 @@ void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr
 		{
 			terminal_set_led_play_stype( tmp->tmnl_dev.entity_id, addr, card_opt );
 		}
-		
 	}
 }
 
@@ -3808,7 +3807,7 @@ void terminal_query_sign_vote_pro( void )
 	
 	if ( (gquery_svote_pro.running) && host_timer_timeout(&gquery_svote_pro.query_timer))
 	{
-		host_timer_update( 100, &gquery_svote_pro.query_timer );
+		host_timer_update( 60, &gquery_svote_pro.query_timer );
 		if( sys_state == SIGN_STATE )
 		{
 			do

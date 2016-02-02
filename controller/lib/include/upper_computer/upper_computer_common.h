@@ -156,6 +156,12 @@ typedef struct _type_upper_computer_table_card
 	uint8_t msg_type;	// 短信息类型
 	uint8_t msg_buf[UPPER_MSG_MAX_LENGTH];//身份代表
 }tcmpt_table_card; 
+
+static inline void upper_computer_table_card_message_form(tcmpt_table_card* table_card_info, const void *base, ssize_t offset, ssize_t len )
+{
+	memcpy( table_card_info, ((uint8_t*)base) + offset, len );
+}
+
 /*@}*/
 
 /*{@ sign begin*/

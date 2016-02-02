@@ -98,9 +98,17 @@ typedef struct _inflight
 	struct _inflight *prior, *next;
 }inflight_list,*inflight_plist;
 
+typedef struct _type_inflight_proccess
+{
+	bool running;
+	pthread_mutex_t mutex;
+}tinflight_proccess;
+
 extern struct raw_context net;			// Ô­Ê¼Ì×½Ó×Ö
 extern volatile bool is_inflight_timeout;
+extern tinflight_proccess ginflight_pro;
 
+void inflight_proccess_init( void );
 bool is_inflight_cmds_retried( inflight_plist station );
 void inflight_timer_state_avail( timetype timeout, inflight_plist target );
 void inflight_timer_start( timetype timeout, inflight_plist target );

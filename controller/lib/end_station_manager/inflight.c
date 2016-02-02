@@ -1,4 +1,15 @@
 #include "inflight.h"
+#include <pthread.h>
+
+tinflight_proccess ginflight_pro;
+
+void inflight_proccess_init( void )
+{
+	ginflight_pro.running = true;
+	pthread_mutex_init(&ginflight_pro.mutex, NULL );
+	pthread_mutex_lock(&ginflight_pro.mutex);
+	pthread_mutex_unlock(&ginflight_pro.mutex);
+}
 
 bool is_inflight_cmds_retried( inflight_plist station )
 {

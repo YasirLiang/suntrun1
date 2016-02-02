@@ -95,7 +95,9 @@ int fn_netif_cb( struct epoll_priv *priv )
 	        uint16_t operation_id = 0;
 	       	bool is_operation_id_valid = false;
 
+		pthread_mutex_lock(&ginflight_pro.mutex);
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
+		pthread_mutex_unlock(&ginflight_pro.mutex);
 		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			int msr_status = 0;

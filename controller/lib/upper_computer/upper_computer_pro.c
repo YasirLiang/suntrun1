@@ -285,13 +285,11 @@ int proccess_upper_cmpt_tablet_stands_manager( uint16_t protocal_type, void *dat
 
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
-	
-		conference_host_upper_computer_set_upper_message_form( &table_card, data, CMPT_DATA_LEN_OFFSET, lenght );
-
-		/*管理终端的桌牌*/
-		terminal_tablet_stands_manager( &table_card, address, lenght - sizeof(uint16_t)); // 注:这里不涉及到系统的所有状态的处理
-		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, TABLE_TABLET_STANDS_MANAGER, NULL, 0 );
+		
+		/*管理终端的桌牌*/
+		upper_computer_table_card_message_form( &table_card, data, CMPT_DATA_OFFSET, lenght );
+		terminal_tablet_stands_manager( &table_card, address, lenght ); // 注:这里不涉及到系统的所有状态的处理
 	}
 
 	return 0;

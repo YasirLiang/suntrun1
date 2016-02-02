@@ -47,7 +47,10 @@ void inflight_time_tick( inflight_plist guard )
 void time_tick_event( solid_pdblist guard, inflight_plist inflight_guard )
 {
 	adp_entity_time_tick( guard );
+	
+	pthread_mutex_lock(&ginflight_pro.mutex);
 	inflight_time_tick( inflight_guard );
+	pthread_mutex_unlock(&ginflight_pro.mutex);
 
 	//acmp_binflight_cmd_time_tick();
 }

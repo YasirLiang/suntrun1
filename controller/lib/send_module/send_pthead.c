@@ -143,6 +143,7 @@ int thread_send_func( void *pgm ) // º”»ÎÕ¨≤Ωª˙÷∆£¨≤…”√–≈∫≈¡ø.(–ﬁ∏ƒ∫Û≤ª‘⁄¥Àœﬂ≥Ã 
 		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
 
 		// ready to sending data
+		pthread_mutex_lock(&ginflight_pro.mutex);
 		tx_packet_event( data_type, 
 					    notification_flag, 
 					    send_frame, 
@@ -153,6 +154,7 @@ int thread_send_func( void *pgm ) // º”»ÎÕ¨≤Ωª˙÷∆£¨≤…”√–≈∫≈¡ø.(–ﬁ∏ƒ∫Û≤ª‘⁄¥Àœﬂ≥Ã 
 					    &udp_sin, 
 					    is_resp_data, 
 					    &resp_interval_time );
+		pthread_mutex_unlock(&ginflight_pro.mutex);
 
 		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
 			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\

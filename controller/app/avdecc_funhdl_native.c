@@ -330,7 +330,9 @@ int pthread_recv_data_fn( void *pgm )
 		switch( (static_buf_num++) % SYS_BUF_RECV_COUNT )
 		{
 			case 0:// buffer 1
+				pthread_mutex_lock(&ginflight_pro.mutex);
 				upper_computer_recv_message_get_pro();
+				pthread_mutex_unlock(&ginflight_pro.mutex);
 			break;
 			case 1:// buffer 2
 			break;
