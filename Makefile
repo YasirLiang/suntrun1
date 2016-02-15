@@ -26,7 +26,8 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/send_module\
 		   -I$(ROOTPATH)/controller/lib/include/camera_module\
 		   -I$(ROOTPATH)/controller/lib/include/uart\
-		   -I$(ROOTPATH)/controller/lib/include/timer_pthread
+		   -I$(ROOTPATH)/controller/lib/include/timer_pthread\
+		   -I$(ROOTPATH)/controller/lib/include/control_matrix
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')

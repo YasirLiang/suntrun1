@@ -14,7 +14,7 @@
 *出口参数：   
 		正确返回为1，错误返回为0 
 *******************************************************************/  
-int UART0_Open( int fd, char* port )  
+int UART_File_Open( int fd, char* port )  
 {  
 	fd = open( port, O_RDWR|O_NOCTTY|O_NDELAY );  
 	if( FALSE == fd )  
@@ -52,7 +52,7 @@ int UART0_Open( int fd, char* port )
 			port :串口号(ttyS0,ttyS1,ttyS2) 
 * 出口参数： void 
 *******************************************************************/  
-void UART0_Close(int fd)  
+void UART_File_Close(int fd)  
 {  
 	close( fd );  
 }  
@@ -68,7 +68,7 @@ void UART0_Close(int fd)
 *			 parity: 效验类型 取值为N,E,O,,S 
 *出口参数：正确返回为1，错误返回为0 
 *******************************************************************/  
-int UART0_Set( int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity )  
+int UART_File_Set( int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity )  
 {  
 	int i;  
 	int speed_arr[] = { B115200, B19200, B9600, B4800, B2400, B1200, B300 };  
@@ -214,11 +214,11 @@ int UART0_Set( int fd, int speed, int flow_ctrl, int databits, int stopbits, int
 *		  parity: 效验类型 取值为N,E,O,,S 
 * 出口参数：正确返回为0，错误返回为-1
 *********************************************************************/  
-int UART0_Init( int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity )
+int UART_File_Init( int fd, int speed, int flow_ctrl, int databits, int stopbits, int parity )
 {  
 	int err;  
 
-	if( ( err = UART0_Set( fd, speed, flow_ctrl, databits, stopbits, parity ) ) == FALSE )  //设置串口数据帧格式  
+	if( ( err = UART_File_Set( fd, speed, flow_ctrl, databits, stopbits, parity ) ) == FALSE )  //设置串口数据帧格式  
 	{                                                           
 		return FALSE;  
 	}  
@@ -237,7 +237,7 @@ int UART0_Init( int fd, int speed, int flow_ctrl, int databits, int stopbits, in
 *		 data_len:一帧数据的长度 
 *出口参数：正确返回为1，错误返回为0 
 *******************************************************************/  
-int UART0_Recv( int fd, uint8_t *rcv_buf, int data_len )  
+int UART_File_Recv( int fd, uint8_t *rcv_buf, int data_len )  
 {  
 	int len;
 
@@ -254,7 +254,7 @@ int UART0_Recv( int fd, uint8_t *rcv_buf, int data_len )
 *			data_len:一帧数据的个数 
 *出口参数：正确返回为1，错误返回为0 
 *******************************************************************/  
-int UART0_Send( int fd, uint8_t *send_buf, int data_len )  
+int UART_File_Send( int fd, uint8_t *send_buf, int data_len )  
 {  
 	int len = 0;  
 	len = write( fd, send_buf, data_len );  

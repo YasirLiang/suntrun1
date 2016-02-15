@@ -159,7 +159,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
 			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\
 			||((next_msg_type == TRANSMIT_TYPE_UDP_CLT) && (cur_msg_type != TRANSMIT_TYPE_UDP_CLT))\
-			||((next_msg_type == TRANSMIT_TYPE_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_UART_CTRL)))
+			||((next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_CAMERA_UART_CTRL))\
+			||((next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_MATRIX_UART_CTRL)))
 		{// µ±Ç°·¢ËÍÏûÏ¢µÄ¶Ë¿ÚÓëÏÂÒ»¸ö·¢ËÍÏûÏ¢µÄ¶Ë¿Ú²»Í¬£¬¼´¿ªÊ¼ÏÂÒ»¸öÏûÏ¢µÄ·¢ËÍ
 			int nowait_status = set_wait_message_active_state();
 			assert( nowait_status == 0 );

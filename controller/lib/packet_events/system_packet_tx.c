@@ -5,10 +5,11 @@
 #include "udp_server_controller_machine.h"
 #include "udp_client_controller_machine.h"
 #include "wait_message.h"
-#include "uart_controller_machine.h"
+#include "camera_uart_controller_machine.h"
 #include "send_interval.h"
 #include "send_work_queue.h"
 #include "send_pthread.h"
+#include "matrix_output.h"
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
 uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
@@ -137,6 +138,7 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 *Writer:YasirLiang
 *Data: 2015/11/25
 *Name: system_uart_packet_tx
+*Func:send data to uart output
 *Param:
 *	frame:the sending data 
 *	frame_len:the length of sending data
@@ -169,7 +171,7 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 	
 	int ret = -1;
 	
-	if( data_type == TRANSMIT_TYPE_UART_CTRL )
+	if( (data_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) || (data_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) )
 	{
 		tx_data tx;
 		uint8_t *tran_buf = pipe_buf;
@@ -229,7 +231,7 @@ void tx_packet_event( uint8_t type,
 	int server_fd = 0;
 	int client_fd = 0;
 	bool istx = false;
-	bool right_packet = false;
+	bool right_packet = true;
 	struct sockaddr_in sin_event;
 	
 	if( notification_flag == RUNINFLIGHT )
@@ -255,32 +257,30 @@ void tx_packet_event( uint8_t type,
 		if( type == TRANSMIT_TYPE_ADP )
 		{
 			transmit_adp_packet_to_net( frame, frame_len, NULL, false, dest, resp, interval_time );
-			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_ACMP )
 		{
 			transmit_acmp_packet_network( frame, frame_len, NULL, false, dest, resp, interval_time );
-			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_AECP )
 		{
 			transmit_aecp_packet_network( frame, frame_len, NULL, false, dest, resp, interval_time );
-			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_SVR )// host as client send data to udp server using client fd
 		{ 
 			transmit_udp_packet_server( client_fd, frame, frame_len, NULL, false, &sin_event, resp, interval_time );// 未完成，原因是协议没定
-			right_packet = true;
 		}
 		else if( type == TRANSMIT_TYPE_UDP_CLT )// host as server send data to udp client using server fd
 		{ 
 			transmit_udp_client_packet( server_fd, frame, frame_len, NULL, false, &sin_event, resp, interval_time );
-			right_packet = true;
 		}
-		else if( type == TRANSMIT_TYPE_UART_CTRL )
+		else if( type == TRANSMIT_TYPE_CAMERA_UART_CTRL )
 		{ 
-			transmit_uart_control_packet_uart( frame, frame_len, false, resp, interval_time ); 
-			right_packet = true;
+			transmit_camera_uart_control_packet( frame, frame_len, false, resp, interval_time ); 
+		}
+		else if( type == TRANSMIT_TYPE_MATRIX_UART_CTRL )
+		{
+			matrix_output_transmit_uart_control_packet( frame, frame_len, false, resp, interval_time );
 		}
 		else 
 		{

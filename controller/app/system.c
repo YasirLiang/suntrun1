@@ -16,6 +16,7 @@
 #include "camera_common.h"
 #include "muticast_connector.h"
 #include "check_timer.h"
+#include "matrix_output.h"// 矩阵输出
 
 void init_system( void )
 {
@@ -53,6 +54,7 @@ void init_system( void )
 
 	inflight_proccess_init();// 初始化inflight 处理参数
 	DEBUG_LINE();
+	matrix_output_init();// 初始化矩阵输出端口
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );

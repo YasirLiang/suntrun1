@@ -19,7 +19,8 @@ enum transmit_data_type
 	TRANSMIT_TYPE_UDP_SVR, // send data to udp server
 	TRANSMIT_TYPE_UDP_CLT, // send data to udp client
 
-	TRANSMIT_TYPE_UART_CTRL	// send data to uart for controling the camera (2015-11-25 add)
+	TRANSMIT_TYPE_CAMERA_UART_CTRL,	// send data to uart for controling the camera (2015-11-25 add)
+	TRANSMIT_TYPE_MATRIX_UART_CTRL  // send matrix control data for controling the ouside matrx(15-2-1016 add)
 };
 
 typedef struct transmit_data
