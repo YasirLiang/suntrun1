@@ -99,6 +99,9 @@ int camera_profile_read( FILE *fd, camera_profile_format *read_buf )
 int camera_profile_write( FILE *fd, camera_profile_format *write_buf )
 {
 	assert( fd && write_buf );
+	if( fd == NULL && write_buf == NULL )
+		return -1;
+	
 	int ret = Fwrite( fd, write_buf, sizeof(camera_profile_format), 1);
 	if( ret != 1 )
 	{

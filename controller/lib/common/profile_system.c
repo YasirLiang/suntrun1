@@ -334,10 +334,11 @@ void profile_system_close( void )
 	Fflush( profile_file_fd );
 
 	/*2016-1-26不能正常关闭*/ 
-	//Fclose( profile_file_fd );
-	//if( profile_file_fd != NULL )
-	//{
-	//	profile_file_fd = NULL;
-	//}
+	/*
+	if( profile_file_fd != NULL )
+	{
+		Fclose( profile_file_fd );
+		profile_file_fd = NULL;
+	}*/
 }
 

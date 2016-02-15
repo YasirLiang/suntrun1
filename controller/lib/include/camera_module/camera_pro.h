@@ -9,6 +9,11 @@
 #define __CAMERA_PRO_H__
 
 #include "camera_profile.h"
+#include "host_controller_debug.h"
+
+#ifdef __DEBUG__
+#define __CAMERA_DEBUG__ 
+#endif
 
 #define PRESET_SYSTEM_FILE "preset_plist.dat"
 #define MUX_NUM_CAMERA 4

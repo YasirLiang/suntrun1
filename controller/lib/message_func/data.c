@@ -6,10 +6,9 @@
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
-
-	{ 0xffffffff, terminal_func_allot_address, FUNC_TMNL_ALLOT_ADDRESS},
+	{ 0xffffffff, terminal_func_allot_address, FUNC_TMNL_ALLOT_ADDRESS},// 0
 	{ 0xffffffff, terminal_func_key_action, FUNC_TMNL_KEY_ACTION},
-	{ 0xffffffff, terminal_func_chairman_control, FUNC_TMNL_CHAIRMAN_CONTROL},
+	{ 0xffffffff, terminal_func_chairman_control, FUNC_TMNL_CHAIRMAN_CONTROL},// 2
 	{ 0xffffffff, terminal_func_send_main_state, FUNC_TMNL_SEND_MAIN_STATE},
 	{ 0xffffffff, terminal_func_cmd_event, FUNC_TMNL_EVENT},// 4
 	
@@ -41,32 +40,31 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, proccess_upper_cmpt_report_endstation_message, FUNC_CMPT_REPORT_ENDSTATION_MESSAGE},//3 // 30
 	{ 0xffffffff, proccess_upper_cmpt_hign_definition_switch_set, FUNC_CMPT_HIGH_DEFINITION_SWITCH_SET},
 	
-	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },
+	{ 0xffffffff, terminal_mic_auto_close, FUNC_MENU_AUTO_CLOSE_CMD },// 32
 	{ 0xffffffff, terminal_system_discuss_mode_set, FUNC_MENU_DISC_MODE_SET_CMD },
-	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET },
+	{ 0xffffffff, terminal_speak_limit_num_set, FUNC_MENU_SPK_LIMIT_NUM_SET }, //34
 	{ 0xffffffff, terminal_apply_limit_num_set, FUNC_MUNU_APPLY_LIMIT_NUM_SET },
 	
-	{ 0xffffffff, termianal_music_enable, FUNC_MENU_MUSIC_EN_SET },
+	{ 0xffffffff, termianal_music_enable, FUNC_MENU_MUSIC_EN_SET },// 36
 	{ CAMERA_PRESET, camera_preset_save, FUNC_MENU_CMR_SAVE_PRESET },
-	{ CAMERA_PRESET, camera_select_num, FUNC_MENU_CMR_SEL_CMR },
+	{ CAMERA_PRESET, camera_select_num, FUNC_MENU_CMR_SEL_CMR },//38
 	{ CAMERA_PRESET, camera_control_rightleft, FUNC_MENU_CMR_CTRL_LR },
-	{ CAMERA_PRESET, camera_control_updown, FUNC_MENU_CMR_CTRL_UD },
+	{ CAMERA_PRESET, camera_control_updown, FUNC_MENU_CMR_CTRL_UD },//40
 	{ CAMERA_PRESET, camera_control_fouce, FUNC_MENU_CMR_CTRL_FOUCE },
-	{ CAMERA_PRESET, camera_control_zoom, FUNC_MENU_CMR_CTRL_ZOOM },
+	{ CAMERA_PRESET, camera_control_zoom, FUNC_MENU_CMR_CTRL_ZOOM },//42
 	{ CAMERA_PRESET, camera_control_iris, FUNC_MENU_CMR_CTRL_APERT },
-	{ CAMERA_PRESET, camera_control_align, FUNC_MENU_CMR_CTRL_ALIGN },
+	{ CAMERA_PRESET, camera_control_align, FUNC_MENU_CMR_CTRL_ALIGN },//44
 	{ 0xffffffff, camera_control_full_view, FUNC_MENU_CMR_FULL_VIEW},
-	{ 0xffffffff, camera_preset_set, FUNC_MENU_CMR_CLR_PRESET },
+	{ 0xffffffff, camera_preset_set, FUNC_MENU_CMR_CLR_PRESET },//46
 	{ 0xffffffff, termianal_chairman_prior_set, FUNC_MENU_PRIOR_EN_SET },
-	{ 0Xffffffff, terminal_system_register, FUNC_MENU_TERMINAL_SYS_REGISTER},// 2016/1/23 add
+	{ 0Xffffffff, terminal_system_register, FUNC_MENU_TERMINAL_SYS_REGISTER},// 48 // 2016/1/23 add
 	
 	{ 0xffffffff, camera_preset_addr_select, FUNC_SYS_PRESET_ADDR },
-	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }
+	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }// 50
 };
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
-
 	{ TERMINAL_USE, ALLOCATION, FUNC_TMNL_ALLOT_ADDRESS, 0},
 	{ TERMINAL_USE, KEYPAD_ACTION, FUNC_TMNL_KEY_ACTION, 0},
 	{ TERMINAL_USE, PRESIDENT_CONTROL, FUNC_TMNL_CHAIRMAN_CONTROL, 0},
@@ -105,6 +103,7 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ MENU_USE, MENU_DISC_MODE_SET_CMD, FUNC_MENU_DISC_MODE_SET_CMD, 0},
 	{ MENU_USE, MENU_SPK_LIMIT_NUM_SET, FUNC_MENU_SPK_LIMIT_NUM_SET, 0},
 	{ MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, FUNC_MUNU_APPLY_LIMIT_NUM_SET, 0},
+	
 	{ MENU_USE, MENU_MUSIC_EN_SET, FUNC_MENU_MUSIC_EN_SET, 0},
 	{ MENU_USE, MENU_CMR_SAVE_PRESET, FUNC_MENU_CMR_SAVE_PRESET, 0},
 	{ MENU_USE, MENU_CMR_SEL_CMR, FUNC_MENU_CMR_SEL_CMR, 0},

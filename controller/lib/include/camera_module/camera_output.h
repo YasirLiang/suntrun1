@@ -14,6 +14,7 @@
 #define CAMERA_OUT_TRACK_VIEW 2
 
 int camera_output_switch( uint8_t input_chn, uint8_t output_chn, bool is_change );
+uint8_t camera_output_get_input( uint8_t out );
 
 
 #endif

@@ -495,6 +495,9 @@ int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *dat
 	tcmp_camara_bit_preset prs;
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
+			VIDICON_PRERATION_SET, NULL, 0 );
+		
 		upper_cmpt_camera_preset_flag_get( data, &prs, CMPT_DATA_OFFSET, 0 );
 		switch(prs.camara_preset_flags)
 		{
@@ -516,9 +519,6 @@ int proccess_upper_cmpt_vidicon_preration_set( uint16_t protocal_type, void *dat
 			default:
 				break;
 		}
-		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET,\
-			VIDICON_PRERATION_SET, NULL, 0 );
 	}
 	
 	return 0;
@@ -558,6 +558,13 @@ int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
 			VIDICON_OUTPUT, NULL, 0 );
+	}
+	else if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
+	{
+		out_chn.camara_output_1 = camera_output_get_input(CAMERA_OUT_FULL_VIEW);
+		out_chn.camara_output_2 = camera_output_get_input(CAMERA_OUT_TRACK_VIEW);
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_QUERY, \
+			VIDICON_OUTPUT, (uint8_t*)&out_chn, sizeof(uint16_t) );
 	}
 	
 	return 0;

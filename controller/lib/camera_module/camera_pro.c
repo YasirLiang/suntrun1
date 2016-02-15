@@ -28,6 +28,23 @@ uint8_t gscene_out;
 
 get_cmrpreset_pro ggetcmrpreset_pro;
 
+void preset_camera_list_info( void )
+{
+#ifdef __CAMERA_DEBUG__
+		int i = 0;
+		printf( "\n---------------camera preset file list init success->List Info:[(camera num)--(preset_point_num)--(addr)]------\n\t");
+		for( i = 0; i < sizeof(gpresetcmr_list)/sizeof(preset_point_format); i++ )
+		{
+			if( gpresetcmr_list[i].tmnl_addr != 0xffff )
+				printf( "[%d--%d--0x%04x] ", gpresetcmr_list[i].camera_num,\
+					gpresetcmr_list[i].preset_point_num, gpresetcmr_list[i].tmnl_addr );
+		}
+
+		printf("\n");
+#endif
+}
+
+
 /*=============================
 *开始摄像头命令处理函数
 *==============================*/
@@ -47,7 +64,8 @@ int camera_preset_save( uint16_t cmd, void *data, uint32_t data_len )
 {
 	uint16_t index = 0;
 	uint8_t preset = 0;
-	
+
+	DEBUG_INFO( "=====gcurpresetcmr.tmnl_addr = 0x%04x", gcurpresetcmr.tmnl_addr );
 	if( 0xffff == gcurpresetcmr.tmnl_addr )
 	{
 		return -1;
@@ -79,13 +97,29 @@ int camera_preset_save( uint16_t cmd, void *data, uint32_t data_len )
 		DEBUG_INFO( "not find preset addr!" );
 		return -1;
 	}
-
+	
 	gpresetcmr_list[index].camera_num = gcurpresetcmr.camera_num;
 	gpresetcmr_list[index].preset_point_num = gcurpresetcmr.preset_point_num;
 	gpresetcmr_list[index].tmnl_addr = gcurpresetcmr.tmnl_addr;
+	DEBUG_INFO( "index in gpresetcmr_list = %d, [0x%04x-%d-%d]", index, gpresetcmr_list[index].tmnl_addr, gpresetcmr_list[index].camera_num, gpresetcmr_list[index].preset_point_num );
 
 	camera_pro_control( gcurpresetcmr.camera_num, CAMERA_CTRL_PRESET_SET, 0,\
 		gcurpresetcmr.preset_point_num );
+
+	camera_profile_format cmr_file;
+	int write_byte = 0;
+	
+	write_byte = sizeof(preset_point_format)*PRESET_NUM_MAX;
+	memcpy( cmr_file.cmr_preset_list, gpresetcmr_list, write_byte );
+	camera_profile_fill_check( &cmr_file, PRESET_NUM_MAX );
+	if( -1 != Fseek(gpreset_fd, 0, SEEK_SET) )
+	{
+		camera_profile_write( gpreset_fd, &cmr_file );
+		Fflush( gpreset_fd );	
+	}
+#ifdef __CAMERA_DEBUG__
+		preset_camera_list_info();
+#endif
 
 	if((gcurpresetcmr.tmnl_addr != FULL_VIEW_ADDR) && (gcurpresetcmr.tmnl_addr != BACKUP_FULL_VIEW_ADDR))
 	{//非全景定位保存预置后需要熄灭相应终端的指示灯
@@ -520,8 +554,12 @@ int camera_pro_preset_file_list_init( void )
 
 void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
 {
-	camera_pro_preset_file_list_init();
-	
+	if( camera_pro_preset_file_list_init() == 0 )
+	{
+#ifdef __CAMERA_DEBUG__
+		preset_camera_list_info();
+#endif
+	}
 	gcurpresetcmr.camera_num = gset_sys.current_cmr;
 	gcurpresetcmr.preset_point_num = 0;
 	gcurpresetcmr.tmnl_addr = 0xffff;
@@ -531,21 +569,30 @@ void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
 /*清除摄像头系统信息, 这里把内存的对应的所有数据都保存到了文件中*/ 
 void camera_pro_system_close( void )
 {
+	/*写入配置文件*/
 	camera_profile_format cmr_file;
 	int write_byte = 0;
 	
 	write_byte = sizeof(preset_point_format)*PRESET_NUM_MAX;
 	memcpy( cmr_file.cmr_preset_list, gpresetcmr_list, write_byte );
 	camera_profile_fill_check( &cmr_file, PRESET_NUM_MAX );
-	camera_profile_write( gpreset_fd, &cmr_file );
-	Fflush( gpreset_fd );
+	// 从头写入
+	if( -1 != Fseek( gpreset_fd, 0, SEEK_SET))
+	{
+		camera_profile_write( gpreset_fd, &cmr_file );
+		Fflush( gpreset_fd );
+	}
 
 	/*2016-1-26不能正常关闭*/ 
-	//camera_profile_close( gpreset_fd );
-	//if( gpreset_fd != NULL )
-	//{
-	//	gpreset_fd = NULL;
-	//}
+	/*
+	if( gpreset_fd != NULL )
+	{
+		DEBUG_INFO( "============>camera system close Success!<=======" );
+		camera_profile_close( gpreset_fd );
+		gpreset_fd = NULL;
+	}
+
+	DEBUG_INFO( "============>camera system close Success!<=======" );*/
 }
 
 /*=============================
