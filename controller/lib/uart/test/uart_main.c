@@ -15,7 +15,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 		return FALSE;  
 	}
 	
-	fd = UART0_Open( fd,argv[1] );//打开串口，返回文件描述符 
+	fd = UART_File_Open( fd,argv[1] );//打开串口，返回文件描述符 
 	if( fd == -1 )
 	{
 		DEBUG_MSGINFO("Open Port Failed!");  
@@ -23,7 +23,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 	
 	do
 	{  
-		err = UART0_Init( fd, 9600, 0, 8, 1, 'N' );
+		err = UART_File_Init( fd, 9600, 0, 8, 1, 'N' );
 		DEBUG_MSGINFO("Set Port Exactly!");  
 	}while( FALSE == err||FALSE == fd );  
 
@@ -31,7 +31,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 	{  
 		for( i=0; i<10; i++ )  
 		{  
-			len	= UART0_Send(fd,send_buf,12);  
+			len	= UART_File_Send(fd,send_buf,12);  
 			if(len>0)
 				printf("%d send data successful\n",i);  
 			else  
@@ -40,7 +40,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 			sleep(2);  
 		}  
 
-		UART0_Close(fd);               
+		UART_File_Close(fd);               
 	}  
 	else  
 	{  
@@ -61,7 +61,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 			fs_sel = select( fd+1, &fs_read, NULL, NULL, &time );  
 			if( fs_sel )  
 			{  
-				len = UART0_Recv( fd, rcv_buf, UART_BUF_SIZE );
+				len = UART_File_Recv( fd, rcv_buf, UART_BUF_SIZE );
 				if(len>0)  
 				{
 #if 0
@@ -80,7 +80,7 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 			}
 		}
 		
-		UART0_Close( fd ); 
+		UART_File_Close( fd ); 
 	}              
 	
 	return 0;

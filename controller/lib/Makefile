@@ -12,7 +12,7 @@ OBJS = $(patsubst %.c, %.o, $(SRC_FILE))
 DIR = $(notdir $(OBJS))
 
 LIB=libavdecc-host.a
-all:LIB
+all:LIB $(SUBDIRS)
 
 LIB:$(OBJS)
 ifeq ($(LIB), $(wildcard $(LIB)))
