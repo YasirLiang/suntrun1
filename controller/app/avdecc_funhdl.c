@@ -7,6 +7,8 @@
 #include "func_proccess.h"
 #include "profile_system.h"
 #include "muticast_connector.h"
+#include "matrix_output_input.h"
+#include "control_matrix_common.h"
 
 volatile bool is_inflight_timeout = false;
 static bool system_stop = false;	// 线程退出全局变量
@@ -144,6 +146,22 @@ int udp_client_fn(struct epoll_priv *priv )
 	return 0;
 }
 
+// matrix control recv mssage
+int matrix_control_uart_recv_fn( struct epoll_priv *priv )
+{
+	uint16_t recv_len = 0;
+	uint8_t recv_buf[2048] = {0};
+	
+	recv_len = read( priv->fd, recv_buf, sizeof(recv_buf));
+	if( recv_len  > 0 )
+	{
+		// save message to ring buf
+		control_matrix_common_recv_message_save( recv_buf, recv_len );
+	}
+	
+	return 0;
+}
+
 int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_event *ev)
 {
 	priv->fd = fd;
@@ -177,6 +195,14 @@ int thread_fn(void *pgm)
 
 	prep_evt_desc( fn_fds->udp_client_fd, &udp_client_fn, &fd_fns[3], &ev );
 	epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[3].fd, &ev );
+
+	if( gmatrix_file_set_success)
+	{// matrix uart recv module
+		prep_evt_desc( gmatrix_output_file, &matrix_control_uart_recv_fn, &fd_fns[4], &ev );
+		epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[4].fd, &ev );
+	}
+	else 
+		DEBUG_INFO( "init matrix uart recv thread handle failed!" );
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );

@@ -16,7 +16,8 @@
 #include "camera_common.h"
 #include "muticast_connector.h"
 #include "check_timer.h"
-#include "matrix_output.h"// 矩阵输出
+#include "matrix_output_input.h"// 矩阵输出
+#include "control_matrix_common.h"
 
 void init_system( void )
 {
@@ -55,6 +56,7 @@ void init_system( void )
 	inflight_proccess_init();// 初始化inflight 处理参数
 	DEBUG_LINE();
 	matrix_output_init();// 初始化矩阵输出端口
+	control_matrix_common_init();
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
@@ -172,6 +174,7 @@ void system_close( struct threads_info *p_threads )
 	profile_system_close();// 保存配置文件的信息
 	camera_pro_system_close();// 摄像头相关的资源释放
 	camera_common_control_destroy(); // 串口资源释放
+	matrix_control_destroy();
 
 	// 释放系统相关的资源
 	terminal_proccess_system_close();

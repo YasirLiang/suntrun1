@@ -9,7 +9,7 @@
 #include "send_interval.h"
 #include "send_work_queue.h"
 #include "send_pthread.h"
-#include "matrix_output.h"
+#include "matrix_output_input.h"
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
 uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx

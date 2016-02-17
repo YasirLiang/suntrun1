@@ -91,7 +91,7 @@ int main( int argc, char* argv[] )
 
 	if( 0 == strcmp( argv[2], "0") )  
 	{  
-		for( i = 0; i < 1000; i++ )  
+		for( i = 0; i < 10; i++ )  
 		{
 			if( i % 2 )
 			{

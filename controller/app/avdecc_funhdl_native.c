@@ -3,6 +3,7 @@
 #include "send_work_queue.h"
 #include "system_packet_tx.h"
 #include "send_pthread.h"
+#include "control_matrix_common.h"
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -335,6 +336,7 @@ int pthread_recv_data_fn( void *pgm )
 				pthread_mutex_unlock(&ginflight_pro.mutex);
 			break;
 			case 1:// buffer 2
+				control_matrix_common_recv_message_pro();
 			break;
 			default:
 				break;
