@@ -18,6 +18,7 @@
 #include "check_timer.h"
 #include "matrix_output_input.h"// 矩阵输出
 #include "control_matrix_common.h"
+#include "system_database.h"
 
 void init_system( void )
 {
@@ -57,6 +58,8 @@ void init_system( void )
 	DEBUG_LINE();
 	matrix_output_init();// 初始化矩阵输出端口
 	control_matrix_common_init();
+
+	system_database_init();// 打开数据库
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
@@ -175,6 +178,9 @@ void system_close( struct threads_info *p_threads )
 	camera_pro_system_close();// 摄像头相关的资源释放
 	camera_common_control_destroy(); // 串口资源释放
 	matrix_control_destroy();
+
+	// 关闭数据库
+	system_database_destroy();
 
 	// 释放系统相关的资源
 	terminal_proccess_system_close();

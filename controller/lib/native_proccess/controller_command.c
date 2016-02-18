@@ -55,10 +55,11 @@ static const char *commands_list[COMMANDS_MAX_NUM] =
 	
 	// 开始-系统功能
 	"hostFunc",
-	"reAllot"
+	"reAllot",
+	"matrixControl",// 矩阵控制
 	// 结束-系统功能
 	
-	//NULL
+	NULL
 };
 
 static char* command_generator(const char *text, int state)
@@ -323,14 +324,17 @@ void terminal_cmd_query_proccess( const char*opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %04x" ,convert_eui64_to_uint64_return(entity_id.value), addr);
 	terminal_query_endstation( addr, convert_eui64_to_uint64_return(entity_id.value));
 }
+
 void terminal_cmd_allot_proccess( void )
 {
 	terminal_allot_address();
 }
+
 void terminal_cmd_reallot_proccess( void )
 {
 	terminal_reallot_address();
 }
+
 void terminal_cmd_set_state_proccess( const char*opt )
 {
 	tmnl_state_set tmnl_state; // 终端状态
@@ -376,6 +380,7 @@ void terminal_cmd_set_state_proccess( const char*opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d " , convert_eui64_to_uint64_return(entity_id.value), addr );
 	terminal_state_set(tmnl_state, addr, convert_eui64_to_uint64_return(entity_id.value));
 }
+
 void terminal_cmd_set_mic_proccess( const char*opt )
 {
 	uint16_t addr = 0;
@@ -417,6 +422,7 @@ void terminal_cmd_set_mic_proccess( const char*opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, mic status = %02x" ,convert_eui64_to_uint64_return(entity_id.value), addr, mic_status );
 	terminal_set_mic_status( mic_status, addr, convert_eui64_to_uint64_return(entity_id.value));
 }
+
 void terminal_cmd_set_indicator_proccess(const char*opt)
 {
 	uint16_t addr = 0;
@@ -462,6 +468,7 @@ void terminal_cmd_set_indicator_proccess(const char*opt)
 	
 	terminal_set_indicator_lamp(lamp, addr, convert_eui64_to_uint64_return(entity_id.value));
 }
+
 void terminal_cmd_new_allot_proccess(const char*opt)
 {
 	char entity_id_str[32] = {0};
@@ -490,6 +497,7 @@ void terminal_cmd_new_allot_proccess(const char*opt)
 	DEBUG_INFO( "query entity id = 0x%016llx " ,convert_eui64_to_uint64_return(entity_id.value));
 	terminal_new_endstation_allot_address( convert_eui64_to_uint64_return(entity_id.value));
 }
+
 void terminal_cmd_set_lcd_proccess(const char*opt)
 {
 	uint16_t addr = 0;
@@ -531,6 +539,7 @@ void terminal_cmd_set_lcd_proccess(const char*opt)
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, lcd_stype = %02x" ,convert_eui64_to_uint64_return(entity_id.value), addr, lcd_stype);
 	terminal_set_lcd_play_stype(  convert_eui64_to_uint64_return(entity_id.value), addr, lcd_stype);
 }
+
 void terminal_cmd_set_led_proccess(const char*opt)
 {
 	uint16_t addr = 0;
@@ -574,6 +583,7 @@ void terminal_cmd_set_led_proccess(const char*opt)
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, [led_stype = %04x ( stop_time = %02x, speed_roll = %02x, page_show_state = %02x, bright_lv = %02x, blink = %02x )]" ,convert_eui64_to_uint64_return(entity_id.value), addr, set_led, led_stype.stop_time,led_stype.speed_roll,led_stype.page_show_state,led_stype.bright_lv,led_stype.blink);
 	terminal_set_led_play_stype( convert_eui64_to_uint64_return(entity_id.value), addr, led_stype);
 }
+
 void terminal_cmd_chairman_control_proccess( const char*opt )
 {
 	uint16_t addr = 0;
@@ -615,6 +625,7 @@ void terminal_cmd_chairman_control_proccess( const char*opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, meeting_set = %02x" ,convert_eui64_to_uint64_return(entity_id.value), addr, meeting_set);
 	terminal_chairman_control_meeting( convert_eui64_to_uint64_return(entity_id.value), addr, meeting_set);
 }
+
 void terminal_cmd_query_vote_result_proccess( const char*opt )
 {
 	uint16_t addr = 0;
@@ -664,6 +675,7 @@ void terminal_cmd_query_vote_result_proccess( const char*opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, [ vote result (total = %04x, abs = %04x, neg = %04x,aff = %04x) ]" ,convert_eui64_to_uint64_return(entity_id.value), addr, vote_rslt.total, vote_rslt.abs,vote_rslt.neg,vote_rslt.aff);
 	terminal_send_vote_result( convert_eui64_to_uint64_return(entity_id.value), addr, vote_rslt);
 }
+
 void terminal_cmd_limit_spk_time_proccess(const char *opt)
 {
 	uint16_t addr = 0;
@@ -707,6 +719,7 @@ void terminal_cmd_limit_spk_time_proccess(const char *opt)
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %02x, spk_time = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set.limit_time);
 	terminal_limit_spk_time( convert_eui64_to_uint64_return(entity_id.value), addr, spk_time_set);
 }
+
 void terminal_cmd_host_send_state_proccess(const char *opt)
 {
 	char entity_id_str[32] = {0};
@@ -748,6 +761,7 @@ void terminal_cmd_host_send_state_proccess(const char *opt)
 	DEBUG_INFO( "query entity id = 0x%016llx  conference_stype = %d" , convert_eui64_to_uint64_return(entity_id.value), state_send.conference_stype );
 	terminal_host_send_state( convert_eui64_to_uint64_return(entity_id.value), state_send);
 }
+
 void terminal_cmd_send_end_lcd_proccess(const char *opt)
 {
 	uint16_t addr = 0;
@@ -799,6 +813,7 @@ void terminal_cmd_send_end_lcd_proccess(const char *opt)
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, lcd_num = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, lcd_dis.num);
 	terminal_send_end_lcd_display( convert_eui64_to_uint64_return(entity_id.value), addr, lcd_dis);
 }
+
 void terminal_cmd_option_endpoint_proccess( const char *opt )
 {
 	uint16_t addr = 0;
@@ -840,6 +855,7 @@ void terminal_cmd_option_endpoint_proccess( const char *opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, end_opt = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, end_opt);
 	terminal_option_endpoint( convert_eui64_to_uint64_return(entity_id.value), addr, end_opt);
 }
+
 void terminal_cmd_special_event_reply_proccess( const char *opt )
 {
 	uint16_t addr = 0;
@@ -874,6 +890,7 @@ void terminal_cmd_special_event_reply_proccess( const char *opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr);
 	terminal_endstation_special_event_reply( convert_eui64_to_uint64_return(entity_id.value), addr );
 }
+
 void terminal_cmd_tnmt_cmpt_msg_proccess( const char *opt )
 {
 	uint16_t addr = 0;
@@ -910,6 +927,7 @@ void terminal_cmd_tnmt_cmpt_msg_proccess( const char *opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d, cmpt_msg type = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr, cmpt_msg[0]);
 	terminal_transmit_upper_cmpt_message( convert_eui64_to_uint64_return(entity_id.value), addr, cmpt_msg, msg_len );
 }
+
 void terminal_cmd_reply_end_message_proccess(const char *opt )
 {
 	uint16_t addr = 0;
@@ -944,6 +962,7 @@ void terminal_cmd_reply_end_message_proccess(const char *opt )
 	DEBUG_INFO( "query entity id = 0x%016llx addr = %d" ,convert_eui64_to_uint64_return(entity_id.value), addr);
 	terminal_reply_end_message_command( convert_eui64_to_uint64_return(entity_id.value), addr);
 }
+
 void terminal_cmd_query_vote_sign_proccess(const char *opt)
 {
 	uint16_t addr = 0;
@@ -1266,6 +1285,23 @@ void cmd_host_func_proccess( void )
 		free(cmd_buf);
 	}
 }
+
+void cmd_matrix_control_proccess( void )
+{
+	while( 1 )
+	{
+		DEBUG_MSGINFO( "\nEnter follow num to control matrix (0 to exit control)\n" );
+		DEBUG_MSGINFO( "\t1:av矩阵切换  2:视频矩阵切换:  3:音频矩阵切换\n" );
+		DEBUG_MSGINFO( "\t3:锁定键盘  5:解开键盘的锁定  6:关闭蜂鸣器\n" );
+		DEBUG_MSGINFO( "\t7:打开蜂鸣器  8:查询软件版本  9:设置兼容指令系统\n" );
+		DEBUG_MSGINFO( "\t10:设置creator2.0指令系统  11:关闭串口  12:打开串口\n" );
+		DEBUG_MSGINFO( "\t13:设置lcd背光时间  14:查询矩阵型号  15:修改矩阵的密码\n" );
+		DEBUG_MSGINFO( "\t16:关闭所有输出通道  17:设置通道对应输出 18:查询输出的输入状态\n" );
+		DEBUG_MSGINFO( "\t0:退去矩阵控制\n" );
+
+	}
+}
+
 /*===================================
 *结束-主机功能
 *====================================*/
@@ -1337,6 +1373,10 @@ void controller_proccess( void )
 		else if( strncmp( cmd_buf, "udpClient", 9) == 0 ) // test procces by sending host and upper computer command to udp client
 		{
 			cmd_udp_client();
+		}
+		else if( strncmp( cmd_buf, "matrixControl", 13) == 0 ) // test procces by sending host and upper computer command to udp client
+		{
+			cmd_matrix_control_proccess();
 		}
 		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{

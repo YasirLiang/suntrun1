@@ -6,7 +6,7 @@ export CC AR LD
 
 ROOTPATH = $(shell pwd)
 CFGS = -Wall
-CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
+CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -27,7 +27,8 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/camera_module\
 		   -I$(ROOTPATH)/controller/lib/include/uart\
 		   -I$(ROOTPATH)/controller/lib/include/timer_pthread\
-		   -I$(ROOTPATH)/controller/lib/include/control_matrix
+		   -I$(ROOTPATH)/controller/lib/include/control_matrix\
+		   -I$(ROOTPATH)/controller/lib/include/system_database
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
