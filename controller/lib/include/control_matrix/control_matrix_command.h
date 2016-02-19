@@ -36,6 +36,9 @@ typedef enum _enum_matrix_command
 	MATRIX_SET_OUTIN_CORRESPONDING, // 设置所有通道一一对应
 	MATRIX_CLOSE_ALL_OUTPUT_CHANNAL,// 关闭所有输出通道
 	MATRIX_QUEUE_OUT_CHANNAL_INPUT_STATUS,// 查询所有输出通道的的信号的输入状态
+	MATRIX_AV_SWITCH,// AV切换
+	MATRIX_VIDEO_SWITCH,// 视频切换
+	MATRIX_AUDIO_SWITCH,// 音频切换
 	MATRIX_COMMAND_NUM
 }enum_matrix_command;
 
@@ -77,6 +80,13 @@ typedef enum _enum_matrix_command
 #define MATRIX_STRING_CMD_SET_OUTIN_CORRESPONDING "All#." 
 #define MATRIX_STRING_CMD_CLOSE_ALL_OUTPUT_CHANNAL "All$."
 #define MATRIX_STRING_CMD_QUEUE_OUT_CHANNAL_INPUT_STATUS "Status."
+
+#define MATRIX_AV_SWICH_CMD 'B'
+#define MATRIX_A_SWICH_CMD 'A'
+#define MATRIX_V_SWICH_CMD 'V'
+
+#define MATRIX_EXTRON_CMD_LEN 4// 兼容指令的长度
+
 /*ASCII码命令定义*/
 
 extern const uint8_t* control_matrix_comand_get( uint16_t cmd_index, uint16_t* p_ascii_cmd_len );

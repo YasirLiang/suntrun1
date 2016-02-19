@@ -47,6 +47,9 @@ void control_matrix_common_recv_message_pro( void )// ;ºóÆÚ¿ÉÄÜÐÞ¸ÄÕâ¸ö´¦Àíº¯Êý£
 	while( char_ring_buf_get( &gmatrix_recv_buf_pro, &ch_temp ))
 	{
 		ret = control_matrix_recv_pro_byte_msg( /*&gmatrix_recv_buf_pro,*/ ch_temp );
+		if( !ret )
+			DEBUG_INFO( "save msg Error!");
+		
 		over_time_set( MATRIX_RCV_GAP, 10 );
 	}
 
@@ -67,10 +70,14 @@ void control_matrix_common_recv_message_pro( void )// ;ºóÆÚ¿ÉÄÜÐÞ¸ÄÕâ¸ö´¦Àíº¯Êý£
 bool control_matrix_recv_pro_byte_msg( /*thost_upper_cmpt_msg *pmsg, */uint8_t save_char )
 {
 	bool bret = false;
+	uint8_t save_ch = save_char;
 	if( gmatrix_save_msg_fd != NULL )
 	{
-		if( Fwrite( gmatrix_save_msg_fd, &save_char, 1, 1 ) == 1 );
+		if( Fwrite( gmatrix_save_msg_fd, &save_ch, 1, 1 ) == 1 );
+		{
+			Fflush( gmatrix_save_msg_fd );
 			bret = true;
+		}
 	}
 
 	return bret;
@@ -84,7 +91,7 @@ void control_matrix_common_init( void )
 	gmatrix_recv_buf_pro.trail = 0;
 	gmatrix_recv_buf_pro.pring_buf = gmatrix_recv_buf;
 
-	gmatrix_save_msg_fd = Fopen( MATRIX_MSG_SAVE_FILE, "a+" );
+	gmatrix_save_msg_fd = Fopen( MATRIX_MSG_SAVE_FILE, "ab+" );
 	if( gmatrix_save_msg_fd == NULL )
 	{
 		DEBUG_INFO( "open matrix save message file( %s ) is wrong!can't save any message", MATRIX_MSG_SAVE_FILE );

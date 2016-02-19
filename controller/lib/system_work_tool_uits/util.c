@@ -810,7 +810,7 @@ struct response_data_interval_util response_data_interval_util_tables[] =
 	{ TRANSMIT_TYPE_CAMERA_UART_CTRL, CAMERA_CTRL_PRESET_SET, CAMERA_CTRL_PRESET_SET_INTERVAL_TIME },
 	{ TRANSMIT_TYPE_CAMERA_UART_CTRL, CAMERA_CTRL_PRESET_CALL, CAMERA_CTRL_PRESET_CALL_INTERVAL_TIME },
 	
-	{ TRANSMIT_TYPE_MATRIX_UART_CTRL, 0xffff, 0}
+	{ TRANSMIT_TYPE_MATRIX_UART_CTRL, 0xffff, 100}
 };
 
 uint32_t get_send_respons_interval_timeout( uint8_t data_type, uint32_t command )

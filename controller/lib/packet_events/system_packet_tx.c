@@ -280,6 +280,9 @@ void tx_packet_event( uint8_t type,
 		}
 		else if( type == TRANSMIT_TYPE_MATRIX_UART_CTRL )
 		{
+#if 1
+			fprintf( stdout, "Matrix command string => %s", frame );
+#endif
 			matrix_output_transmit_uart_control_packet( frame, frame_len, false, resp, interval_time );
 		}
 		else 

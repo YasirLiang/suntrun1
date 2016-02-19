@@ -12,6 +12,8 @@
 #include "terminal_system_func.h"
 #include "terminal_common.h"
 #include "system.h"
+#include "control_matrix_pro.h"
+#include "matrix_output_input.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -1288,17 +1290,154 @@ void cmd_host_func_proccess( void )
 
 void cmd_matrix_control_proccess( void )
 {
+	int cmd = 0;
+	enum_matrix_command matrix_cmd = 0xff;
+	int int_input = 0;
+	int int_output_num = 0;
+	int int_output[MATRIX_OUTPUT_NUM]={0};
+	uint8_t uoutput[MATRIX_OUTPUT_NUM]={0};
+	char sw_string_buf[256] = {0};
+	
 	while( 1 )
 	{
-		DEBUG_MSGINFO( "\nEnter follow num to control matrix (0 to exit control)\n" );
-		DEBUG_MSGINFO( "\t1:av矩阵切换  2:视频矩阵切换:  3:音频矩阵切换\n" );
-		DEBUG_MSGINFO( "\t3:锁定键盘  5:解开键盘的锁定  6:关闭蜂鸣器\n" );
-		DEBUG_MSGINFO( "\t7:打开蜂鸣器  8:查询软件版本  9:设置兼容指令系统\n" );
-		DEBUG_MSGINFO( "\t10:设置creator2.0指令系统  11:关闭串口  12:打开串口\n" );
-		DEBUG_MSGINFO( "\t13:设置lcd背光时间  14:查询矩阵型号  15:修改矩阵的密码\n" );
-		DEBUG_MSGINFO( "\t16:关闭所有输出通道  17:设置通道对应输出 18:查询输出的输入状态\n" );
-		DEBUG_MSGINFO( "\t0:退去矩阵控制\n" );
+		MSGINFO( "\nEnter follow num to control matrix (0 to exit control)\n" );
+		MSGINFO( "\t1:av矩阵切换  2:视频矩阵切换:  3:音频矩阵切换\n" );
+		MSGINFO( "\t3:锁定键盘  5:解开键盘的锁定  6:关闭蜂鸣器\n" );
+		MSGINFO( "\t7:打开蜂鸣器  8:查询软件版本  9:设置兼容指令系统\n" );
+		MSGINFO( "\t10:设置creator2.0指令系统  11:关闭串口  12:打开串口\n" );
+		MSGINFO( "\t13:设置lcd背光时间  14:查询矩阵型号  15:修改矩阵的密码\n" );
+		MSGINFO( "\t16:关闭所有输出通道  17:设置通道对应输出 18:查询输出的输入状态\n" );
+		MSGINFO( "\t0:退去矩阵控制,返回主菜单\n" );
 
+		MSGINFO( ">>" );
+		if( scanf( "%d", &cmd ) != 1 )
+		{
+			MSGINFO( "wrong enter cmd: Will Return to Main menu" );
+			return;
+		}
+
+		MSGINFO( "Your Enter command-->%d", cmd );
+		switch( cmd )
+		{
+			case 1:
+				if( cmd == 1 )
+					matrix_cmd = MATRIX_AV_SWITCH;
+			case 2:
+				if( cmd == 2 )
+					matrix_cmd = MATRIX_VIDEO_SWITCH;
+			case 3:
+				int_input = 0;
+				int_output_num = 0;
+				memset( int_output, 0, sizeof(int_output));
+				
+				// choose to enter control num or strings
+				MSGINFO("Select 1 or 2 to choose control Stype\n");
+				int ctl_num;
+				scanf( "%d", &ctl_num );
+				if( ctl_num == 2 )
+				{
+					memset( sw_string_buf, 0, sizeof( sw_string_buf));
+					scanf( "%s", sw_string_buf );
+					control_matrix_switch( sw_string_buf, strlen(sw_string_buf));
+				}
+				else
+				{
+					MSGINFO( "step 1: Enter input channal (1-%d)", MATRIX_INPUT_NUM );
+					while( (int_input == 0) || (int_input > MATRIX_OUTPUT_NUM))
+					{
+						if( scanf( "%d", &int_input ) != 1 )
+						{
+							MSGINFO( "wrong enter param: Will Return to Main menu" );
+							return;
+						}
+						
+						if( (int_input > MATRIX_OUTPUT_NUM ) || (int_input <=0))
+							MSGINFO( "input num (%d)out of range!Please enter right num",int_input );
+					}
+
+					MSGINFO( "step 2: Enter output number (1-%d) <--input = %d", MATRIX_OUTPUT_NUM, int_input );
+					while( (int_output_num == 0) || (int_output_num > MATRIX_OUTPUT_NUM))
+					{
+						if( scanf( "%d", (int*)&int_output_num ) != 1 )
+						{
+							MSGINFO( "wrong enter param: Will Return to Main menu" );
+							return;
+						}
+
+						if( (int_output_num > MATRIX_OUTPUT_NUM ) || (int_output_num) <=0 )
+							MSGINFO( "output num (%d)out of range!Please enter right num", int_output_num );
+					}
+					
+					MSGINFO( "step 3(end):Enter output channal (1-%d)", MATRIX_OUTPUT_NUM );
+					int i = 0;
+					for( i = 0; i < int_output_num; i++ )
+					{
+						while( (int_output[i] == 0) || (int_output[i] > MATRIX_OUTPUT_NUM))
+						{
+							if( scanf( "%d", (int*)&int_output[i] ) != 1 )
+							{
+								MSGINFO( "wrong enter param: Will Return to Main menu" );
+								return;
+							}
+							
+							if( (int_output[i] > MATRIX_OUTPUT_NUM ) || (int_output[i]) <=0 )
+								MSGINFO( "output channal (%d)out of range!Please enter right num. Or have same output", int_output[i] );
+						}
+					}
+
+					if( cmd == 3 )
+						matrix_cmd = MATRIX_AUDIO_SWITCH;
+
+					DEBUG_INFO( "input = %d, output_num = %d", int_input, int_output_num );
+					for( i = 0; i < int_output_num; i++ )
+						uoutput[i] = (int)int_output[i];
+					if( -1 != control_matrix_input_output_switch( matrix_cmd, (uint8_t)int_input, uoutput, (uint8_t)int_output_num ))
+					{
+						MSGINFO( "switch Success" );
+					}
+					else
+					{
+						MSGINFO( "switch failed: input = %d, output_num %d", int_input, int_output_num );
+					}
+				}
+				break;
+			case 4:
+				break;
+			case 5:
+				break;
+			case 6:
+				break;
+			case 7:
+				break;
+			case 8:
+				break;
+			case 9:
+				break;
+			case 10:
+				break;
+			case 11:
+				break;
+			case 12:
+				break;
+			case 13:
+				break;
+			case 14:
+				break;
+			case 15:
+				break;
+			case 16:
+				break;
+			case 17:
+				break;
+			case 18:
+				break;
+			case 0:
+				MSGINFO( "Return to main menu\n" );
+				return;
+			default:
+				MSGINFO( " %d out of range comand,Please enter Again \n", cmd );
+				break;
+		}
 	}
 }
 
@@ -1386,7 +1525,7 @@ void controller_proccess( void )
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\n");
+			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\nmatrixControl\n");
 		}
 
 		free(cmd_buf); // free command
