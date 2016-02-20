@@ -9,6 +9,11 @@
 #define __SYSTEM_DATABASE_H__
 
 #include "sqlite3_util.h"
+#include "profile_system.h"
+
+#ifdef __DEBUG__
+#define __SYSTEM_DB_DEBUG__
+#endif
 
 #define SYSTEM_DB_FILE "system.db" // 系统配置参数数据库
 
@@ -29,6 +34,15 @@
 #define TERMINA_USER_COLUMN   "uid int, uname varchar(30) primary key not null, user_type int"
 #define SYS_DB_TMNL_CAMERA_PRE_TABLE "camera_preset" // 终端的预置位信息
 #define CAMERA_PRESET_COLUMN   "uid int, uname varchar(30) primary key not null, camera_num int, camera_preset_point int"
+
+int system_db_delect_table( char *table_name );
+
+/**=========================开始系统配置数据库表操作======================================**/
+void system_db_configure_system_table_result_print( int nrow, int ncolumn, char **db_result );
+int system_db_update_configure_system_table( thost_system_set config_info );
+int system_db_queue_configure_system_table( thost_system_set* p_config );
+int system_db_add_configure_system_table( thost_system_set config );
+/**=========================结束系统配置数据库表操作======================================**/
 
 void system_database_init( void );
 void system_database_destroy( void );

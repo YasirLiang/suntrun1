@@ -9,6 +9,8 @@
 #include "jdksavdecc_aecp_print.h"
 
 #define GET_ARRAY_ELEM_NUM( array, elem_type ) (((sizeof(array)))/((sizeof(elem_type))))// get the num of a array
+#define INIT_ZERO( where, size ) do{\
+	memset( where, 0, size );} while(0)
 
 // 从buf中获取两个字节的数据，并返回
 static inline uint16_t get_uint16_data_from_buf( void* base, uint16_t offset )

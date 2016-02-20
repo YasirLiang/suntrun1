@@ -21,6 +21,7 @@
 #include "camera_pro.h"
 #include "camera_output.h"
 #include "control_matrix_pro.h"
+#include "system_database.h"
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
 {
@@ -58,12 +59,17 @@ int profile_dis_param_save_to_ram( thost_system_set *set_sys, tcmpt_discuss_para
 					开始终端命令函数
 ====================================================*/
 
+// 20-2-2016 添加数据库的相关处理
 int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data, uint32_t data_len ) //后期可能需要修改11/10。
 {
 	tcmpt_discuss_parameter qu_dis_para, set_dis_para;
 	uint16_t send_data_len = 0; // 协议数据负载的长度
 	thost_system_set set_sys; // 系统配置文件的格式
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+	
+	if ( -1 == system_db_queue_configure_system_table( &set_sys ))
+	{// load from memory(system.dat)
+		memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+	}
 
 	if((protocol_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
 	{
@@ -127,6 +133,9 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
+
+			//更新数据库系统配置信息
+			system_db_update_configure_system_table( gset_sys );
 		}
 	}
 	

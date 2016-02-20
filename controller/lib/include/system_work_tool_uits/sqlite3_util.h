@@ -13,6 +13,10 @@
 
 #define SQL_STRING_LEN 1024 // sqlÓï¾äµÄ³¤¶È
 
+#define CREATE_TATBLE_SQL_FORM( sql_buf, table_name, column_name ) do{\
+		sprintf( sql_buf, "create table %s(%s)", table_name, column_name );\
+	}while(0)
+	
 sqlite3 *db_open_file( const char *path_name );
 void create_database_table( sqlite3 *p_db, char *sql, uint16_t sql_len, char *table_name );
 bool db_is_table_exist( sqlite3 *p_db, char *sql, uint16_t sql_len, const char *table_name );

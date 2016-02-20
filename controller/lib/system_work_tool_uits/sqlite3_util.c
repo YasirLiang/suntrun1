@@ -135,7 +135,7 @@ int db_get_table( sqlite3 *p_db, char *sql, uint16_t sql_len, char ***db_result,
 	
 	result = sqlite3_get_table( p_db, sql, db_result, nrow, ncolumn, &errmsg );
 	DB_GETERR( result );
-
+	
 	return 0;
 }
 
