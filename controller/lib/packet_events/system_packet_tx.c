@@ -183,7 +183,7 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 			return -1;
 		}
 
-		memset( tran_buf, 0, sizeof(pipe_buf) );
+		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
 		memcpy( tran_buf, frame, frame_len );
 		tx.frame = tran_buf;
 		tx.data_type = data_type;
@@ -281,7 +281,11 @@ void tx_packet_event( uint8_t type,
 		else if( type == TRANSMIT_TYPE_MATRIX_UART_CTRL )
 		{
 #if 1
-			fprintf( stdout, "Matrix command string => %s", frame );
+			int i = 0;
+			fprintf( stdout, "Matrix command string => " );
+			for( i = 0; i < frame_len; i++ )	
+				fprintf( stdout, "%c", frame[i] );
+			fprintf( stdout, "\n" );
 #endif
 			matrix_output_transmit_uart_control_packet( frame, frame_len, false, resp, interval_time );
 		}

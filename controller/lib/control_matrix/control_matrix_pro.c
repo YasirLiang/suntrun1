@@ -7,6 +7,7 @@
 
 #include "control_matrix_pro.h"
 #include "system_packet_tx.h"
+#include "system_database.h"
 
 #define MATRIX_COMMAND_BUF_SIZE 256
 uint8_t gmatrix_command_buf[MATRIX_COMMAND_BUF_SIZE]; // 发送矩阵命令缓冲区 
@@ -238,11 +239,71 @@ int control_matrix_input_output_switch( enum_matrix_command matrix_cmd, uint8_t 
 	return ret;
 }
 
+// 已测试(22-2-2016)
+bool paser_matrix_switch_cmd_string( char *p_str, uint8_t string_len, uint8_t *p_input, uint8_t* p_out, int *p_out_num )
+{
+	int i = 0;
+	bool input_put = false;
+	
+	if( p_str == NULL ||  p_input == NULL || p_out == NULL || p_out_num == NULL || (string_len >MATRIX_COMMAND_BUF_SIZE))
+		return false;
+
+	for( i = 0; i < string_len; i++ )
+	{
+		if( !input_put )
+		{
+			if( ((p_str[0] > 48) && (p_str[0] < 58)) && ((p_str[1] == 'B') || (p_str[1] == 'V') || (p_str[1] == 'A')) )
+			{
+				*p_input = p_str[0] - 48;
+				i = 2;
+			}
+			else if( ((p_str[1] > 48) && (p_str[1] < 58)) && ((p_str[0] -48) == 1) && \
+				((p_str[2] == 'B') || (p_str[2] == 'V') || (p_str[2] == 'A')) )
+			{
+				*p_input = (p_str[0] - 48)*10 + (p_str[1] -48);
+				i = 3;
+			}
+			else 
+				return false;
+
+			input_put = true;
+		}
+
+		if( (i >= 2) && ((p_str[i] > 48) && (p_str[i] < 58)) && ((p_str[i+1] == '.') || (p_str[i+1] == ',')) )
+		{// parser out // 一位?
+			if( *p_out_num < MATRIX_INPUT_NUM )
+			{
+				p_out[(*p_out_num)++] = p_str[i] - 48;
+				i += 1;
+			}
+		}
+		else if( (i >= 2) && ((p_str[i] > 48) && (p_str[i] < 58)) && ((p_str[i] -48) == 1) &&\
+			((p_str[i+1] > 48) && (p_str[i+1] < 58)) && ((p_str[i+2] == ',') || (p_str[i+2] == '.')))// 两位?
+		{
+			if( *p_out_num < MATRIX_INPUT_NUM )
+			{
+				p_out[(*p_out_num)++] = (p_str[i] - 48)*10 + (p_str[i+1] -48);
+				i += 2;
+			}
+		}
+		else 
+		{
+			DEBUG_INFO( "inval form data switch comand!" );
+			return false;
+		}
+	}
+
+	return true;
+}
+
 // 矩阵的切换 暂时只支持MATRIX_COMMAND_BUF_SIZE
 int control_matrix_switch( char *p_string, uint8_t string_len )
 {
 	uint16_t send_len = 0;
-	int ret = -1;
+	int ret = -1, out_num = 0;
+	uint8_t out[MATRIX_INPUT_NUM] = {0}, input = 0;
+	char str[MATRIX_COMMAND_BUF_SIZE] = {0};
+	enum matrix_switch_cmd sw_cmd;
 
 	assert( p_string );
 	if( NULL == p_string || string_len > MATRIX_COMMAND_BUF_SIZE )
@@ -250,12 +311,67 @@ int control_matrix_switch( char *p_string, uint8_t string_len )
 		return -1;
 	}
 
-	if( gmatrix_comand_system_flags == MATRIX_SET_CREATOR20 )
+	memset( gmatrix_command_buf, 0, MATRIX_COMMAND_BUF_SIZE );
+	memcpy( gmatrix_command_buf, p_string, string_len );
+	send_len = string_len;
+	memcpy( str, p_string, string_len );
+	
+	if( str[1] == 'B' || str[2] == 'B' )
+		sw_cmd = AV_SWITCH;
+	else if( str[1] == 'V'  || str[2] == 'V')
+		sw_cmd = V_SWITCH;
+	else if( str[1] == 'A'  || str[2] == 'A')
+		sw_cmd = A_SWITCH;
+	else 
 	{
-		send_len = string_len;
-		memcpy( gmatrix_command_buf, p_string, string_len );
-		system_uart_packet_tx( gmatrix_command_buf, send_len, RUNINFLIGHT, TRANSMIT_TYPE_MATRIX_UART_CTRL, true );
-		ret = 0;
+		MSGINFO( "Err switch cmd = %c, check cmd is A B V", str[2] );
+		return -1;
+	}
+	
+	if( paser_matrix_switch_cmd_string( str, string_len, &input, out, &out_num ) )
+	{
+		int i = 0;
+#ifdef __DEBUG__
+		printf( " input = %d --out(num = %d):\t", input, out_num );
+		for( i = 0 ; i < out_num; i++ )
+		{
+			printf( " %d", out[i] );
+		}
+		printf( " \n" );
+#endif
+		// 填充数据库
+		gmatrix_io_swich_pro.input = input;
+		if( -1 == system_database_matrix_io_queue(sw_cmd))
+		{
+			memset( &gmatrix_io_swich_pro, 0, sizeof(gmatrix_io_swich_pro) );
+			for( i = 0 ; i < out_num; i++ )
+			{
+				if( out[i] <= MATRIX_OUTPUT_NUM )
+					gmatrix_io_swich_pro.output_num[out[i]-1] = out[i]?1:0;
+			}
+			
+			gmatrix_io_swich_pro.input = input;
+			system_database_matrix_io_insert(sw_cmd);
+		}
+		else
+		{
+			memset( &gmatrix_io_swich_pro, 0, sizeof(gmatrix_io_swich_pro) );
+			gmatrix_io_swich_pro.input = input;
+			for( i = 0 ; i < out_num; i++ )
+			{
+				if( out[i] <= MATRIX_OUTPUT_NUM )
+					gmatrix_io_swich_pro.output_num[out[i]-1] = out[i]?1:0;
+			}
+			
+			if( -1 == system_database_matrix_io_update( sw_cmd ))
+				DEBUG_INFO( "system_database_matrix_io_update Failed!" );
+		}
+
+		if( gmatrix_comand_system_flags == MATRIX_SET_CREATOR20 )
+		{
+			system_uart_packet_tx( gmatrix_command_buf, send_len, RUNINFLIGHT, TRANSMIT_TYPE_MATRIX_UART_CTRL, true );
+			ret = 0;
+		}
 	}
 	
 	return ret;
