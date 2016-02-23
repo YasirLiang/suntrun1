@@ -535,6 +535,216 @@ int system_database_matrix_io_queue( enum matrix_switch_cmd sw_cmd )// ²éÑ¯Ìî³äµ
 }
 /**=========================½áÊø¾ØÕóÇÐ»»Êý¾Ý¿â±í²Ù×÷======================================**/
 
+/**=========================¿ªÊ¼ÖÕ¶ËÐÅÏ¢Êý¾Ý¿â±í²Ù×÷======================================**/
+int system_db_tmnluser_info_insert(  sdb_terminal_user user_info )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(uid, uname, user_type, registered,signed, sys_state, mic_state)\
+			values(%d,%s,%d,%d,%d,%d,%d);", SYS_DB_TMNL_USER_TABLE,\
+			user_info.uid, user_info.uname, user_info.user_type, user_info.registered,\
+			user_info.sign_flag, user_info.sys_state, user_info.mic_state );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+
+int system_db_tmnluser_info_queue(  sdb_terminal_user *p_user_info, int uid )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, ret = -1;
+
+	if( p_user_info == NULL )
+		return 2;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select * from %s where uid = %d;", SYS_DB_TMNL_USER_TABLE, uid );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			p_user_info->uid = atoi( db_result[ncolumn] );
+			strncpy( p_user_info->uname, db_result[ncolumn+1], 30 );
+			p_user_info->user_type = atoi( db_result[ncolumn+2] );
+			p_user_info->registered = atoi( db_result[ncolumn+3] );
+			p_user_info->sign_flag = atoi( db_result[ncolumn+4] );
+			p_user_info->sys_state = atoi( db_result[ncolumn+5] );
+			p_user_info->mic_state = atoi( db_result[ncolumn+6] );
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+int system_db_tmnluser_info_update(  sdb_terminal_user user_info, int uid )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "update %s set uid = %d, uname =%s, user_type = %d, registered = %d,signed = %d, sys_state = %d, mic_state = %d where uid = %d;", \
+			SYS_DB_TMNL_USER_TABLE, user_info.uid, user_info.uname, \
+			user_info.user_type, user_info.registered,\
+			user_info.sign_flag, user_info.sys_state, user_info.mic_state, uid);
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+/**=========================½áÊøÖÕ¶ËÐÅÏ¢Êý¾Ý¿â±í²Ù×÷======================================**/
+
+/**=========================¿ªÊ¼ÖÕ¶ËÍ¶Æ±Êý¾Ý¿â±í²Ù×÷======================================**/
+int system_db_tmnlkey_info_insert( enum conference_table_type c_type, sdb_conference_type key_info )
+{
+	char *p_table = NULL;
+	
+	if( c_type == CONFERENCE_VOTE )
+	{
+		p_table = SYS_DB_TMNL_KEY_VOTE_TABLE;
+	}
+	else if( c_type == CONFERENCE_SELECT )
+	{
+		p_table = SYS_DB_TMNL_KEY_SELECT_TABLE;
+	}
+	else if( c_type == CONFERENCE_GRADE )
+	{
+		p_table = SYS_DB_TMNL_KEY_GRADE_TABLE;
+	}
+	else 
+		return 2;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(uid, key1 , key2 , key3 , key4 , key5 )\
+			values(%d,%d,%d,%d,%d,%d);", p_table,key_info.uid,\
+			key_info.key[0], key_info.key[1], key_info.key[2],\
+			key_info.key[3], key_info.key[4] );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+
+int system_db_tmnlkey_info_queue( enum conference_table_type c_type, int uid,sdb_conference_type *p_key_info )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, ret = -1, i = 0;
+	char *p_table = NULL;
+
+	if( p_key_info == NULL )
+		return 2;
+
+	if( c_type == CONFERENCE_VOTE )
+	{
+		p_table = SYS_DB_TMNL_KEY_VOTE_TABLE;
+	}
+	else if( c_type == CONFERENCE_SELECT )
+	{
+		p_table = SYS_DB_TMNL_KEY_SELECT_TABLE;
+	}
+	else if( c_type == CONFERENCE_GRADE )
+	{
+		p_table = SYS_DB_TMNL_KEY_GRADE_TABLE;
+	}
+	else 
+		return 2;
+	
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select * from %s where uid = %d;", p_table, uid );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			p_key_info->uid = atoi( db_result[ncolumn] );
+			for( i = 0; i < KEY_VOTE_NUM; i++ )
+				p_key_info->key[i] = atoi( db_result[ncolumn+1+i] );
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+int system_db_tmnlkey_info_update( enum conference_table_type c_type, sdb_conference_type key_info )
+{
+	char *p_table = NULL;
+	
+	if( c_type == CONFERENCE_VOTE )
+	{
+		p_table = SYS_DB_TMNL_KEY_VOTE_TABLE;
+	}
+	else if( c_type == CONFERENCE_SELECT )
+	{
+		p_table = SYS_DB_TMNL_KEY_SELECT_TABLE;
+	}
+	else if( c_type == CONFERENCE_GRADE )
+	{
+		p_table = SYS_DB_TMNL_KEY_GRADE_TABLE;
+	}
+	else 
+		return 2;
+	
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "update %s set uid = %d, key1 = %d, key2 = %d, key3 = %d, key4 = %d, key5 = %d where uid = %d;", \
+			p_table,key_info.uid,\
+			key_info.key[0], key_info.key[1], key_info.key[2],\
+			key_info.key[3], key_info.key[4], key_info.uid );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+/**=========================½áÊøÖÕ¶ËÍ¶Æ±Êý¾Ý¿â±í²Ù×÷======================================**/
+
+/**=========================¿ªÊ¼ÖÕ¶ËÔ¤ÖÃÎ»Êý¾Ý¿â±í²Ù×÷======================================**/
+int system_db_cmrpre_info_insert( sdb_cmr_preset insert_info, int uid )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(uid, camera_num, camera_preset_point )\
+			values(%d,%d,%d);", SYS_DB_TMNL_CAMERA_PRE_TABLE,\
+			uid, insert_info.cmr_num, insert_info.preset_point_num );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+
+int system_db_cmrpre_info_queue( sdb_cmr_preset *p_insert_info, int uid )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, ret = -1;
+
+	if( p_insert_info == NULL )
+		return 2;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select * from %s where uid = %d;", SYS_DB_TMNL_CAMERA_PRE_TABLE, uid );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			p_insert_info->uid = atoi( db_result[ncolumn] );
+			p_insert_info->cmr_num = atoi( db_result[ncolumn+1] );
+			p_insert_info->preset_point_num = atoi( db_result[ncolumn+2] );
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+int system_db_cmrpre_info_update( sdb_cmr_preset insert_info, int uid )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "update %s set uid = %d, camera_num = %d, camera_preset_point = %d where uid = %d;", \
+			SYS_DB_TMNL_CAMERA_PRE_TABLE, uid, insert_info.cmr_num, insert_info.preset_point_num, uid );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+/**=========================½áÊøÖÕ¶ËÔ¤ÖÃÎ»Êý¾Ý¿â±í²Ù×÷======================================**/
+
 /*ÏµÍ³Êý¾Ý¿âÄ£¿éµÄ³õÊ¼»¯*/
 void system_database_init( void )
 {	
@@ -567,6 +777,18 @@ void system_database_init( void )
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN );
 	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_CAMERA_PRE_TABLE );
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN );
+	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_VOTE_TABLE );
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN );
+	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_SELECT_TABLE );
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN );
+	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_GRADE_TABLE );
 
 	INIT_ZERO( &gmatrix_record, sizeof(gmatrix_record));
 	if( -1 == system_db_queue_matrix_config_record( &gmatrix_record ))

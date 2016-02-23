@@ -33,10 +33,16 @@
 #define SYS_DB_MATRIX_ASW_TABLE "matrix_audio_switch"// ¾ØÕóÇĞ»»ÊäÈë¶ÔÓ¦µÄÊä³ö(a), ·ÇÁã´ú±íÒÑÇĞ»»µ½ÏàÓ¦µÄÊä³ö
 #define MATRIX_ASW_COLUMN   "intput int,output1 int,output2 int,output3 int,output4 int,output5 int,output6 int,output7 int,output8 int,output9 int,output10 int,output11 int,output12 int,output13 int,output14 int,output15 int,output16 int"
 
-#define SYS_DB_TMNL_USER_TABLE "tmnl_user" // ÖÕ¶ËĞÅÏ¢
-#define TERMINA_USER_COLUMN   "uid int, uname varchar(30) primary key not null, user_type int"
+#define SYS_DB_TMNL_USER_TABLE "tmnl_user" // ÖÕ¶ËĞÅÏ¢ 
+#define TERMINA_USER_COLUMN   "uid int, uname varchar(30) primary key not null, user_type int, registered int,signed int, sys_state int, mic_state int"
+
+#define SYS_DB_TMNL_KEY_VOTE_TABLE "conference_vote" // ÖÕ¶ËÍ¶Æ±°´¼ü¼üÖµ±í
+#define SYS_DB_TMNL_KEY_SELECT_TABLE "conference_select" // ÖÕ¶ËÑ¡¾Ù°´¼ü¼üÖµ±í
+#define SYS_DB_TMNL_KEY_GRADE_TABLE "conference_grade" // ÖÕ¶ËÆÀ·Ö°´¼ü¼üÖµ±í
+#define TERMINA_KEY_COLUMN   "uid int, key1 int, key2 int, key3 int, key4 int, key5 int"
+
 #define SYS_DB_TMNL_CAMERA_PRE_TABLE "camera_preset" // ÖÕ¶ËµÄÔ¤ÖÃÎ»ĞÅÏ¢
-#define CAMERA_PRESET_COLUMN   "uid int, uname varchar(30) primary key not null, camera_num int, camera_preset_point int"
+#define CAMERA_PRESET_COLUMN   "uid int, camera_num int, camera_preset_point int"
 
 typedef struct type_struct_database_handle
 {
@@ -72,6 +78,39 @@ typedef struct type_matrix_db_output
 	int input;// ÊäÈë
 	int output_num[MATRIX_OUTPUT_NUM];// Êä³ö £¬·ÇÁã´ú±íÊäÈëÒÑÇĞ»»µ½ÏàÓ¦µÄÊä³ö
 }smatrix_input_out_sw;// ÊäÈëÇĞ»»µ½¶ÔÓ¦Êä³öÍ¨µÀ
+
+typedef struct database_terminal_user
+{
+	int uid;
+	char uname[31];// µÚ31¸ö·Å"\0"
+	int user_type;
+	int registered;
+	int sign_flag;
+	int sys_state;
+	int mic_state;
+}sdb_terminal_user;
+
+enum conference_table_type
+{
+	CONFERENCE_VOTE,
+	CONFERENCE_SELECT,
+	CONFERENCE_GRADE,
+	CONFERENCE_TYPE_NUM
+};
+
+#define KEY_VOTE_NUM 5
+typedef struct database_conference_type
+{
+	int uid;
+	int key[KEY_VOTE_NUM];
+}sdb_conference_type;
+
+typedef struct database_cmr_preset
+{
+	int uid;
+	int cmr_num;
+	int preset_point_num;
+}sdb_cmr_preset;
 
 extern smatrix_config_entity gmatrix_record;// ¾ØÕóÅäÖÃ²ÎÊı
 extern smatrix_input_out_sw gmatrix_io_swich_pro;
@@ -117,6 +156,25 @@ int system_database_matrix_io_insert( enum matrix_switch_cmd sw_cmd );// Ê¹ÓÃÇ°Ğ
 int system_database_matrix_io_update( enum matrix_switch_cmd sw_cmd );// Ê¹ÓÃÇ°ĞèÌî³ägmatrix_io_swich
 int system_database_matrix_io_queue( enum matrix_switch_cmd sw_cmd );
 /**=========================½áÊø¾ØÕóÇĞ»»Êı¾İ¿â±í²Ù×÷======================================**/
+
+/**=========================¿ªÊ¼ÖÕ¶ËĞÅÏ¢Êı¾İ¿â±í²Ù×÷======================================**/
+int system_db_tmnluser_info_insert(  sdb_terminal_user user_info );
+int system_db_tmnluser_info_queue(  sdb_terminal_user *p_user_info, int uid );
+int system_db_tmnluser_info_update(  sdb_terminal_user user_info, int uid );
+/**=========================½áÊøÖÕ¶ËĞÅÏ¢Êı¾İ¿â±í²Ù×÷======================================**/
+
+/**=========================¿ªÊ¼ÖÕ¶ËÍ¶Æ±Êı¾İ¿â±í²Ù×÷======================================**/
+int system_db_tmnlkey_info_insert( enum conference_table_type c_type, sdb_conference_type key_info );
+int system_db_tmnlkey_info_queue( enum conference_table_type c_type, int uid,sdb_conference_type *p_key_info );
+int system_db_tmnlkey_info_update( enum conference_table_type c_type, sdb_conference_type key_info );
+/**=========================½áÊøÖÕ¶ËÍ¶Æ±Êı¾İ¿â±í²Ù×÷======================================**/
+
+/**=========================¿ªÊ¼ÖÕ¶ËÔ¤ÖÃÎ»Êı¾İ¿â±í²Ù×÷======================================**/
+int system_db_cmrpre_info_insert( sdb_cmr_preset insert_info, int uid );
+int system_db_cmrpre_info_queue( sdb_cmr_preset *p_insert_info, int uid );
+int system_db_cmrpre_info_update( sdb_cmr_preset insert_info, int uid );
+/**=========================½áÊøÖÕ¶ËÔ¤ÖÃÎ»Êı¾İ¿â±í²Ù×÷======================================**/
+
 
 void system_database_init( void );
 void system_database_destroy( void );
