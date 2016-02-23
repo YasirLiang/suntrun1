@@ -7,7 +7,7 @@ SRC_FILE = $(wildcard avdecc/*.c) $(wildcard camera_module/*.c)\
 		    $(wildcard packet_events/*.c) $(wildcard send_module/*.c) \
 		    $(wildcard system_work_tool_uits/*.c) $(wildcard uart/*.c)\
 		    $(wildcard timer_pthread/*.c) $(wildcard control_matrix/*.c)\
-		    $(wildcard system_database/*.c)
+		    $(wildcard system_database/*.c) $(wildcard ui_encap/*.c)
 DEPS = $(patsubst %.c, %.d, $(SRC_FILE))
 OBJS = $(patsubst %.c, %.o, $(SRC_FILE))
 DIR = $(notdir $(OBJS))
