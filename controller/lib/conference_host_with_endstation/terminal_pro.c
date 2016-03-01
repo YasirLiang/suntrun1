@@ -2671,16 +2671,17 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签
 
 	if( gtmnl_signstate == SIGN_IN_ON_TIME )// 设置签到标志
 	{
-		sign_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;
+		sign_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
 	}
 	else if( gtmnl_signstate == SIGN_IN_BE_LATE && sign_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN )
 	{
-		sign_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;
+		sign_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
 	}
 	
 	// 设置投票使能
 	termianl_vote_enable_func_handle( sign_node );
 	// 上报签到情况
+	DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
 	upper_cmpt_report_sign_in_state( sign_node->tmnl_dev.tmnl_status.sign_state, sign_node->tmnl_dev.address.addr );
 
 	assert( dev_terminal_list_guard );
