@@ -450,12 +450,13 @@ inflight_plist search_node_inflight_from_dblist( inflight_plist head, uint16_t  
 	}
 }
 
-inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd )
+// 这函数只适用于链表中只存在同一个应用地址终端唯一的会议命令中 2016-3-2
+inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd, uint16_t addr )
 {
 	assert( head );
 	inflight_plist ptr = head->next;
 
-	SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, ptr, cfr_cmd, subtype );
+	SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, ptr, cfr_cmd, subtype, addr );
 	if( ptr != head )
 		return ptr;
 	else

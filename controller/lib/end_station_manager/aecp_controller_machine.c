@@ -292,30 +292,38 @@ int aecp_state_rcvd_resp( struct jdksavdecc_frame *cmd_frame)
 	return aecp_proc_resp( cmd_frame);
 }
 
+#define UNIQUE_CMD_FUN
 int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 {
 	assert(cmd_frame);
 	uint8_t subtype = jdksavdecc_common_control_header_get_subtype( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
-	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id(cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint32_t notification_flag = 0;
 	inflight_plist inflight_aecp = NULL;
+#ifdef UNIQUE_CMD_FUN
+	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint8_t conference_cmd = 0;
 	uint16_t terminal_address = 0;
+#endif
 
 	if( aecp_inflight_guard == NULL )
 		return -1;
-
+	
+#ifdef UNIQUE_CMD_FUN
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{
 		conference_cmd = conference_command_type_read( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		conference_cmd &=0x1f;// 命令位于低八位
 		terminal_address = conferenc_terminal_read_address_data( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
-		
-		inflight_aecp = search_for_conference_inflight_dblist_node( aecp_inflight_guard, subtype, conference_cmd );
+
+		// 此函数不适用链表中存在多个相同终端与相同命令的inflight链表
+		inflight_aecp = search_for_conference_inflight_dblist_node( aecp_inflight_guard, 
+														subtype, conference_cmd, 
+														terminal_address &TMN_ADDR_MASK );
 		if( inflight_aecp != NULL )
 		{
-			if( (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address == CONFERENCE_BROADCAST_ADDRESS) || (terminal_address == inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address) )
+			if( (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address == CONFERENCE_BROADCAST_ADDRESS) ||\
+				((terminal_address &TMN_ADDR_MASK) == (inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address&TMN_ADDR_MASK)) )
 			{
 				notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 				aecp_callback( notification_flag, cmd_frame->payload );
@@ -335,8 +343,11 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			return -1;
 		}
 	}
+#endif
+#ifdef UNIQUE_CMD_FUN
 	else
 	{
+#endif
 		inflight_aecp = search_node_inflight_from_dblist( aecp_inflight_guard, seq_id, subtype );	// found?
 		if( NULL != inflight_aecp )
 		{
@@ -351,8 +362,9 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
 			return -1;
 		}
+#ifdef UNIQUE_CMD_FUN
 	}
-
+#endif
 	return -1;
 }
 

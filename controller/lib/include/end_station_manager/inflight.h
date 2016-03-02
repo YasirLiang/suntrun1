@@ -69,7 +69,8 @@ struct _inflight_frame
 	bool notification_flag;				// 发送标志
 	uint8_t data_type;					// 发送数据类型，为负载数据中的类型
 	uint8_t *frame;					// 网络数据保存区
-	struct conference_data_in_aecp_payload_recgnize conference_data_recgnize;// 会议系统协议数据的响应识别
+	struct conference_data_in_aecp_payload_recgnize conference_data_recgnize;// 会议系统协议数据的响应识别只适用链表中的单一命令 
+// 若同一个终端重发一次相同命令则不能识别2016-3-2；使用时保证链表中不能同时出现相同终端相同命令的节点两个。若出现这里暂时不做任何处理(2016-3-2)
 	uint16_t seq_id;					// seq_id发送序列(这里用于1722协议数据的传输(除了在aecp负载 的会议协议协议))或协议的命令(这里用于udp传输数据中)
 	uint16_t inflight_frame_len;			// 网络数据的长度
 	struct jdksavdecc_eui48 raw_dest;		// 只用于原始数据包的目标地址

@@ -32,6 +32,7 @@ typedef enum enum_overtime_handle
 	SEND_MAIN_STATE_INTERVAL,
 	NET_SEND_INTERVAL,
 	MIND_UPPER_CMPT_SIGN_RESULT,// 提醒上位机终端签到
+	SENDING_INTERVAL,// 发送间隔
 	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;
 

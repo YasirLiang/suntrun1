@@ -44,11 +44,11 @@ void delect_node_from_endpoint_dblist( solid_pdblist *free_node );
 *以下的函数用于操作inflight命令链表
 *======================================*/
 #define SEARCH_INFLIGHT_SEQ_TYPE_NODE( head, pnode, sequeue, subtype )\
-	for( ; pnode != head; pnode = pnode->next )\
+	for( ; (pnode != head)&&(pnode != NULL); pnode = pnode->next )\
 		if((pnode->host_tx.inflight_frame.data_type == subtype) && (pnode->host_tx.inflight_frame.seq_id == sequeue))break
-#define SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, pnode, cmd, subtype )\
-	for( ; pnode != head; pnode = pnode->next )\
-		if((pnode->host_tx.inflight_frame.data_type == subtype) && (pnode->host_tx.inflight_frame.conference_data_recgnize.conference_command == cmd))break
+#define SEARCH_INFLIGHT_CONFERENCE_TYPE_NODE( head, pnode, cmd, subtype, addr )\
+	for( ; (pnode != head)&&(pnode != NULL); pnode = pnode->next )\
+		if((addr == pnode->host_tx.inflight_frame.conference_data_recgnize.address)&&(pnode->host_tx.inflight_frame.data_type == subtype) && (pnode->host_tx.inflight_frame.conference_data_recgnize.conference_command == cmd))break
 
 inflight_plist create_inflight_dblist_new_node( inflight_plist *new_node );
 void destroy_inflight_node( inflight_plist *node_dstry );
@@ -57,7 +57,7 @@ void insert_inflight_dblist_trail( inflight_plist head, inflight_plist new_node 
 int get_inflight_dblist_length( inflight_plist head );
 inflight_plist search_node_inflight_from_dblist(inflight_plist head, uint16_t  seq_id, uint8_t subtype );
 void delect_inflight_dblist_node( inflight_plist *free_node );
-inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd );
+inflight_plist search_for_conference_inflight_dblist_node( inflight_plist head, uint8_t subtype,  uint8_t cfr_cmd, uint16_t addr );
 bool is_exist_udp_client_inflight_type_node( inflight_plist head, uint8_t subtype );
 void destroy_inflight_dblist( inflight_plist guard );
 

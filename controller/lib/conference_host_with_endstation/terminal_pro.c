@@ -2119,6 +2119,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
+					//DEBUG_INFO( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 					terminal_mic_state_set( MIC_COLSE_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 					if( gdisc_flags.apply_num > 0 )
 					{
@@ -2126,6 +2127,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 						apply_first = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
 						if( apply_first != NULL )
 						{
+							//DEBUG_INFO( "set FIRST apply addr = 0x%04x", apply_first->tmnl_dev.address.addr );
 							terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 						}
 					}
@@ -2150,6 +2152,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
+					//DEBUG_INFO( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 					terminal_mic_state_set( MIC_OTHER_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 
 					gdisc_flags.currect_first_index++;
@@ -2158,6 +2161,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 					apply_first = found_terminal_dblist_node_by_addr( addr );
 					if( apply_first != NULL )
 					{
+						//DEBUG_INFO( "set FIRST apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 						terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 					}
 					else

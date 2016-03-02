@@ -6,6 +6,7 @@
 
 #include "send_pthread.h"
 #include <time.h>
+#include "time_handle.h"
 
 sem_t sem_waiting; // ·¢ËÍµÈ´ıĞÅºÅÁ¿£¬ËùÓĞÏß³Ì¿É¼û
 sdpwqueue net_send_queue;// ÍøÂçÊı¾İ·¢ËÍ¹¤×÷¶ÓÁĞ
@@ -155,7 +156,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 					    is_resp_data, 
 					    &resp_interval_time );
 		pthread_mutex_unlock(&ginflight_pro.mutex);
-
+#if 0// ÕâÀïÒ²ÓĞ¿ÉÄÜ·¢ËÍÊı¾İ¹ı¿ì£¬¶øµ¼ÖÂÖÕ¶Ë´¦ÀíÒì³££¬2-3-2016
 		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
 			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\
 			||((next_msg_type == TRANSMIT_TYPE_UDP_CLT) && (cur_msg_type != TRANSMIT_TYPE_UDP_CLT))\
@@ -168,7 +169,19 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			assert( nowait_status == 0 );
 			continue;
 		}
-		
+#else
+		if ( (((cur_msg_type == TRANSMIT_TYPE_ADP) || (cur_msg_type == TRANSMIT_TYPE_ACMP) || (cur_msg_type == TRANSMIT_TYPE_AECP) || (cur_msg_type == TRANSMIT_TYPE_UDP_SVR ) || (cur_msg_type == TRANSMIT_TYPE_UDP_CLT))\
+			&& ((next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) ||(next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL)))\
+			|| ((cur_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) && (next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL))\
+			|| ((cur_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) && (next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL)))
+		{// µ±Ç°·¢ËÍÏûÏ¢µÄ¶Ë¿ÚÓëÏÂÒ»¸ö·¢ËÍÏûÏ¢µÄ¶Ë¿Ú²»Í¬£¬¼´¿ªÊ¼ÏÂÒ»¸öÏûÏ¢µÄ·¢ËÍ,ÍøÂç³ıÍâ
+			int nowait_status = set_wait_message_active_state();
+			assert( nowait_status == 0 );
+			nowait_status = set_wait_message_idle_state();
+			assert( nowait_status == 0 );
+			continue;
+		}
+#endif		
 		/*·¢ËÍÏÂÒ»ÌõÊı¾İµÄÌõ¼ş-Êı¾İ»ñµÃÏìÓ¦»òÊı¾İ³¬Ê±»òÊ±¼ä¼ä¸ôµ½ÁË(×¢:Ê±¼ä¼ä¸ôÖ»ÊÊÓÃÓÚÏµÍ³ÏìÓ¦Êı¾İ»òÉãÏñÍ·¿ØÖÆÊı¾İµÄ·¢ËÍ)*/
 		if( is_wait_messsage_primed_state() ) 
 		{
