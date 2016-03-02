@@ -156,6 +156,7 @@ void 	test_interface_terminal_address_list_write_file( FILE** fd )
 	{
 		DEBUG_ERR( "init terminal addr fd Err!" );
 		assert( NULL != *fd );
+		return;
 	}
 
 	// write info
@@ -668,6 +669,8 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len )
 {
 	assert( p_data );
+	if( p_data == NULL )
+		return;
 	
 	upper_cmpt_terminal_message_report( p_data, msg_len, address );
 }
@@ -675,6 +678,9 @@ void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_
 uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index)
 {
 	assert( p_gallot && p_gaddr_list && new_index );
+	if( (p_gaddr_list == NULL) || (p_gallot == NULL) || (new_index == NULL))
+		return 0xffff;
+	
 	uint16_t current_index = p_gallot->index;
 	uint16_t temp_addr = 0;
 	uint16_t i = 0;
@@ -959,6 +965,9 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 			break;
 		case CHM_CLOSE_ALL_MIC:// ¹Ø±ÕËùÓÐÆÕÍ¨´ú±í»ú
 			assert( dev_terminal_list_guard );
+			if( dev_terminal_list_guard == NULL )
+				return -1;
+			
 			for( query_tmp = dev_terminal_list_guard->next; query_tmp != dev_terminal_list_guard; query_tmp = query_tmp->next )
 			{
 				if( (query_tmp->tmnl_dev.address.addr != 0xffff) && \
@@ -1103,8 +1112,7 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 /*Ö÷»ú·¢ËÍ×´Ì¬, */
 int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 {
-	assert( dev_terminal_list_guard );
-	tmnl_pdblist p_tmnl_list = dev_terminal_list_guard->next;	
+	tmnl_pdblist p_tmnl_list = NULL;	
 	tmnl_main_state_send host_main_state;
 	uint8_t spk_num = 0;
 	thost_system_set set_sys; // ÏµÍ³ÅäÖÃÎÄ¼þµÄ¸ñÊ½
@@ -1116,8 +1124,12 @@ int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 	host_main_state.conference_stype = (set_sys.discuss_mode&0x0f); // low 4bit
 	host_main_state.limit = set_sys.speak_limit; 		// ½²»°ÈËÊýÉÏÏÞ
 	host_main_state.apply_set = set_sys.apply_limit;	// ÉêÇëÈËÊýÉÏÏÞ
+
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return -1;	
 	
-	for( ;p_tmnl_list != dev_terminal_list_guard; p_tmnl_list = p_tmnl_list->next )
+	for( p_tmnl_list = dev_terminal_list_guard->next;p_tmnl_list != dev_terminal_list_guard; p_tmnl_list = p_tmnl_list->next )
 	{
 		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && (p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
 			spk_num++;
@@ -1172,6 +1184,9 @@ int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
 int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
 {
 	assert( data && dev_terminal_list_guard );
+	if( data == NULL || dev_terminal_list_guard == NULL )
+		return -1;
+	
 	uint8_t dis_mode = *((uint8_t*)data);
 	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
 
@@ -1341,7 +1356,7 @@ int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len )
 		return 0;
 	}
 	
-	return 0;
+	return -1;
 }
 
 /*==================================================
@@ -1377,7 +1392,7 @@ void terminal_remove_unregitster( void ) // ÕâÀïÃ»ÓÐÇå³ýÖÕ¶ËµØÖ·ÎÄ¼þÒÔ¼°ÄÚ´æÖÕ¶Ë
 void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node )
 {
 	assert( tmnl_node );
-	DEBUG_INFO( "mic state = %d ",  mic_status );
+	DEBUG_INFO( "===========mic state = %d ============",  mic_status );
 
 	if( (tmnl_node == NULL) && !(addr & BROADCAST_FLAG) )
 	{
@@ -1408,8 +1423,10 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 int terminal_mic_speak_limit_time_manager_event( void )
 {
 	assert( dev_terminal_list_guard );
-	uint8_t system_state = get_sys_state();
+	if( dev_terminal_list_guard == NULL )
+		return -1;
 	
+	uint8_t system_state = get_sys_state();
 	if(  system_state != DISCUSS_STATE/* || p_node == dev_terminal_list_guard */ )
 	{
 		return -1;
@@ -1428,6 +1445,9 @@ int terminal_start_discuss( bool mic_flag )
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return -1;
+	
 	tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
 	if( !mic_flag ) // ¹Ø±ÕËùÓÐÂó¿Ë·ç
 	{	
@@ -1482,7 +1502,6 @@ int terminal_start_discuss( bool mic_flag )
 /*ÒÀ¾ÝÀàÐÍÉèÖÃÖÕ¶ËµÄ×´Ì¬*/
 void terminal_state_set_base_type( uint16_t addr, tmnl_state_set tmnl_state )
 {
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
@@ -1546,7 +1565,6 @@ void fterminal_led_set_send( uint16_t addr )
 	led_lamp.data_low = gled_buf[0];
 	led_lamp.data_high = gled_buf[1];
 
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
@@ -1575,6 +1593,9 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 	limit_time = set_sys.spk_limtime;
 	
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return -1;
+	
 	DEBUG_INFO( " speak addr = %04x, discuccess mode = %d", addr, dis_mode );
 	for( speak_node = dev_terminal_list_guard->next; speak_node != dev_terminal_list_guard; speak_node = speak_node->next )
 	{
@@ -1650,6 +1671,8 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 bool terminal_read_profile_file( thost_system_set *set_sys )
 {
 	FILE* fd = NULL;
+	thost_system_set tmp_set_sys;
+	int ret = false;
 	
 	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // Ö»¶Á¶Á³öÊý¾Ý
 	if( NULL == fd )
@@ -1658,16 +1681,29 @@ bool terminal_read_profile_file( thost_system_set *set_sys )
 		return false;
 	}
 
-	assert( set_sys );
-	if( profile_system_file_read( fd, set_sys ) == -1)
+	ret = true;
+	memset( &tmp_set_sys, 0, sizeof( thost_system_set));
+	if( profile_system_file_read( fd, &tmp_set_sys ) == -1)
 	{
 		DEBUG_INFO( "Read profile system Err!" );
-		Fclose( fd );
-		return false;
+		ret = false;
 	}
 
+	if( ret )
+	{
+		assert( set_sys );
+		if( set_sys != NULL )
+		{
+			memcpy( set_sys, &tmp_set_sys, sizeof(thost_system_set));
+		}
+		else
+		{
+			ret = false;
+		}	
+	}
+			
 	Fclose( fd );
-	return true;
+	return ret;
 }
 
 void terminal_free_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node )
@@ -2015,8 +2051,10 @@ bool addr_queue_find_by_value( uint16_t *addr_queue, uint8_t queue_len, uint16_t
 tmnl_pdblist found_terminal_dblist_node_by_addr( uint16_t addr )
 {
 	assert( dev_terminal_list_guard );
-	tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
+	if( dev_terminal_list_guard == NULL )
+		return NULL;
 	
+	tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
 	for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
 	{
 		if( tmp_node->tmnl_dev.address.addr == addr )
@@ -2059,7 +2097,7 @@ void terminal_select_apply( uint16_t addr ) // Ê¹Ñ¡ÔñµÄÉêÇëÈËÊÇÊ×Î»ÉêÇëÈË
 	}
 }
 
-bool terminal_examine_apply( enum_apply_pro apply_value )
+bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-2016,passed
 {
 	uint16_t addr = 0;
 	tmnl_pdblist apply_first = NULL;
@@ -2074,10 +2112,10 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 
 	switch( apply_value )
 	{
-		case REFUSE_APPLY:
+		case REFUSE_APPLY:// be tested in 02-3-2016,passed
 			addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-			if( addr_queue_delect_by_value(gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index) )
-			{
+			if( addr_queue_delect_by_value(gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr) )
+			{// delect success
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
@@ -2100,18 +2138,23 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 				terminal_main_state_send( 0, NULL, 0 );
 				ret = true;
 			}
+			else
+			{
+				DEBUG_INFO( "delect apply add = 0x%04x failed: no such address", addr );
+			}
 			break;
-		case NEXT_APPLY:
-			if( gdisc_flags.apply_num > 0 )
+		case NEXT_APPLY: // be tested in 02-3-2016,passed
+			if( gdisc_flags.apply_num > 1 )
 			{
 				addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
 					terminal_mic_state_set( MIC_OTHER_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
+
 					gdisc_flags.currect_first_index++;
 					gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-					
+					addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 					apply_first = found_terminal_dblist_node_by_addr( addr );
 					if( apply_first != NULL )
 					{
@@ -2127,11 +2170,11 @@ bool terminal_examine_apply( enum_apply_pro apply_value )
 					DEBUG_INFO( "no found first apply node!" );
 				}
 
-				terminal_main_state_send( 0, NULL, 0 );
+				//terminal_main_state_send( 0, NULL, 0 );
 				ret = true;
 			}
 			break;
-		case APPROVE_APPLY:
+		case APPROVE_APPLY:// be tested in 02-3-2016,passed
 			if( gdisc_flags.currect_first_index < gdisc_flags.apply_num )
 			{
 				addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
@@ -2227,7 +2270,6 @@ void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
 
 void terminal_chairman_excute_set( uint16_t addr, bool is_set_excute )
 {
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
@@ -2243,7 +2285,6 @@ void terminal_chairman_excute_set( uint16_t addr, bool is_set_excute )
 
 void terminal_vip_type_set( uint16_t addr, bool is_set_vip )
 {
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
@@ -2358,6 +2399,9 @@ void terminal_send_upper_message( uint8_t *data_msg, uint16_t addr, uint16_t msg
 void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr, uint16_t contex_len )// ×ÀÅÆ¹ÜÀí
 {
 	assert( table_card );
+	if( table_card == NULL )
+		return;
+	
 	uint8_t card_flag = table_card->msg_type;
 	tmnl_led_state_show_set card_opt;
 
@@ -2369,7 +2413,6 @@ void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr
 	{
 		memcpy( &card_opt, table_card->msg_buf, sizeof(uint16_t));
 
-		assert( dev_terminal_list_guard );
 		tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 		if( tmp == NULL )
 		{
@@ -2386,6 +2429,9 @@ void terminal_tablet_stands_manager( tcmpt_table_card *table_card, uint16_t addr
 void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 {
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	uint8_t sign_type = sign_flag.sign_type;
 	uint8_t timeouts = sign_flag.retroactive_timeouts;
 	tmnl_pdblist tmp = dev_terminal_list_guard->next;
@@ -2425,6 +2471,9 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 {
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	tmnl_pdblist tmp = dev_terminal_list_guard->next;
 	int i = 0;
 
@@ -2460,14 +2509,16 @@ void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 
 void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 {
-	assert( sign_flag );
-	gfirst_key_flag = vote_start_flag.key_effective?true:false;
 	uint8_t vote_type = vote_start_flag.vote_type;
-	*sign_flag = gsigned_flag ? 0 : 1;// ÏìÓ¦0£¬Õý³£;ÏìÓ¦1Òì³£ 
-
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp = NULL;
 
+	assert( sign_flag );
+	if( sign_flag == NULL )
+		return;
+	
+	*sign_flag = gsigned_flag ? 0 : 1;// ÏìÓ¦0£¬Õý³£;ÏìÓ¦1Òì³£ 
+	gfirst_key_flag = vote_start_flag.key_effective?true:false;
+	
 	gvote_mode = (tevote_type)vote_type;
 	if( vote_type ==  VOTE_MODE )
 	{
@@ -2483,6 +2534,10 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	}
 
 	gvote_flag = VOTE_SET;
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	for( tmp = dev_terminal_list_guard->next ; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
 		if( tmp->tmnl_dev.tmnl_status.is_rgst && (tmp->tmnl_dev.address.addr != 0xffff))
@@ -2512,16 +2567,14 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 
 void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
 {
+	tmnl_pdblist tmp = NULL;
+	
 	assert( sign_flag );
+	if( sign_flag == NULL )
+		return;
+	
 	gfirst_key_flag = key_effective; // true = Ê×´Î°´¼üÓÐÐ§£»
 	*sign_flag = gsigned_flag; 
-
-	tmnl_pdblist tmp = NULL;
-	assert( dev_terminal_list_guard );
-	if( dev_terminal_list_guard != NULL )
-	{
-		tmp = dev_terminal_list_guard->next;	
-	}
 
 	gvote_mode = (tevote_type)vote_type;
 	if( vote_type ==  VOTE_MODE )
@@ -2538,7 +2591,13 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	}
 
 	gvote_flag = VOTE_SET;
-	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+	{
+		return;
+	}
+	
+	for( tmp = dev_terminal_list_guard->next; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
 		if( tmp->tmnl_dev.tmnl_status.is_rgst || tmp->tmnl_dev.address.addr )
 		{
@@ -2668,14 +2727,16 @@ void terminal_vote_state_set( uint16_t addr )
 void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // ÖÕ¶ËÌØÊâÊÂ¼þ-Ç©µ½
 {
 	assert( sign_node );
-
+	if( sign_node == NULL )
+		return;
+	
 	if( gtmnl_signstate == SIGN_IN_ON_TIME )// ÉèÖÃÇ©µ½±êÖ¾
 	{
-		sign_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
+		sign_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;
 	}
-	else if( gtmnl_signstate == SIGN_IN_BE_LATE && sign_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN )
+	else if( (gtmnl_signstate == SIGN_IN_BE_LATE) && (sign_node->tmnl_dev.tmnl_status.sign_state == TMNL_NO_SIGN_IN) )
 	{
-		sign_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
+		sign_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;
 	}
 	
 	// ÉèÖÃÍ¶Æ±Ê¹ÄÜ
@@ -2685,6 +2746,9 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // ÖÕ¶ËÌØÊâÊÂ¼þ-Ç©
 	upper_cmpt_report_sign_in_state( sign_node->tmnl_dev.tmnl_status.sign_state, sign_node->tmnl_dev.address.addr );
 
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	tmnl_pdblist tmp = dev_terminal_list_guard->next;
 	int sign_num = 0;
 	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
@@ -2710,6 +2774,9 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // ÖÕ¶ËÌØÊâÊÂ¼þ-Ç©
 void termianl_vote_enable_func_handle( tmnl_pdblist sign_node )
 {
 	assert( sign_node );
+	if( sign_node == NULL )
+		return;
+	
 	sign_node->tmnl_dev.tmnl_status.vote_state |= TVOTE_EN; // TVOTE_SET_FLAG ->TVOTE_EN ->TWAIT_VOTE_FLAG(Í¶Æ±×´Ì¬Á÷³Ì)
 }
 
@@ -2723,6 +2790,9 @@ void terminal_state_all_copy_from_common( void )
 void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾ÝÖÕ¶ËµÄ2 3 4¼üÍ³¼Æ½á¹û
 {
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	tmnl_pdblist tmp = NULL, head_list = dev_terminal_list_guard;
 	uint16_t vote_total = 0, neg = 0, abs = 0, aff = 0;
 	tmnl_vote_result vote_rslt;
@@ -2771,6 +2841,9 @@ void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾ÝÖÕ¶ËµÄ2 3 4¼üÍ³¼
 void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata )
 {
 	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	
 	tmnl_pdblist tmp_node = NULL, tmp_head = dev_terminal_list_guard;
 	if( gvote_flag == NO_VOTE || ( key_num > 5 ) ) // ¼ûÐ­Òé(2.	ÖÕ¶Ë°´¼üµÄ±àºÅ£º±í¾ö¼ü1~5£¬·¢ÑÔ¼ü6£¬Ö÷Ï¯ÓÅÏÈ¼ü7)
 	{
@@ -2821,10 +2894,17 @@ void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t t
 
 bool terminal_key_action_value_judge_can_save( uint8_t key_num,  tmnl_pdblist vote_node )
 {
-	assert( vote_node );
 	bool ret = false;
-	uint8_t *p_vote_state = &vote_node->tmnl_dev.tmnl_status.vote_state;
+	uint8_t *p_vote_state = NULL;
+	
+	assert( vote_node );
+	if( NULL == p_vote_state )
+		return false;
+	
+	p_vote_state = &vote_node->tmnl_dev.tmnl_status.vote_state;
 	assert( p_vote_state );
+	if( NULL == p_vote_state )
+		return false;
 
 	if( !gfirst_key_flag )	// last key effective 
 	{
@@ -2892,7 +2972,6 @@ bool terminal_key_action_value_judge_can_save( uint8_t key_num,  tmnl_pdblist vo
 
 void terminal_key_action_host_special_num2_reply( const uint8_t recvdata, uint8_t key_down, uint8_t key_up, uint16_t key_led, uint8_t lcd_num, tmnl_pdblist node )
 {
-	assert( node );
 	uint8_t data_len;
 	tka_special2_reply reply_data;
 	reply_data.recv_data = recvdata;
@@ -2904,36 +2983,45 @@ void terminal_key_action_host_special_num2_reply( const uint8_t recvdata, uint8_
 	reply_data.lcd_num = lcd_num;
 	data_len = SPECIAL2_REPLY_KEY_AC_DATA_LEN;
 
+	assert( node );
+	if( node == NULL )
+		return;
+	
 	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, NULL, NULL, &reply_data );
 }
 
 void terminal_key_action_host_special_num1_reply( const uint8_t recvdata, uint8_t mic_state, tmnl_pdblist node )
 {
-	assert( node );
 	uint8_t data_len;
 	tka_special1_reply reply_data;
 	reply_data.mic_state = mic_state;
 	reply_data.reply_num = REPLY_SPECAIL_NUM1;
 	reply_data.recv_data = recvdata;
 	data_len = SPECIAL1_REPLY_KEY_AC_DATA_LEN;
-
+	
+	assert( node );
+	if( node == NULL )
+		return;
+	
 	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, NULL, &reply_data, NULL );
 }
 
 void terminal_key_action_host_common_reply( const uint8_t recvdata, tmnl_pdblist node )
 {
-	assert( node );
 	uint8_t data_len;
 	tka_common_reply common_data;
 	common_data.recv_data = recvdata;
 	data_len = COMMON_REPLY_KEY_AC_DATA_LEN;
+
+	assert( node );
+	if( node == NULL )
+		return;
 	
 	terminal_key_action_host_reply( node->tmnl_dev.entity_id, node->tmnl_dev.address.addr, data_len, &common_data, NULL, NULL );
 }
 
 void terminal_key_speak( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t tmnl_state, const uint8_t recvdata )
 {
-	assert( dev_terminal_list_guard );
 	tmnl_pdblist tmp_node = NULL;
 	
 	tmp_node = found_terminal_dblist_node_by_addr( addr );
@@ -3027,8 +3115,10 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 				0, chman_node, false, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send ); // ÕâÀï²»±£´æÆämic openµÄ×´Ì¬2015-12-11
 
 		assert( dev_terminal_list_guard );
-		tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
+		if( dev_terminal_list_guard == NULL )
+			return;
 		
+		tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
 		for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
 		{
 			if( tmp_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST )
@@ -3056,9 +3146,6 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	else if( !key_down )
 	{
 		set_terminal_system_state( INTERPOSE_STATE, false );
-		assert(dev_terminal_list_guard);
-		tmnl_pdblist end_node = dev_terminal_list_guard->next;
-		
 		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );
 
 		/**
@@ -3069,6 +3156,11 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS )
 			connect_table_tarker_disconnect( chman_node->tmnl_dev.entity_id, chman_node, false, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 		
+		assert(dev_terminal_list_guard);
+		if( dev_terminal_list_guard == NULL )
+			return;
+		
+		tmnl_pdblist end_node = dev_terminal_list_guard->next;
 		for( ;end_node != dev_terminal_list_guard; end_node = end_node->next )
 		{
 			if( (end_node->tmnl_dev.address.addr != 0xffff)&&\
@@ -3241,6 +3333,9 @@ int terminal_chairman_apply_reply( uint8_t tmnl_type, uint16_t addr, uint8_t key
 void terminal_free_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg )
 {
 	assert( speak_node );
+	if( speak_node == NULL )
+		return;
+	
 	if( key_down )
 	{
 		if( gdisc_flags.speak_limit_num < FREE_MODE_SPEAK_MAX )
@@ -3260,9 +3355,9 @@ void terminal_free_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 
 bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg )
 {
-	assert( speak_node );
-
 	bool ret = false;
+	
+	assert( speak_node );
 	if( speak_node == NULL )
 	{
 		return ret;
@@ -3391,10 +3486,10 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 
 bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg )
 {
-	assert( speak_node );
-
 	bool ret = false;
 	uint16_t addr = speak_node->tmnl_dev.address.addr;
+
+	assert( speak_node );
 	if( speak_node == NULL )
 	{
 		DEBUG_INFO( " NULL speak node!" );
@@ -3455,7 +3550,6 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg )
 {
 	assert( speak_node );
-
 	if( speak_node == NULL )
 	{
 		return false;
@@ -3476,11 +3570,12 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 				gdisc_flags.currect_first_index = 0;
 				state = MIC_FIRST_APPLY_STATUS;
 			}
+			
 			gdisc_flags.apply_addr_list[gdisc_flags.apply_num] = speak_node->tmnl_dev.address.addr;
 			gdisc_flags.apply_num++;
 
 			terminal_key_action_host_special_num1_reply( recv_msg, state, speak_node );
-			//terminal_mic_state_set( state, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
+			terminal_mic_state_set( state, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
 			terminal_main_state_send( 0, NULL, 0 );
 			ret = true;
 		}
@@ -3490,24 +3585,27 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr ))
-		{
+		{// terminal apply
+			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );// È¡Ïûµ±Ç°µÄÉêÇë·¢ÑÔ
+			terminal_mic_state_set( MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );// ÉÏ±¨mic×´Ì¬
+			//DEBUG_INFO( "gdisc_flags.apply_num =%d  current_addr = 0x%04x addr = 0x%04x", gdisc_flags.apply_num, current_addr, addr );
 			if( gdisc_flags.apply_num > 0 && current_addr == addr )// ÖÃÏÂÒ»¸öÉêÇëÎªÊ×Î»ÉêÇë×´Ì¬
 			{
 				gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
 				first_apply = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index] );
 				if( first_apply != NULL )
 				{
-					terminal_key_action_host_special_num1_reply( recv_msg, MIC_FIRST_APPLY_STATUS, speak_node );
-					//terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );
+					terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, first_apply->tmnl_dev.address.addr, first_apply->tmnl_dev.entity_id, true, first_apply );
 				}
 			}
 			
 			terminal_main_state_send( 0, NULL, 0 );
 		}	
 		else
-		{
+		{// terminal speaking
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 			connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+			// »¹ÐèÔö¼Ó camera strack 2016-3-2
 		}
 		
 		ret = true;
@@ -3698,7 +3796,7 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 		{
 			vote_node->tmnl_dev.tmnl_status.sign_state = SIGN_IN_BE_LATE;
 		}
-
+		
 		upper_cmpt_report_sign_in_state( vote_node->tmnl_dev.tmnl_status.sign_state, vote_node->tmnl_dev.address.addr );
 	}
 	else if ( ((VOTE_STATE == sys_state) || (GRADE_STATE == sys_state) \
@@ -3935,7 +4033,9 @@ void terminal_sign_in_pro( void )
 			for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++)
 			{
 				uint16_t addr = tmnl_addr_list[i].addr;
-				if( addr != 0xffff )
+				if( addr == 0xffff )
+					continue;
+				else if( addr != 0xffff )
 				{
 					tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 					if( (tmp != NULL) && ( tmp->tmnl_dev.address.addr != 0xffff) &&\
@@ -3984,6 +4084,8 @@ void terminal_open_addr_file_wt_wb( void )
 	{
 		DEBUG_ERR( "terminal_open_addr_file_wt_wb open fd  Err!" );
 		assert( NULL != addr_file_fd );
+		if( NULL == addr_file_fd )
+			return;
 	}	
 }
 
