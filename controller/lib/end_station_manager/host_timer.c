@@ -21,7 +21,7 @@ void host_timer_start( timetype timeout, host_timer* target )
 	target->start_time = get_current_time();
 }
 
-inline void host_timer_stop( host_timer* target )
+void host_timer_stop( host_timer* target )
 {
 	assert( target );
 	target->elapsed = false;

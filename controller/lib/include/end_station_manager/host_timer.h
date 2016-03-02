@@ -19,7 +19,7 @@ typedef struct host_timer			// 主机定时器
 
 extern void host_timer_state_avail( timetype timeout, host_timer* target );
 extern void host_timer_start( timetype timeout, host_timer* target );
-extern inline void host_timer_stop( host_timer* target );
+extern void host_timer_stop( host_timer* target );
 extern void host_timer_update( timetype timeout, host_timer* target );
 extern bool host_timer_timeout( host_timer* target );
 

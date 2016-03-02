@@ -121,7 +121,7 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 			break;
 		}
 	}
-
+	
 	// save message
 #ifdef __FUNC_LINK_PROCCESS__
 	DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
@@ -143,7 +143,6 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 
 		// thread lock and save data
 		pthread_mutex_lock( &fcwork_queue.control.mutex );
-		
 		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
 
 		pthread_cond_signal( &fcwork_queue.control.cond );

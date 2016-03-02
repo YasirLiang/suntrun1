@@ -220,6 +220,7 @@ int thread_func_fn( void * pgm )
 		while( p_func_wq->control.active && (p_func_wq->work.head == NULL) )
 		{
 			pthread_cond_wait( &p_func_wq->control.cond, &p_func_wq->control.mutex );
+			DEBUG_INFO( "active = %d", p_func_wq->control.active );
 		}
 
 		if( !p_func_wq->control.active )
@@ -228,6 +229,7 @@ int thread_func_fn( void * pgm )
 			break;
 		}
 
+#if 0// (2016-3-2)这样行不通，因为当队列永不为空时，系统的命令也就得不到执行 最新经调试时发现的，也就是系统不能停止投票与选举评分的原因
 		pthread_mutex_lock( &net_send_queue.control.mutex );
 		if( !is_queue_empty( &net_send_queue.work ) )
 		{
@@ -236,7 +238,7 @@ int thread_func_fn( void * pgm )
 			continue;
 		}
 		pthread_mutex_unlock( &net_send_queue.control.mutex );
-		
+#endif		
 		p_msg_wnode = func_command_work_queue_messag_get( p_func_wq );
 		if( p_func_wq->work.head == NULL )
 		{
