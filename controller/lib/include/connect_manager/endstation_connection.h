@@ -13,8 +13,6 @@
 #include "descriptor.h"
 #include "terminal_common.h"
 
-#define CHANNEL_MUX_NUM 4 // 最大的通道数
-
 #ifdef __DEBUG__
 #ifndef __DEBUG_CONNECT_TABLE__
 #define __DEBUG_CONNECT_TABLE__
@@ -68,7 +66,6 @@ typedef struct _ttdisconnect_connect_mic_set_callback
 	p_mic_state_set_callback p_mic_set_callback;
 	p_main_state_send_callback p_mian_state_send;
 }tdisconnect_connect_mic_main_set;
-
 
 void connect_table_info_init( void );
 bool connect_table_get_information( desc_pdblist desc_guard );

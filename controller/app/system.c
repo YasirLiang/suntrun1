@@ -55,7 +55,6 @@ void init_system( void )
 	camera_pro_init();// 初始化预置点配置文件
 
 	inflight_proccess_init();// 初始化inflight 处理参数
-	DEBUG_LINE();
 	matrix_output_init();// 初始化矩阵输出端口
 	control_matrix_common_init();
 

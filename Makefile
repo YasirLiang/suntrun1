@@ -29,7 +29,8 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/timer_pthread\
 		   -I$(ROOTPATH)/controller/lib/include/control_matrix\
 		   -I$(ROOTPATH)/controller/lib/include/system_database\
-		   -I$(ROOTPATH)/controller/lib/include/ui_encap
+		   -I$(ROOTPATH)/controller/lib/include/ui_encap\
+		   -I$(ROOTPATH)/controller/lib/include/host_connect
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')

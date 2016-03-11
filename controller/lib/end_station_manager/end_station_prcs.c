@@ -511,12 +511,20 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 
                     case JDKSAVDECC_DESCRIPTOR_STREAM_INPUT:
 			if( found_descptor_endstation/* && descptor_info->endpoint_desc.is_input_stream_desc_exist*/)
-                        	store_stream_input_desc( frame, read_desc_offset, frame_len, descptor_info);
+			{
+                        	store_stream_input_desc( frame, read_desc_offset, frame_len, descptor_info );
+
+				
+
+			}
                         break;
 
                     case JDKSAVDECC_DESCRIPTOR_STREAM_OUTPUT:
-			if( found_descptor_endstation /*&& !descptor_info->endpoint_desc.is_output_stream_desc_exist*/ )
+			if( found_descptor_endstation /*&& !descptor_info->endpoint_desc.is_output_stream_desc_exist*/)
+			{
                         	store_stream_output_desc( frame, read_desc_offset, frame_len, descptor_info);
+				
+			}
                         break;
 
                     case JDKSAVDECC_DESCRIPTOR_JACK_INPUT:

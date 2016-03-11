@@ -301,8 +301,10 @@ bool upper_computer_comm_recv_msg_pro( thost_upper_cmpt_msg *pmsg, uint8_t save_
 					{
 						set_wait_message_status( 0 );
 						sem_post( &sem_waiting );
-						return true;
 					}
+
+					grecv_cmpt_msg_pro.msg_len = 0;
+					return true;
 				}
 			}
 

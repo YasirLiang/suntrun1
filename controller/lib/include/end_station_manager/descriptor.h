@@ -16,8 +16,6 @@ struct out_and_in_descptor
 	struct jdksavdecc_eui64 current_format;			
 };
 
-
-
 typedef struct out_and_in_stream_descptor		// 输入输出流描述符
 {
 	uint8_t num;								// 输入流或输出流的数量

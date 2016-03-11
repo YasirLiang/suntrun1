@@ -11,6 +11,7 @@
 #include "sqlite3_util.h"
 #include "profile_system.h"
 #include "matrix_output_input.h"
+#include "avdecc_manage.h"
 
 #ifdef __DEBUG__
 #define __SYSTEM_DB_DEBUG__
@@ -43,6 +44,9 @@
 
 #define SYS_DB_TMNL_CAMERA_PRE_TABLE "camera_preset" // 终端的预置位信息
 #define CAMERA_PRESET_COLUMN   "uid int, camera_num int, camera_preset_point int"
+
+#define SYS_DB_AVDECC_SET_TABLE "avdecc_set" // 设置avdecc设置参数
+#define SYSTEM_AVDECC_SET_COLUMN   "enable_discover int,discover_interval int, poll_descripor int, poll_descripor_interval int,automatic_remove int, remove_interval int"// 时间的单位是ms
 
 typedef struct type_struct_database_handle
 {
@@ -175,6 +179,11 @@ int system_db_cmrpre_info_queue( sdb_cmr_preset *p_insert_info, int uid );
 int system_db_cmrpre_info_update( sdb_cmr_preset insert_info, int uid );
 /**=========================结束终端预置位数据库表操作======================================**/
 
+/**=========================开始avdecc管理数据库表操作======================================**/
+int system_db_avdecc_info_insert(  tavdecc_manage discover_info, tavdecc_manage descripor_info, tavdecc_manage device_remove );
+int system_db_avdecc_info_queue(  tavdecc_manage* p_discover_info, tavdecc_manage* p_descripor_info, tavdecc_manage* p_device_remove );
+int system_db_avdecc_info_update( tavdecc_manage discover_info, tavdecc_manage descripor_info, tavdecc_manage device_remove );
+/**=========================结束avdecc管理数据库表操作======================================**/
 
 void system_database_init( void );
 void system_database_destroy( void );

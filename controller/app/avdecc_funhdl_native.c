@@ -5,6 +5,7 @@
 #include "send_pthread.h"
 #include "control_matrix_common.h"
 #include "time_handle.h"
+#include "avdecc_manage.h"// 发现终端，读描述符，移除终端
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -349,6 +350,7 @@ int pthread_recv_data_fn( void *pgm )
 		terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
 		terminal_vote_proccess();// 终端投票处理
 		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
+		avdecc_manage_discover_proccess();// 系统定时发现终端
 	}
 	
 	return 0;

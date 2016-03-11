@@ -152,6 +152,7 @@ void store_stream_input_desc( const uint8_t *frame, int pos, size_t frame_len, d
         if (ret < 0)
         {
         	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
+		return ;
         }
 
 	uint8_t num = ++desc_info_node->endpoint_desc.input_stream.num;
@@ -170,6 +171,7 @@ void store_stream_output_desc( const uint8_t *frame, int pos, size_t frame_len, 
         if (ret < 0)
         {
         	DEBUG_INFO( "avdecc_read_descriptor_error:stream_output_desc_read error" );
+		return;
         }
 
 	uint8_t num = ++desc_info_node->endpoint_desc.output_stream.num;

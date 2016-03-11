@@ -2,6 +2,11 @@
 **data:2015/11/3
 **
 **
+// ****************************
+// file change 2016-3-8
+// 建立会议系统连接表管理机制
+// 
+// ****************************
 */
 
 #include "endstation_connection.h"
@@ -26,6 +31,36 @@ void connect_table_info_init( void )
 	connect_table_double_list_init( &cnnt_list_guard );
 	assert( cnnt_list_guard );
 	pthread_mutex_unlock( &cnnt_mutex );
+}
+
+// 根据输入通道建立连接表节点 2016-3-10
+bool connect_table_create_node_by_input_can_insert(  uint16_t input_index, uint64_t listerner_id, connect_tbl_pdblist **insert_node )
+{
+	connect_tbl_pdblist new_node = NULL;
+	new_node = connect_table_dblist_node_create( &new_node );
+	if( NULL == new_node )
+	{
+		DEBUG_INFO( "create connect table node Err!" );
+		*insert_node = NULL;
+		assert( NULL != new_node );
+		return false;
+	}
+
+	memset( &new_node->connect_elem.spk_timeout, 0, sizeof(ttspeak_timeouts));
+	new_node->connect_elem.listener_id = listerner_id;
+	new_node->connect_elem.listener_index = input_index;
+	new_node->connect_elem.listener_connect_flags = false;
+	new_node->connect_elem.tarker_id = 0;// 未连接初始化
+	new_node->connect_elem.tarker_index = 0; // 未连接初始化
+
+	// 插入到连接表结尾
+	pthread_mutex_lock( &cnnt_mutex );
+	connect_table_double_list_insert_node( new_node, cnnt_list_guard );
+	pthread_mutex_unlock( &cnnt_mutex );
+
+	*insert_node = new_node;// 返回新建连接表节点
+	
+	return true;
 }
 
 /* 初始化系统生音通道，必须在系统终端的输入输出流初始化完成后才能调用*/
@@ -53,6 +88,7 @@ bool connect_table_get_information( desc_pdblist desc_guard )
 			{
 				DEBUG_INFO( "create connect table node Err!" );
 				assert( NULL != new_node );
+				return false;
 			}
 
 			memset( &new_node->connect_elem.spk_timeout, 0, sizeof(ttspeak_timeouts));

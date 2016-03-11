@@ -745,6 +745,64 @@ int system_db_cmrpre_info_update( sdb_cmr_preset insert_info, int uid )
 }
 /**=========================结束终端预置位数据库表操作======================================**/
 
+/**=========================开始avdecc管理数据库表操作======================================**/
+int system_db_avdecc_info_insert(  tavdecc_manage discover_info, tavdecc_manage descripor_info, tavdecc_manage device_remove )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(enable_discover,discover_interval, poll_descripor, poll_descripor_interval,automatic_remove,  remove_interval)\
+			values(%d,%d,%d,%d,%d,%d);", SYS_DB_AVDECC_SET_TABLE,\
+			discover_info.enable, discover_info.query_timer.count_time,\
+			descripor_info.enable, descripor_info.query_timer.count_time, \
+			device_remove.enable, device_remove.query_timer.count_time );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+
+int system_db_avdecc_info_queue(  tavdecc_manage* p_discover_info, tavdecc_manage* p_descripor_info, tavdecc_manage* p_device_remove )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, ret = -1;
+
+	if( p_discover_info == NULL || p_descripor_info == NULL || p_device_remove == NULL)
+		return 2;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select * from %s;", SYS_DB_AVDECC_SET_TABLE );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			p_discover_info->enable = atoi( db_result[ncolumn] );
+			p_discover_info->query_timer.count_time = atoi( db_result[ncolumn+1] );
+			p_descripor_info->enable = atoi( db_result[ncolumn+2] );
+			p_descripor_info->query_timer.count_time = atoi( db_result[ncolumn+3] );
+			p_device_remove->enable = atoi( db_result[ncolumn+4] );
+			p_device_remove->query_timer.count_time = atoi( db_result[ncolumn+5] );
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+int system_db_avdecc_info_update( tavdecc_manage discover_info, tavdecc_manage descripor_info, tavdecc_manage device_remove )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "update %s set enable_discover = %d, discover_interval =%d, poll_descripor = %d, poll_descripor_interval = %d,automatic_remove = %d, remove_interval = %d;", \
+			SYS_DB_AVDECC_SET_TABLE, 
+			discover_info.enable, discover_info.query_timer.count_time,\
+			descripor_info.enable, descripor_info.query_timer.count_time, \
+			device_remove.enable, device_remove.query_timer.count_time );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+/**=========================结束avdecc管理数据库表操作======================================**/
+
 /*系统数据库模块的初始化*/
 void system_database_init( void )
 {	
@@ -789,6 +847,10 @@ void system_database_init( void )
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN );
 	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_GRADE_TABLE );
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN );
+	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_AVDECC_SET_TABLE );
 
 	INIT_ZERO( &gmatrix_record, sizeof(gmatrix_record));
 	if( -1 == system_db_queue_matrix_config_record( &gmatrix_record ))
