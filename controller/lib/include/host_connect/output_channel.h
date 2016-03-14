@@ -13,21 +13,18 @@
 #ifndef __OUTPUT_CHANNEL_H__
 #define __OUTPUT_CHANNEL_H__
 
-enum output_channel_status// 输出通道的状态
+typedef struct _type_input_channel
 {
-	OUTCHANNEL_UNAVAILABLE,// 不可用
-	OUTCHANNEL_OFFLINE,// 可连接
-	OUTCHANNEL_ONLINE = 0, // 已连接在线
-};
+	uint64_t listener_id;
+	uint16_t listen_index;
+	struct list_head list;
+}Input_Channel;
 
 typedef struct _type_output_channel// 连接输入的通道
 {
-	uint64_t tarker_id; 		// 通道ID
-	uint16_t tarker_index; 	// 通道ID索引
-	enum output_channel_status status;// 通道的状态
-	timetype timetimp;			// 连接时时间戳
-	struct list_head list;			// 用于已连接连接表的链表管理，
-}TOutChannel;
-
+	uint16_t tarker_index;
+	Input_Channel input_head; // 输入, 为空则无连接
+	struct list_head list;
+}TOutChannel, *T_pOutChannel;
 
 #endif

@@ -50,7 +50,7 @@ typedef struct _type_central_control_recieve_model// 接收模块
 	solid_pdblist solid_pnode; // 指向adp链表节点
 	struct endpoint_decriptor* desc_pnode;// 指向desc链表节点
 	TInChannel connect_channel_head;// 模块已连接表输入通道
-	TInChannel unconnect_channel_head;// 模块未连接表输入通道
+	TInChannel unconnect_channel_head;// 模块已连接表输入通道
 	enum recieve_model_state model_state;
 	uint8_t channel_num;// 通道数
 	uint8_t chanel_connect_num;// 通道已连接数
@@ -64,12 +64,19 @@ enum channel_list_pro_flags
 	CH_ALLOT_FINISH// 处理完成
 };
 
+enum channel_pro_stype
+{
+	CH_DISCONNECT,
+	CH_CONNECT
+};
+
 typedef struct _type_channel_alloction_proccess// 通道分配处理结构
 {
 	TInChannel *p_current_input_channel;// 指向通道表中当前可以被分配的模块,若为NULL，则表示无可用通道
 	uint8_t elem_num;// 通道的个数
 	uint8_t cnnt_num;// 已连接个数
-	channel_list_pro_flags pro_eflags;// 处理过程参数
+	enum channel_list_pro_flags pro_eflags;// 处理过程参数
+	enum channel_pro_stype pro_stype;
 }tchannel_allot_pro;
 
 // *****************************************//

@@ -23,9 +23,11 @@ enum input_channel_status// 输入通道的状态
 typedef struct _type_input_channel// 连接输入的通道
 {
 	uint64_t listener_id; 		// 通道ID
+	uint64_t tarker_id;
+	uint16_t tarker_index;
 	uint16_t listener_index; 		// 通道ID索引
-	enum input_channel_status status;// 通道的状态
 	timetype timetimp;// 连接时时间戳
+	enum input_channel_status status;// 通道的状态
 	struct list_head list;			// 用于已连接连接表的链表管理，
 }TInChannel,*T_pInChannel;
 
