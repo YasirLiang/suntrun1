@@ -20,6 +20,8 @@
 #include "camera_pro.h"
 #include "time_handle.h"
 
+#include "conference_transmit_unit.h"
+
 FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
@@ -976,7 +978,11 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 					(query_tmp->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) )
 				{
 					query_tmp->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 					connect_table_tarker_disconnect( query_tmp->tmnl_dev.entity_id, query_tmp, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+					trans_model_unit_disconnect( query_tmp->tmnl_dev.entity_id );
+#endif
 				}
 			}
 			
@@ -1099,7 +1105,12 @@ int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
 	{
 		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS )
 		{
-			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
+				connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id );
+#endif
+			
 		}
 	}
 
@@ -1202,7 +1213,11 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 		// 2.设置麦克风tarker的状态,上报麦克风状态, 设置相应终端的麦克风状态(会议主机与终端协议)
 		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) )
 		{
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 			connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id );
+#endif
 		}
 	}
 
@@ -1433,7 +1448,10 @@ int terminal_mic_speak_limit_time_manager_event( void )
 	}
 	
 	/*查看系统连接表, 并检查超时*/
+#ifdef ENABLE_CONNECT_TABLE
 	connect_table_timeouts_image();
+#else
+#endif
 
 	return 0;
 }
@@ -1457,7 +1475,11 @@ int terminal_start_discuss( bool mic_flag )
 			//DEBUG_INFO( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) ) // 断开注册连接的终端
 			{
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id );
+#endif
 			}
 		}
 	}
@@ -1620,11 +1642,19 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 		{
 			if( mic_state_set )
 			{
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			}
 			else
 			{
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 			}
 		}
 		else
@@ -1717,12 +1747,20 @@ void terminal_free_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 	{
 		if( gdisc_flags.speak_limit_num < FREE_MODE_SPEAK_MAX )
 		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 		}
 	}
 	else
 	{
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 	}
 
 	terminal_main_state_send( 0, NULL, 0 );
@@ -1749,7 +1787,11 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 		}
 		else if( gdisc_flags.speak_limit_num < gdisc_flags.limit_num ) // 打开麦克风
 		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			ret = true;
 		}
 		else if( gdisc_flags.apply_num < gdisc_flags.apply_limit ) // 申请发言
@@ -1770,7 +1812,11 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 	}
 	else
 	{
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		cc_state = speak_node->tmnl_dev.tmnl_status.mic_state;
 		
@@ -1805,7 +1851,11 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
 					if( first_speak != NULL )
 					{
+#ifdef ENABLE_CONNECT_TABLE
 						connect_table_tarker_connect( first_speak->tmnl_dev.entity_id, limit_time, first_speak, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+						trans_model_unit_connect( first_speak->tmnl_dev.entity_id );
+#endif
 
 						if( gdisc_flags.apply_num > 0 ) // 设置首位申请发言终端
 						{
@@ -1859,12 +1909,20 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 	{
 		if( addr_queue_find_by_value( gdisc_flags.speak_addr_list, speak_limit_num, addr, NULL))
 		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			ret = true;
 		}
 		else if( speak_limit_num < gdisc_flags.limit_num )
 		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			gdisc_flags.speak_addr_list[speak_limit_num] = addr;
 			ret = true;
 		}
@@ -1875,7 +1933,11 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 				tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( gdisc_flags.speak_addr_list[0] );
 				if( first_speak != NULL )
 				{
+#ifdef ENABLE_CONNECT_TABLE
 					connect_table_tarker_disconnect( first_speak->tmnl_dev.entity_id, first_speak, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+					trans_model_unit_disconnect( first_speak->tmnl_dev.entity_id );
+#endif
 				}
 				else
 				{
@@ -1885,7 +1947,11 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 				addr_queue_delete_by_index( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, 0 );// 首位发言删除
 
 				uint8_t speak_limit_num1 = gdisc_flags.speak_limit_num;
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 				gdisc_flags.speak_addr_list[speak_limit_num1] = speak_node->tmnl_dev.address.addr;
 				ret = true;
 			}
@@ -1894,7 +1960,11 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 	else
 	{
 		addr_queue_delect_by_value( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, speak_node->tmnl_dev.address.addr );
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 		ret = true;
 	}
 
@@ -1951,7 +2021,11 @@ bool terminal_apply_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 		}	
 		else
 		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 		}
 		
 		ret = true;
@@ -2185,7 +2259,11 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 				apply_first = found_terminal_dblist_node_by_addr( addr ); // 打开第一个申请的麦克风
 				if( apply_first != NULL )
 				{
+#ifdef ENABLE_CONNECT_TABLE
 					connect_table_tarker_connect( apply_first->tmnl_dev.entity_id, set_sys.spk_limtime, apply_first, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+					trans_model_unit_connect( apply_first->tmnl_dev.entity_id );
+#endif
 				}
 
 				addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index );
@@ -3042,12 +3120,20 @@ void terminal_key_speak( uint16_t addr, uint8_t key_num, uint8_t key_value, uint
 		{
 			// no limit time
 			mic_state = MIC_OPEN_STATUS;
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( tmp_node->tmnl_dev.entity_id, 0, tmp_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( tmp_node->tmnl_dev.entity_id );
+#endif
 		}
 		else
 		{
 			mic_state = MIC_COLSE_STATUS;
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( tmp_node->tmnl_dev.entity_id, tmp_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( tmp_node->tmnl_dev.entity_id );
+#endif
 		}
 
 		terminal_key_action_host_special_num1_reply( recvdata, mic_state, tmp_node );
@@ -3114,9 +3200,15 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		 *2015-12-11
 		 *打开主席mic,不保存状态
 		 */
-		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS );
+		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS )
+		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( chman_node->tmnl_dev.entity_id,\
 				0, chman_node, false, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send ); // 这里不保存其mic open的状态2015-12-11
+#else
+			trans_model_unit_connect( chman_node->tmnl_dev.entity_id );
+#endif
+		}
 
 		assert( dev_terminal_list_guard );
 		if( dev_terminal_list_guard == NULL )
@@ -3129,7 +3221,11 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 			{// 关闭所有普通代表机
 				if( tmp_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS )
 				{
+#ifdef ENABLE_CONNECT_TABLE
 					connect_table_tarker_disconnect( tmp_node->tmnl_dev.entity_id, tmp_node, !tmp_close, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+					trans_model_unit_disconnect( tmp_node->tmnl_dev.entity_id );
+#endif
 					if( report_mic_num <= SYSTEM_TMNL_MAX_NUM )
 					{
 						mic_list[report_mic_num].addr.low_addr = (uint8_t)((tmp_node->tmnl_dev.address.addr&0x00ff) >> 0);
@@ -3158,7 +3254,13 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		 *否则断开其mic，而不重新设置保存
 		 */
 		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS )
+		{
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( chman_node->tmnl_dev.entity_id, chman_node, false, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( chman_node->tmnl_dev.entity_id );
+#endif
+		}
 		
 		assert(dev_terminal_list_guard);
 		if( dev_terminal_list_guard == NULL )
@@ -3172,7 +3274,11 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 				(end_node->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS) &&\
 				((end_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST) ||(end_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP)))
 			{
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( end_node->tmnl_dev.entity_id, set_sys.spk_limtime, end_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( end_node->tmnl_dev.entity_id );
+#endif
 			}
 		}
 
@@ -3248,12 +3354,20 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 		if( key_down )
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, dis_node );
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( dis_node->tmnl_dev.entity_id, 0, dis_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( dis_node->tmnl_dev.entity_id );
+#endif
 		}
 		else
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( dis_node->tmnl_dev.entity_id, dis_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( dis_node->tmnl_dev.entity_id );
+#endif
 		}
 	}
 	else
@@ -3345,13 +3459,21 @@ void terminal_free_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 		if( gdisc_flags.speak_limit_num < FREE_MODE_SPEAK_MAX )
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, 0, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 		}
 	}
 	else
 	{
 		terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );	
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 	}
 
 	terminal_main_state_send( 0, NULL, 0 );
@@ -3391,7 +3513,11 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		else if( gdisc_flags.speak_limit_num < gdisc_flags.limit_num ) // 打开麦克风
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			ret = true;
 		}
 		else if( gdisc_flags.apply_num < gdisc_flags.apply_limit ) // 申请发言
@@ -3413,7 +3539,11 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	else
 	{
 		terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		cc_state = speak_node->tmnl_dev.tmnl_status.mic_state;
 		
@@ -3448,7 +3578,11 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
 					if( first_speak != NULL )
 					{
+#ifdef ENABLE_CONNECT_TABLE
 						connect_table_tarker_connect( first_speak->tmnl_dev.entity_id, limit_time, first_speak, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+						trans_model_unit_connect( first_speak->tmnl_dev.entity_id );
+#endif
 
 						if( gdisc_flags.apply_num > 0 ) // 设置首位申请发言终端
 						{
@@ -3506,13 +3640,21 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 		if( addr_queue_find_by_value( gdisc_flags.speak_addr_list, speak_limit_num, addr, NULL))
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
-			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#ifdef ENABLE_CONNECT_TABLE
+				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			ret = true;
 		}
 		else if( speak_limit_num < gdisc_flags.limit_num )
 		{
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
-			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#ifdef ENABLE_CONNECT_TABLE
+				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 			gdisc_flags.speak_addr_list[speak_limit_num] = addr;
 			ret = true;
 		}
@@ -3523,7 +3665,11 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 				tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( gdisc_flags.speak_addr_list[0] );
 				if( first_speak != NULL )
 				{
+#ifdef ENABLE_CONNECT_TABLE
 					connect_table_tarker_disconnect( first_speak->tmnl_dev.entity_id, first_speak, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+					trans_model_unit_disconnect( first_speak->tmnl_dev.entity_id );
+#endif
 				}
 				else
 				{
@@ -3534,7 +3680,11 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 
 				uint8_t speak_limit_num1 = gdisc_flags.speak_limit_num;
 				terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+				trans_model_unit_connect( speak_node->tmnl_dev.entity_id );
+#endif
 				gdisc_flags.speak_addr_list[speak_limit_num1] = speak_node->tmnl_dev.address.addr;
 				ret = true;
 			}
@@ -3544,7 +3694,11 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 	{
 		addr_queue_delect_by_value( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, speak_node->tmnl_dev.address.addr );
 		terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 		connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+		trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 		ret = true;
 	}
 
@@ -3608,7 +3762,11 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		else
 		{// terminal speaking
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( speak_node->tmnl_dev.entity_id, speak_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
+#else
+			trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id );
+#endif
 			// 还需增加 camera strack 2016-3-2
 		}
 		

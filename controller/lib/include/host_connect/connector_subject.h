@@ -17,6 +17,8 @@
 
 #define OBSERVER_LIST_MAX_NUM 20
 
+#include "jdksavdecc_world.h"
+
 typedef struct _elem_data
 {
 	uint64_t listener_id;
@@ -35,7 +37,19 @@ typedef struct _subject_t
 {
 	struct _elem_data sub_data;
 	int observer_num;
-	observer_t observer_list[OBSERVER_LIST_MAX_NUM];
+	observer_t *observer_list[OBSERVER_LIST_MAX_NUM];
 }subject_t;
+
+extern subject_t gconnector_subjector;
+
+// **************************************************
+int attach_observer( subject_t *subject, observer_t *observer );
+int delect_observer( subject_t *subject, observer_t *observer );
+int set_subject_data( subject_data_elem data, subject_t *subject );
+void notify_observer( subject_t *subject );
+void init_subject( subject_t *subject );
+void init_observer( observer_t *observer, void (*update)(subject_data_elem) );
+
+// *****************************************************//
 
 #endif

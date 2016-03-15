@@ -19,6 +19,8 @@
 #include "acmp_controller_machine.h"
 #include <pthread.h>
 
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
+
 connect_tbl_pdblist cnnt_list_guard = NULL;	// 连接表头结点
 static uint16_t ct_acmp_seq_id = 0; 		// 连接表序列号
 pthread_mutex_t cnnt_mutex;			// 连接表私有线程锁 
@@ -531,4 +533,4 @@ void connect_table_destroy( void )
 	pthread_mutex_destroy( &cnnt_mutex );
 }
 
-
+#endif

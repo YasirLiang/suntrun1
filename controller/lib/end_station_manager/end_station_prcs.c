@@ -12,6 +12,8 @@
 #include "configuration_descptor.h"
 #include "terminal_pro.h"
 #include "jdksavdecc_pdu.h"
+#include "central_control_recieve_unit.h"
+#include "conference_transmit_unit.h"
 
 void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len, int *status )
 {
@@ -513,8 +515,8 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 			if( found_descptor_endstation/* && descptor_info->endpoint_desc.is_input_stream_desc_exist*/)
 			{
                         	store_stream_input_desc( frame, read_desc_offset, frame_len, descptor_info );
-
-				
+				init_central_control_recieve_unit_by_entity_id( frame, read_desc_offset, frame_len, descptor_info, target_entity_id );
+				DEBUG_INFO( "=================================" );
 
 			}
                         break;
@@ -523,7 +525,9 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 			if( found_descptor_endstation /*&& !descptor_info->endpoint_desc.is_output_stream_desc_exist*/)
 			{
                         	store_stream_output_desc( frame, read_desc_offset, frame_len, descptor_info);
-				
+				conference_transmit_unit_init( frame, read_desc_offset, frame_len, target_entity_id, descptor_info );
+				DEBUG_INFO( "=================================" );
+
 			}
                         break;
 

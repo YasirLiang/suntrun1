@@ -11,8 +11,22 @@
 // ********************************
 
 #include "conference_transmit_unit.h"
+#include "jdksavdecc_aem_descriptor.h"
+#include "central_control_recieve_unit.h"
+#include "util.h"
 
 tconference_trans_model gconference_model_guard;// 会议传输单元链表全局头结点
+
+observer_t gconference_trans_observer;// 用于更新会议单元模块的连接状态
+
+void  trans_model_node_insert_to_list( tconference_trans_pmodel p_new_node)
+{
+	assert( NULL != p_new_node );
+	if( NULL == p_new_node )
+		return;
+	
+	list_add_tail(  &p_new_node->list, &gconference_model_guard.list );
+}
 
 // 初始化会议单元输出通道信息
 int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_len, const uint64_t endtity_id, const desc_pdblist desc_node )
@@ -28,16 +42,16 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 
 	if( stream_output_desc.descriptor_index > CONFERENCE_OUTCHANNEL_MAX_NUM )
 	{
-        	DEBUG_INFO( "stream_input_desc.descriptor_index = %d out of range:  error",stream_input_desc.descriptor_index);
+        	DEBUG_INFO( "stream_input_desc.descriptor_index = %d out of range:  error",stream_output_desc.descriptor_index);
 		return -1;
 	}
 
 	// 检查是否不为中央控制接收模块
-	memcpy( &entity_name, desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
-	if( (strcmp( &entity_name, CCU_TR_MODEL_NAME) == 0) ||\
-		(strcmp( &entity_name, CCU_R_MODEL_NAME) == 0) )
+	memcpy( &entity_name, &desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
+	if( (strcmp((char*) &entity_name, CCU_TR_MODEL_NAME) == 0) ||\
+		(strcmp( (char*)&entity_name, CCU_R_MODEL_NAME) == 0) )
 	{
-		DEBUG_INFO( "entity not a conference uinit %s", &entity_name );
+		DEBUG_INFO( "entity not a conference uinit %s", (char*)&entity_name.value);
 		return -1;
 	}
 
@@ -45,7 +59,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	//搜索是否存在endtity_id 的链表节点
 	tconference_trans_pmodel p_temp_node = NULL;
 	bool cfc_node_found = false;
-	list_for_each_entry( p_temp_node, &gconference_model_guard->list, list )
+	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
 	{
 		if( p_temp_node->tarker_id == endtity_id )
 		{
@@ -69,6 +83,8 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 		if( p_temp_node != NULL )
 		{
 			INIT_ZERO(p_temp_node, sizeof(tconference_trans_model));
+			INIT_LIST_HEAD( &p_temp_node->out_ch.list );
+			INIT_LIST_HEAD( &p_temp_node->out_ch.input_head.list );
 			p_temp_node->tarker_id = endtity_id;
 
 			T_pOutChannel p_node = out_channel_node_create_can_init();
@@ -77,7 +93,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 				output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
 				output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
 			}
-
+			
 			trans_model_node_insert_to_list( p_temp_node );
 		}
 	}
@@ -85,11 +101,99 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	return 0;
 }
 
-void  trans_model_node_insert_to_list( tconference_trans_pmodel p_new_node)
+int trans_model_unit_connect( uint64_t tarker_id )// return -1; means that there is no ccu reciever model 
 {
-	if( NULL == p_new_node )
-		return;
+	return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+}
+
+int trans_model_unit_disconnect( uint64_t tarker_id ) // return -1 means talker not connect
+{
+	return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+}
+
+void trans_model_unit_update( subject_data_elem connect_info )// 更新传输模块的连接状态, 并发送通知会议系统协议的消息
+{
+	const bool cnnt_flag = connect_info.connect_flag;
+	tconference_trans_pmodel p_temp_node = NULL;
+
+	if( !cnnt_flag )// connferenc Mic close
+	{
+		list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+		{
+			if( p_temp_node->tarker_id == connect_info.tarker_id )
+			{
+				T_pOutChannel p_Outnode = NULL;
+				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
+				{
+					if( p_Outnode->tarker_index == connect_info.tarker_index )
+					{
+						Input_pChannel Input_pnode = NULL;
+						list_for_each_entry( Input_pnode, &p_Outnode->list, list )
+						{
+							if(  Input_pnode->listener_id == connect_info.listener_id&& \
+								(Input_pnode->listen_index== connect_info.listener_index))// found?
+							{
+								__list_del_entry(&Input_pnode->list);// delect connect input node
+								if( Input_pnode != NULL )
+								{
+									free(Input_pnode);
+									Input_pnode = NULL;	
+									DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
+										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
+									return;
+								}
+							}
+						}
+
+						break;// if found and updata failed, return, not search again;
+					}
+				}
+
+				break;// if found and updata failed, return, not search again;
+			}
+		}
+	}
+	else// connferenc Mic open
+	{
+		list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+		{
+			if( p_temp_node->tarker_id == connect_info.tarker_id )
+			{
+				T_pOutChannel p_Outnode = NULL;
+				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
+				{
+					if( p_Outnode->tarker_index == connect_info.tarker_index )
+					{
+						Input_pChannel Input_pnode = NULL;
+						Input_pnode = input_connect_node_create();
+						if( Input_pnode == NULL )
+						{
+							DEBUG_INFO( "connect info not save Success!!!" );
+							return;
+						}
+
+						input_connect_node_init_by_index( Input_pnode, connect_info.listener_id, connect_info.listener_index );
+						input_connect_node_insert_node_to_list( &p_Outnode->list, Input_pnode );
+						DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)",\
+							connect_info.tarker_id, connect_info.tarker_index );
+						return;
+					}
+				}
+
+				break;// if found and updata failed, return, not search again;
+			}
+		}
+	}
 	
-	list_add_tail( &gconference_model_guard->list, &p_new_node->list );
+}
+
+void conference_transmit_model_init( void )
+{
+	INIT_LIST_HEAD( &gconference_model_guard.list );
+
+	// 初始化观察者
+	init_observer( &gconference_trans_observer, trans_model_unit_update );
+	// 加入观察者到被观察者
+	attach_observer( &gconnector_subjector, &gconference_trans_observer );
 }
 

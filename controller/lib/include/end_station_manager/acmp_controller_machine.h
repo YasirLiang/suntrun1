@@ -15,7 +15,8 @@ void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8
 ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflight_plist resend_node, bool resend ,const uint8_t dest_mac[6], bool resp, uint32_t *interval_time );
 void acmp_inflight_time_tick( inflight_plist inflight_list_guard );
 void acmp_inflight_station_timeouts( inflight_plist acmp_sta, inflight_plist hdr );
-int acmp_callback(  uint32_t notification_flag, uint8_t *frame);
+int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_len );
+//int acmp_callback(  uint32_t notification_flag, uint8_t *frame);
 int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame );
 void acmp_update_output_stream_descriptor( uint16_t desc_index, struct jdksavdecc_acmpdu *acmpdu_get_rx_state_resp );
 void acmp_update_input_stream_descriptor( uint16_t desc_index, struct jdksavdecc_acmpdu *acmpdu_get_rx_state_resp );

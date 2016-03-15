@@ -13,7 +13,10 @@
 #ifndef __CENTRAL_CONTROL_RECIEVE_UNIT_H__
 #define __CENTRAL_CONTROL_RECIEVE_UNIT_H__
 
-#include "endstation_connection.h"
+#include "entity.h"
+#include "descriptor.h"
+#include "input_channel.h"
+#include "connector_subject.h"
 
 #ifdef __DEBUG__
 #define __CCU_RECV_DEBUG__
@@ -24,9 +27,8 @@
 #define CHANNEL_MUX_NUM 6 // 最大的通道数
 #define CCU_TR_MODEL_MAX_NUM 3 // 中央控制单元接收发送模块的最大总数
 #define CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM 4 //中央控制单元每个接收发送模块的最大的通道数 
-#define CCU_TR_MODEL_CHANNEL_MAX_NUM \ 
-	(CCU_TR_MODEL_MAX_NUM*CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM)// 中央控制单元接收发送模块的通道总数
-#define CCU_TR_MODEL_NAME "DCS6000_MODEL0"// 中央控制接收发送模块名字
+#define CCU_TR_MODEL_CHANNEL_MAX_NUM (CCU_TR_MODEL_MAX_NUM*CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM)// 中央控制单元接收发送模块的通道总数
+#define CCU_TR_MODEL_NAME "CCU-MODEL0"// 中央控制接收发送模块名字
 #define CCU_R_MODEL_NAME "DCS6000_MODEL1" // 中央控制接收模块的名字
 #define PER_CCU_CONNECT_MAX_NUM 2 // 每个ccu接收模块最大连接数
 
@@ -48,7 +50,7 @@ typedef struct _type_central_control_recieve_model// 接收模块
 {
 	uint64_t entity_id;
 	solid_pdblist solid_pnode; // 指向adp链表节点
-	struct endpoint_decriptor* desc_pnode;// 指向desc链表节点
+	desc_pdblist desc_pnode;// 指向desc链表节点
 	TInChannel connect_channel_head;// 模块已连接表输入通道
 	TInChannel unconnect_channel_head;// 模块已连接表输入通道
 	enum recieve_model_state model_state;
@@ -81,4 +83,14 @@ typedef struct _type_channel_alloction_proccess// 通道分配处理结构
 
 // *****************************************//
 
+// *****************************************
+int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int pos, size_t frame_len, const desc_pdblist desc_node, const uint64_t endtity_id );
+void central_control_recieve_ccu_model_state_update( subject_data_elem connect_info );
+int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index );
+int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_index );
+void central_control_recieve_uinit_init_list( void );
+
+// *****************************************//
+
 #endif
+

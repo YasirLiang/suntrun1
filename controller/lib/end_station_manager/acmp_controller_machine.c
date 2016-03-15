@@ -2,6 +2,7 @@
 #include "acmp.h"
 #include "stream_descriptor.h"
 #include "endstation_connection.h"
+#include "connector_subject.h"
 
 static struct jdksavdecc_frame acmp_frame;
 static struct jdksavdecc_acmpdu acmpdu;
@@ -371,7 +372,7 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	if( NULL != inflight_est )
 	{
 		notification_flag = inflight_est->host_tx.inflight_frame.notification_flag;
-		acmp_callback( notification_flag, cmd_frame->payload );
+		acmp_callback( notification_flag, cmd_frame->payload, cmd_frame->length );
 		release_heap_space( &inflight_est->host_tx.inflight_frame.frame );// it must delect
 		delect_inflight_dblist_node( &inflight_est );	// delect acmp inflight node must delect date frame
 	}
@@ -384,7 +385,7 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	return 0;
 }
 
-int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
+int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_len )
 {
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(frame, ZERO_OFFSET_IN_PAYLOAD);
 	uint16_t seq_id = jdksavdecc_acmpdu_get_sequence_id(frame, ZERO_OFFSET_IN_PAYLOAD);
@@ -393,6 +394,10 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 	struct jdksavdecc_eui64 stream_entity_station = jdksavdecc_common_control_header_get_stream_id( frame, ZERO_OFFSET_IN_PAYLOAD );
 	uint64_t end_stream_id = jdksavdecc_uint64_get(&stream_entity_station, 0);
 
+	// acmp info
+	struct jdksavdecc_acmpdu node_acmpdu;
+	jdksavdecc_acmpdu_read( &node_acmpdu, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len );
+	
 	if((notification_flag == CMD_WITH_NOTIFICATION) &&
 	((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_CONNECTION_RESPONSE)))
@@ -447,6 +452,15 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame)
 			((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) || \
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE)))// udpate system descriptor connect list 
 		{
+			subject_data_elem elem;
+			elem.connect_flag = (msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE)?true:false;
+			elem.listener_id = end_station_entity_id;
+			elem.listener_index = node_acmpdu.listener_unique_id;
+			elem.tarker_id = tarker_id;
+			elem.tarker_index = node_acmpdu.talker_unique_id;
+			set_subject_data( elem, &gconnector_subjector );
+			notify_observer( &gconnector_subjector );
+			
 			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener)-0x%016llx(tarker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,

@@ -44,3 +44,35 @@ T_pOutChannel out_channel_node_create_can_init( void )
 	return p_node;
 }
 
+bool input_connect_node_insert_node_to_list( struct list_head *head, Input_pChannel p_node )
+{
+	assert( head && p_node );
+	if( head == NULL || p_node == NULL )
+		return false;
+
+	list_add_tail( &p_node->list, head );
+	
+	return true;
+}
+
+
+bool input_connect_node_init_by_index( Input_pChannel p_node, uint64_t  listen_id, uint16_t listen_index  )
+{
+	assert( p_node );
+	if( p_node == NULL )
+		return false;
+	
+	memset( p_node, 0, sizeof(Input_Channel));
+	p_node->listener_id = listen_id;
+	p_node->listen_index = listen_index;
+
+	return true;
+}
+
+Input_pChannel input_connect_node_create( void )
+{
+	Input_pChannel p_node = ( Input_pChannel )malloc( sizeof(Input_Channel));
+	assert( p_node );
+
+	return p_node;
+}

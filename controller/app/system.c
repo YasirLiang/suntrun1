@@ -39,8 +39,15 @@ void init_system( void )
 	init_func_command_work_queue();
 	init_sem_wait_can();
 	upper_computer_common_init();
+
+	init_connector_subjector();// 初始化系统的被观察者
+	conference_transmit_model_init();// 初始化系统会议单元传输模块
+	central_control_recieve_uinit_init_list();// 初始化中央接收模块
 	
-	connect_table_info_init();/*初始化连接表*/ 
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
+	connect_table_info_init();/*初始化连接表*/
+#endif
+
 	if( -1 == muticast_connector_init())// 初始广播表
 	{
 		DEBUG_INFO( "init mitucast conventionr list failed" );
@@ -121,15 +128,19 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
 	sleep(2);
 	
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	/*获取系统的终端连接信息*/ 
 	connect_table_get_information( descptor_guard );
+#endif
+
 	background_read_descriptor_input_output_stream();
-	sleep(2);
+	//sleep(2);
 	
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	/* 设置连接表*/
 	connect_table_info_set( descptor_guard, true );
 	sleep(1);
-	
+#endif	
 	// 设置广播连接表的信息
 	muticast_connector_connect_table_set( descptor_guard );
 	
@@ -169,8 +180,11 @@ void system_close( struct threads_info *p_threads )
 	// 释放系统队列资源
 	destroy_func_command_work_queue();
 	destroy_network_send_work_queue();
-
+	
+#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	connect_table_destroy();// 释放连接表资源
+#endif
+
 	muticast_connector_destroy();// 释放广播表资源
 
 	profile_system_close();// 保存配置文件的信息

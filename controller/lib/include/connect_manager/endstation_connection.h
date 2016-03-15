@@ -19,6 +19,8 @@
 #endif
 #endif
 
+//#define ENABLE_CONNECT_TABLE // 使能控制连接表模块
+
 typedef struct _tterminal_speak_timeouts
 {
 	bool is_limit;					// 超时设定

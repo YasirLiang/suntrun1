@@ -15,7 +15,7 @@
 
 int input_channel_list_add_trail( T_pInChannel p_Inputnode, struct list_head *list )
 {
-	assert( p_Inputnode && list )
+	assert( p_Inputnode && list );
 	if( p_Inputnode == NULL || list == NULL )
 		return -1;
 
@@ -37,7 +37,6 @@ bool input_channel_list_node_init( T_pInChannel p_Inputnode, uint64_t channel_id
 	if( p_Inputnode == NULL )
 		return false;
 
-	p_Inputnode->list = NULL;
 	p_Inputnode->listener_id = channel_id;
 	p_Inputnode->listener_index = channel_index;
 	p_Inputnode->status = INCHANNEL_FREE;

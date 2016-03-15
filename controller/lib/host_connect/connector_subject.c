@@ -49,14 +49,14 @@ int delect_observer( subject_t *subject, observer_t *observer )
 	int i = 0;
 	for( i = 0; i < subject->observer_num; i++ )
 	{
-		if( subject->observer_list[i].update == observer.update )
+		if( subject->observer_list[i]->update == observer->update )
 		{
 			// 后面的元素前移一个元素
 			int j = 0;
-			subject->observer_list[i].update = NULL;
+			subject->observer_list[i]->update = NULL;
 			for( j = i; j < (subject->observer_num - i - 1); j++ )
 			{
-				subject->observer_list[j].update = subject->observer_list[j+1].update;
+				subject->observer_list[j]->update = subject->observer_list[j+1]->update;
 			}
 			
 			subject->observer_num--;
@@ -86,12 +86,12 @@ void notify_observer( subject_t *subject )
 {
 	assert( subject );
 	if( subject == NULL )
-		return -1;
+		return;
 	
 	int i = 0;
 	for( i = 0; i < subject->observer_num; i++ )
 	{
-		subject.observer_list[i]->update( subject->sub_data );
+		subject->observer_list[i]->update( subject->sub_data );
 	}
 }
 

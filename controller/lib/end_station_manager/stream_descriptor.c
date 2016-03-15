@@ -35,6 +35,7 @@ int proc_get_rx_state_resp( const uint8_t *frame, size_t frame_len, uint16_t des
 	struct jdksavdecc_acmpdu acmp_cmd_get_rx_state_resp; // Store the response received after sending a GET_TX_STATE command.
 
 	memset(&acmp_cmd_get_rx_state_resp, 0, sizeof(struct jdksavdecc_acmpdu));
+	cmd_frame.length = frame_len;
 	memcpy(cmd_frame.payload, frame, frame_len);
 	acmp_cmd_get_rx_state_resp_returned = jdksavdecc_acmpdu_read(&acmp_cmd_get_rx_state_resp, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len);
 	if( acmp_cmd_get_rx_state_resp_returned < 0 )
@@ -60,6 +61,7 @@ int proc_get_tx_state_resp( const uint8_t *frame, size_t frame_len,uint16_t desc
 	struct jdksavdecc_acmpdu acmp_cmd_get_tx_state_resp;
 
 	memset(&acmp_cmd_get_tx_state_resp, 0, sizeof(struct jdksavdecc_acmpdu));
+	cmd_frame.length = frame_len;
         memcpy(cmd_frame.payload, frame, frame_len);
         acmp_cmd_get_tx_state_resp_returned = jdksavdecc_acmpdu_read(&acmp_cmd_get_tx_state_resp, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len );
         if(acmp_cmd_get_tx_state_resp_returned < 0)
@@ -84,6 +86,7 @@ int proc_connect_rx_resp( const uint8_t *frame, size_t frame_len, int *status)
 	struct jdksavdecc_acmpdu acmp_cmd_connect_rx_resp; // Store the response received after sending a CONNECT_RX command.
 
 	memset(&acmp_cmd_connect_rx_resp, 0, sizeof(struct jdksavdecc_acmpdu));
+	cmd_frame.length = frame_len;
 	memcpy(cmd_frame.payload, frame, frame_len);
 	acmp_cmd_connect_rx_resp_returned = jdksavdecc_acmpdu_read(&acmp_cmd_connect_rx_resp, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len);
 	if(acmp_cmd_connect_rx_resp_returned < 0)
@@ -106,6 +109,7 @@ int proc_disconnect_rx_resp( const uint8_t *frame, size_t frame_len, int *status
 	struct jdksavdecc_acmpdu acmp_cmd_disconnect_rx_resp; // Store the response received after sending a DISCONNECT_RX command.
 
 	memset(&acmp_cmd_disconnect_rx_resp, 0, sizeof(struct jdksavdecc_acmpdu));
+	cmd_frame.length = frame_len;
         memcpy(cmd_frame.payload, frame, frame_len);
         acmp_cmd_disconnect_rx_resp_returned = jdksavdecc_acmpdu_read(&acmp_cmd_disconnect_rx_resp, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len);
         if(acmp_cmd_disconnect_rx_resp_returned < 0)
@@ -129,6 +133,7 @@ int proc_get_tx_connection_resp( const uint8_t *frame, size_t frame_len, int *st
 	struct jdksavdecc_acmpdu acmp_cmd_get_tx_connection_resp; // Store the response received after sending a GET_TX_CONNECTION command.
 
 	memset(&acmp_cmd_get_tx_connection_resp, 0, sizeof(struct jdksavdecc_acmpdu));
+	cmd_frame.length = frame_len;
         memcpy(cmd_frame.payload, frame, frame_len);
         acmp_cmd_get_tx_connection_resp_returned = jdksavdecc_acmpdu_read(&acmp_cmd_get_tx_connection_resp, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len);
         if(acmp_cmd_get_tx_connection_resp_returned < 0)
