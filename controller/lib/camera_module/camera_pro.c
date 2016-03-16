@@ -131,7 +131,7 @@ int camera_preset_save( uint16_t cmd, void *data, uint32_t data_len )
 		connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, \
 			close_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-		trans_model_unit_disconnect( close_node->tmnl_dev.entity_id );
+		trans_model_unit_disconnect( close_node->tmnl_dev.entity_id, close_node );
 #endif
 	}
 
@@ -166,7 +166,7 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 				connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, close_node,\
 					true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-				trans_model_unit_disconnect( close_node->tmnl_dev.entity_id );
+				trans_model_unit_disconnect( close_node->tmnl_dev.entity_id, close_node );
 #endif
 			}
 		}

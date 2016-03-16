@@ -353,7 +353,7 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 		{
 			notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 			aecp_callback( notification_flag, cmd_frame->payload );
-			DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
+			//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
 			release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
 			delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
 		}

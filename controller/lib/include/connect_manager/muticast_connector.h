@@ -11,6 +11,8 @@
 #include "terminal_common.h"
 #include "host_timer.h"
 #include "descriptor.h"
+#include "conference_recieve_unit.h"
+#include "central_control_recieve_unit.h"
 
 
 #define MAX_BD_CONNECT_NUM (SYSTEM_TMNL_MAX_NUM) // 最大连接数
@@ -18,6 +20,10 @@
 #define CVNT_CONNECT_TIME_OUT  	10
 #define CVNT_ONLINE_TIME_OUT  		30
 #define CVNT_OUTLINE_TIME_OUT  	60
+
+#define CVNT_MUTICAST_NAME CCU_TR_MODEL_NAME // 是中央处理接收发送模块
+#define CVNT_MUTICAST_OUT_CHANNEL 0// 定义模块输出通道为0
+#define CVNT_MUTICAST_IN_CHNNEL CONFERENCE_RECIEVE_UNIT_IN_CHNNEL// 定义会议接收单元输入通道为0
 
 typedef enum _econventioner_state
 {
@@ -82,6 +88,8 @@ int muticast_connector_time_tick( void );
 int muticast_connector_init( void );
 void muticast_connector_destroy( void );
 bool muticast_connector_connect_table_set( desc_pdblist desc_guard );
+
+int muticast_connector_connect_table_init_node( const bool is_input_desc, const uint8_t *frame, int pos, size_t frame_len, const uint64_t endtity_id, const desc_pdblist desc_node );
 
 
 #endif

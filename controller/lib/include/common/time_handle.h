@@ -33,7 +33,8 @@ typedef enum enum_overtime_handle
 	NET_SEND_INTERVAL,
 	MIND_UPPER_CMPT_SIGN_RESULT,// 提醒上位机终端签到
 	SENDING_INTERVAL,// 发送间隔
-	OVER_TIME_ITEMS_NUM
+	OVER_TIME_ITEMS_NUM,
+	CCU_TRANS_CONNECT_BEGIN_TIME // ccu 发送开始超时时间
 }enum_overtime_handle;
 
 void over_time_set( enum_overtime_handle handle, uint32_t over_time );

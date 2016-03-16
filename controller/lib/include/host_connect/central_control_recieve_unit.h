@@ -30,7 +30,7 @@
 #define CCU_TR_MODEL_CHANNEL_MAX_NUM (CCU_TR_MODEL_MAX_NUM*CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM)// 中央控制单元接收发送模块的通道总数
 #define CCU_TR_MODEL_NAME "CCU-MODEL0"// 中央控制接收发送模块名字
 #define CCU_R_MODEL_NAME "DCS6000_MODEL1" // 中央控制接收模块的名字
-#define PER_CCU_CONNECT_MAX_NUM 2 // 每个ccu接收模块最大连接数
+#define PER_CCU_CONNECT_MAX_NUM 4 // 每个ccu接收模块最大连接数
 
 //*****************************
 #define CCU_TR_MODEL_RECIEVE_ENABLE // 使能中央控制单元接收发送模块的接收功能

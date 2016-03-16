@@ -101,14 +101,47 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	return 0;
 }
 
-int trans_model_unit_connect( uint64_t tarker_id )// return -1; means that there is no ccu reciever model 
+// ³õÊ¼»¯»áÒé´«Êäµ¥ÔªµÄ»áÒéµ¥Ôª½Úµã
+int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_node, const uint64_t tarker_id )
 {
-	return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+	tconference_trans_pmodel p_temp_node = NULL;
+	bool found = false;
+	
+	assert( NULL != p_tmnl_node );
+	if( NULL == p_tmnl_node )
+	{
+		return -1;
+	}
+
+	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+	{
+		if( p_temp_node->tarker_id == tarker_id )
+		{
+			if( p_temp_node->confenrence_node == NULL )
+				p_temp_node->confenrence_node = p_tmnl_node;
+			
+			found = true;
+			break;
+		}
+	}
+
+	return (found?0:-1);
 }
 
-int trans_model_unit_disconnect( uint64_t tarker_id ) // return -1 means talker not connect
+int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
 {
-	return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )
+		return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+
+	return -1;
+}
+
+int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node ) // return -1 means talker not connect
+{
+	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )
+		return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+
+	return -1;
 }
 
 void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ¬½Ó×´Ì¬, ²¢·¢ËÍÍ¨Öª»áÒéÏµÍ³Ð­ÒéµÄÏûÏ¢
@@ -133,23 +166,23 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 							if(  Input_pnode->listener_id == connect_info.listener_id&& \
 								(Input_pnode->listen_index== connect_info.listener_index))// found?
 							{
+								if( NULL != p_temp_node->confenrence_node)
+									terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
+								
 								__list_del_entry(&Input_pnode->list);// delect connect input node
 								if( Input_pnode != NULL )
 								{
 									free(Input_pnode);
 									Input_pnode = NULL;	
-									DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
-										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
-									return;
 								}
+
+								DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
+										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
+								return;
 							}
 						}
-
-						break;// if found and updata failed, return, not search again;
 					}
 				}
-
-				break;// if found and updata failed, return, not search again;
 			}
 		}
 	}
@@ -159,7 +192,7 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 		{
 			if( p_temp_node->tarker_id == connect_info.tarker_id )
 			{
-				T_pOutChannel p_Outnode = NULL;
+				T_pOutChannel p_Outnode = NULL;				
 				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
@@ -174,8 +207,12 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 
 						input_connect_node_init_by_index( Input_pnode, connect_info.listener_id, connect_info.listener_index );
 						input_connect_node_insert_node_to_list( &p_Outnode->list, Input_pnode );
-						DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)",\
-							connect_info.tarker_id, connect_info.tarker_index );
+
+						if( NULL != p_temp_node->confenrence_node)
+							terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
+	
+						DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
+							connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
 						return;
 					}
 				}

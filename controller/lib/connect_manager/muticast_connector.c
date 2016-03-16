@@ -6,7 +6,7 @@
 
 #include "muticast_connector.h"
 #include "acmp_controller_machine.h"
-
+#include "time_handle.h"
 muticastor_connect_pro gmuti_connect_pro;
 conventioner_cnnt_list_node* pgconventioner_cnnt_list = NULL;// 以指针指向的一个由conventioner_cnnt_list_node数据块。可往表里添加内容，也可清除相应的内容
 bool offline_reconnect = false;
@@ -247,9 +247,13 @@ int muticast_connector_time_tick( void )
 	emuticast_node_pro muti_flags = gmuti_connect_pro.eelem_flags;
 	uint16_t total_num = gmuti_connect_pro.muticastor.cvntr_total_num;
 
+	if( !over_time_listen(CCU_TRANS_CONNECT_BEGIN_TIME) )
+		return -1;
+
+	//DEBUG_INFO( "total_num = %d--muti_flags = %d", total_num, muti_flags );
 	if( (p_cvnt_node == NULL) || \
 		(total_num == 0)\
-		||(muti_flags != CVNT_CHECK_IDLE) )
+		||(muti_flags != CVNT_CHECK_IDLE) || ( !gmuti_connect_pro.muticastor.muticastor_exsit) )
 	{
 		return -1;
 	}
@@ -318,7 +322,9 @@ int muticast_connector_time_tick( void )
 	return 0;
 }
 
-// 通过系统的描述符链表设置广播连接表的信息，主要是按照一定的规则(这里是临时定的，未最终确定(2015-12-15))设置广播者和与会者对应表的信息
+// 通过系统的描述符链表设置广播连接表的信息，主要是按照一定的规则(这里是临时定的，未最终确定(2015-12-15))设置广播者和与会者对应表的信息;
+// 新的设置设置广播者和与会者对应表的信息的函数是muticast_connector_connect_table_init_node，此时此函数为不用
+// 2016-3-16
 bool muticast_connector_connect_table_set( desc_pdblist desc_guard )
 {
 	bool ret = false;
@@ -349,6 +355,7 @@ bool muticast_connector_connect_table_set( desc_pdblist desc_guard )
 				gmuti_connect_pro.muticastor.uid = desc_node->endpoint_desc.entity_id;
 				gmuti_connect_pro.muticastor.tarker_index = desc_node->endpoint_desc.output_stream.desc[0].descriptor_index;// 存储第一个输出流
 				gmuti_connect_pro.muticastor.muticastor_exsit = true;
+				over_time_set( CCU_TRANS_CONNECT_BEGIN_TIME, 10*1000 );
 				DEBUG_INFO( "muticastor enstation is 0x%016llx ", gmuti_connect_pro.muticastor.uid );
 			}
 			else
@@ -389,12 +396,101 @@ bool muticast_connector_connect_table_set( desc_pdblist desc_guard )
 	return ret;
 }
 
+// is_input_desc:true->input descptor;false->output descptor
+int muticast_connector_connect_table_init_node( const bool is_input_desc, const uint8_t *frame, int pos, size_t frame_len, const uint64_t endtity_id, const desc_pdblist desc_node )
+{
+	struct jdksavdecc_string entity_name;// 终端avb名字
+	struct jdksavdecc_descriptor_stream stream_output_desc; // Structure containing the stream_output_desc fields
+	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_output_desc, frame, pos, frame_len );
+        if (ret < 0)
+        {
+        	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
+		return -1;
+        }
+
+	if( stream_output_desc.descriptor_index !=  CVNT_MUTICAST_OUT_CHANNEL || \
+		stream_output_desc.descriptor_index !=  CVNT_MUTICAST_IN_CHNNEL )
+	{
+        	DEBUG_INFO( "stream_output_desc.descriptor_index = %d : Error",stream_output_desc.descriptor_index);
+		return -1;
+	}
+
+	// 检查是否不为中央控制接收模块
+	memcpy( &entity_name, &desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
+	if( strcmp((char*) &entity_name, CCU_R_MODEL_NAME) == 0 )
+	{// 系统的接收模块不初始化
+		DEBUG_INFO( "entity not a CCU tramsmit uinit %s", (char*)&entity_name.value);
+		return -1;
+	}
+
+	bool is_muticastor = false;
+	if( strcmp((char*) &entity_name, CVNT_MUTICAST_NAME) == 0 )
+	{
+		if( is_input_desc || stream_output_desc.descriptor_index !=  CVNT_MUTICAST_OUT_CHANNEL )
+		{
+	        	DEBUG_INFO( "stream_output_desc.descriptor_index = %d : Error Or Not muticastor output",stream_output_desc.descriptor_index);
+			return -1;
+		}
+		
+		is_muticastor = true;
+	}
+	else
+	{
+		if( (!is_input_desc) || stream_output_desc.descriptor_index !=  CVNT_MUTICAST_IN_CHNNEL )
+		{
+	        	DEBUG_INFO( "stream_output_desc.descriptor_index = %d : Error Or Not convener input",stream_output_desc.descriptor_index);
+			return -1;
+		}
+	}
+
+	if( is_muticastor )
+	{
+		if( !gmuti_connect_pro.muticastor.muticastor_exsit )
+		{ // set muticastor
+			gmuti_connect_pro.muticastor.uid = endtity_id;
+			gmuti_connect_pro.muticastor.tarker_index = stream_output_desc.descriptor_index;
+			gmuti_connect_pro.muticastor.muticastor_exsit = true;
+			DEBUG_INFO( "muticastor enstation is 0x%016llx ", gmuti_connect_pro.muticastor.uid );
+		}
+	}
+	else
+	{
+		assert( NULL != pgconventioner_cnnt_list );
+		conventioner_cnnt_list_node* list_node =  pgconventioner_cnnt_list;
+		uint16_t* p_num = &gmuti_connect_pro.muticastor.cvntr_total_num;
+
+		// 设置会议单元通道信息
+		if( *p_num < MAX_BD_CONNECT_NUM )
+		{
+			list_node[*p_num].uid = endtity_id;
+			list_node[*p_num].listerner_index = stream_output_desc.descriptor_index;// 存储第一个输入流
+			list_node[*p_num].state = CVNT_OFFLINE;
+			list_node[*p_num].count = 1;
+			list_node[*p_num].connect_flag = false;
+			host_timer_start( 200, &(list_node[*p_num].timeout));// set 200ms time for the first time
+
+			(*p_num)++;
+			DEBUG_INFO( "list conventioner number is  %d conventioner (0X%016llx)is in!", *p_num, endtity_id );
+			ret = true;	
+		}
+		else
+		{
+			DEBUG_INFO( " muticast connect table is full!can't be add to list again!" );
+			ret = false;
+		}
+
+	}
+
+	return 0;
+}
+
 /*注:这里没有初始化有用的tarker.分配空间, 错误返回-1，这里需要程序停止执行并退出*/
 int muticast_connector_init( void )
 {
 	int i = 0;
 	memset( &gmuti_connect_pro, 0, sizeof(muticastor_connect_pro));
 	gmuti_connect_pro.eelem_flags = CVNT_CHECK_IDLE;// check stop
+	over_time_set( CCU_TRANS_CONNECT_BEGIN_TIME, 10*1000 );
 	
 	pgconventioner_cnnt_list = (conventioner_cnnt_list_node*)malloc( sizeof(conventioner_cnnt_list_node) * MAX_BD_CONNECT_NUM );
 	if( NULL == pgconventioner_cnnt_list )

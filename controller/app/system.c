@@ -126,24 +126,28 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
-	sleep(2);
+	//sleep(2);
 	
 #ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	/*获取系统的终端连接信息*/ 
 	connect_table_get_information( descptor_guard );
 #endif
 
+#if 0
 	background_read_descriptor_input_output_stream();
-	//sleep(2);
-	
+	sleep(2);
+#endif
+
 #ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	/* 设置连接表*/
 	connect_table_info_set( descptor_guard, true );
 	sleep(1);
-#endif	
+#endif
+
+#if 0
 	// 设置广播连接表的信息
 	muticast_connector_connect_table_set( descptor_guard );
-	
+#endif
 	// 开始注册会议终端
 	terminal_begin_register();
 }

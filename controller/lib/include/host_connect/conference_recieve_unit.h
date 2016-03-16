@@ -13,5 +13,6 @@
 #ifndef __CONFERENCE_RECIEVE_UNIT_H__
 #define __CONFERENCE_RECIEVE_UNIT_H__
 
+#define CONFERENCE_RECIEVE_UNIT_IN_CHNNEL 0 // 定义会议接收单元输入通道为0
 
 #endif

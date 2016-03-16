@@ -33,8 +33,7 @@
 
 #define BRDCST_NEED_RESPONSE 0x0100
 
-#define FREE_MODE_SPEAK_MAX 10 // 自由模式最大讲话人数
-
+#define FREE_MODE_SPEAK_MAX 6 // 自由模式最大讲话人数
 
 /*{@ set terminal address*/
 #define ADDRESS_NOT_ALLOT 0

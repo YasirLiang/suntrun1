@@ -43,6 +43,18 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 		*/
 		for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 		{
+			if( gccu_recieve_model_list[i].solid_pnode != NULL )// check solid is right init or whether out  off line
+			{
+				if( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT )
+				{// solid out off line
+					continue;
+				}
+			}
+			else
+			{
+				continue;
+			}
+			
 			if( (gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_OK) ||\
 				(gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_ALL_CHANNEL_INIT))
 			{
@@ -92,13 +104,27 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 		bret = false;
 	}
 
-	if( !bret )
+	if( !bret && gchannel_allot_pro.elem_num != 0 )
 	{
 		for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 		{
+			DEBUG_INFO( " 0x%016llx chanel_connect_num is %d------", \
+				gccu_recieve_model_list[i].entity_id,gccu_recieve_model_list[i].chanel_connect_num );
 			if( gccu_recieve_model_list[i].chanel_connect_num < PER_CCU_CONNECT_MAX_NUM )
 				continue;
-		
+
+			if( gccu_recieve_model_list[i].solid_pnode != NULL )
+			{
+				if( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT )
+				{// solid out off line
+					continue;
+				}
+			}
+			else
+			{
+				continue;
+			}
+			
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 			{
 				timetype current_time = get_current_time();
@@ -106,6 +132,11 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 				p_next_node = list_entry(p_temp_chNode->list.next, TInChannel, list );
 				if( p_next_node != &gccu_recieve_model_list[i].connect_channel_head )
 				{
+					if( p_next_node->pro_status != INCHANNEL_PRO_FINISH )// 节点未处理完?
+					{
+						continue;
+					}
+					
 					if( (p_longest_cnntNode == NULL ) )
 					{
 						if( (current_time-p_next_node->timetimp) > (current_time-p_temp_chNode->timetimp) )
@@ -278,6 +309,8 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 				input_channel_list_node_init( new_ch_node, endtity_id,  stream_input_desc.descriptor_index );
 				input_channel_list_add_trail( new_ch_node, &gccu_recieve_model_list[insert_index].unconnect_channel_head.list );
 
+				new_ch_node->status = INCHANNEL_FREE;
+				new_ch_node->pro_status = INCHANNEL_PRO_FINISH;
 				if( gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_UNINIT )
 				{//  init Node for the first time
 					gccu_recieve_model_list[i].entity_id = endtity_id;
@@ -313,10 +346,6 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 				return -1;
 		}	
 	}
-	else // new node ?
-	{
-		
-	}
 	
 	return 0;
 }
@@ -342,11 +371,18 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					p_temp_chNode->tarker_id = connect_info.tarker_id;
 					p_temp_chNode->tarker_index = connect_info.tarker_index;
 					p_temp_chNode->status = INCHANNEL_BUSY;
+					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 					p_temp_chNode->timetimp = get_current_time();
 					gccu_recieve_model_list[i].chanel_connect_num++;
 					gchannel_allot_pro.cnnt_num++;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
-					DEBUG_INFO( "CCU RECV model update.......Success!(0x%016llx:%d)", connect_info.listener_id, connect_info.listener_index );
+					DEBUG_INFO( "CCU CONNECT update Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
+						p_temp_chNode->tarker_id,
+						p_temp_chNode->tarker_index,
+						gccu_recieve_model_list[i].chanel_connect_num,
+						connect_info.listener_id, 
+						connect_info.listener_index,
+						gchannel_allot_pro.cnnt_num);
 					return;
 				}
 			}
@@ -361,10 +397,17 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					__list_del_entry(&p_temp_chNode->list);
 					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list );
 					p_temp_chNode->status = INCHANNEL_FREE;
+					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 					gccu_recieve_model_list[i].chanel_connect_num--;
 					gchannel_allot_pro.cnnt_num--;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
-					DEBUG_INFO( "CCU RECV model update.......Success!(0x%016llx:%d)", connect_info.listener_id, connect_info.listener_index );
+					DEBUG_INFO( "CCU DISCONNECT Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
+						p_temp_chNode->tarker_id,
+						p_temp_chNode->tarker_index,
+						gccu_recieve_model_list[i].chanel_connect_num,
+						connect_info.listener_id, 
+						connect_info.listener_index,
+						gchannel_allot_pro.cnnt_num );
 					return;
 				}
 			}
@@ -383,15 +426,19 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 		assert( gchannel_allot_pro.p_current_input_channel != NULL );
 		if( gchannel_allot_pro.p_current_input_channel != NULL )
 		{
-			convert_uint64_to_eui64( talker_entity_id.value, talker_id );
-			convert_uint64_to_eui64( listener_entity_id.value, gchannel_allot_pro.p_current_input_channel->listener_id );
-			acmp_connect_avail( talker_entity_id.value, 
-							talker_index, 
-							listener_entity_id.value, 
-							gchannel_allot_pro.p_current_input_channel->listener_index, 
-							1, ++gccu_acmp_sequeue_id );
-
-			ret = 0;
+			if( gchannel_allot_pro.p_current_input_channel->status == INCHANNEL_FREE )
+			{
+				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
+				convert_uint64_to_eui64( talker_entity_id.value, talker_id );
+				convert_uint64_to_eui64( listener_entity_id.value, gchannel_allot_pro.p_current_input_channel->listener_id );
+				acmp_connect_avail( talker_entity_id.value, 
+								talker_index, 
+								listener_entity_id.value, 
+								gchannel_allot_pro.p_current_input_channel->listener_index, 
+								1, ++gccu_acmp_sequeue_id );
+				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
+				ret = 0;
+			}
 		}
 	}
 	else 
@@ -418,6 +465,7 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 			if( (p_temp_chNode->tarker_id == talker_id) &&\
 				(p_temp_chNode->tarker_index == talker_index) )
 			{
+				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
 				convert_uint64_to_eui64( talker_entity_id.value, talker_id );
 				convert_uint64_to_eui64( listener_entity_id.value, p_temp_chNode->listener_id );
 				acmp_disconnect_avail( talker_entity_id.value, 
@@ -425,7 +473,7 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 							listener_entity_id.value, 
 							p_temp_chNode->listener_index, 
 							1, ++gccu_acmp_sequeue_id );
-
+				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
 				return 0;
 			}
 		}

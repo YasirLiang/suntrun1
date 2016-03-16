@@ -35,8 +35,8 @@ typedef struct _confenrence_trans_model
 // *************************************************
 void  trans_model_node_insert_to_list( tconference_trans_pmodel p_new_node);
 int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_len, const uint64_t endtity_id, const desc_pdblist desc_node );
-int trans_model_unit_connect( uint64_t tarker_id );// return -1; means that there is no ccu reciever model 
-int trans_model_unit_disconnect( uint64_t tarker_id ); // return -1 means talker not connect
+int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node );// return -1; means that there is no ccu reciever model 
+int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node ); // return -1 means talker not connect
 void trans_model_unit_update( subject_data_elem connect_info );// 更新传输模块的连接状态, 并发送通知会议系统协议的消息
 void conference_transmit_model_init( void );
 
