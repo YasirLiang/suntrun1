@@ -172,9 +172,11 @@ typedef enum enum_func_link // conferenc command functions command link
 	FUNC_MENU_CMR_CLR_PRESET,
 	FUNC_MENU_PRIOR_EN_SET,
 	FUNC_MENU_TERMINAL_SYS_REGISTER,
+	FUNC_MENU_TEMP_CLOSE_SET,
+	FUNC_MENU_CMR_TRACK,
 	/*@}*/
 	/*{@œµÕ≥√¸¡Ó*/
-	FUNC_SYS_PRESET_ADDR,// 50
+	FUNC_SYS_PRESET_ADDR,// 51
 	FUNC_SYS_GET_PRESET,
 	/*@}*/
 	FUNC_PROCCESS_NUM

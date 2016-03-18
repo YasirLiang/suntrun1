@@ -140,6 +140,8 @@ int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len );
 int termianal_music_enable( uint16_t cmd, void *data, uint32_t data_len );
 int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len );
 int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len );//2016/1/23
+int termianal_temp_close_set( uint16_t cmd, void *data, uint32_t data_len );
+int termianal_camera_track_set( uint16_t cmd, void *data, uint32_t data_len );
 
 /*@}*/
 
@@ -229,6 +231,9 @@ void terminal_open_addr_file_wt_wb( void );
 void terminal_system_dblist_destroy( void );
 
 /*@}*/
+
+void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_node );
+
 
 #endif
 

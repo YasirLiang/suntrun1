@@ -53,14 +53,16 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ CAMERA_PRESET, camera_control_fouce, FUNC_MENU_CMR_CTRL_FOUCE },
 	{ CAMERA_PRESET, camera_control_zoom, FUNC_MENU_CMR_CTRL_ZOOM },//42
 	{ CAMERA_PRESET, camera_control_iris, FUNC_MENU_CMR_CTRL_APERT },
-	{ CAMERA_PRESET, camera_control_align, FUNC_MENU_CMR_CTRL_ALIGN },//44
+	{ CAMERA_PRESET, camera_control_align, FUNC_MENU_CMR_CTRL_ALIGN },//44 控制对齐， 遥控器的控制
 	{ 0xffffffff, camera_control_full_view, FUNC_MENU_CMR_FULL_VIEW},
 	{ 0xffffffff, camera_preset_set, FUNC_MENU_CMR_CLR_PRESET },//46
 	{ 0xffffffff, termianal_chairman_prior_set, FUNC_MENU_PRIOR_EN_SET },
 	{ 0Xffffffff, terminal_system_register, FUNC_MENU_TERMINAL_SYS_REGISTER},// 48 // 2016/1/23 add
+	{ 0Xffffffff, termianal_temp_close_set, FUNC_MENU_TEMP_CLOSE_SET },
+	{ 0Xffffffff, termianal_camera_track_set, FUNC_MENU_CMR_TRACK },
 	
 	{ 0xffffffff, camera_preset_addr_select, FUNC_SYS_PRESET_ADDR },
-	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }// 50
+	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }// INDEX 53
 };
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
@@ -117,6 +119,8 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ MENU_USE, MENU_CMR_CLR_PRESET, FUNC_MENU_CMR_CLR_PRESET, 0},
 	{ MENU_USE, MENU_PRIOR_EN_SET, FUNC_MENU_PRIOR_EN_SET, 0},
 	{ MENU_USE, MENU_TERMINAL_SYS_REGISTER, FUNC_MENU_TERMINAL_SYS_REGISTER },// 2016/1/23 add
+	{ MENU_USE, MENU_TEMP_CLOSE_SET, FUNC_MENU_TEMP_CLOSE_SET }, // 2016/3/18 ADD
+	{ MENU_USE, MENU_CMR_TRACK, FUNC_MENU_CMR_TRACK }, // 2016/3/18 ADD
 
 	{ SYSTEM_USE, SYS_PRESET_ADDR, FUNC_SYS_PRESET_ADDR, 0},
 	{ SYSTEM_USE, SYS_GET_PRESET, FUNC_SYS_GET_PRESET, 0}

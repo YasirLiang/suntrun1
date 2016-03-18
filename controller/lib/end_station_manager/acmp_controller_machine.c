@@ -328,6 +328,18 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 					acmp_cmd_value_to_name(msg_type),
 					"NULL",
 					 acmp_pstation->host_tx.inflight_frame.seq_id);
+
+		struct jdksavdecc_acmpdu node_acmpdu;
+		jdksavdecc_acmpdu_read( &node_acmpdu, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len );
+		subject_data_elem elem;
+		
+		elem.connect_flag = false;
+		elem.listener_id = end_station_entity_id;
+		elem.listener_index = node_acmpdu.listener_unique_id;
+		elem.tarker_id = tarker_id;
+		elem.tarker_index = node_acmpdu.talker_unique_id;
+		set_subject_data( elem, &gconnector_subjector );
+		notify_observer( &gconnector_subjector );
 		
 		// 广播表连线回调失败
 		if( (acmp_muticast_call.p_cvnt_node != NULL) && (acmp_muticast_call.p_offline_func != NULL))
@@ -569,6 +581,15 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 							"NULL", 
 							acmp_cmd_status_value_to_name(status),
 							seq_id);
+
+			subject_data_elem elem;
+			elem.connect_flag = false;
+			elem.listener_id = end_station_entity_id;
+			elem.listener_index = node_acmpdu.listener_unique_id;
+			elem.tarker_id = tarker_id;
+			elem.tarker_index = node_acmpdu.talker_unique_id;
+			set_subject_data( elem, &gconnector_subjector );
+			notify_observer( &gconnector_subjector );
 			
 			/*断开连接失败，连接失败*/
 			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )

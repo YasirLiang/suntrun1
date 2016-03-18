@@ -1374,6 +1374,40 @@ int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len )
 	return -1;
 }
 
+/******************************************
+*Auther:YasirLiang
+*Date:2016/3/18
+*Name:termianal_temp_close_set
+*Func:SET temp close flags
+*Paramer:
+*		cmd;data;data_len
+*******************************************/
+int termianal_temp_close_set( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data != NULL );
+	if( data_len != sizeof(uint8_t) || data == NULL );
+		return -1;
+
+	gset_sys.temp_close = *((uint8_t*)data);
+}
+
+/******************************************
+*Auther:YasirLiang
+*Date:2016/3/18
+*Name:termianal_camera_track_set
+*Func:SET camera track flags
+*Paramer:
+*		cmd;data;data_len
+*******************************************/
+int termianal_camera_track_set( uint16_t cmd, void *data, uint32_t data_len )
+{
+	assert( data != NULL );
+	if( data_len != sizeof(uint8_t) || data == NULL );
+		return -1;
+
+	gset_sys.camara_track = *((uint8_t*)data);
+}
+
 /*==================================================
 					½áÊøÖÕ¶ËÃüÁîº¯Êı
 ====================================================*/

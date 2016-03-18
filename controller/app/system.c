@@ -19,6 +19,9 @@
 #include "matrix_output_input.h"// ¾ØÕóÊä³ö
 #include "control_matrix_common.h"
 #include "system_database.h"
+#include "conference_transmit_unit.h"
+#include "central_control_recieve_unit.h"
+#include "connector_subject.h"
 
 void init_system( void )
 {

@@ -42,6 +42,8 @@ typedef struct _subject_t
 
 extern subject_t gconnector_subjector;
 
+void init_connector_subjector( void );
+
 // **************************************************
 int attach_observer( subject_t *subject, observer_t *observer );
 int delect_observer( subject_t *subject, observer_t *observer );

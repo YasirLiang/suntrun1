@@ -14,6 +14,7 @@
 #include "jdksavdecc_aem_descriptor.h"
 #include "central_control_recieve_unit.h"
 #include "util.h"
+#include "terminal_pro.h"
 
 tconference_trans_model gconference_model_guard;// »áÒé´«Êäµ¥ÔªÁ´±íÈ«¾ÖÍ·½áµã
 
@@ -156,6 +157,10 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 			if( p_temp_node->tarker_id == connect_info.tarker_id )
 			{
 				T_pOutChannel p_Outnode = NULL;
+				
+				if( NULL != p_temp_node->confenrence_node)
+					terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
+				
 				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
@@ -166,9 +171,6 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 							if(  Input_pnode->listener_id == connect_info.listener_id&& \
 								(Input_pnode->listen_index== connect_info.listener_index))// found?
 							{
-								if( NULL != p_temp_node->confenrence_node)
-									terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
-								
 								__list_del_entry(&Input_pnode->list);// delect connect input node
 								if( Input_pnode != NULL )
 								{

@@ -14,11 +14,12 @@
 #include "system.h"
 #include "control_matrix_pro.h"
 #include "matrix_output_input.h"
+#include "menu_func.h"
 
 static solid_pdblist end_list_guard = NULL;
 
 /*====================补全命令===============*/
-#define COMMANDS_MAX_NUM 64
+#define COMMANDS_MAX_NUM 128
 static const char *commands_list[COMMANDS_MAX_NUM] = 
 {
 	"adp",
@@ -59,6 +60,31 @@ static const char *commands_list[COMMANDS_MAX_NUM] =
 	"hostFunc",
 	"reAllot",
 	"matrixControl",// 矩阵控制
+	// // 菜单功能测试 ////////////////
+	"MenuTest",// 菜单功能测试
+	"ModeSet",
+	"TempClose",
+	"ChairmanHint",
+	"CameraTrack",
+	"AutoClose",
+	"SpeakLimit",
+	"ApplyNumSet",
+	"ReAllot",
+	"NewAllot",
+	"SetFinish",
+	"CameraCtl",
+	"CameraCtlLeftRight",
+	"CameraCtlUpDown",
+	"CameraCtlFouce",
+	"CameraCtlIris",
+	"CameraCtlZoom",
+	"DistanceCtl",
+	"PresetSave",
+	"SwitchCmr",
+	"ClearPreset",
+	"SelectPresetAddr",
+	"EnterEscPreset",
+	"help",// 菜单功能测试 ////////////////
 	// 结束-系统功能
 	
 	NULL
@@ -1441,6 +1467,69 @@ void cmd_matrix_control_proccess( void )
 	}
 }
 
+// *********************************************
+// *********系统菜单功能接口的测试开始****************
+// *********************************************
+void	parser_comand_line( char *in_cmd, char out_cmd[][CMD_OPTION_STRING_LEN] )// 注:函数使用命令行参数最好不要使用两个空格隔开，否则会出现参数使用不正确的情况
+{
+	uint16_t i = 0, j = 0, num = 0, cmd_len = 0;
+	uint16_t space_num = 0;
+
+	assert( NULL != in_cmd );
+	if( NULL == in_cmd )
+		return;
+
+	cmd_len = strlen( in_cmd );
+	for( i = 0; i < cmd_len; i++ )
+	{
+		if( in_cmd[i] != ' ' )
+		{// 不为空格
+			out_cmd[num][j] =  in_cmd[i];
+			j++;
+			space_num = 0;
+		}
+		else if( in_cmd[i] == ' ' )
+		{// 不空格
+			if( space_num == 0 )
+				num++;
+			
+			space_num++;
+			j = 0;
+		}
+	}
+}
+
+void cmd_menu_control_proccess( void )
+{
+	char menu_cmd_buf[512] = {0};
+	char treated_cmd[CMD_OPTION_MAX_NUM][CMD_OPTION_STRING_LEN] = {{0}};
+
+	MSGINFO( "Welcome to test menu func, Please enter \"help\" to see menu command Usage!(quit to exit)" );
+	while( 1 )
+	{
+		fprintf( stdout, ">> ");
+		Fflush( stdout );
+		
+		memset( menu_cmd_buf, 0, sizeof(menu_cmd_buf) );
+		memset( treated_cmd, 0, sizeof(treated_cmd) );
+		if( NULL == fgets( menu_cmd_buf, sizeof(menu_cmd_buf), stdin ) )
+		{
+			DEBUG_ERR( "menu read cmd failed!" );
+			return;
+		}
+
+		parser_comand_line( menu_cmd_buf, treated_cmd );
+		if( strcmp( menu_cmd_buf, "quit" ) == 0 )
+			return;
+		
+		menu_cmd_line_run( treated_cmd );
+	}
+}
+
+// *********************************************
+// *********系统菜单功能接口的测试结束****************
+// *********************************************
+
 /*===================================
 *结束-主机功能
 *====================================*/
@@ -1517,6 +1606,10 @@ void controller_proccess( void )
 		{
 			cmd_matrix_control_proccess();
 		}
+		else if( strncmp( cmd_buf, "MenuTest", 9 ) == 0 )
+		{
+			cmd_menu_control_proccess();
+		}
 		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
 			free(cmd_buf);
@@ -1525,7 +1618,7 @@ void controller_proccess( void )
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\nmatrixControl\n");
+			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\nmatrixControl\nMenuTest\n");
 		}
 
 		free(cmd_buf); // free command

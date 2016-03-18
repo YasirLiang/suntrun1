@@ -363,6 +363,9 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 		{
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list, list )
 			{
+				if( p_temp_chNode->pro_status == INCHANNEL_PRO_HANDLING )
+					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
+				
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
@@ -391,13 +394,15 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 		{
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 			{
+				if( p_temp_chNode->pro_status == INCHANNEL_PRO_HANDLING )
+					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
+				
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
 					__list_del_entry(&p_temp_chNode->list);
 					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list );
 					p_temp_chNode->status = INCHANNEL_FREE;
-					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 					gccu_recieve_model_list[i].chanel_connect_num--;
 					gchannel_allot_pro.cnnt_num--;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;

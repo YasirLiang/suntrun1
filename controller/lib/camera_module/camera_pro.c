@@ -14,6 +14,7 @@
 #include "terminal_system.h"
 #include "camera_common.h"
 #include "control_matrix_pro.h"
+#include "conference_transmit_unit.h"
 
 preset_point_format gpresetcmr_list[PRESET_NUM_MAX];	// Ô¤ÖÃµãÁĞ±í
 preset_point_format gcurpresetcmr;					// µ±Ç°Ô¤ÖÃµã
@@ -22,7 +23,7 @@ FILE *gpreset_fd = NULL;		// È«¾ÖÔ¤ÖÃµãĞÅÏ¢ÎÄ¼şÃèÊö·û,ÏµÍ³µÚÒ»´ÎÔËĞĞÒÔwb+·½Ê½´ò¿
 uint16_t gcamerpreset_index = 0;
 uint8_t gcamera_levelspeed = 25;
 uint8_t gcamera_vertspeed = 25;
-bool grctrl_align_enable;//¶ÔÂëÏÔÊ¾Ò³
+bool grctrl_align_enable;// Ò£¿ØÆ÷¶ÔÆë
 
 uint8_t gfull_view_index[2]; // È«¾°ÇĞ»»Ë÷Òı
 uint8_t gscene_out;
@@ -246,7 +247,7 @@ int camera_control_updown( uint16_t cmd, void *data, uint32_t data_len )
 	
 }
 
-int camera_control_fouce( uint16_t cmd, void *data, uint32_t data_len )
+int camera_control_fouce( uint16_t cmd, void *data, uint32_t data_len )// ¾Û½¹
 {
 	uint8_t cond = 0;// ¿ØÖÆÌõ¼ş
 	
@@ -262,7 +263,7 @@ int camera_control_fouce( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
-int camera_control_zoom( uint16_t cmd, void *data, uint32_t data_len )
+int camera_control_zoom( uint16_t cmd, void *data, uint32_t data_len )// Ëõ·Å
 {
 	uint8_t cond = 0;// ¿ØÖÆÌõ¼ş
 	
@@ -278,7 +279,7 @@ int camera_control_zoom( uint16_t cmd, void *data, uint32_t data_len )
 	return 0;
 }
 
-int camera_control_iris( uint16_t cmd, void *data, uint32_t data_len )
+int camera_control_iris( uint16_t cmd, void *data, uint32_t data_len )// ¹âÈ¦
 {
 	uint8_t cond = 0;// ¿ØÖÆÌõ¼ş
 	
@@ -501,7 +502,6 @@ int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uin
 {
 	camera_form_can_send( cmr_addr, d_cmd, speed_lv, speed_vertical ); // control the camera
 	return (camera_form_can_send( cmr_addr, 0, 0, 0 )); // stop the camera
-	return 0;
 }
 
 /*³õÊ¼»¯Ô¤ÖÃµãÎÄ¼ş(ÏµÍ³µÚÒ»´ÎÆô¶¯)Óë³õÊ¼»¯Ô¤ÖÃµãÁĞ±í*/

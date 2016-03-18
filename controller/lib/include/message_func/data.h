@@ -4,8 +4,8 @@
 #include "jdksavdecc_world.h"
 #include "func_proccess.h"
 
-#define MAX_FUNC_LINK_ITEMS 51
-#define MAX_PROCCESS_FUNC 51
+#define MAX_FUNC_LINK_ITEMS 53
+#define MAX_PROCCESS_FUNC 53
 
 #define TERMINAL_USE   (1<<0)
 #define MENU_USE  (1<<1)
@@ -25,7 +25,7 @@ enum menu_command//菜单相关命令定义
 
 	MENU_MUSIC_EN_SET,// 2015-12-09 add include all after
 	MENU_CMR_SAVE_PRESET,
-	MENU_CMR_SEL_CMR,
+	MENU_CMR_SEL_CMR,// 当前摄像头
 	MENU_CMR_CTRL_LR,
 	MENU_CMR_CTRL_UD,
 	MENU_CMR_CTRL_FOUCE,
@@ -33,9 +33,11 @@ enum menu_command//菜单相关命令定义
 	MENU_CMR_CTRL_APERT, // 光圈控制
 	MENU_CMR_CTRL_ALIGN, // 控制对齐
 	MENU_CMR_FULL_VIEW,
-	MENU_CMR_CLR_PRESET, // 预置点初始化
+	MENU_CMR_CLR_PRESET, // 预置点清除
 	MENU_PRIOR_EN_SET, // 主席优先
 	MENU_TERMINAL_SYS_REGISTER, // 系统注册终端
+	MENU_TEMP_CLOSE_SET, // 临时关闭
+	MENU_CMR_TRACK,// 摄像跟踪
 	MENU_FUNC_NUM
 };
 
