@@ -27,15 +27,15 @@ int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_d
 {
 	assert( fd && set_dis_para );
 	
-	return (( profile_system_file_write( fd, set_dis_para->chairman_first, VAL_CHM_PRIOR_ENUM ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->chair_music, VAL_CHM_MUSIC ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->auto_close, VAL_AUTO_CLOSE ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->discuss_mode, VAL_DSCS_MODE ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->limit_speak_num, VAL_SPKER_LIMIT ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->limit_apply_num, VAL_APPLY_LIMIT ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->limit_chm_time, VAL_CHM_TIMED_ENUM ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->limit_vip_time, VAL_VIP_TIMED_ENUM ) != -1) && \
-	 (profile_system_file_write( fd, set_dis_para->limit_speak_time, VAL_SPK_LIMIT_TIME ) != -1)) ? 0 : -1;
+	return (( profile_system_file_write( fd, set_dis_para->chairman_first, VAL_CHM_PRIOR_ENUM_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->chair_music, VAL_CHM_MUSIC_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->auto_close, VAL_AUTO_CLOSE_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->discuss_mode, VAL_DSCS_MODE_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->limit_speak_num, VAL_SPKER_LIMIT_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->limit_apply_num, VAL_APPLY_LIMIT_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->limit_chm_time, VAL_CHM_TIMED_ENUM_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->limit_vip_time, VAL_VIP_TIMED_ENUM_PROFILE ) != -1) && \
+	 (profile_system_file_write( fd, set_dis_para->limit_speak_time, VAL_SPK_LIMIT_TIME_PROFILE ) != -1)) ? 0 : -1;
 }
 
 int profile_dis_param_save_to_ram( thost_system_set *set_sys, tcmpt_discuss_parameter *set_dis_para )
@@ -46,8 +46,8 @@ int profile_dis_param_save_to_ram( thost_system_set *set_sys, tcmpt_discuss_para
 	set_sys->chman_music = set_dis_para->chair_music;
 	set_sys->auto_close = set_dis_para->auto_close;
 	set_sys->discuss_mode = set_dis_para->discuss_mode;
-	set_sys->speak_limit = set_dis_para->limit_speak_num;
-	set_sys->apply_limit = set_dis_para->limit_apply_num;
+	set_sys->speak_limit = set_dis_para->limit_speak_num > MAX_LIMIT_SPK_NUM?MAX_LIMIT_SPK_NUM:set_dis_para->limit_speak_num;
+	set_sys->apply_limit = set_dis_para->limit_apply_num > MAX_LIMIT_APPLY_NUM?MAX_LIMIT_APPLY_NUM:set_dis_para->limit_apply_num;
 	set_sys->chman_limitime = set_dis_para->limit_chm_time;
 	set_sys->vip_limitime = set_dis_para->limit_vip_time;
 	set_sys->spk_limtime = set_dis_para->limit_speak_time;
@@ -446,13 +446,30 @@ int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uin
 		upper_cmpt_current_cmrnum_get( data, &curcmr, CMPT_DATA_OFFSET, 0 );
 		curcmr.camara_num += 1; // change;2016-1-21
 		camera_select_num( 0, &curcmr, sizeof(uint8_t) );
+
+		if( curcmr.camara_num < 1 )
+		{
+			curcmr.camara_num = 1;
+		}
+		else if( curcmr.camara_num > 4 )
+			curcmr.camara_num = 4;
+	
+		gset_sys.current_cmr = curcmr.camara_num;
+		system_db_update_configure_system_table( gset_sys );
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, NULL, 0 );
 	}
 	else
 	{
+		thost_system_set set_sys; // 系统配置文件的格式
+	
+		if ( -1 == system_db_queue_configure_system_table( &set_sys ))
+		{// load from memory(system.dat)
+			memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+		}
+
+		gcurpresetcmr.camera_num = set_sys.current_cmr;
 		curcmr.camara_num = gcurpresetcmr.camera_num -1;
-		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, &curcmr, sizeof(uint8_t));
 	}
 	

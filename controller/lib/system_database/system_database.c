@@ -113,7 +113,6 @@ int system_db_update_configure_system_table( thost_system_set config_info )
 			config_info.sign_type, config_info.camara_track, config_info.current_cmr, config_info.menu_language );
 		
 		db_excute_sql( gsystem_db, gsql );
-
 	}
 	else 
 	{// insert record

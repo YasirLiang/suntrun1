@@ -14,7 +14,7 @@
 #include "system.h"
 #include "control_matrix_pro.h"
 #include "matrix_output_input.h"
-#include "menu_func.h"
+#include "menu_cli_func.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -1501,26 +1501,44 @@ void	parser_comand_line( char *in_cmd, char out_cmd[][CMD_OPTION_STRING_LEN] )//
 
 void cmd_menu_control_proccess( void )
 {
-	char menu_cmd_buf[512] = {0};
 	char treated_cmd[CMD_OPTION_MAX_NUM][CMD_OPTION_STRING_LEN] = {{0}};
 
 	MSGINFO( "Welcome to test menu func, Please enter \"help\" to see menu command Usage!(quit to exit)" );
 	while( 1 )
 	{
-		fprintf( stdout, ">> ");
-		Fflush( stdout );
-		
-		memset( menu_cmd_buf, 0, sizeof(menu_cmd_buf) );
-		memset( treated_cmd, 0, sizeof(treated_cmd) );
-		if( NULL == fgets( menu_cmd_buf, sizeof(menu_cmd_buf), stdin ) )
+		char* cmd_buf = readline( ">>  " );
+	        if ( !cmd_buf )
+	            break;
+	        if ( strlen(cmd_buf) == 0 )
+	        {
+	        	free(cmd_buf);
+	        	continue;
+	        }
+		else
 		{
-			DEBUG_ERR( "menu read cmd failed!" );
+			add_history( cmd_buf );
+		}
+		
+		if( strncmp( cmd_buf, "quit", 4 ) == 0 )
+		{
+			if( cmd_buf != NULL )
+				free( cmd_buf );
+			
 			return;
 		}
+		else if( strncmp( cmd_buf, "clear", 5 ) == 0 )
+		{
+			system("clear");
+			if( cmd_buf != NULL )
+				free( cmd_buf );
+			
+			continue;
+		}
 
-		parser_comand_line( menu_cmd_buf, treated_cmd );
-		if( strcmp( menu_cmd_buf, "quit" ) == 0 )
-			return;
+		memset( treated_cmd, 0, sizeof(treated_cmd) );
+		parser_comand_line( cmd_buf, treated_cmd );
+		if( cmd_buf != NULL )
+			free( cmd_buf );
 		
 		menu_cmd_line_run( treated_cmd );
 	}
@@ -1563,7 +1581,7 @@ void controller_proccess( void )
 		{
 			cmd_adp_proccess( cmd_buf ); // fmt adp [ msg type] [0x----------------]
 		}
-		else if( strncmp( cmd_buf, "clear", 3 ) == 0 )
+		else if( strncmp( cmd_buf, "clear", 5 ) == 0 )
 		{
 			int ret = 0;
 			ret = system("clear");
@@ -1606,7 +1624,7 @@ void controller_proccess( void )
 		{
 			cmd_matrix_control_proccess();
 		}
-		else if( strncmp( cmd_buf, "MenuTest", 9 ) == 0 )
+		else if( strncmp( cmd_buf, "MenuTest", 8 ) == 0 )
 		{
 			cmd_menu_control_proccess();
 		}

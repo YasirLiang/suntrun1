@@ -214,9 +214,9 @@ int profile_system_file_write( FILE* fd,  const uint8_t save_value,  size_t inde
 #endif
 	}
 
-	if( index > BYTE_DATA_NUM )
+	if( index >= BYTE_DATA_NUM_PROFILE )
 	{
-		DEBUG_INFO( " index Err : index (%d) > BYTE_DATA_NUM( %d ) ", index, BYTE_DATA_NUM );
+		DEBUG_INFO( " index Err : index (%d) > BYTE_DATA_NUM( %d ) ", index, BYTE_DATA_NUM_PROFILE );
 		return -1;
 	}
 

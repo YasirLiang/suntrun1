@@ -12,7 +12,7 @@
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 //#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
-#define MAX_LIMIT_SPK_NUM 4
+#define MAX_LIMIT_SPK_NUM 6
 #define MAX_LIMIT_APPLY_NUM 10
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
