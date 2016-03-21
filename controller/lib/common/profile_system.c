@@ -38,7 +38,7 @@ int init_profile_system_file( void )
 			system_set_form.set_sys.current_cmr = 1;
 			system_set_form.set_sys.speak_limit = 3;
 			system_set_form.set_sys.temp_close = 0;
-			system_set_form.set_sys.discuss_mode = FREE_MODE;
+			system_set_form.set_sys.discuss_mode = FIFO_MODE;
 			system_set_form.set_sys.spk_limtime = 0;
 			system_set_form.set_sys.menu_language = 0; // ÖÐÎÄ
 

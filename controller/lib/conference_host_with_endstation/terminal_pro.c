@@ -3433,14 +3433,15 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
 	{
+		int dis_ret = -1;
 		if( key_down )
 		{
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, dis_node );
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( dis_node->tmnl_dev.entity_id, 0, dis_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( dis_node->tmnl_dev.entity_id, dis_node );
+			dis_ret = trans_model_unit_connect( dis_node->tmnl_dev.entity_id, dis_node );
 #endif
+			terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, dis_node );
 		}
 		else
 		{
@@ -3456,11 +3457,13 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 	{
 		switch( dis_mode )
 		{
+#if 0 // 没有自由模式
 			case FREE_MODE:
 			{
 				terminal_free_disccuss_mode_pro( key_down, set_sys.spk_limtime, dis_node, recv_msg );
 				break;
 			}
+#endif
 			case LIMIT_MODE:
 			{
 				terminal_limit_disccuss_mode_pro( key_down, set_sys.spk_limtime, dis_node, recv_msg );
@@ -3576,6 +3579,8 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	uint16_t current_addr = 0;
 	uint8_t cc_state = 0;
 	tmnl_pdblist first_apply = NULL; // 首位申请发言
+	int  dis_ret = -1;
+	
 	if( key_down ) // 打开麦克风
 	{
 		if( speak_node->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS )
@@ -3595,12 +3600,13 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		}
 		else if( gdisc_flags.speak_limit_num < gdisc_flags.limit_num ) // 打开麦克风
 		{
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			dis_ret = trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
 #endif
+			terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret==0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
+
 			ret = true;
 		}
 		else if( gdisc_flags.apply_num < gdisc_flags.apply_limit ) // 申请发言
@@ -3713,6 +3719,7 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 {
 	bool ret = false;
 	uint16_t addr = speak_node->tmnl_dev.address.addr;
+	int dis_ret = -1;
 
 	assert( speak_node );
 	if( speak_node == NULL )
@@ -3727,22 +3734,23 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 	{
 		if( addr_queue_find_by_value( gdisc_flags.speak_addr_list, speak_limit_num, addr, NULL))
 		{
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			dis_ret = trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
 #endif
+			terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
+
 			ret = true;
 		}
 		else if( speak_limit_num < gdisc_flags.limit_num )
 		{
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			dis_ret = trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
 #endif
+			terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
 			gdisc_flags.speak_addr_list[speak_limit_num] = addr;
 			ret = true;
 		}
