@@ -293,7 +293,7 @@ static struct _type_menu_command_command gtable_menu_command[] =
 	{ MENU_UI_CLEARPRESET,  menuClearPresetPro },
 	{ MENU_UI_SELECTPRESETADDR, menuSelectPresetAddrPro },
 	{ MENU_UI_ENTERESCPRESET, menuEnterEscPresetPro },
-	{MENU_UI_GET_PARAM, menuGetMeetParamPro },
+	{ MENU_UI_GET_PARAM, menuGetMeetParamPro },
 	{ MENU_UI_MENU_CMD_ERR, NULL }
 };
 

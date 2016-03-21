@@ -19,15 +19,6 @@
 #include "camera_pro.h"
 #include "system_database.h"
 
-
-#define MENU_CMD_PARAM_MAX_NUM 128
-
-#define CMD_OPTION_MAX_NUM 20 // 命令行参数个数
-#define CMD_OPTION_STRING_LEN 50// 命令行参数长度
-
-extern void menu_cmd_line_run( char (*args)[CMD_OPTION_STRING_LEN] );
-
-
 static void menuClihelpPro( char (*args)[CMD_OPTION_STRING_LEN] )
 {
 	MSGINFO( "\nEnter follow String command to Test menu Function (\"quit\" to exit control)\n" );
