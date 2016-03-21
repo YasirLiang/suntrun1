@@ -416,8 +416,6 @@ static struct _type_menu_command_line_command gtable_menu_command_line[] =
 	{ "NULL", NULL }
 };
 
-
-
 /************************************************************/
 // Author:YasirLiang
 // Data: 2016-3-18

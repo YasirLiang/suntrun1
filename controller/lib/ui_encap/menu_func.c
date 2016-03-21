@@ -264,13 +264,13 @@ static void menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
 
 }
 
-struct _type_menu_command_line_command
+struct _type_menu_command_command
 {
 	enum enum_menu_cmd menu_cmd;
 	void (*menu_run_commmand)( uint16_t value, uint8_t  *p_GetParam );
 };
 
-static struct _type_menu_command_line_command gtable_menu_command_line[] = 
+static struct _type_menu_command_command gtable_menu_command[] = 
 {
 	{ MENU_UI_MODESET, menuModeSetPro },
 	{ MENU_UI_TEMPCLOSE, menuTempClosePro },
@@ -308,7 +308,7 @@ static struct _type_menu_command_line_command gtable_menu_command_line[] =
 /*************************************************************/
 void menu_cmd_run( enum enum_menu_cmd menu_cmd, uint16_t value, uint8_t  *p_GetParam )
 {	
-	struct _type_menu_command_line_command *p = &gtable_menu_command_line[0];
+	struct _type_menu_command_command *p = &gtable_menu_command[0];
 
 	while( p->menu_cmd != MENU_UI_MENU_CMD_ERR )
 	{
