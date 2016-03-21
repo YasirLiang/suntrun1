@@ -11,6 +11,9 @@
 // 
 //*******************
 
+#ifndef __MENU_CLI_FUNC_H__
+#define __MENU_CLI_FUNC_H__
+
 #include "jdksavdecc_world.h"
 
 #define MENU_CMD_PARAM_MAX_NUM 128
@@ -20,3 +23,4 @@
 
 extern void menu_cmd_line_run( char (*args)[CMD_OPTION_STRING_LEN] );
 
+#endif
