@@ -48,11 +48,12 @@ tquery_svote  gquery_svote_pro;							// 查询签到表决结果
 
 void init_terminal_proccess_fd( FILE ** fd )
 {
-	*fd = Fopen( ADDRESS_FILE, "ab+" );
+	*fd = Fopen( ADDRESS_FILE, "rb+" );
 	if( NULL == *fd )
 	{
 		DEBUG_ERR( "init terminal addr fd Err!" );
-		assert( NULL != *fd );
+		DEBUG_INFO( "open %s Err: not exit!Will create for the address file for the first time!", ADDRESS_FILE );
+		terminal_open_addr_file_wt_wb();
 	}
 }
 
@@ -1452,7 +1453,12 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 	terminal_set_mic_status( mic_status, addr, tarker_id );
 	if( tmnl_node != NULL )
 	{
-		upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
+		if(tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE &&\
+			mic_status ==MIC_CHM_INTERPOSE_STATUS)
+			upper_cmpt_report_mic_state( MIC_OPEN_STATUS, tmnl_node->tmnl_dev.address.addr );
+		else
+			upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
+		
 		if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) )
 		{
 			tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
@@ -1496,12 +1502,30 @@ void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_no
 				gdisc_flags.speak_limit_num--;
 		}
 	}
+
+	if( (get_sys_state() == INTERPOSE_STATE) && p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE)
+		terminal_mic_state_set( connect_flag?MIC_CHM_INTERPOSE_STATUS:MIC_COLSE_STATUS,
+					p_tmnl_node->tmnl_dev.address.addr,
+					p_tmnl_node->tmnl_dev.entity_id,
+					false,
+					p_tmnl_node );
+	else if((get_sys_state() == INTERPOSE_STATE) && p_tmnl_node->tmnl_dev.address.tmn_type != TMNL_TYPE_CHM_EXCUTE)
+	{
+		terminal_mic_state_set( connect_flag?MIC_OPEN_STATUS:MIC_COLSE_STATUS,
+				p_tmnl_node->tmnl_dev.address.addr,
+				p_tmnl_node->tmnl_dev.entity_id,
+				gset_sys.temp_close?false:true,// 是临时关闭，可恢复
+				p_tmnl_node );
+	}
+	else if((get_sys_state() != INTERPOSE_STATE))
+	{
+		terminal_mic_state_set( connect_flag?MIC_OPEN_STATUS:MIC_COLSE_STATUS,
+			p_tmnl_node->tmnl_dev.address.addr,
+			p_tmnl_node->tmnl_dev.entity_id,
+			true,
+			p_tmnl_node );
+	}
 	
-	terminal_mic_state_set( connect_flag?MIC_OPEN_STATUS:MIC_COLSE_STATUS,
-						p_tmnl_node->tmnl_dev.address.addr,
-						p_tmnl_node->tmnl_dev.entity_id,
-						true,
-						p_tmnl_node );
 	terminal_main_state_send( 0, NULL, 0 );
 }
 
@@ -3252,6 +3276,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	tcmpt_data_mic_status mic_list[SYSTEM_TMNL_MAX_NUM]; // 100-临时发言总人数
 	uint16_t report_mic_num = 0;
 	thost_system_set set_sys; // 系统配置文件的格式
+	int dis_ret = -1;
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	assert( chman_node );
@@ -3266,17 +3291,16 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		return;
 	}
 
+	DEBUG_INFO( "system mode = %d", get_sys_state());
 	if( (get_sys_state() != INTERPOSE_STATE) && key_down )
 	{
 		bool tmp_close = false; // temp close
 		
 		set_terminal_system_state( INTERPOSE_STATE, true );
+		DEBUG_INFO( "system mode = %d", get_sys_state());
 		gchm_int_ctl.is_int = true;
 		gchm_int_ctl.chmaddr = addr;
 		tmp_close = (set_sys.temp_close != 0)?true:false; 
-
-		terminal_key_action_host_special_num1_reply( recvdata, MIC_CHM_INTERPOSE_STATUS, chman_node );// 设置主席mic状态
-		terminal_mic_state_set( MIC_CHM_INTERPOSE_STATUS, BRDCST_ALL, BRDCST_1722_ALL, true, chman_node );
 
 		/**
 		 *2015-12-11
@@ -3288,8 +3312,17 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 			connect_table_tarker_connect( chman_node->tmnl_dev.entity_id,\
 				0, chman_node, false, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send ); // 这里不保存其mic open的状态2015-12-11
 #else
-			trans_model_unit_connect( chman_node->tmnl_dev.entity_id, chman_node );
+			dis_ret = trans_model_unit_connect( chman_node->tmnl_dev.entity_id, chman_node );
 #endif
+			terminal_key_action_host_special_num1_reply( recvdata,(dis_ret != -1)?MIC_CHM_INTERPOSE_STATUS:MIC_COLSE_STATUS, chman_node );// 设置主席mic状态
+			if( dis_ret != -1 )
+			{
+				terminal_mic_state_set( MIC_CHM_INTERPOSE_STATUS, BRDCST_ALL, BRDCST_1722_ALL, true, chman_node );
+			}
+		}
+		else 
+		{
+			terminal_key_action_host_special_num1_reply( recvdata, MIC_CHM_INTERPOSE_STATUS, chman_node );// 设置主席mic状态
 		}
 
 		assert( dev_terminal_list_guard );
@@ -3328,26 +3361,28 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	else if( !key_down )
 	{
 		set_terminal_system_state( INTERPOSE_STATE, false );
-		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );
+		DEBUG_INFO( "system mode = %d Mic state = %d", get_sys_state(), chman_node->tmnl_dev.tmnl_status.mic_state );
+		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );// 设置主席mic状态
 
 		/**
 		 *2015-12-11
-		 *若主席mic的上一个状态是打开的状态不去管它，
-		 *否则断开其mic，而不重新设置保存
+		 *若主席mic的上一个状态是打开的状态不去管它
+		 *否则断开其mic，而不重新设置保存，若断开成功在此时主席的mic状态是close状态
+		 * 因为在非插入状态，mic的状态会被成功的回调保存(见terminal_mic_status_set_callback)
 		 */
 		if( chman_node->tmnl_dev.tmnl_status.mic_state != MIC_OPEN_STATUS )
 		{
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_disconnect( chman_node->tmnl_dev.entity_id, chman_node, false, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_disconnect( chman_node->tmnl_dev.entity_id, chman_node );
+			dis_ret = trans_model_unit_disconnect( chman_node->tmnl_dev.entity_id, chman_node );
 #endif
 		}
 		
 		assert(dev_terminal_list_guard);
 		if( dev_terminal_list_guard == NULL )
 			return;
-		
+
 		tmnl_pdblist end_node = dev_terminal_list_guard->next;
 		for( ;end_node != dev_terminal_list_guard; end_node = end_node->next )
 		{

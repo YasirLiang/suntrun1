@@ -22,6 +22,7 @@
 #include "conference_transmit_unit.h"
 #include "central_control_recieve_unit.h"
 #include "connector_subject.h"
+#include "avdecc_manage.h"
 
 void init_system( void )
 {
@@ -69,6 +70,8 @@ void init_system( void )
 	control_matrix_common_init();
 
 	system_database_init();// 打开数据库
+
+	avdecc_manage_init();// 初始化avdecc 管理 
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );

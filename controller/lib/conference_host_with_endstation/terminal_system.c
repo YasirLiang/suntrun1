@@ -24,23 +24,23 @@ bool set_terminal_system_state( uint8_t state_value, bool is_pre )
 		{
 			if( gsystem_state.host_state == DISCUSS_STATE ) // 只有讨论时才可切换为CAMERA_PRESET
 			{
-				gsystem_state_pre = gsystem_state;
+				gsystem_state_pre.host_state = gsystem_state.host_state;
 				gsystem_state.host_state = state_value;
 			}
 
 			return true;
 		}
 
-		if( (gsystem_state.host_state != CAMERA_PRESET) \
-			&& (gsystem_state.host_state != INTERPOSE_STATE) )
+		if( (gsystem_state.host_state == CAMERA_PRESET) \
+			|| (gsystem_state.host_state == INTERPOSE_STATE) )
 		{
-			gsystem_state_pre = gsystem_state;
-			gsystem_state.host_state = state_value;
+			gsystem_state_pre.host_state = state_value;
 			ret = true;	
 		}
 		else
 		{
-			gsystem_state_pre = gsystem_state;
+			gsystem_state_pre.host_state = gsystem_state.host_state;
+			gsystem_state.host_state = state_value;
 			ret = false;
 		}
 	}
@@ -51,7 +51,7 @@ bool set_terminal_system_state( uint8_t state_value, bool is_pre )
 			terminal_start_discuss( true );// 不必关闭mic
 		}
 		
-		gsystem_state = gsystem_state_pre;
+		gsystem_state.host_state = gsystem_state_pre.host_state;
 		ret = true;
 	}
 	

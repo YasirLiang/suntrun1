@@ -7,7 +7,7 @@
 #include "system_packet_tx.h"
 
 int gmatrix_output_file = -1;	// 矩阵控制输出文件
-bool gmatrix_file_set_success = false; // 矩阵控制输出文件初始化成功
+volatile bool gmatrix_file_set_success = false; // 矩阵控制输出文件初始化成功
 
 uint16_t matrix_input_recieve_message( uint8_t *p_msg_buf, uint16_t recv_len )
 {

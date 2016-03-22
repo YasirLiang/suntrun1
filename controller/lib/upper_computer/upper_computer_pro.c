@@ -456,6 +456,14 @@ int proccess_upper_cmpt_current_vidicon( uint16_t protocal_type, void *data, uin
 	
 		gset_sys.current_cmr = curcmr.camara_num;
 		system_db_update_configure_system_table( gset_sys );
+		if(-1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys ))
+		{
+			Fflush( profile_file_fd );
+		}
+		else
+		{
+			DEBUG_INFO( "Write System param err!" );
+		}
 		
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, CURRENT_VIDICON, NULL, 0 );
 	}

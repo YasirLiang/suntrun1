@@ -91,6 +91,8 @@ int terminal_address_list_write_file( FILE* fd,  terminal_address_list* ptmnl_ad
 		}
 
 		Fflush( fd ); // 写完一定要刷新到文件中，否则会读不成功
+		DEBUG_INFO( "Success Write tmnl num total= %d", tmnl_num );
+		
 		return write_num;
 	}
 	

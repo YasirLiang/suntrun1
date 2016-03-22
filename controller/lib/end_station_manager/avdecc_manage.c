@@ -32,6 +32,8 @@ void avdecc_manage_discover_proccess( void )
 
 		// found all endpoints
 		adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
+
+		host_timer_update( gadp_discover_pro.query_timer.count_time, &gadp_discover_pro.query_timer );
 	}
 }
 
@@ -48,4 +50,24 @@ void avdecc_manage_remove_device_proccess( void )
 void avdecc_manage_init( void )
 {
 	gadp_discover_pro.running = true;
+	gadp_discover_pro.enable = true;
+	gadp_discover_pro.query_timer.count_time = 5000;
+
+	gread_descripor_pro.running = false;
+	gread_descripor_pro.enable = false;
+	gread_descripor_pro.query_timer.count_time = 0;
+	host_timer_stop( &gread_descripor_pro.query_timer );
+
+	gremove_device_pro.running = false;
+	gremove_device_pro.enable = false;
+	gremove_device_pro.query_timer.count_time = 0;
+	host_timer_stop( &gremove_device_pro.query_timer );
+
+	if( -1 == system_db_avdecc_info_queue(&gadp_discover_pro, &gread_descripor_pro, &gremove_device_pro ))
+	{
+		avdecc_manage_insert_database();
+	}
+
+	host_timer_start( gadp_discover_pro.query_timer.count_time, &gadp_discover_pro.query_timer );
 }
+
