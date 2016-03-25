@@ -18,6 +18,7 @@
 #include "terminal_command.h"
 #include "camera_pro.h"
 #include "system_database.h"
+#include "system.h"
 
 static void menuClihelpPro( char (*args)[CMD_OPTION_STRING_LEN] )
 {
@@ -182,9 +183,14 @@ static void menuCliNewAllotPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	terminal_new_endstation_allot_address( 0 );
 }
 
+extern struct threads_info threads;
 static void menuCliSetFinishPro( char (*args)[CMD_OPTION_STRING_LEN] )// ÷ÿ∆Ù≥Ã–Ú
 {
-	
+	sync();
+	DEBUG_INFO( "System Close......" );
+	system_close( &threads );
+	DEBUG_INFO( "System Close Success!" );
+	exit(0);
 }
 
 static void menuCliCameraCtlPro( char (*args)[CMD_OPTION_STRING_LEN] )

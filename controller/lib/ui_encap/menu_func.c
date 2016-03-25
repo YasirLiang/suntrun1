@@ -19,6 +19,7 @@
 #include "camera_pro.h"
 #include "profile_system.h"
 #include "system_database.h"
+#include "system.h"
 
 // 非命令行菜单功能命令
 static void menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
@@ -90,7 +91,7 @@ static void menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
 	DEBUG_INFO( "SpeakLimit flags  = %d", temp );
 
 	// 保存到数据库中
-	if( temp <= MAX_LIMIT_SPK_NUM ) 
+	if( temp > MAX_LIMIT_SPK_NUM ) 
 	{
 		temp = MAX_LIMIT_SPK_NUM;	
 	}
@@ -129,11 +130,17 @@ static void menuNewAllotPro( uint16_t value, uint8_t  *p_GetParam )
 	terminal_new_endstation_allot_address( 0 );
 }
 
+extern struct threads_info threads;
 static void menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the program
 {
 	uint16_t temp = value;
 	DEBUG_INFO( "SetFinish flags  = %d", temp );
 
+	sync();// 同步所有文件
+	DEBUG_INFO( "System Close......" );
+	system_close( &threads );
+	DEBUG_INFO( "System Close Success!" );
+	exit(0);
 }
 
 static void menuCameraCtlLeftRightPro( uint16_t value, uint8_t  *p_GetParam ) // 0 left 1 right
