@@ -51,7 +51,7 @@ void avdecc_manage_init( void )
 {
 	gadp_discover_pro.running = true;
 	gadp_discover_pro.enable = true;
-	gadp_discover_pro.query_timer.count_time = 5000;
+	gadp_discover_pro.query_timer.count_time = 10000;
 
 	gread_descripor_pro.running = false;
 	gread_descripor_pro.enable = false;

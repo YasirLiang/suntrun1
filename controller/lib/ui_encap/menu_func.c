@@ -21,6 +21,8 @@
 #include "system_database.h"
 #include "system.h"
 
+#include "menu_exe.h"// 来自菜单命令
+
 // 非命令行菜单功能命令
 static void menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
@@ -34,7 +36,7 @@ static void menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.discuss_mode = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuTempClosePro( uint16_t value, uint8_t  *p_GetParam )
@@ -46,7 +48,7 @@ static void menuTempClosePro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.temp_close = temp?1:0;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuChairmanHintPro( uint16_t value, uint8_t  *p_GetParam )
@@ -58,7 +60,7 @@ static void menuChairmanHintPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.chman_music = temp?1:0;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCameraTrackPro( uint16_t value, uint8_t  *p_GetParam )
@@ -70,7 +72,7 @@ static void menuCameraTrackPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.camara_track = temp?1:0;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
@@ -82,7 +84,7 @@ static void menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.auto_close = temp?1:0;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint16_t));
+	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint16_t));
 }
 
 static void menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
@@ -99,8 +101,7 @@ static void menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.speak_limit = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
-
+	find_func_command_link( MENUMENT_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuApplyNumSetPro( uint16_t value, uint8_t  *p_GetParam )
@@ -117,7 +118,7 @@ static void menuApplyNumSetPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.apply_limit = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuReAllotPro( uint16_t value, uint8_t  *p_GetParam )
@@ -138,9 +139,10 @@ static void menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot th
 
 	sync();// 同步所有文件
 	DEBUG_INFO( "System Close......" );
-	system_close( &threads );
+	//system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
-	exit(0);
+	system("reboot");
+	//exit(0);
 }
 
 static void menuCameraCtlLeftRightPro( uint16_t value, uint8_t  *p_GetParam ) // 0 left 1 right
@@ -148,7 +150,7 @@ static void menuCameraCtlLeftRightPro( uint16_t value, uint8_t  *p_GetParam ) //
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlLeftRight flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCameraCtlUpDownPro( uint16_t value, uint8_t  *p_GetParam )// 0 down 1 up
@@ -156,7 +158,7 @@ static void menuCameraCtlUpDownPro( uint16_t value, uint8_t  *p_GetParam )// 0 d
 	uint8_t temp = (uint8_t)value;	
 	DEBUG_INFO( "CameraCtlUpDown flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCameraCtlFoucePro( uint16_t value, uint8_t  *p_GetParam )
@@ -164,7 +166,7 @@ static void menuCameraCtlFoucePro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlFouce flags  = %d", temp );
 	
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_FOUCE, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_FOUCE, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCameraCtlIrisPro( uint16_t value, uint8_t  *p_GetParam )
@@ -172,7 +174,7 @@ static void menuCameraCtlIrisPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlIris flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_APERT, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_APERT, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCameraCtlZoomPro( uint16_t value, uint8_t  *p_GetParam )
@@ -180,7 +182,7 @@ static void menuCameraCtlZoomPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlZoom flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_ZOOM, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ZOOM, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuDistanceCtlPro( uint16_t value, uint8_t  *p_GetParam )
@@ -188,12 +190,12 @@ static void menuDistanceCtlPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "DistanceCtl flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_ALIGN, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ALIGN, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuPresetSavePro( uint16_t value, uint8_t  *p_GetParam )
 {
-	find_func_command_link( MENU_USE, MENU_CMR_SAVE_PRESET, 0, NULL, 0 );
+	find_func_command_link( MENUMENT_USE, MENU_CMR_SAVE_PRESET, 0, NULL, 0 );
 }
 
 static void menuSwitchCmrPro( uint16_t value, uint8_t  *p_GetParam )
@@ -212,7 +214,7 @@ static void menuSwitchCmrPro( uint16_t value, uint8_t  *p_GetParam )
 	gset_sys.current_cmr = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuClearPresetPro( uint16_t value, uint8_t  *p_GetParam )
@@ -220,7 +222,7 @@ static void menuClearPresetPro( uint16_t value, uint8_t  *p_GetParam )
 	uint16_t temp = value;
 	DEBUG_INFO( "ClearPreset flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
 }
 
 static void menuSelectPresetAddrPro( uint16_t value, uint8_t  *p_GetParam )
@@ -266,9 +268,55 @@ static void menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
 		*p_GetParam = set_sys.apply_limit;
 	else if( value == VAL_DSCS_MODE )
 		*p_GetParam = set_sys.discuss_mode;
+	else if( value == VAL_MENU_LANG )
+		*p_GetParam = set_sys.menu_language;
 	else
 		DEBUG_INFO( "Error EPar value!" );
 
+}
+
+static void menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
+{
+	uint8_t save_value;
+	thost_system_set set_sys; // 系统配置文件的格式
+	assert( p_saveParam != NULL );
+	if( p_saveParam == NULL )
+		return;
+
+	if ( -1 == system_db_queue_configure_system_table( &set_sys ))
+	{// load from memory(system.dat)
+		memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
+	}
+
+	save_value = *p_saveParam;
+	if( value == VAL_TEMP_CLOSE )
+		set_sys.temp_close = save_value;
+	else if( value == VAL_CHM_MUSIC )
+		set_sys.chman_music = save_value;
+	else if( value == VAL_CMR_TRACK_EN )
+		set_sys.camara_track = save_value;
+	else if( value == VAL_AUTO_CLOSE )
+		set_sys.auto_close = save_value;
+	else if( value == VAL_CUR_CMR )
+		set_sys.current_cmr = save_value;
+	else if( value == VAL_SPKER_LIMIT )
+		set_sys.speak_limit = save_value;
+	else if( value == VAL_APPLY_LIMIT )
+		set_sys.apply_limit = save_value;
+	else if( value == VAL_DSCS_MODE )
+		set_sys.discuss_mode = save_value;
+	else if( value == VAL_MENU_LANG )
+		set_sys.menu_language  = save_value;
+	else
+		DEBUG_INFO( "Error EPar value!" );
+
+	memcpy( &gset_sys, &set_sys, sizeof(thost_system_set));
+	system_db_update_configure_system_table( set_sys );
+}
+
+static void menuSendMainStatePro( uint16_t value, uint8_t  *p_GetParam )
+{
+	find_func_command_link( TERMINAL_USE, HOST_SEND_STATUS, 0, NULL, 0);
 }
 
 struct _type_menu_command_command
@@ -301,6 +349,8 @@ static struct _type_menu_command_command gtable_menu_command[] =
 	{ MENU_UI_SELECTPRESETADDR, menuSelectPresetAddrPro },
 	{ MENU_UI_ENTERESCPRESET, menuEnterEscPresetPro },
 	{ MENU_UI_GET_PARAM, menuGetMeetParamPro },
+	{ MENU_UI_SAVE_PARAM, menuSaveMeetParamPro },
+	{ MENU_UI_SEND_MAIN_STATE, menuSendMainStatePro },
 	{ MENU_UI_MENU_CMD_ERR, NULL }
 };
 

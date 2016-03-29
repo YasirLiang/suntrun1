@@ -8,7 +8,7 @@
 #define MAX_PROCCESS_FUNC 53
 
 #define TERMINAL_USE   (1<<0)
-#define MENU_USE  (1<<1)
+#define MENUMENT_USE  (1<<1)
 #define SYSTEM_USE   (1<<2)
 #define COMPUTER_USE   (1<<3)
 

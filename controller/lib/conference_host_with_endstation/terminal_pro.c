@@ -563,14 +563,14 @@ void system_register_terminal_pro( void )
 					{
 						if( NULL == found_terminal_dblist_node_by_addr(addr) )
 						{
-							find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+							find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
 							over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
 						}
 						else
 						{
 							if( !register_node->tmnl_dev.tmnl_status.is_rgst )
 							{
-								find_func_command_link( MENU_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
+								find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
 								over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
 							}
 						}

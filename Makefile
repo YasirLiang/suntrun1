@@ -5,7 +5,7 @@ OBJDUMP = arm-linux-objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
-CFGS = -Wall
+CFGS = -Wall -g
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/app/include \
@@ -30,7 +30,8 @@ CFG_INC += -I$(ROOTPATH)/controller/include \
 		   -I$(ROOTPATH)/controller/lib/include/control_matrix\
 		   -I$(ROOTPATH)/controller/lib/include/system_database\
 		   -I$(ROOTPATH)/controller/lib/include/ui_encap\
-		   -I$(ROOTPATH)/controller/lib/include/host_connect
+		   -I$(ROOTPATH)/controller/lib/include/host_connect\
+		   -I$(ROOTPATH)/controller/lib/include/menu_displays
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')

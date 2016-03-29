@@ -104,28 +104,28 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
+				find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
 			}
 
 			temp_status = set_dis_para.discuss_mode;
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
-				find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
+				find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
 			temp_status = set_dis_para.limit_speak_num;
 			if( temp_status != set_sys.speak_limit )
 			{
 				// 设置限制的发言人数
-				find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENUMENT_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			temp_status = set_dis_para.limit_apply_num;
 			if( temp_status != set_sys.apply_limit )
 			{
 				// 设置限制申请人数
-				find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
+				find_func_command_link( MENUMENT_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp_status, 1 );
 			}
 
 			// 限时设置

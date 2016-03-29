@@ -42,6 +42,7 @@ void signal_handle_main( int signum )
 	}
 }
 
+extern void *thread_control_surface(void *arg);// 界面处理线程函数
 int main( int argc, char *argv[] )
 {
 	struct udp_context udp_net;
@@ -108,6 +109,19 @@ int main( int argc, char *argv[] )
 	pthread_t timer_pthread;
 	check_timer_create( &timer_pthread );
 #endif
+
+	/**
+	*创建界面处理线程
+	*/
+	pthread_t th;  
+	int ret;  
+	ret = pthread_create( &th, NULL, thread_control_surface, NULL);  
+	if( ret != 0 ){  
+		printf( "Create thread_control_surface error!\n");  
+		exit(1); 
+	}
+	threads.tid[threads.pthread_nums++] = th;
+	pthread_detach( th );// 与主线程分离
 
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );

@@ -62,7 +62,7 @@ static void menuCliModeSetPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.discuss_mode = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliTempClosePro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -78,7 +78,7 @@ static void menuCliTempClosePro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.temp_close = temp;
 	system_db_update_configure_system_table( gset_sys );
 	
-	find_func_command_link( MENU_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliChairmanHintPro( char (*args)[CMD_OPTION_STRING_LEN] )// Ö÷Ï¯ÌáÊ¾
@@ -94,7 +94,7 @@ static void menuCliChairmanHintPro( char (*args)[CMD_OPTION_STRING_LEN] )// Ö÷Ï¯
 	gset_sys.chman_music = temp;
 	system_db_update_configure_system_table( gset_sys );
 	
-	find_func_command_link( MENU_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliCameraTrackPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -110,7 +110,7 @@ static void menuCliCameraTrackPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.camara_track = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliAutoClosePro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -126,7 +126,7 @@ static void menuCliAutoClosePro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.auto_close = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliSpeakLimitPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -147,8 +147,7 @@ static void menuCliSpeakLimitPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.speak_limit = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
-
+	find_func_command_link( MENUMENT_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliApplyNumSetPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -169,8 +168,7 @@ static void menuCliApplyNumSetPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.apply_limit = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
-
+	find_func_command_link( MENUMENT_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliReAllotPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -188,9 +186,10 @@ static void menuCliSetFinishPro( char (*args)[CMD_OPTION_STRING_LEN] )// ÖØÆô³ÌÐ
 {
 	sync();
 	DEBUG_INFO( "System Close......" );
-	system_close( &threads );
+	//system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
-	exit(0);
+	system("reboot");
+	//exit(0);
 }
 
 static void menuCliCameraCtlPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -207,28 +206,28 @@ static void menuCliCameraCtlPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	{
 		case 1:
 			temp = 1;
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
 			break;
 		case 2:
 			temp = 0;
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
 			break;
 		case 3:
 			temp = 0;
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
 			break;
 		case 4:
 			temp = 1;
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
 			break;
 		case 5:
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_FOUCE, 0, &temp2, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_FOUCE, 0, &temp2, sizeof(uint8_t));
 			break;
 		case 6:
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_APERT, 0, &temp2, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_APERT, 0, &temp2, sizeof(uint8_t));
 			break;
 		case 7:
-			find_func_command_link( MENU_USE, MENU_CMR_CTRL_ZOOM, 0, &temp2, sizeof(uint8_t));
+			find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ZOOM, 0, &temp2, sizeof(uint8_t));
 			break;
 		default:
 			break;
@@ -244,7 +243,7 @@ static void menuCliCameraCtlLeftRightPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] ); // 0 letf; 1 right
 	DEBUG_INFO( "CameraCtlLeftRight flags = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliCameraCtlUpDownPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -256,7 +255,7 @@ static void menuCliCameraCtlUpDownPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );// 0 down; 1 up
 	DEBUG_INFO( "CameraCtlUpDown  flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliCameraCtlFoucePro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -268,7 +267,7 @@ static void menuCliCameraCtlFoucePro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "CameraCtlFouce  flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_FOUCE, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_FOUCE, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliCameraCtlIrisPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -280,7 +279,7 @@ static void menuCliCameraCtlIrisPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "CameraCtlIris  flags  = %d", temp );
 	
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_APERT, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_APERT, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliCameraCtlZoomPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -292,7 +291,7 @@ static void menuCliCameraCtlZoomPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "CameraCtlZoom flags  = %d", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_ZOOM, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ZOOM, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliDistanceCtlPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -304,7 +303,7 @@ static void menuCliDistanceCtlPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "DistanceCtl flags = %d ", temp );
 	
-	find_func_command_link( MENU_USE, MENU_CMR_CTRL_ALIGN, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ALIGN, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliPresetSavePro( char (*args)[CMD_OPTION_STRING_LEN] ) 
@@ -316,7 +315,7 @@ static void menuCliPresetSavePro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "PresetSave flags = %d ", temp );
 
-	find_func_command_link( MENU_USE, MENU_CMR_SAVE_PRESET, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_SAVE_PRESET, 0, &temp, sizeof(uint8_t));
 }
 
 static void menuCliSwitchCmrPro( char (*args)[CMD_OPTION_STRING_LEN] )
@@ -339,7 +338,7 @@ static void menuCliSwitchCmrPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	gset_sys.current_cmr = temp;
 	system_db_update_configure_system_table( gset_sys );
 
-	find_func_command_link( MENU_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
+	find_func_command_link( MENUMENT_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
 
 }
 
@@ -352,7 +351,7 @@ static void menuCliClearPresetPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "ClearPreset flags = %d ", temp );
 	
-	find_func_command_link( MENU_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
 }
 
 static void menuCliSelectPresetAddrPro( char (*args)[CMD_OPTION_STRING_LEN] )
