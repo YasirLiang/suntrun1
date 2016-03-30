@@ -32,7 +32,7 @@ int timer_start_interval(int timerfd)
         memset(&itimer_old, 0, sizeof(itimer_old));
 
         itimer_new.it_interval.tv_sec = interval_ms / 1000;
-        itimer_new.it_interval.tv_nsec = (interval_ms % 1000) * ns_per_us;
+        itimer_new.it_interval.tv_nsec = (interval_ms % 1000) * ns_per_us;// 1微妙
         itimer_new.it_value = itimer_new.it_interval;
 
 	// 设置新的超时时间，并开始计时。
@@ -93,7 +93,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 #endif
 		solid_pdblist list_head = endpoint_list;
 	       	int rx_status = -1;
-	       	bool is_notification_id_valid = false;// 这里没有任何意义，因为系统中没有实现发送数据的命令的管理机制，这里的管理机制是指管理机制主机的一个管理终端与用户交互的过程，即发送数据后有一个特定的ID来标识其命令的
+	       	bool is_notification_id_valid = false;
 	        uint16_t operation_id = 0;
 	       	bool is_operation_id_valid = false;
 
@@ -127,7 +127,6 @@ int udp_server_fn(struct epoll_priv *priv )
 	if( recv_len > 0)
 	{
 		// 保存接收数据到缓冲区
-		//DEBUG_RECV( recv_frame.payload, recv_len, "Begin udp Recv" );
 		upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
 	}
 	else
@@ -167,8 +166,8 @@ int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_even
 {
 	priv->fd = fd;
 	priv->fn = fn;
-	ev->events = EPOLLIN;	// 表示对应的文件描述符可以读（包括对端SOCKET正常关闭）
-	ev->data.ptr = priv;		// 在处理的事件中， 这里注册了处理函数。还包含了fd
+	ev->events = EPOLLIN;	// 可读
+	ev->data.ptr = priv;		//注册处理函数
 	
 	return 0;
 }
@@ -176,7 +175,6 @@ int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_even
 int thread_fn(void *pgm)
 {
 	struct fds *fn_fds = (struct fds *)pgm;
-
 	int epollfd;
 	struct epoll_event ev, epoll_evt[POLL_COUNT]; // struct epoll_event 定义于 sys/epoll.h
 	struct epoll_priv fd_fns[POLL_COUNT];
@@ -208,7 +206,6 @@ int thread_fn(void *pgm)
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );
 
-	//开始循环
 	do
 	{
 		int i, res;
@@ -234,11 +231,10 @@ int thread_fn(void *pgm)
 			return 0;
 		}
 		
-		//监听到的准备好的文件描述符的数量
 		for (i = 0; i < res; i++)
 		{
-			priv = (struct epoll_priv *)epoll_evt[i].data.ptr;//空类型强制转换为 struct epoll_priv *类型
-			if (priv->fn(priv) < 0) //运行先前已经注册好的函数指针
+			priv = (struct epoll_priv *)epoll_evt[i].data.ptr;
+			if (priv->fn(priv) < 0) 
 				return -1;
 		}
 	}
@@ -247,12 +243,10 @@ int thread_fn(void *pgm)
 	return 0;
 }
 
-//系统启动时便开始了执行
 int pthread_handle_create( pthread_t *h_trd, struct fds *kfds )
 {
 	int rc;
 
-	//创建接收线程
 	rc = pthread_create(h_trd, NULL, (void*)&thread_fn, kfds);
 	if ( rc )
 	{
