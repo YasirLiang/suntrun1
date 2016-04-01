@@ -338,15 +338,16 @@ void destroy_endpoint_dblist( solid_pdblist head )
 		tmp_node = delect_node->next;
 		delect_node_from_endpoint_dblist( &delect_node );
 	}
-
+#if 0
 	if( delect_node == head ) // delect guard
 	{
-		destroy_endpoint_node( &head );
+		destroy_endpoint_node( &delect_node );
 	}
 	else
 	{
 		DEBUG_INFO( "Err endpoint dblist delect!" );
 	}
+#endif
 }
 
 /*=====================================
@@ -504,15 +505,16 @@ void destroy_inflight_dblist( inflight_plist guard )
 		tmp_node = de_node->next;
 		delect_inflight_dblist_node( &de_node );
 	}
-
+#if 0
 	if( de_node == guard ) // delect guard
 	{
-		destroy_inflight_node( &guard );
+		destroy_inflight_node( &de_node );
 	}
 	else
 	{
 		DEBUG_INFO( "Err inflight dblist delect!" );
 	}
+#endif
 }
 
 /*=====================================
@@ -627,14 +629,16 @@ void destroy_descptor_dblist( desc_pdblist  head )
 		delect_descptor_dblist_node( &delect_node );
 	}
 
+#if 0
 	if( delect_node == head ) // delect guard
 	{
-		destroy_descptor_dblist_node( &head );
+		destroy_descptor_dblist_node( &delect_node );
 	}
 	else
 	{
 		DEBUG_INFO( "Err descptor dblist delect!" );
 	}
+#endif
 }
 
 // 寻找ID为entity_id 的描述符信息节点

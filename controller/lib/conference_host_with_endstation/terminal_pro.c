@@ -424,8 +424,8 @@ bool terminal_delect_register_addr( uint16_t addr_delect )
 		bool found_dl = false;
 		volatile uint16_t *p_head = &p_regist_pro->rgsted_head;
 		volatile uint16_t *p_trail = &p_regist_pro->rgsted_trail;
-		if( (*p_head >= *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail >= (SYSTEM_TMNL_MAX_NUM-1)) || (*p_head !=  (p_regist_pro->noregister_head - 1)) )
+		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
+			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
 			DEBUG_INFO( "Err delect register address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
@@ -452,7 +452,10 @@ bool terminal_delect_register_addr( uint16_t addr_delect )
 				**2: 移动已注册表尾到已注册的表尾的上一个已注册元素
 				*/
 				p_regist_pro->noregister_head = *p_trail;
-				(*p_trail)--;
+				if( *p_trail > 0 )// 索引最小为零
+					(*p_trail)--;
+
+				gregister_tmnl_pro.tmn_rgsted--;
 
 				return true;
 			}
@@ -557,11 +560,12 @@ void system_register_terminal_pro( void )
 				if( unregister_list_index < SYSTEM_TMNL_MAX_NUM )
 				{	
 					addr = gregister_tmnl_pro.register_pro_addr_list[unregister_list_index];
-
 					DEBUG_INFO( "query address %04x----index = %d", addr, unregister_list_index );
+					
 					if( addr != 0xffff )
 					{
-						if( NULL == found_terminal_dblist_node_by_addr(addr) )
+						register_node = found_terminal_dblist_node_by_addr(addr);
+						if( NULL == register_node )
 						{
 							find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
 							over_time_set( QUERY_TMN_GAP, 500 ); // 注册持续500ms
@@ -1427,15 +1431,27 @@ int terminal_socroll_synch(void )
 
 void terminal_remove_unregitster( void ) // 这里没有清除终端地址文件以及内存终端列表里相应的内容
 {
-	tmnl_pdblist p_node = dev_terminal_list_guard->next;
+	tmnl_pdblist p_loop_node = dev_terminal_list_guard->next;
+	tmnl_pdblist p_tmp_node = NULL;
 
-	for( ; p_node != dev_terminal_list_guard; p_node = p_node->next )
+#ifdef __DEBUG__
+	show_terminal_dblist(dev_terminal_list_guard);
+#endif
+
+	for( ; p_loop_node != dev_terminal_list_guard; p_loop_node = p_tmp_node )
 	{
-		if(  p_node->tmnl_dev.address.addr == 0xffff || !p_node->tmnl_dev.tmnl_status.is_rgst )
+		uint64_t id = p_loop_node->tmnl_dev.entity_id;
+		p_tmp_node = p_loop_node->next;
+		if(  p_loop_node->tmnl_dev.address.addr == 0xffff || !p_loop_node->tmnl_dev.tmnl_status.is_rgst )
 		{
-			delect_terminal_dblist_node( &p_node );
+			delect_terminal_dblist_node( &p_loop_node );
+			conference_transmit_model_node_destroy( id );
 		}
 	}
+
+#ifdef __DEBUG__
+	show_terminal_dblist(dev_terminal_list_guard);
+#endif
 }
 
 // 需上报，且不是主席插话，才保存麦克风状态
@@ -2109,7 +2125,6 @@ bool terminal_apply_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 	}
 	else // 取消申请发言
 	{
-		
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr ))
 		{

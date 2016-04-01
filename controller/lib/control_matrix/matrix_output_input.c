@@ -55,6 +55,8 @@ int matrix_output_transmit_uart_control_packet( uint8_t *frame, uint16_t frame_l
 	return err;
 }
 
+/***************************
+*矩阵控制输出端口初始化*/
 int matrix_output_init( void )
 {
 	int fd = -1;

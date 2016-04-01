@@ -18,10 +18,6 @@
 #include "input_channel.h"
 #include "connector_subject.h"
 
-#ifdef __DEBUG__
-#define __CCU_RECV_DEBUG__
-#endif
-
 //************************************
 
 #define CHANNEL_MUX_NUM 6 // 最大的通道数

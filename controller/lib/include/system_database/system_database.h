@@ -14,7 +14,7 @@
 #include "avdecc_manage.h"
 
 #ifdef __DEBUG__
-#define __SYSTEM_DB_DEBUG__
+//#define __SYSTEM_DB_DEBUG__
 #endif
 
 #define SYSTEM_DB_FILE "system.db" // 系统配置参数数据库

@@ -37,8 +37,6 @@ int timer_start_interval(int timerfd)
 
 	// 设置新的超时时间，并开始计时。
         return timerfd_settime(timerfd, 0, &itimer_new, &itimer_old);
-
-	return 0;
 }
 
 int fn_timer_cb( struct epoll_priv*priv )

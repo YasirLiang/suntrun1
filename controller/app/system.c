@@ -183,8 +183,24 @@ void system_close( struct threads_info *p_threads )
 
 	// 释放所有系统链表
 	destroy_endpoint_dblist( endpoint_list );
+	if( endpoint_list != NULL )
+	{
+		free( endpoint_list );
+		endpoint_list = NULL;
+	}
 	destroy_inflight_dblist( command_send_guard );
+	if( command_send_guard != NULL )
+	{
+		free( command_send_guard );
+		command_send_guard = NULL;
+	}
 	destroy_descptor_dblist( descptor_guard );
+	if( descptor_guard != NULL )
+	{
+		free( descptor_guard );
+		descptor_guard = NULL;
+	}
+	
 	terminal_system_dblist_destroy();
 	
 	// 释放系统队列资源

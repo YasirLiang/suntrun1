@@ -15,8 +15,14 @@
 #include "central_control_recieve_unit.h"
 #include "util.h"
 #include "terminal_pro.h"
+#include "acmp_controller_machine.h"
+
+#ifdef __DEBUG__
+#define __CONFERENCE_TRANSMIT_DEBUG__
+#endif
 
 tconference_trans_model gconference_model_guard;// »áÒé´«Êäµ¥ÔªÁ´±íÈ«¾ÖÍ·½áµã
+uint16_t gconference_tramsmit_acmp_sequeue_id = 0;
 
 observer_t gconference_trans_observer;// ÓÃÓÚ¸üÐÂ»áÒéµ¥ÔªÄ£¿éµÄÁ¬½Ó×´Ì¬
 
@@ -37,13 +43,17 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_output_desc, frame, pos, frame_len );
         if (ret < 0)
         {
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
         	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
+#endif
 		return -1;
         }
 
 	if( stream_output_desc.descriptor_index > CONFERENCE_OUTCHANNEL_MAX_NUM )
 	{
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
         	DEBUG_INFO( "stream_input_desc.descriptor_index = %d out of range:  error",stream_output_desc.descriptor_index);
+#endif
 		return -1;
 	}
 
@@ -52,7 +62,9 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	if( (strcmp((char*) &entity_name, CCU_TR_MODEL_NAME) == 0) ||\
 		(strcmp( (char*)&entity_name, CCU_R_MODEL_NAME) == 0) )
 	{
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
 		DEBUG_INFO( "entity not a conference uinit %s", (char*)&entity_name.value);
+#endif
 		return -1;
 	}
 
@@ -75,7 +87,27 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 		if( p_node != NULL )
 		{
 			output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
+			INIT_LIST_HEAD( &p_node->input_head.list );// ³õÊ¼»¯outstream¶ÔÓ¦µÄinputstreamÁ´±í
 			output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
+			
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
+			DEBUG_INFO( "out Stream add ONE<<<<<<<<------------------" );
+
+			Input_pChannel Input_pnode = NULL;
+			T_pOutChannel p_Out = NULL;
+			int in_num = 0, out_num = 0;
+			list_for_each_entry( Input_pnode, &p_node->input_head.list, list )
+			{
+				in_num++;
+			}
+
+			list_for_each_entry( p_Out, &p_temp_node->out_ch.list, list )
+			{
+				out_num++;
+			}
+
+			DEBUG_INFO( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
+#endif
 		}
 	}
 	else
@@ -83,16 +115,37 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 		p_temp_node = (tconference_trans_pmodel)malloc( sizeof(tconference_trans_model) );
 		if( p_temp_node != NULL )
 		{
-			INIT_ZERO(p_temp_node, sizeof(tconference_trans_model));
-			INIT_LIST_HEAD( &p_temp_node->out_ch.list );
-			INIT_LIST_HEAD( &p_temp_node->out_ch.input_head.list );
+			p_temp_node->confenrence_node = NULL;
 			p_temp_node->tarker_id = endtity_id;
+			p_temp_node->model_speak_time.elapsed = false;
+			p_temp_node->model_speak_time.running = false;
+			INIT_LIST_HEAD( &p_temp_node->out_ch.list );// µÚÒ»¸öoutstream ³õÊ¼»¯
 
 			T_pOutChannel p_node = out_channel_node_create_can_init();
 			if( p_node != NULL )
 			{
 				output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
+				INIT_LIST_HEAD( &p_node->input_head.list );// ³õÊ¼»¯outstream¶ÔÓ¦µÄinputstreamÁ´±í
 				output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
+
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
+				DEBUG_INFO( "out Stream add ONE1111111111<<<<<<<<------------------" );
+
+				Input_pChannel Input_pnode = NULL;
+				T_pOutChannel p_Out = NULL;
+				int in_num = 0, out_num = 0;
+				list_for_each_entry( Input_pnode, &p_node->input_head.list, list )
+				{
+					in_num++;
+				}
+
+				list_for_each_entry( p_Out, &p_temp_node->out_ch.list, list )
+				{
+					out_num++;
+				}
+
+				DEBUG_INFO( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
+#endif
 			}
 			
 			trans_model_node_insert_to_list( p_temp_node );
@@ -166,7 +219,7 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
 					{
 						Input_pChannel Input_pnode = NULL;
-						list_for_each_entry( Input_pnode, &p_Outnode->list, list )
+						list_for_each_entry( Input_pnode, &p_Outnode->input_head.list, list )
 						{
 							if(  Input_pnode->listener_id == connect_info.listener_id&& \
 								(Input_pnode->listen_index== connect_info.listener_index))// found?
@@ -177,9 +230,10 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 									free(Input_pnode);
 									Input_pnode = NULL;	
 								}
-
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
 								DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
 										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
+#endif
 								return;
 							}
 						}
@@ -203,18 +257,22 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 						Input_pnode = input_connect_node_create();
 						if( Input_pnode == NULL )
 						{
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
 							DEBUG_INFO( "connect info not save Success!!!" );
+#endif
 							return;
 						}
 
 						input_connect_node_init_by_index( Input_pnode, connect_info.listener_id, connect_info.listener_index );
-						input_connect_node_insert_node_to_list( &p_Outnode->list, Input_pnode );
+						input_connect_node_insert_node_to_list( &p_Outnode->input_head.list, Input_pnode );
 
 						if( NULL != p_temp_node->confenrence_node)
 							terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
-	
+						
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__	
 						DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
 							connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
+#endif
 						return;
 					}
 				}
@@ -224,6 +282,69 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 		}
 	}
 	
+}
+
+int conference_transmit_model_node_destroy( uint64_t tarker_id )
+{
+	tconference_trans_pmodel p_temp_node = NULL;
+	
+	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+	{
+		if( p_temp_node->tarker_id == tarker_id )
+		{
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
+			DEBUG_INFO( "destroy ID = 0x%016llx", tarker_id );
+#endif
+			if( p_temp_node->confenrence_node != NULL )
+				p_temp_node->confenrence_node = NULL;
+
+			T_pOutChannel p_Outnode = NULL, p_TmpOut = NULL;
+			list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
+			{// ÊÍ·ÅËùÓÐµÄsource£¬Ã¿´Î´ÓÍ·¿ªÊ¼ÊÍ·Å
+				p_TmpOut = &p_temp_node->out_ch;// ÁÙÊ±±£´æÍ·
+				Input_pChannel Input_pnode = NULL, p_TmpIn = NULL;
+				list_for_each_entry( Input_pnode, &p_Outnode->input_head.list, list )
+				{// ¶Ï¿ª²¢ÊÍ·Åsource ¶ÔÓ¦ËùÓÐµÄsinkÁ¬½Ó, Ã¿´Î´ÓÍ·¿ªÊ¼ÊÍ·Å
+					struct jdksavdecc_eui64 talker_entity_id;
+					struct jdksavdecc_eui64 listener_entity_id;
+					convert_uint64_to_eui64( talker_entity_id.value, tarker_id );
+					convert_uint64_to_eui64( listener_entity_id.value, Input_pnode->listener_id );
+					acmp_disconnect_avail( talker_entity_id.value, 
+								p_Outnode->tarker_index, 
+								listener_entity_id.value, 
+								Input_pnode->listen_index, 
+								1, ++gconference_tramsmit_acmp_sequeue_id );
+					
+					p_TmpIn = &p_Outnode->input_head;
+					__list_del_entry(&Input_pnode->list);// delect connect input node
+					if( Input_pnode != NULL )
+					{
+						free(Input_pnode);
+						Input_pnode = p_TmpIn;	
+					}
+				}
+
+				__list_del_entry(&p_Outnode->list);
+				if( p_Outnode != NULL )
+				{
+					free(p_Outnode);
+					p_Outnode = p_TmpOut;
+				}
+			}
+
+			// ÊÍ·ÅÕâ¸önode
+			__list_del_entry(&p_temp_node->list);
+			if( p_temp_node != NULL )
+			{
+				free(p_temp_node);
+				p_temp_node = NULL;	
+			}
+			
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 void conference_transmit_model_init( void )

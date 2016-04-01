@@ -37,6 +37,15 @@ void adp_entity_time_tick( solid_pdblist guard )
 			{
 				ptr->solid.connect_flag = DISCONNECT;
 				adp_entity_post_timeout_msr( ptr );
+
+				assert( dev_terminal_list_guard );
+				tmnl_pdblist disconnect_node = search_terminal_dblist_entity_id_node(ptr->solid.entity_id, dev_terminal_list_guard );
+				if( disconnect_node != NULL )
+				{
+					disconnect_node->tmnl_dev.tmnl_status.is_rgst = false;
+					terminal_delect_register_addr(disconnect_node->tmnl_dev.address.addr);
+				}
+
 			}
 		}
 	}

@@ -99,6 +99,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 					{
 						DEBUG_INFO("LOGGING_LEVEL_DEBUG:Re-enumerating end station with entity_id %llx", end_entity_id);
 						// 重新枚举
+
+						terminal_begin_register();// 开始注册
 					}
 
 					// 更新adp数据包为最新的内容
@@ -111,6 +113,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 						end_station->solid.connect_flag = CONNECT;
 						adp_entity_state_avail( guard, end_station, &adpdu.header );
 						DEBUG_ONINFO("[ END_STATION AFLESH CONNECT: 0x%llx ] ", end_station->solid.entity_id );
+
+						terminal_begin_register();// 开始注册
 					}
 					// 更新终端的可用时间，即超时时间。因为终端存在系统的时间永远是最新的
 					else
