@@ -501,6 +501,11 @@ void camera_pro_lock_flags( uint8_t option )
 int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uint8_t speed_vertical )
 {
 	camera_form_can_send( cmr_addr, d_cmd, speed_lv, speed_vertical ); // control the camera
+
+	if( (d_cmd == CAMERA_CTRL_PRESET_SET) ||\
+		d_cmd == CAMERA_CTRL_PRESET_CALL)
+		return 0;
+	
 	return (camera_form_can_send( cmr_addr, 0, 0, 0 )); // stop the camera
 }
 
