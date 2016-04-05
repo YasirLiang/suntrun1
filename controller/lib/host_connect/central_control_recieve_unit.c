@@ -194,7 +194,8 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 			struct jdksavdecc_eui64 listener_entity_id;
 			convert_uint64_to_eui64( talker_entity_id.value, p_longest_cnntNode->tarker_id );
 			convert_uint64_to_eui64( listener_entity_id.value, p_longest_cnntNode->listener_id );
-			
+
+			gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
 			gchannel_allot_pro.pro_eflags = CH_ALLOT_PRIMED;
 			acmp_disconnect_avail( talker_entity_id.value, p_longest_cnntNode->tarker_index, listener_entity_id.value, p_longest_cnntNode->listener_index, 1, ++gccu_acmp_sequeue_id );
 			gchannel_allot_pro.pro_eflags = CH_ALLOT_HANDLING;
