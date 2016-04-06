@@ -5,33 +5,33 @@ OBJDUMP = arm-linux-objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
+CONTROLINCPATH = $(ROOTPATH)/controller/lib/include
 CFGS = -Wall -g
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
-CFG_INC += -I$(ROOTPATH)/controller/include \
-		   -I$(ROOTPATH)/controller/app/include \
+CFG_INC += -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
-		   -I$(ROOTPATH)/controller/lib/include/avdecc \
-		   -I$(ROOTPATH)/controller/lib/include/conference_host_with_endstation\
-		   -I$(ROOTPATH)/controller/lib/include/conference_network\
-		   -I$(ROOTPATH)/controller/lib/include/consultative_encapsulation \
-		   -I$(ROOTPATH)/controller/lib/include/packet_events \
-		   -I$(ROOTPATH)/controller/lib/include/host_controller_debug \
-		   -I$(ROOTPATH)/controller/lib/include/native_proccess \
-		   -I$(ROOTPATH)/controller/lib/include/system_work_tool_uits \
-		   -I$(ROOTPATH)/controller/lib/include/upper_computer \
-		   -I$(ROOTPATH)/controller/lib/include/end_station_manager \
-		   -I$(ROOTPATH)/controller/lib/include/message_func \
-		   -I$(ROOTPATH)/controller/lib/include/common\
-		   -I$(ROOTPATH)/controller/lib/include/connect_manager\
-		   -I$(ROOTPATH)/controller/lib/include/send_module\
-		   -I$(ROOTPATH)/controller/lib/include/camera_module\
-		   -I$(ROOTPATH)/controller/lib/include/uart\
-		   -I$(ROOTPATH)/controller/lib/include/timer_pthread\
-		   -I$(ROOTPATH)/controller/lib/include/control_matrix\
-		   -I$(ROOTPATH)/controller/lib/include/system_database\
-		   -I$(ROOTPATH)/controller/lib/include/ui_encap\
-		   -I$(ROOTPATH)/controller/lib/include/host_connect\
-		   -I$(ROOTPATH)/controller/lib/include/menu_displays
+		   -I$(CONTROLINCPATH)/avdecc \
+		   -I$(CONTROLINCPATH)/conference_host_with_endstation\
+		   -I$(CONTROLINCPATH)/conference_network\
+		   -I$(CONTROLINCPATH)/consultative_encapsulation \
+		   -I$(CONTROLINCPATH)/packet_events \
+		   -I$(CONTROLINCPATH)/host_controller_debug \
+		   -I$(CONTROLINCPATH)/native_proccess \
+		   -I$(CONTROLINCPATH)/system_work_tool_uits \
+		   -I$(CONTROLINCPATH)/upper_computer \
+		   -I$(CONTROLINCPATH)/end_station_manager \
+		   -I$(CONTROLINCPATH)/message_func \
+		   -I$(CONTROLINCPATH)/common\
+		   -I$(CONTROLINCPATH)/connect_manager\
+		   -I$(CONTROLINCPATH)/send_module\
+		   -I$(CONTROLINCPATH)/camera_module\
+		   -I$(CONTROLINCPATH)/uart\
+		   -I$(CONTROLINCPATH)/timer_pthread\
+		   -I$(CONTROLINCPATH)/control_matrix\
+		   -I$(CONTROLINCPATH)/system_database\
+		   -I$(CONTROLINCPATH)/ui_encap\
+		   -I$(CONTROLINCPATH)/host_connect\
+		   -I$(CONTROLINCPATH)/menu_displays
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')
