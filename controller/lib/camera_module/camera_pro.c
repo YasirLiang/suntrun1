@@ -207,8 +207,6 @@ int camera_select_num( uint16_t cmd, void *data, uint32_t data_len )// ´Ëº¯ÊýÎ´Í
 	// ÇÐ»»ÉãÏñÍ·......
 	gmatrix_output[0] = CAMERA_OUT_TRACK_VIEW;
 	control_matrix_input_output_switch( MATRIX_AV_SWITCH, gcurpresetcmr.camera_num, gmatrix_output, 1 );
-	//camera_output_switch( gcurpresetcmr.camera_num, CAMERA_OUT_TRACK_VIEW, true );
-	//CmrSwCmd(gCameraPresetCur.CameraNum-1,CMR_OUT_FOR_TRACK-1);
 	
 	return 0;
 }
@@ -372,8 +370,6 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // ´Ëº¯ÊýÎ´
 				gmatrix_output[0] = CAMERA_OUT_FULL_VIEW;
 				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
 					gpresetcmr_list[gfull_view_index[gscene_out]].camera_num, gmatrix_output, 1 );
-				//camera_output_switch(gpresetcmr_list[gfull_view_index[gscene_out]].camera_num,CAMERA_OUT_FULL_VIEW,1); 
-				//CmrSwCmd((gpresetcmr_list+gfull_view_index[gscene_out])->CameraNum-1,CAMERA_OUT_FULL_VIEW-1);
 				scene_switch = 1;
 			}
 			
@@ -392,8 +388,6 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // ´Ëº¯ÊýÎ´
 				gmatrix_output[0] = CAMERA_OUT_TRACK_VIEW;
 				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
 					(gpresetcmr_list+index)->camera_num, gmatrix_output, 1 );
-				//camera_output_switch((gpresetcmr_list+index)->camera_num,CAMERA_OUT_TRACK_VIEW,1);
-				//CmrSwCmd((gpresetcmr_list+index)->CameraNum-1,CAMERA_OUT_TRACK_VIEW-1);
 			}
 
 			gcamer_presetdndex = index;
