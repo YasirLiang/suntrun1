@@ -80,7 +80,7 @@ int main( int argc, char *argv[] )
 	
 	if( argc >= 2 )
 		log_level = atoi(argv[1]);
-	if( log_level > TOTAL_NUM_OF_LOGGING_LEVELS )
+	if( log_level >= TOTAL_NUM_OF_LOGGING_LEVELS )
 		log_level = LOGGING_LEVEL_ERROR;
 	fprintf( stdout, "Will Usage: %s message can be logged, and only log to screen\n", logging_level_string_get(log_level) );
 	if( argc >= 3 )
