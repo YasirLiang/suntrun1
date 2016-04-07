@@ -23,6 +23,7 @@
 #include "central_control_recieve_unit.h"
 #include "connector_subject.h"
 #include "avdecc_manage.h"
+#include "log_machine.h"
 
 void init_system( void )
 {
@@ -158,6 +159,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	terminal_begin_register();
 }
 
+extern FILE *glog_file_fd;
 void system_close( struct threads_info *p_threads )
 {	
 	int can_num = p_threads->pthread_nums;
@@ -224,7 +226,11 @@ void system_close( struct threads_info *p_threads )
 	// 释放系统相关的资源
 	terminal_proccess_system_close();
 
+	log_machine_destroy();
+
 	// 释放所有文件描述符
+	if( NULL != glog_file_fd)
+		Fclose( glog_file_fd );
 	close( net_fd.raw_fd );
 	close( net_fd.tx_pipe[PIPE_RD] );
 	close( net_fd.tx_pipe[PIPE_WR]);

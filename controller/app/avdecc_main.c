@@ -7,6 +7,7 @@
 #include "controller_command.h"
 #include "send_pthread.h"
 #include "check_timer.h"
+#include "log_machine.h"// 日志记录机制头文件
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
 struct raw_context net;				// 原始套接字
@@ -15,6 +16,10 @@ solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 inflight_plist command_send_guard;	// 系统中发送网络数据命令链表哨兵节点
 desc_pdblist descptor_guard;	// 系统中描述符链表哨兵节点
 struct threads_info threads;
+
+char *glog_file_name = NULL;
+FILE *glog_file_fd = NULL;
+char gmain_buf[2048] = {0};
 
 #ifdef __TEST_DEBUG_CM__ 
 int thread_test_fn( void*pgm )
@@ -30,6 +35,28 @@ int thread_test_fn( void*pgm )
 	}
 }
 #endif
+
+void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32_t time_stamp_ms )
+{
+	if( glog_file_fd == NULL )
+	{// printf to screen
+		printf( "[LOG] %s (%s)\n", logging_level_string_get(log_level), msg );
+	}
+	else
+	{// log to file
+		time_t tem = time( NULL );
+		struct tm *t = (struct tm*)localtime( &tem );
+		memset( gmain_buf, 0, sizeof(gmain_buf) );
+		sprintf( gmain_buf, "[LOG] %s %d-%d-%d %d:%d:%d (%s)\n", logging_level_string_get(log_level),
+				t->tm_year+1900,\
+				t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min,\
+				t->tm_sec,
+				msg );
+		
+		fputs( gmain_buf, glog_file_fd );
+		fflush( glog_file_fd );
+	}
+}
 
 void signal_handle_main( int signum )
 {
@@ -47,7 +74,35 @@ int main( int argc, char *argv[] )
 {
 	struct udp_context udp_net;
 	struct sigaction sa;
+	int32_t log_level = LOGGING_LEVEL_ERROR;
 
+	fprintf( stdout, "Usage: ./programing 0/1/2/3/4/5(log level) file_name(none log to screen) \n");
+	
+	if( argc >= 2 )
+		log_level = atoi(argv[1]);
+	if( log_level > TOTAL_NUM_OF_LOGGING_LEVELS )
+		log_level = LOGGING_LEVEL_ERROR;
+	fprintf( stdout, "Will Usage: %s message can be logged, and only log to screen\n", logging_level_string_get(log_level) );
+	if( argc >= 3 )
+	{
+		glog_file_name = argv[2];
+		glog_file_fd = Fopen( glog_file_name, "a+" );
+		if( glog_file_fd != NULL )
+		{
+			fprintf( stdout, "your log message file Name is %s, Open Success!\n", glog_file_name );
+		}
+		else 
+		{
+			fprintf( stdout, "your log message file Name is %s, Open failed, Check Right!\n", glog_file_name );
+			glog_file_fd = NULL;
+		}
+	}
+
+	if( NULL == log_machine_create( log_callback_func, log_level, NULL ) )
+	{
+		fprintf( stdout, "your system cant log massge, log machine class create is failed\n" );
+	}
+	
 	sa.sa_handler = signal_handle_main;
 	sigemptyset( &sa.sa_mask );
 	sa.sa_flags = 0;

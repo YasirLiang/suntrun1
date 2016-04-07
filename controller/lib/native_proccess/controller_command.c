@@ -15,6 +15,7 @@
 #include "control_matrix_pro.h"
 #include "matrix_output_input.h"
 #include "menu_cli_func.h"
+#include "log_machine.h"
 
 static solid_pdblist end_list_guard = NULL;
 
@@ -1572,6 +1573,8 @@ void controller_proccess( void )
 		{
 			add_history( cmd_buf );
 		}
+
+		gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_INFO, "=======cli cmd = %s=============", cmd_buf );
 		
 		if( strncmp( cmd_buf, "list", 4 ) == 0 || strncmp( cmd_buf, "ls", 2 ) == 0 )
 		{

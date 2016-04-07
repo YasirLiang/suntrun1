@@ -438,7 +438,7 @@ enum notifications /// Notifications for the AVDECC library implementation, not 
 
 enum logging_levels
 {
-	LOGGING_LEVEL_ERROR   = 0,
+	LOGGING_LEVEL_ERROR   = 0,// 优先级最高的日志记录。为默认的日志级别记录
 	LOGGING_LEVEL_WARNING = 1,
 	LOGGING_LEVEL_NOTICE  = 2,
 	LOGGING_LEVEL_INFO    = 3,

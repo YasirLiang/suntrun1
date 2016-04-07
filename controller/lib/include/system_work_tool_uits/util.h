@@ -56,7 +56,7 @@ bool is_terminal_response( void *base, uint16_t offset );
 uint32_t get_host_endstation_command_timeout( uint32_t cmd_value );
 uint32_t get_send_respons_interval_timeout( uint8_t data_type, uint32_t command );
 bool swap_valtile_uint16( volatile uint16_t *p_sw1, volatile uint16_t *p_sw2 );// 交换两个的数值
-
+const char* logging_level_string_get( int32_t level_value );
 
 #endif
 

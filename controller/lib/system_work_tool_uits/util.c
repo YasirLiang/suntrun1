@@ -851,3 +851,13 @@ bool swap_valtile_uint16( volatile uint16_t *p_sw1, volatile uint16_t *p_sw2 )
 	return true;
 }
 
+const char* logging_level_string_get( int32_t level_value )
+{
+	if( level_value < TOTAL_NUM_OF_LOGGING_LEVELS )
+	{
+		return logging_level_names[level_value];
+	}
+
+	return "UNKNOWN";
+}
+
