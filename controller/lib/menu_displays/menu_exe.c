@@ -5,19 +5,25 @@
 #include "host_controller_debug.h"// yasir add in 2016-3-29
 
 unsigned char  gUseDis;
+unsigned char gByteData[PAR_NUM];
+
+Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir add in 2016-3-29
+Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir add in 2016-3-29
+Bool UseDisSet(unsigned char Use,Bool Set);// yasir add in 2016-3-29
 
 void EnterCmrPreset(unsigned int value)
 {
 	printf("EnterCmrPreset(%d)\n",value);
 	menu_cmd_run( MENU_UI_ENTERESCPRESET, 1,NULL );
 }
+
 void EscCmrPreset(unsigned int value)
 {
 	printf("EscCmrPreset(%d)\n",value); 
 	menu_cmd_run( MENU_UI_ENTERESCPRESET, 0,NULL );
 }
-//Ò£¿ØÆ÷¶ÔÂë
 
+//Ò£¿ØÆ÷¶ÔÂë
 void RCtrlAlign(unsigned int value)
 {
 	printf("RCtrlAlign(%d)\n",value); 
@@ -42,6 +48,8 @@ void ApplyLmtSet(unsigned int value)
 void SwitchCamera(unsigned int value)
 {
 	printf("SwitchCamera(%d)\n",value);
+	unsigned char sa = (unsigned char)value;
+	ByteDataSave( VAL_CUR_CMR, sa );
 	menu_cmd_run( MENU_UI_SWITCHCMR, value,NULL );
 }
 
@@ -68,7 +76,6 @@ void CameraUD(unsigned int value)
 {
 	printf("CameraUD(%d)\n",value);
 	menu_cmd_run( MENU_UI_CAMERACTLUPDOWN, value,NULL );
-
 }
 
 
@@ -231,32 +238,28 @@ void TerminalAllotAddrOver(unsigned int value)
 	menu_cmd_run( MENU_UI_SETFINISH, value, NULL );
 }
 
-unsigned char gByteData[PAR_NUM];
-Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir add in 2016-3-29
-Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir add in 2016-3-29
-Bool UseDisSet(unsigned char Use,Bool Set);// yasir add in 2016-3-29
-
 void ByteDataInit(void)// yasir chang in 2016-3-29
 {
 	unsigned char  get_byte = 0;
-	ByteDataGet( VAL_TEMP_CLOSE, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_TEMP_CLOSE,get_byte );
-	ByteDataGet( VAL_CHM_MUSIC, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_CHM_MUSIC,get_byte );
-	ByteDataGet( VAL_CMR_TRACK_EN, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_CMR_TRACK_EN,get_byte );
-	ByteDataGet( VAL_AUTO_CLOSE, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_AUTO_CLOSE,get_byte );
-	ByteDataGet( VAL_CUR_CMR, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_CUR_CMR,get_byte );
-	ByteDataGet( VAL_SPKER_LIMIT, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_SPKER_LIMIT,get_byte );
-	ByteDataGet( VAL_APPLY_LIMIT, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_APPLY_LIMIT,get_byte );
-	ByteDataGet( VAL_DSCS_MODE, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_DSCS_MODE,get_byte );
-	ByteDataGet( VAL_MENU_LANG, &get_byte );DEBUG_INFO( "Value Get (%d-%d)", VAL_MENU_LANG,get_byte );
+	ByteDataGet( VAL_TEMP_CLOSE, &get_byte );
+	ByteDataGet( VAL_CHM_MUSIC, &get_byte );
+	ByteDataGet( VAL_CMR_TRACK_EN, &get_byte );
+	ByteDataGet( VAL_AUTO_CLOSE, &get_byte );
+	ByteDataGet( VAL_CUR_CMR, &get_byte );
+	ByteDataGet( VAL_SPKER_LIMIT, &get_byte );
+	ByteDataGet( VAL_APPLY_LIMIT, &get_byte );
+	ByteDataGet( VAL_DSCS_MODE, &get_byte );
+	ByteDataGet( VAL_MENU_LANG, &get_byte );
 }
 
 Bool ByteDataGet(unsigned char Index, unsigned char *pValue)
 {
-	printf("ByteDataGet(Index=%d)\n",Index);
+	printf("ByteDataGet(Index=%d)",Index);
 	if(Index<PAR_NUM)
 	{
 		menu_cmd_run( MENU_UI_GET_PARAM, Index, &gByteData[Index] );
 		*pValue=gByteData[Index];
+		printf("value = %d\n", *pValue );
 		return TRUE;
 	}
 	

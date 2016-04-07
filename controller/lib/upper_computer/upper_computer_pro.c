@@ -95,6 +95,12 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE |CMPT_MSG_TYPE_SET, \
 				DISCUSSION_PARAMETER, NULL, 0 ); // 第三个与第四个参数与协议有些出入，这里是根据黄工代码写的。协议是数据单元仅一个字节0，设置成功；非零设置失败。而黄工的没有数据单元，故这里写NULL
 				
+		if( set_dis_para.discuss_mode == UPPER_CMPT_DISCUSS_FREE_MODE )// 数字会议系统没有自由模式
+		{
+			terminal_start_discuss( false );
+			return 0;
+		}
+
 		// 保存配置文件
 		if( (profile_dis_param_save_to_ram( &gset_sys, &set_dis_para ) != -1) && (-1 != profile_system_file_write_gb_param( profile_file_fd, &gset_sys )) )
 		{

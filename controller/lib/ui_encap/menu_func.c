@@ -29,13 +29,6 @@ static void menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ModeSet flags  = %d", temp );
 
-	if( temp == 0 )// free mode
-		return;
-
-	// 保存到数据库中
-	gset_sys.discuss_mode = temp;
-	system_db_update_configure_system_table( gset_sys );
-
 	find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
 }
 
@@ -43,10 +36,6 @@ static void menuTempClosePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "TempClose flags  = %d", temp );
-
-	// 保存到数据库中
-	gset_sys.temp_close = temp?1:0;
-	system_db_update_configure_system_table( gset_sys );
 
 	find_func_command_link( MENUMENT_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
 }
@@ -56,10 +45,6 @@ static void menuChairmanHintPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ChairmanHint flags  = %d", temp );
 
-	// 保存到数据库中
-	gset_sys.chman_music = temp?1:0;
-	system_db_update_configure_system_table( gset_sys );
-
 	find_func_command_link( MENUMENT_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
 }
 
@@ -67,10 +52,6 @@ static void menuCameraTrackPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraTrack flags  = %d", temp );
-
-	// 保存到数据库中
-	gset_sys.camara_track = temp?1:0;
-	system_db_update_configure_system_table( gset_sys );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
 }
@@ -80,10 +61,6 @@ static void menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "AutoClose flags  = %d", temp );
 
-	// 保存到数据库中
-	gset_sys.auto_close = temp?1:0;
-	system_db_update_configure_system_table( gset_sys );
-
 	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint16_t));
 }
 
@@ -92,15 +69,6 @@ static void menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "SpeakLimit flags  = %d", temp );
 
-	// 保存到数据库中
-	if( temp > MAX_LIMIT_SPK_NUM ) 
-	{
-		temp = MAX_LIMIT_SPK_NUM;	
-	}
-
-	gset_sys.speak_limit = temp;
-	system_db_update_configure_system_table( gset_sys );
-
 	find_func_command_link( MENUMENT_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
 
@@ -108,15 +76,6 @@ static void menuApplyNumSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ApplyNum flags  = %d", temp );
-
-	// 保存到数据库中
-	if( temp > MAX_LIMIT_APPLY_NUM )
-	{
-		temp = MAX_LIMIT_APPLY_NUM;	
-	}
-
-	gset_sys.apply_limit = temp;
-	system_db_update_configure_system_table( gset_sys );
 
 	find_func_command_link( MENUMENT_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
 }
@@ -203,17 +162,6 @@ static void menuSwitchCmrPro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "SwitchCmr Num = %d", temp );
 
-	// 保存到数据库中 1-4
-	if( temp < 1 )
-	{
-		temp = 1;
-	}
-	else if( temp > 4 )
-		temp = 4;
-	
-	gset_sys.current_cmr = temp;
-	system_db_update_configure_system_table( gset_sys );
-
 	find_func_command_link( MENUMENT_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
 }
 
@@ -267,12 +215,13 @@ static void menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
 	else if( value == VAL_APPLY_LIMIT )
 		*p_GetParam = set_sys.apply_limit;
 	else if( value == VAL_DSCS_MODE )
-		*p_GetParam = set_sys.discuss_mode;
+	{
+		*p_GetParam = set_sys.discuss_mode-1;// 实际会讨模式的值比菜单会讨模式对应的值多1，没有自由模式
+	}
 	else if( value == VAL_MENU_LANG )
 		*p_GetParam = set_sys.menu_language;
 	else
 		DEBUG_INFO( "Error EPar value!" );
-
 }
 
 static void menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
@@ -290,28 +239,32 @@ static void menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
 
 	save_value = *p_saveParam;
 	if( value == VAL_TEMP_CLOSE )
-		set_sys.temp_close = save_value;
+		set_sys.temp_close = save_value?1:0;
 	else if( value == VAL_CHM_MUSIC )
-		set_sys.chman_music = save_value;
+		set_sys.chman_music = save_value?1:0;
 	else if( value == VAL_CMR_TRACK_EN )
-		set_sys.camara_track = save_value;
+		set_sys.camara_track = save_value?1:0;
 	else if( value == VAL_AUTO_CLOSE )
-		set_sys.auto_close = save_value;
+		set_sys.auto_close = save_value?1:0;
 	else if( value == VAL_CUR_CMR )
 		set_sys.current_cmr = save_value;
 	else if( value == VAL_SPKER_LIMIT )
-		set_sys.speak_limit = save_value;
+		set_sys.speak_limit = save_value>MAX_LIMIT_SPK_NUM?MAX_LIMIT_SPK_NUM:save_value;
 	else if( value == VAL_APPLY_LIMIT )
-		set_sys.apply_limit = save_value;
+		set_sys.apply_limit = save_value>MAX_LIMIT_APPLY_NUM?MAX_LIMIT_APPLY_NUM:save_value;
 	else if( value == VAL_DSCS_MODE )
-		set_sys.discuss_mode = save_value;
+	{
+		set_sys.discuss_mode = save_value+1;// 实际会讨模式的值比菜单会讨模式对应的值多1，没有自由模式
+	}
 	else if( value == VAL_MENU_LANG )
 		set_sys.menu_language  = save_value;
 	else
 		DEBUG_INFO( "Error EPar value!" );
 
-	memcpy( &gset_sys, &set_sys, sizeof(thost_system_set));
-	system_db_update_configure_system_table( set_sys );
+	if( -1 != system_db_update_configure_system_table( set_sys ) )
+	{
+		memcpy( &gset_sys, &set_sys, sizeof(thost_system_set));
+	}
 }
 
 static void menuSendMainStatePro( uint16_t value, uint8_t  *p_GetParam )

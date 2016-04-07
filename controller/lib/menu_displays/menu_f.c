@@ -391,7 +391,13 @@ void GetMenuValue(unsigned char GrpNum,unsigned char LineNum,unsigned int *pValu
 	}
 	if(i<MAX_MENU_VALUE_NUM)
 	{
+#if 0// yasir change in 2016-4-7
 		ByteDataGet(gMenuValue[i].ValueIndex, pValue);
+#else
+		unsigned char value;
+		ByteDataGet(gMenuValue[i].ValueIndex, &value);
+		*pValue = (unsigned int)value;
+#endif	
 	}
 }
 void SaveMenuValue(unsigned char GrpNum,unsigned char LineNum,unsigned int Value)
@@ -406,7 +412,11 @@ void SaveMenuValue(unsigned char GrpNum,unsigned char LineNum,unsigned int Value
   }
 	if(i<MAX_MENU_VALUE_NUM)
 	{
+#if 0// yasir change in 2016-4-7
 		ByteDataSave(gMenuValue[i].ValueIndex, Value);
+#else
+		ByteDataSave(gMenuValue[i].ValueIndex, (unsigned char)Value);
+#endif
 	}
 }
 
@@ -1467,6 +1477,8 @@ Bool CtrlMenuSw(short snMGSeq)
 {
   ItemSelected(snMGSeq);
 }
+
+extern unsigned char gByteData[PAR_NUM];// yasir change in 2016-4-7
 void MenuInit(void)
 {
   int i;
@@ -1491,7 +1503,11 @@ void MenuInit(void)
 	clear_block(0,0,192,64);
   update_disp_data(0,0,192,64);
 	DisplayGroup(gsnCurMGrp);
+#if 0 // yasir change in 2016-4-7
   DisplayOneState(0,PPT_MODE);
+#else
+  DisplayOneState(0,gByteData[VAL_DSCS_MODE]);
+#endif
 	sleep(1);
 }
 // ============================================================================
