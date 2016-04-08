@@ -47,7 +47,7 @@ APP_SUB:ECHO
 	make -C controller
 #@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
 #@$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.txt
-	@$(OBJDUMP) -d avdecc_ctl > avdecc_ctlDump
+#@$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)
