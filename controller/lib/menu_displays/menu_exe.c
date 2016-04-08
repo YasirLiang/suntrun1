@@ -71,13 +71,11 @@ void CameraLR(unsigned int value)
 	menu_cmd_run( MENU_UI_CAMERACTLLEFTRIGHT, value,NULL );
 }
 
-
 void CameraUD(unsigned int value)
 {
 	printf("CameraUD(%d)\n",value);
 	menu_cmd_run( MENU_UI_CAMERACTLUPDOWN, value,NULL );
 }
-
 
 void CameraFouce(unsigned int value)
 {
@@ -90,7 +88,6 @@ void CameraZoom(unsigned int value)
 	printf("CameraZoom(%d)\n",value);
 	menu_cmd_run( MENU_UI_CAMERACTLZOOM, value,NULL );
 }
-
 
 void CameraAperture(unsigned int value)
 {
@@ -279,6 +276,7 @@ Bool ByteDataSave(unsigned char Index, unsigned char Value)
 	return FALSE;
 }
 
+extern bool use_dis_set( uint8_t  user, bool set );// yasir add in 2016-4-8
 Bool UseDisSet(unsigned char Use,Bool Set)
 {
 	printf("UseDisSet(Use=%d,Set=%d)\n",Use,Set);
@@ -295,6 +293,8 @@ Bool UseDisSet(unsigned char Use,Bool Set)
 	{
 		gUseDis &= (~Use);
 	}
+
+	use_dis_set(Use, (Use == CPT_USE)?!Set:Set);// yasir add in 2016-4-8 , 不在主界面时上位机不能控制主机，界面传的set的值与实际的相反
 	
 	return TRUE;
 }

@@ -992,7 +992,7 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 				}
 			}
 			
-			terminal_mic_state_set( MIC_COLSE_STATUS, BRDCST_MEM,BRDCST_1722_ALL, false, NULL );
+			//terminal_mic_state_set( MIC_COLSE_STATUS, BRDCST_MEM,BRDCST_1722_ALL, false, NULL );
 			cmpt_miscrophone_status_list();
 			gdisc_flags.speak_limit_num = 0;
 			gdisc_flags.apply_num = 0;
@@ -2836,6 +2836,11 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	}
 
 	terminal_vote_state_set( BRDCST_ALL );
+
+	// 设置查询签到投票结果 (2016-4-8)
+	gquery_svote_pro.running = true;
+	gquery_svote_pro.index = 0;
+	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
 void terminal_vote_state_set( uint16_t addr )

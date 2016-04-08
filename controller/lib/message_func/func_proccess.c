@@ -5,7 +5,7 @@
 
 fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
-uint8_t globle_use_dis = TERMINAL_USE |COMPUTER_USE |MENUMENT_USE|SYSTEM_USE; 	// 当前用户
+uint8_t globle_use_dis = TERMINAL_USE |MENUMENT_USE|SYSTEM_USE|COMPUTER_USE; 	// 默认当前用户, 
 
 void init_func_command_work_queue( void )
 {
