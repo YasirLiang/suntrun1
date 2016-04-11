@@ -14,7 +14,7 @@
 
 tstrlog_pimp gp_log_imp = NULL;
 
-void log_machine_post_event()
+void log_machine_post_event( void )
 {
 	assert( gp_log_imp );
 	if( gp_log_imp != NULL )
@@ -30,7 +30,7 @@ void *log_machine_thread( void* param )
 
 		write_index = gp_log_imp->log.write_index;
 		read_index = gp_log_imp->log.read_index;
-		if( ( write_index- read_index) > 0 )
+		if( (write_index- read_index) > 0 )
 		{
 			gp_log_imp->log.callback_func( gp_log_imp->log.user_obj,
 										gp_log_imp->log.log_buf[read_index % LOG_BUF_COUNT].level,
