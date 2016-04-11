@@ -19,7 +19,7 @@
 #include "upper_computer_pro.h"
 #include "camera_pro.h"
 #include "time_handle.h"
-
+#include "log_machine.h" // ÏµÍ³ÈÕÖ¾Í·ÎÄ¼ş
 #include "conference_transmit_unit.h"
 
 FILE* addr_file_fd = NULL; 								// ÖÕ¶ËµØÖ·ĞÅÏ¢¶ÁÈ¡ÎÄ¼şÃèÊö·û
@@ -951,14 +951,8 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 			fterminal_led_set_send( BRDCST_ALL );
 
 			// ·¢ËÍ±í¾ö½á¹û
-			if( msg.data&0x10 )	// ¹ã²¥±í¾ö½á¹û
-			{
-				terminal_broadcast_end_vote_result( BRDCST_ALL );
-			}
-			else
-			{
-				terminal_broadcast_end_vote_result( addr );
-			}
+			terminal_broadcast_end_vote_result( msg.data&0x10?BRDCST_ALL: addr);
+			
 			break;
 		case CHM_SUSPEND_VOTE:
 			terminal_pause_vote( 0, NULL, 0 );
@@ -2787,7 +2781,7 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 }
 
 void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
-{
+{// yasir tested in 2016-4-11
 	tmnl_pdblist tmp = NULL;
 	
 	assert( sign_flag );
@@ -2820,6 +2814,7 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	
 	for( tmp = dev_terminal_list_guard->next; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
+#if 0 // yasir change in 2016-4-11
 		if( tmp->tmnl_dev.tmnl_status.is_rgst || tmp->tmnl_dev.address.addr )
 		{
 			continue;
@@ -2833,6 +2828,19 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 		{
 			tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // Î´Ç©µ½²»ÄÜÍ¶Æ±
 		}
+#else
+		if( tmp->tmnl_dev.tmnl_status.is_rgst && (tmp->tmnl_dev.address.addr != 0xffff))
+		{
+			if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// ÒÑÇ©µ½
+			{
+				tmp->tmnl_dev.tmnl_status.vote_state = TWAIT_VOTE_FLAG;
+			}
+			else
+			{
+				tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // Î´Ç©µ½²»ÄÜÍ¶Æ±
+			}
+		}
+#endif
 	}
 
 	terminal_vote_state_set( BRDCST_ALL );
@@ -3014,7 +3022,7 @@ void terminal_state_all_copy_from_common( void )
 }
 
 void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾İÖÕ¶ËµÄ2 3 4¼üÍ³¼Æ½á¹û
-{
+{// yasir tested in 2016-4-11
 	assert( dev_terminal_list_guard );
 	if( dev_terminal_list_guard == NULL )
 		return;
@@ -3023,7 +3031,7 @@ void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾İÖÕ¶ËµÄ2 3 4¼üÍ³¼
 	uint16_t vote_total = 0, neg = 0, abs = 0, aff = 0;
 	tmnl_vote_result vote_rslt;
 
-	for( tmp = head_list; tmp != head_list; tmp = tmp->next )
+	for( tmp = head_list->next; tmp != head_list; tmp = tmp->next )
 	{
 		if( (tmp->tmnl_dev.address.addr == 0xffff) || (!tmp->tmnl_dev.tmnl_status.is_rgst) )
 		{
@@ -3041,11 +3049,11 @@ void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾İÖÕ¶ËµÄ2 3 4¼üÍ³¼
 		}
 		else if( (tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK) == TVOTE_KEY3_ENABLE )// 3¼ü°´ÏÂ ,ÆúÈ¨
 		{
-			neg++;
+			abs++;
 		}
 		else if( (tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_KEY_MARK) == TVOTE_KEY4_ENABLE )// 4¼ü°´ÏÂ ,ÔŞ³É
 		{
-			neg++;
+			aff++;
 		}
 	}
 
@@ -3054,6 +3062,11 @@ void terminal_broadcast_end_vote_result( uint16_t addr ) // ¸ù¾İÖÕ¶ËµÄ2 3 4¼üÍ³¼
 	vote_rslt.abs = abs;
 	vote_rslt.aff = aff;
 
+	gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_INFO, "------Vote Info------\nvote_total = %d	neg = %d	abs = %d	aff = %d\n", 
+								vote_total, 
+								neg,
+								abs,
+								aff );
 	if( (tmp = found_terminal_dblist_node_by_addr( addr )) != NULL )
 	{
 		terminal_send_vote_result( tmp->tmnl_dev.entity_id, addr, vote_rslt );

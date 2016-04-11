@@ -67,10 +67,10 @@ void adp_entity_time_stop(solid_pdblist new_adp_node)
 
 void adp_entity_time_update(timetype timeout, solid_pdblist new_adp_node)
 {
-		new_adp_node->solid.time.running = true;
-		new_adp_node->solid.time.count_time = timeout;
-		new_adp_node->solid.time.elapsed = false;	// 超时标志
-		new_adp_node->solid.time.start_time = get_current_time();
+	new_adp_node->solid.time.running = true;
+	new_adp_node->solid.time.count_time = timeout;
+	new_adp_node->solid.time.elapsed = false;	// 超时标志
+	new_adp_node->solid.time.start_time = get_current_time();
 }
 
 void  adp_entity_timeout( solid_pdblist adp_node )

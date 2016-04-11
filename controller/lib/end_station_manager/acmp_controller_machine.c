@@ -210,7 +210,6 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 	assert( interval_time );
 	*interval_time = timeout;
 
-	//DEBUG_INFO( "acmp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
 		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
@@ -390,7 +389,6 @@ int acmp_proc_state_resp( struct jdksavdecc_frame *cmd_frame )
 	}
 	else
 	{
-		//DEBUG_INFO( "no such inflight cmd acmp node!");
 		return -1;
 	}
 	
@@ -761,7 +759,6 @@ int acmp_connect_connect_table( uint8_t tarker_value[8],
 	else
 	{
 		// 连接表回调信息
-		DEBUG_LINE();
 		connet_table_connect_call_info.limit_speak_time = cnnt_callback_save->limit_speak_time;
 		connet_table_connect_call_info.p_cnnt_node = cnnt_callback_save->p_cnnt_node;
 		connet_table_connect_call_info.tarker_id = cnnt_callback_save->tarker_id;

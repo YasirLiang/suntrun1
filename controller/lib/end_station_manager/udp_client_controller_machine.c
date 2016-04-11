@@ -6,6 +6,10 @@
 static struct socket_info_s server_fd; // host udp as udp server information
 static inflight_plist udp_client_inflight = NULL;
 
+#ifdef __DEBUG__
+#define __UDP_CLIENT_CTL_MACH_DEBUG__ // udp client µ÷ÊÔ¿ª¹Ø
+#endif
+
 void init_udp_client_controller_endstation( int fd, struct sockaddr_in *sin )
 {
 	server_fd.sock_fd = fd;
@@ -168,8 +172,10 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
 		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
+#if 0
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
+#endif
 	}
 }
 
@@ -206,7 +212,9 @@ int udp_client_proc_resp( uint8_t *frame, int frame_len  )
 		udp_client_callback( CMD_WITH_NOTIFICATION, frame );
 		release_heap_space( &inflight_udp_client->host_tx.inflight_frame.frame ); // must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &inflight_udp_client );	// delect aecp inflight node
+#if 0
 		DEBUG_INFO( " after inflight length = %d", get_inflight_dblist_length(udp_client_inflight));
+#endif
 	}
 	else
 	{
