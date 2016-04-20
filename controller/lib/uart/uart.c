@@ -95,6 +95,7 @@ int UART_File_Set( int fd, int speed, int flow_ctrl, int databits, int stopbits,
 
 	options.c_cflag |= CLOCAL; //修改控制模式，保证程序不会占用串口  
 	options.c_cflag |= CREAD;  //修改控制模式，使得能够从串口中读取输入数据  
+	options.c_iflag &= ~(ICRNL | IXON);// 关掉ICRNL和IXON选项 为了接收0x11字符而加的设置( yasir add in 2016-4-20)
 
 	//设置数据流控制  
 	switch( flow_ctrl )  
