@@ -115,33 +115,52 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 		camera_test_form(CAMERA_CTRL_RIGHT);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_LEFT);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_UP);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_DOWN);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_ZOOM_TELE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_ZOOM_WIDE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_FOCUCS_FAR);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_FOCUCS_NEAR);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_IRIS_OPEN);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
+		
 		camera_test_form(CAMERA_CTRL_IRIS_CLOSE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		sleep(1);
+		camera_test_form(CAMERA_CTRL_STOP);
 	}
 		
 	UART_File_Close( fd ); 
