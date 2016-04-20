@@ -3,6 +3,10 @@
 #include "data.h"
 #include "terminal_system.h"
 
+#ifdef __DEBUG__
+#define __FUNC_LINK_PROCCESS__
+#endif
+
 fcwqueue fcwork_queue;						// 函数命令消息工作队列
 
 uint8_t globle_use_dis = TERMINAL_USE |MENUMENT_USE|SYSTEM_USE|COMPUTER_USE; 	// 默认当前用户, 

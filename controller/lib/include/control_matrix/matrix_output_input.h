@@ -7,7 +7,9 @@
 #define __MATRIX_OUTPUT_INPUT_H__
 
 #include "uart.h"
-#define MATRIX_OUTPUT_FILE UART1
+
+#define MATRIX_OUTPUT_FILE UART2
+//#define MATRIX_OUTPUT_FILE UART1
 
 #define MATRIX_INPUT_NUM 16 // 4 ‰»Îæÿ’Û
 #define MATRIX_OUTPUT_NUM 16// 4 ‰≥ˆæÿ’Û
