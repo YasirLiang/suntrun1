@@ -1481,6 +1481,47 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 
 /*********************************************************
 *writer:YasirLiang
+*Date:2016/4/26
+*Name:terminal_speak_limit_timeout_set
+*Param:
+*	p_tmnl_node:set timeout terminal node
+*Retern Value:
+*	None
+*state:根据系统设置设置超时时间
+***********************************************************/ 
+int terminal_speak_limit_timeout_set( tmnl_pdblist p_tmnl_node )
+{
+	uint8_t spk_limit_time = gset_sys.speak_limit;
+	bool vip_time_limit = gset_sys.vip_limitime?true:false;
+	bool chm_time_limit = gset_sys.chman_limitime?true:false;
+	int ret = -1;
+	
+	if( (p_tmnl_node != NULL) && (!spk_limit_time) )// 发言限时?
+	{
+		if( p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST	)// 普通代表?
+		{
+			host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
+		}
+		else if( p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP)
+		{
+			if( vip_time_limit )
+				host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
+		}
+		else if( (p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
+			(p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE) )
+		{
+			if( chm_time_limit )
+				host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
+		}
+
+		ret = 0;
+	}
+
+	return ret;
+}
+
+/*********************************************************
+*writer:YasirLiang
 *Date:2016/3/16
 *Name:terminal_mic_status_set_callback
 *Param:
@@ -1488,7 +1529,8 @@ void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_
 *	p_tmnl_node:callback terminal node
 *Retern Value:
 *	None
-*state:打开或关闭终端mic的回调函数
+*state:打开或关闭终端mic的回调函数:设置mic的状态;若成功连接，设置发言的
+*超时时间
 ***********************************************************/ 
 void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_node )
 {
@@ -1538,6 +1580,18 @@ void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_no
 			true,
 			p_tmnl_node );
 	}
+
+	/**
+	*change data: 26-4-2016
+	*1、根据系统的设置，设置超时时间
+	*2、此时修改tmnl_pdblist的结构体，
+	*	增加超时发言元素
+	*/
+	if( connect_flag )
+		terminal_speak_limit_timeout_set( p_tmnl_node );
+
+	if( !connect_flag && p_tmnl_node != NULL )// 停止计时
+		host_timer_stop( &p_tmnl_node->tmnl_dev.spk_timeout );
 	
 	terminal_main_state_send( 0, NULL, 0 );
 }
@@ -1553,23 +1607,38 @@ void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_no
 *	0,nomal.
 *state:管理系统终端的发言时长，到时断开连接，
 *	单位是分钟;超时检查从讨论开始; 终端限时发言的系统超时管理机制的接口函数
+*Change Date:26-4-2016
+*Context:与函数terminal_mic_status_set_callback(设置超时时间)共同实现发言的超时机制
+*注:在协议下的处理方式是不用调用此函数，见函数terminal_key_discuccess的协议
+*注释部分(// 见协议命令bit3-bit0=1000:关闭麦克风)
 ***********************************************************/ 
 int terminal_mic_speak_limit_time_manager_event( void )
 {
 	assert( dev_terminal_list_guard );
 	if( dev_terminal_list_guard == NULL )
 		return -1;
-	
+#if 0	
 	uint8_t system_state = get_sys_state();
 	if(  system_state != DISCUSS_STATE/* || p_node == dev_terminal_list_guard */ )
 	{
 		return -1;
 	}
-	
-	/*查看系统连接表, 并检查超时*/
+#endif
+
 #ifdef ENABLE_CONNECT_TABLE
+	/*查看系统连接表, 并检查超时*/
 	connect_table_timeouts_image();
 #else
+	/*查看会讨单元链表，并检查超时*/
+	tmnl_pdblist  tmnl_node = dev_terminal_list_guard->next;
+	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
+	{
+		if( (tmnl_node != NULL) && host_timer_timeout(&tmnl_node->tmnl_dev.spk_timeout) )
+		{// timer out
+			trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node );
+			terminal_speak_track(tmnl_node->tmnl_dev.address.addr, false );
+		}
+	}
 #endif
 
 	return 0;
@@ -1653,7 +1722,6 @@ void terminal_state_set_base_type( uint16_t addr, tmnl_state_set tmnl_state )
 	{
 		terminal_state_set( tmnl_state, addr, tmp->tmnl_dev.entity_id );
 	}
-	
 }
 
 /*主席申请类型终端状态设置*/
@@ -3502,6 +3570,10 @@ int terminal_key_discuccess( uint16_t addr, uint8_t key_num, uint8_t key_value, 
 		{
 			terminal_key_speak_proccess( dis_node, false, recv_msg );
 		}
+	}
+	else if( key_num == 0 && key_value )
+	{// 见协议命令bit3-bit0=1000:关闭麦克风
+		terminal_key_speak_proccess( dis_node, false, recv_msg );
 	}
 
 	return 0;

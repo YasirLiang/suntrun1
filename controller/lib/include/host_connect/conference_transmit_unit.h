@@ -23,6 +23,8 @@
 #define CONFERENCE_OUTCHANNEL_MAX_NUM 8// 定义模块最大输出数量
 #define CONFERENCE_PER_MODEL_OUT_MAX_NUM 2// 定义同时能最大的输出数量
 
+#define CONFERENCE_TRANSMIT_UNIT_NAME "DCS6000-UNITE"
+
 typedef struct _confenrence_trans_model
 {
 	uint64_t tarker_id;

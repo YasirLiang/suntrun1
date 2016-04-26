@@ -44,7 +44,7 @@ typedef struct _tthost_system_set
 	uint8_t apply_limit;		// 申请人数限制 5 
 	uint8_t chman_limitime;	// 主席发言限时 6 只有1和0，代表限时与不限时
 	uint8_t vip_limitime;	// VIP发言限时 7 只有1和0，代表限时与不限时
-	uint8_t spk_limtime;	// 发言限制时长 8 0 为限时，1-63代表限时时间
+	uint8_t spk_limtime;	// 发言限制时长 8 0 为无限时，1-63代表限时时间
 	
 	uint8_t temp_close;		// 暂时关闭,主机与终端 主席优先权限。1、静音；0、关闭
 	uint8_t sign_type;		// 签到类型

@@ -399,7 +399,8 @@ void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  tar
 		}
 
 		init_terminal_dblist_node_info( tmnl_list_station );
-		tmnl_list_station->tmnl_dev.entity_id = target_id; 
+		tmnl_list_station->tmnl_dev.entity_id = target_id;
+		host_timer_stop( &tmnl_list_station->tmnl_dev.spk_timeout );
 		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
 	}
 

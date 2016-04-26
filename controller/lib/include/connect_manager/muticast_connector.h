@@ -25,11 +25,13 @@
 #define CVNT_MUTICAST_OUT_CHANNEL 0// 定义模块输出通道为0
 #define CVNT_MUTICAST_IN_CHNNEL CONFERENCE_RECIEVE_UNIT_IN_CHNNEL// 定义会议接收单元输入通道为0
 
+#define CONVENTIONER_CNNT_ERR_LOG_TIMEOUT 30 // 连接出错 记录日志超时时间ms单位
+
 typedef enum _econventioner_state
 {
 	CVNT_OFFLINE,
-	CVNT_ONLINE,
-	CVNT_OUT_CONNECT,	// 未连接成功,update 成功时可改变为CVNT_ONLINE，或count为0时可置为CVNT_OFFLINE
+	CVNT_ONLINE,// 此状态可发送查看连接转状态的命令
+	CVNT_OUT_CONNECT,	// 未连接成功,update 成功时可改变为CVNT_ONLINE，或count为0时可置为CVNT_OFFLINE 此状态可发送连接的命令
 	CVNT_STREAM_ON,
 	CVNT_STREAM_OFF
 }econventioner_state;
@@ -41,6 +43,7 @@ struct host_muticastor	// 主机的广播者
 	uint16_t current_index;  // 当前列表索引,用于超时连接表的处理
 	uint16_t tarker_index;	// 索引
 	uint64_t uid; 			// ID
+	solid_pdblist solid_node;// // change (add in 26-4-2016)
 	bool muticastor_exsit;	// 
 };
 
@@ -49,8 +52,10 @@ typedef struct conventioner_cnnt_list_node	// 与会者连接列表节点 24个字节
 	uint16_t state;							// 与会者的状态
 	bool connect_flag;
 	struct host_timer timeout;
+	struct host_timer errlog_timer;// 错误 日志记录定时器
 	uint16_t count; // 从零开始计数，未连接上的次数 ，可以设置若大于一定的值 ，对其不再连接,也可以设置为零使其重新连接
 	uint16_t listerner_index;
+	solid_pdblist solid_node;// change (add in 26-4-2016)
 	uint64_t uid;
 }conventioner_cnnt_list_node;
 

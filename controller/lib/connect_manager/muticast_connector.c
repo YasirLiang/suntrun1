@@ -7,6 +7,8 @@
 #include "muticast_connector.h"
 #include "acmp_controller_machine.h"
 #include "time_handle.h"
+#include "log_machine.h"
+
 muticastor_connect_pro gmuti_connect_pro;
 conventioner_cnnt_list_node* pgconventioner_cnnt_list = NULL;// 以指针指向的一个由conventioner_cnnt_list_node数据块。可往表里添加内容，也可清除相应的内容
 bool offline_reconnect = false;
@@ -67,7 +69,8 @@ int muticast_connector_connect_callback( uint64_t tarker_id, conventioner_cnnt_l
 				gmuti_connect_pro.muticastor.connect_num++;
 				connect_node->connect_flag = true;
 			}
-			
+
+			// 连接成功，设置当前的状态为
 			connect_node->state = CVNT_ONLINE;
 			connect_node->count = 1;
 			host_timer_update( CVNT_ONLINE_TIME_OUT*1000, &connect_node->timeout );
@@ -123,8 +126,8 @@ int muticast_connector_proccess_online( conventioner_cnnt_list_node* connect_nod
 		acmp_update_muticastor_conventioner( gmuti_connect_pro.muticastor.uid, \
 			gmuti_connect_pro.muticastor.tarker_index,\
 			connect_node->uid, connect_node->listerner_index, \
-			muticast_connector_proccess_online_callback, connect_node,1,\
-			muticast_connnect_sequence++ );
+			muticast_connector_proccess_online_callback, connect_node,\
+			muticast_connnect_sequence++, 1 );
 		
 		ret = 0;
 	}
@@ -157,11 +160,20 @@ int muticast_connector_proccess_online_callback( uint64_t tarker_stream_id, uint
 					gmuti_connect_pro.muticastor.connect_num++; // first connect
 					connect_node->connect_flag = true;
 				}
-			
+
+#if 0
 				gmuti_connect_pro.current_listener->state = CVNT_ONLINE;
 				connect_node->count = 1; // meaning connect once and connect successfully
 				host_timer_update( CVNT_ONLINE_TIME_OUT*1000, &connect_node->timeout );
 				ret = 0;
+#else
+				// 设置为CVNT_OFFLINE状态，目的是在当前的CVNT_ONLINE状态时重新发送连接connect命令
+				// 超时的时间不变为在线的时间CVNT_ONLINE_TIME_OUT
+				connect_node->state = CVNT_OFFLINE; // for reflash connect
+				connect_node->count = 1;// for reflash connect
+				host_timer_update( CVNT_ONLINE_TIME_OUT*1000, &connect_node->timeout );
+				ret = 0;
+#endif
 			}	
 		}
 		else
@@ -242,24 +254,27 @@ int muticast_connector_time_tick( void )
 {
 	conventioner_cnnt_list_node* p_cvnt_node = pgconventioner_cnnt_list;
 	conventioner_cnnt_list_node* p_cur_node = NULL;
-	uint16_t *p_current_index = NULL;
+	uint16_t *p_current_index = NULL, current_index = MAX_BD_CONNECT_NUM;
 	uint16_t conventor_state;
 	emuticast_node_pro muti_flags = gmuti_connect_pro.eelem_flags;
 	uint16_t total_num = gmuti_connect_pro.muticastor.cvntr_total_num;
-
+#if 0
 	if( !over_time_listen(CCU_TRANS_CONNECT_BEGIN_TIME) )
+	{
+		//DEBUG_INFO( "No arrive time" );
 		return -1;
+	}
+#endif
 
 	//DEBUG_INFO( "total_num = %d--muti_flags = %d", total_num, muti_flags );
-	if( (p_cvnt_node == NULL) || \
-		(total_num == 0)\
-		||(muti_flags != CVNT_CHECK_IDLE) || ( !gmuti_connect_pro.muticastor.muticastor_exsit) )
+	if( (p_cvnt_node == NULL) || (total_num == 0) ||\
+		(muti_flags != CVNT_CHECK_IDLE) ||( !gmuti_connect_pro.muticastor.muticastor_exsit) )
 	{
 		return -1;
 	}
 
 	/**
-	 * 检查当前指针的有效性，即不能超出数组的范围 
+	 * 检查当前指针的有效性，即不能超出数组的有效范围 
 	 */
 	p_current_index = &gmuti_connect_pro.muticastor.current_index;
 	if( ((*p_current_index + 1) > MAX_BD_CONNECT_NUM ) ||\
@@ -270,17 +285,64 @@ int muticast_connector_time_tick( void )
 		return -1;
 	}
 
-	/**
-	 * 只处理当前的超时节点;
-	 * 若当前节点超时，处理完成后，重新开始定时器并把当前指针指向下一个元素;
-	 * 若不超时，则返回函数
-	 */
-	p_cur_node = &p_cvnt_node[*p_current_index];
+	/*move to next muticast node or begin the head*/
+	current_index = *p_current_index;
+	if( (*p_current_index >= (total_num - 1 )) || \
+		((*p_current_index + 1) >= MAX_BD_CONNECT_NUM) )// last index,make zero at the begining
+	{
+		*p_current_index = 0;
+	}
+	else
+	{
+		(*p_current_index)++; // 这里是解引用自加
+	}
+
+	/*指向当前可操作节点*/
+	p_cur_node = &p_cvnt_node[current_index];
 	if( NULL == p_cur_node )
 	{
 		return -1;
 	}
 
+	/**
+	*检查节点的有效性并作相应的处理
+	*1、实体节点需存在。2、广播表节点需在连接的状态下有效
+	*3、处理:报告日志的断开信息
+	*/
+	if( p_cur_node->solid_node == NULL ||\
+		p_cur_node->solid_node->solid.connect_flag == DISCONNECT )
+	{
+		p_cur_node->state = CVNT_OFFLINE; // for reflash connect
+		p_cur_node->count = 1;// for reflesh connect
+		
+		if( host_timer_timeout( &p_cur_node->errlog_timer) )
+		{
+			if( p_cur_node->solid_node == NULL )
+			{
+				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_WARNING, "connector(0x%016llx-%d) is init Err: no solid info", 
+											p_cur_node->uid, 
+											p_cur_node->listerner_index );
+			}
+			else if(p_cur_node->solid_node->solid.connect_flag == DISCONNECT)
+			{
+				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_NOTICE, "connector(0x%016llx-%d) is out off network, muticastor (0x%016llx-%d )", 
+											p_cur_node->uid, 
+											p_cur_node->listerner_index,
+											gmuti_connect_pro.muticastor.uid,
+											gmuti_connect_pro.muticastor.tarker_index );
+			}
+
+			host_timer_update( CONVENTIONER_CNNT_ERR_LOG_TIMEOUT*1000, &p_cur_node->errlog_timer );
+		}
+		
+		return -1;
+	}
+	
+	/**
+	 * 只处理当前的超时节点;
+	 * 若当前节点超时，处理完成后，重新开始定时器并把当前指针指向下一个元素;
+	 * 若不超时，则返回函数
+	 */
 	gmuti_connect_pro.current_listener = p_cur_node;
 	if( host_timer_timeout(&(p_cur_node->timeout )) )
 	{
@@ -306,17 +368,6 @@ int muticast_connector_time_tick( void )
 				DEBUG_INFO( "conventioner state is wrong:Please check the right conventioner state!" );
 				break;
 		}
-	}
-
-	/*move to next muticast node or begin the head*/
-	if( (*p_current_index >= (total_num - 1 )) || \
-		((*p_current_index + 1) >= MAX_BD_CONNECT_NUM) )// last index,make zero at the begining
-	{
-		*p_current_index = 0;
-	}
-	else
-	{
-		(*p_current_index)++; // 这里是解引用自加
 	}
 
 	return 0;
@@ -411,18 +462,20 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 	if( stream_output_desc.descriptor_index !=  CVNT_MUTICAST_OUT_CHANNEL || \
 		stream_output_desc.descriptor_index !=  CVNT_MUTICAST_IN_CHNNEL )
 	{
-        	DEBUG_INFO( "stream_output_desc.descriptor_index = %d : Error",stream_output_desc.descriptor_index);
+        	DEBUG_INFO( "stream_output(/input)_desc.descriptor_index = %d : Error",stream_output_desc.descriptor_index);
 		return -1;
 	}
 
-	// 检查是否不为中央控制接收模块
+	
 	memcpy( &entity_name, &desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
-	if( strcmp((char*) &entity_name, CCU_R_MODEL_NAME) == 0 )
+#if 0
+	// 检查是否为中央控制接收模块
+	if( strcmp((char*) &entity_name, CVNT_MUTICAST_NAME) != 0 )
 	{// 系统的接收模块不初始化
 		DEBUG_INFO( "entity not a CCU tramsmit uinit %s", (char*)&entity_name.value);
 		return -1;
 	}
-
+#endif
 	bool is_muticastor = false;
 	if( strcmp((char*) &entity_name, CVNT_MUTICAST_NAME) == 0 )
 	{
@@ -443,6 +496,22 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 		}
 	}
 
+	/*
+	**寻找是否存在实体
+	**
+	*/
+	solid_pdblist solid_node = search_endtity_node_endpoint_dblist( endpoint_list, endtity_id );
+	if( solid_node == NULL )
+	{
+		DEBUG_INFO( "Muticast connector not found solid endtity( id = 0x%016llx)", endtity_id );
+		return -1;
+	}
+
+	/*
+	**建立被广播者列表与初始化中央传输单元
+	**
+	*/
+	assert( solid_node != NULL );
 	if( is_muticastor )
 	{
 		if( !gmuti_connect_pro.muticastor.muticastor_exsit )
@@ -450,6 +519,8 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 			gmuti_connect_pro.muticastor.uid = endtity_id;
 			gmuti_connect_pro.muticastor.tarker_index = stream_output_desc.descriptor_index;
 			gmuti_connect_pro.muticastor.muticastor_exsit = true;
+			gmuti_connect_pro.muticastor.solid_node = solid_node;
+			over_time_set( CCU_TRANS_CONNECT_BEGIN_TIME, 10*1000 );
 			DEBUG_INFO( "muticastor enstation is 0x%016llx ", gmuti_connect_pro.muticastor.uid );
 		}
 	}
@@ -467,6 +538,7 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 			list_node[*p_num].state = CVNT_OFFLINE;
 			list_node[*p_num].count = 1;
 			list_node[*p_num].connect_flag = false;
+			list_node[*p_num].solid_node = solid_node;
 			host_timer_start( 200, &(list_node[*p_num].timeout));// set 200ms time for the first time
 
 			(*p_num)++;
@@ -488,6 +560,7 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 int muticast_connector_init( void )
 {
 	int i = 0;
+	
 	memset( &gmuti_connect_pro, 0, sizeof(muticastor_connect_pro));
 	gmuti_connect_pro.eelem_flags = CVNT_CHECK_IDLE;// check stop
 	over_time_set( CCU_TRANS_CONNECT_BEGIN_TIME, 10*1000 );
@@ -506,6 +579,7 @@ int muticast_connector_init( void )
 		pgconventioner_cnnt_list[i].listerner_index = 0;
 		pgconventioner_cnnt_list[i].state = CVNT_OFFLINE;
 		pgconventioner_cnnt_list[i].uid = 0;
+		host_timer_start( CONVENTIONER_CNNT_ERR_LOG_TIMEOUT*1000, &(pgconventioner_cnnt_list[i].errlog_timer) );
 		host_timer_stop( &(pgconventioner_cnnt_list[i].timeout) );
 	}
 	
@@ -514,6 +588,14 @@ int muticast_connector_init( void )
 	return 0;
 }
 
+/*************************************
+*Writer:YasirLiang
+*Note Date:2015-4-26
+*Name:muticast_connector_destroy
+*Param:无
+*Return value:无
+*Function:释放系统维护广播连接表
+**************************************/
 void muticast_connector_destroy( void )
 {
 	gmuti_connect_pro.current_listener = NULL;

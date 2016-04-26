@@ -10,6 +10,7 @@
 #include "jdksavdecc_world.h"
 #include "conference.h"
 #include "upper_computer.h"
+#include "host_timer.h"
 #include <netinet/in.h>// struct sockaddr_in/socklen_t
 
 #define SYSTEM_TMNL_MAX_NUM 256	// 系统中终端最大的数量
@@ -317,6 +318,7 @@ typedef  struct _tterminal_state	// 终端的状态，一个终端对应一个状态
 typedef  struct _tterminal
 {
 	uint64_t entity_id;			// 实体ID
+	host_timer spk_timeout;		// 发言超时时间 add in 26-4-2016
 	terminal_address_list address; // 终端地址
 	terminal_state tmnl_status;	 // 终端的状态 
 }conference_terminal_device; 
