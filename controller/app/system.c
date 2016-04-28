@@ -24,6 +24,7 @@
 #include "connector_subject.h"
 #include "avdecc_manage.h"
 #include "log_machine.h"
+#include "en485_send.h"
 
 void init_system( void )
 {
@@ -73,6 +74,8 @@ void init_system( void )
 	system_database_init();// 打开数据库
 
 	avdecc_manage_init();// 初始化avdecc 管理 
+
+	en485_send_init(); // 使能发送485端数据
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
@@ -164,6 +167,8 @@ void system_close( struct threads_info *p_threads )
 {	
 	int can_num = p_threads->pthread_nums;
 	int i = 0, ret;
+
+	en485_send_mod_cleanup();// 释放使能发送485端数据文件
 
 	// 退出线程
 	sem_post( &sem_waiting );

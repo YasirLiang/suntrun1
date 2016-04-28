@@ -1,5 +1,6 @@
 #include "uart.h"
 #include "pelco_d.h"
+#include "en485_send.h"
 #include <pthread.h>
 
 // test for camera 
@@ -82,13 +83,21 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 	//uint8_t rcv_buf[UART_BUF_SIZE]; // yasir change    
 	//uint8_t send_buf[100] = { 0xab, 0x04, 0x00, 0x80, 0x00, 0x2f, 0xab, 0x04, 0x00, 0x80, 0x00, 0x2f }; // yasir change       
 
-	if(argc != 3)  
+	if(argc != 4)  
 	{  
-		printf("Usage:%s /dev/ttySn (camera num)\n",argv[0]);  
+		printf("Usage:%s /dev/ttySn (camera num) (en 485 send 0/1)\n",argv[0]);  
 		return FALSE;  
 	}
 
 	gcamera_addr = atoi(argv[2]);
+
+	if( atoi(argv[3]) )
+	{
+		while( !en485_send_init() )
+		{
+			DEBUG_MSGINFO("eable 485 Pin failed.");  
+		}
+	}
 	
 	fd = UART_File_Open( fd,argv[1] );//打开串口，返回文件描述符 
 	if( fd == -1 )
@@ -114,56 +123,67 @@ int main( int argc, char**argv )  // 修改过的，用于向串口发送数据或接收串口数据
 	{    
 		camera_test_form(CAMERA_CTRL_RIGHT);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_LEFT);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_UP);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_DOWN);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_ZOOM_TELE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_ZOOM_WIDE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_FOCUCS_FAR);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_FOCUCS_NEAR);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_IRIS_OPEN);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 		
 		camera_test_form(CAMERA_CTRL_IRIS_CLOSE);
 		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
-		sleep(1);
+		sleep(2);
 		camera_test_form(CAMERA_CTRL_STOP);
+		UART_File_Send( fd, gsend_buf, CAMERA_PELCO_D_DEAL_LEN );
 	}
 		
-	UART_File_Close( fd ); 
+	UART_File_Close( fd );
+	en485_send_mod_cleanup();
 	
 	pthread_join( uart_recv_thread, NULL );
 	pthread_exit( NULL );
