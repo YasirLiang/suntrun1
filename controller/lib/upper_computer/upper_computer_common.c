@@ -5,7 +5,7 @@
 #include "ring_buf.h"
 #include "time_handle.h"
 #include "wait_message.h"
-#include "send_common.h"
+#include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 
 tchar_ring_buf grecv_ucmpt_buf_pro;// 上位机环形接受缓冲区 处理参数
 #define RECV_FROM_UPPTER_BUF_SIZE 2048 // 上位机环形接受缓冲区 大小
@@ -217,10 +217,10 @@ int upper_computer_common_recv_messsage_save( int fd, struct sockaddr_in *sin_in
 void upper_computer_recv_message_get_pro( void )
 {
 	uint8_t ch_temp;
-	bool ret = false;
+	
 	while( char_ring_buf_get( &grecv_ucmpt_buf_pro, &ch_temp ))
 	{
-		ret = upper_computer_comm_recv_msg_pro( &grecv_upper_cmpt_msg, ch_temp );
+		upper_computer_comm_recv_msg_pro( &grecv_upper_cmpt_msg, ch_temp );
 		over_time_set( CPT_RCV_GAP, 10 );
 	}
 
@@ -297,11 +297,13 @@ bool upper_computer_comm_recv_msg_pro( thost_upper_cmpt_msg *pmsg, uint8_t save_
 					// 处理接收的上位机发送过来的数据包
 					int rx_status = -1;
 					proccess_udp_client_msg_recv((uint8_t*)pmsg, msg_len, &rx_status );
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 					if( rx_status && is_wait_messsage_active_state() )
 					{
 						set_wait_message_status( 0 );
 						sem_post( &sem_waiting );
 					}
+#endif
 
 					grecv_cmpt_msg_pro.msg_len = 0;
 					return true;

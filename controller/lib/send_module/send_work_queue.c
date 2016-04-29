@@ -66,4 +66,21 @@ int send_work_queue_message_save( tx_data queue_msg, sdpwqueue *sd_work_quue )//
 	return 0;
 }
 
+bool swap_sdpqueue( sdpwqueue *sdpw_queue1, sdpwqueue *sdpw_queue2 )// 交换发送队列
+{
+	queue tmp_queue;
+	if( sdpw_queue1 == NULL || sdpw_queue2 == NULL )
+	{
+		return false;
+	}
+
+	tmp_queue.head = sdpw_queue1->work.head;
+	tmp_queue.trail = sdpw_queue1->work.trail;
+	sdpw_queue1->work.head = sdpw_queue2->work.head;
+	sdpw_queue1->work.trail = sdpw_queue2->work.trail;
+	sdpw_queue2->work.head = tmp_queue.head;
+	sdpw_queue2->work.trail =  tmp_queue.trail;
+	
+	return true;
+}
 

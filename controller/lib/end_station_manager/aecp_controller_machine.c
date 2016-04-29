@@ -4,6 +4,7 @@
 #include "terminal_command.h"
 #include "conference.h"
 #include "conference_host_to_end.h"
+#include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
 static uint16_t aecp_seq_id = 0;
 static solid_pdblist aecp_solid_guard = NULL;
@@ -141,7 +142,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	inflight_plist aecp_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
-	uint32_t interval_time = 0;
          
 	if( aecp_sta != NULL )
 	{
@@ -184,12 +184,15 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
 		
+#ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // ÉèÖÃ³¬Ê±
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
+#endif
 	}
 	else
 	{
-		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
+		//transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
+		system_tx( frame,  frame_len, true, TRANSMIT_TYPE_AECP, false, aecp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
 }
 

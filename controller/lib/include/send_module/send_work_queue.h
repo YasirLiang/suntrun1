@@ -41,5 +41,6 @@ typedef struct _tsend_data_pthread_work_queue // 系统数据发送队列
 extern uint8_t get_send_queue_message_type( sdpwqueue* send_wq );
 extern p_sdpqueue_wnode send_queue_message_get( sdpwqueue* send_wq );
 extern int send_work_queue_message_save( tx_data p_queue_msg, sdpwqueue *sd_work_quue );// 注:p_queue_msg中的frame元素是指向已分配堆空间的空间
+extern bool swap_sdpqueue( sdpwqueue *sdpw_queue1, sdpwqueue *sdpw_queue2 );// 交换发送队列
 
 #endif

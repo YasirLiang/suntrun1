@@ -10,9 +10,12 @@
 #include "matrix_output_input.h"
 #include "control_matrix_common.h"
 
+#ifndef SEND_DOUBLE_QUEUE_EABLE // 没有定义
 volatile bool is_inflight_timeout = false;
-static bool system_stop = false;	// 线程退出全局变量
 extern bool acmp_recv_resp_err;	// acmp 接收到命令但响应错误参数
+#endif
+
+static bool system_stop = false;	// 线程退出全局变量
 
 void thread_fn_thread_stop( void )
 {
@@ -49,7 +52,8 @@ int fn_timer_cb( struct epoll_priv*priv )
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
 	muticast_connector_time_tick();
-
+	
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );	
@@ -62,7 +66,8 @@ int fn_timer_cb( struct epoll_priv*priv )
 	{
 		sem_post( &sem_waiting ); 
 	}
-	
+#endif
+
     	return read_len;
 }
 
@@ -98,6 +103,8 @@ int fn_netif_cb( struct epoll_priv *priv )
 		pthread_mutex_lock(&ginflight_pro.mutex);
 		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
 		pthread_mutex_unlock(&ginflight_pro.mutex);
+		
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 		{
 			int msr_status = 0;
@@ -106,6 +113,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 			sem_post( &sem_waiting ); 
 			acmp_recv_resp_err = false;
 		}
+#endif
 	}
 	
 	return 0;

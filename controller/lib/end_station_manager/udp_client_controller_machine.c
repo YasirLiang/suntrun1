@@ -129,7 +129,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	bool is_retried = false;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
-	uint32_t interval_time = 0;
+	//uint32_t interval_time = 0;
          
 	if( inflight_station != NULL )
 	{
@@ -171,7 +171,8 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	{
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
-		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
+		//transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
+		system_tx( frame,  frame_len, true, TRANSMIT_TYPE_UDP_CLT, false, NULL, &inflight_station->host_tx.inflight_frame.sin_in );
 #if 0
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );

@@ -6,6 +6,7 @@
 #include "control_matrix_common.h"
 #include "time_handle.h"
 #include "avdecc_manage.h"// 发现终端，读描述符，移除终端
+#include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -55,7 +56,9 @@ int thread_pipe_fn( void *pgm )
 						status = set_wait_message_active_state();
 						assert( status == 0 );
 						uart_resp_send_interval_timer_start(); // start timer
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 						sem_wait( &sem_waiting );
+#endif
 						status = set_wait_message_idle_state();
 						assert( status == 0 );
 					}
@@ -65,7 +68,9 @@ int thread_pipe_fn( void *pgm )
 						status = set_send_interval_wait_state();
 						assert( status == 0 );
 						uart_resp_send_interval_timer_start(); // start timer
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 						sem_wait( &sem_waiting );
+#endif
 						status = set_send_interval_idle_state();
 						assert( status == 0 );
 						resp_send_interval_timer_stop();

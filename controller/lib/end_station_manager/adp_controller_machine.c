@@ -45,7 +45,6 @@ void adp_entity_time_tick( solid_pdblist guard )
 					disconnect_node->tmnl_dev.tmnl_status.is_rgst = false;
 					terminal_delect_register_addr(disconnect_node->tmnl_dev.address.addr);
 				}
-
 			}
 		}
 	}

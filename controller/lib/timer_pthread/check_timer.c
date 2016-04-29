@@ -9,7 +9,8 @@
 #include "check_timer.h"
 #include "avdecc_funhdl.h"
 #include "wait_message.h"
-#include "send_common.h"
+#include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE		
+
 #include "send_interval.h"
 
 pthread_t check_timer_pthread;// 检查定时器线程
@@ -37,7 +38,7 @@ void check_timer_proccess( void )
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
 	//muticast_connector_time_tick();
-
+#ifndef SEND_DOUBLE_QUEUE_EABLE		
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
 		set_wait_message_status( WAIT_TIMEOUT );	
@@ -50,6 +51,7 @@ void check_timer_proccess( void )
 	{
 		sem_post( &sem_waiting ); 
 	}
+#endif
 }
 
 int check_timer_create( pthread_t *check_pthread )

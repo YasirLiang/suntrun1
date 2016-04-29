@@ -10,10 +10,14 @@
 //********************************
 
 #include "send_common.h"
+#include "time_handle.h"
 
 #define CHECK_SYSTEM_SEND_QUEUE_TIMEOUT 200 //  检查系统是否发送数据完成的超时检查时间(MS)
 
-sem_t sem_waiting; // 发送等待信号量，所有线程可见
+#ifndef SEND_DOUBLE_QUEUE_EABLE
+sem_t sem_waiting; // 发送等待信号量，所有线程可见,双线程则不使用信号量
+#endif
+
 sdpwqueue net_send_queue;// 网络数据发送工作队列
 
 #ifdef SEND_DOUBLE_QUEUE_EABLE
@@ -22,7 +26,9 @@ sdpwqueue gwrite_send_queue; // 发送双队列的写队列
 
 void init_sem_wait_can( void )
 {
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 	sem_init( &sem_waiting, 0, -1 );
+#endif
 }
 
 void init_network_send_queue( void )
@@ -74,15 +80,16 @@ void destroy_network_send_work_queue( void )
 	}*/
 }
 
-void system_packet_save_send_queue( tx_data tnt )
+int system_packet_save_send_queue( tx_data tnt )
 {
 	// 加入网络数据发送队列
 	uint16_t frame_len = tnt.frame_len;
 	sdpwqueue*  send_wq = &net_send_queue;
+	int ret = -1;
 
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len < 0) )
 	{
-		return ;
+		return ret;
 	}
 	
 #ifdef SEND_DOUBLE_QUEUE_EABLE
@@ -90,7 +97,7 @@ void system_packet_save_send_queue( tx_data tnt )
 	bool read_empty = is_queue_empty( &send_wq->work );
 
 	pthread_mutex_lock( &send_wq->control.mutex );
-	send_work_queue_message_save( tnt, &gwrite_send_queue );
+	ret = send_work_queue_message_save( tnt, &gwrite_send_queue );
 	pthread_mutex_unlock( &send_wq->control.mutex );
 
 	if( write_empty && read_empty )
@@ -106,11 +113,13 @@ void system_packet_save_send_queue( tx_data tnt )
 	sdpwqueue*  send_wq = &net_send_queue;
 	pthread_mutex_lock( &send_wq->control.mutex );
 	
-	send_work_queue_message_save( tnt, send_wq );
+	ret = send_work_queue_message_save( tnt, send_wq );
 	
 	pthread_cond_signal( &send_wq->control.cond );
 	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
 #endif
+
+	return ret;
 }
 
 void send_common_check_squeue( void )
@@ -124,11 +133,9 @@ void send_common_check_squeue( void )
 		{
 			if( write_empty && read_empty )
 			{
-				pthread_cond_signal( &net_send_queue->control.cond );
+				pthread_cond_signal( &net_send_queue.control.cond );
 			}
 		}
 	}	
-}
-
-int 
+} 
 

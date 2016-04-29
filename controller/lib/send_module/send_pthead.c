@@ -23,7 +23,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 	
 	while( 1 )
 	{
-		if( over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL) )
+		if( !over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL) )
 		{
 			continue;
 		}
@@ -31,6 +31,16 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 #ifdef SEND_DOUBLE_QUEUE_EABLE// Ë«¶ÓÁÐ·¢ËÍÏß³Ìº¯Êý´¦ÀíÁ÷³Ì
 		bool write_empty = is_queue_empty( &gwrite_send_queue.work );
 		bool read_empty = is_queue_empty( &p_send_wq->work );
+
+		/**
+		  *¶Á¶ÓÁÐÎª¿Õ£¬Ð´²»Îª¿Õ£¬½»»»¶ÁÐ´¶ÓÁÐ
+		  */ 
+		if( read_empty && !write_empty )
+		{
+			pthread_mutex_lock( &p_send_wq->control.mutex );
+			swap_sdpqueue( p_send_wq, &gwrite_send_queue );
+			pthread_mutex_unlock( &p_send_wq->control.mutex );
+		}
 
 		/**
 		  *¶ÁÐ´¶ÓÁÐ¶¼Îª¿Õ£¬Ïß³ÌË¯Ãß
@@ -44,19 +54,82 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		}
 
 		/**
-		  *¶Á¶ÓÁÐÎª¿Õ£¬Ð´²»Îª¿Õ£¬½»»»¶ÁÐ´¶ÓÁÐ
-		  */ 
-		if( read_empty && !write_empty )
-		{
-			pthread_mutex_lock( &p_send_wq->control.mutex );
-			pthread_mutex_unlock( &p_send_wq->control.mutex );
-		}
-
-		/**
 		  *È¡³ö¶ÓÁÐÈÎÎñ´¦Àí
 		  */
+		uint8_t dest_raw[6] = {0};
+		struct sockaddr_in udp_sin;
+		uint32_t resp_interval_time = 0;
+		p_sdpqueue_wnode p_send_wnode = NULL;
+
+		// »ñÈ¡¶ÓÁÐÊý¾Ý
+		p_send_wnode = send_queue_message_get( p_send_wq );
+		if( p_send_wq->work.head == NULL )
+		{ // while queue isempty,make sure the queue trail not to be used again!!!!  
+			if( p_send_wq->work.trail != NULL )
+			{
+				p_send_wq->work.trail = NULL;
+			}
+		}
 		
+		if( NULL == p_send_wnode )
+		{
+			DEBUG_INFO( "No send queue message: ERROR!" );
+			continue;
+		}
+
+		uint16_t send_frame_len = p_send_wnode->job_data.frame_len;
+		uint8_t data_type = p_send_wnode->job_data.data_type;
+		bool notification_flag = p_send_wnode->job_data.notification_flag;
+		bool is_resp_data = p_send_wnode->job_data.resp;
+		if( send_frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+		{
+			if( p_send_wnode->job_data.frame != NULL )
+			{
+				free( p_send_wnode->job_data.frame );
+				p_send_wnode->job_data.frame = NULL;
+			}
+			
+			if( NULL != p_send_wnode )
+			{
+				free( p_send_wnode ); // ÊÍ·Å¶ÓÁÐ½Úµã
+				p_send_wnode = NULL;
+			}
+
+			continue;
+		}
+
+		memset( send_frame, 0, sizeof(send_frame) );
+		memcpy( send_frame, p_send_wnode->job_data.frame, send_frame_len );
+		memcpy( dest_raw, p_send_wnode->job_data.raw_dest, 6 );
+		memcpy( &udp_sin, &p_send_wnode->job_data.udp_sin, sizeof(struct sockaddr_in));
+		if( p_send_wnode->job_data.frame != NULL )
+		{
+			free( p_send_wnode->job_data.frame );
+			p_send_wnode->job_data.frame = NULL;
+		}
 		
+		if( NULL != p_send_wnode )
+		{
+			free( p_send_wnode ); // ÊÍ·Å¶ÓÁÐ½Úµã
+			p_send_wnode = NULL;
+		}
+
+		// ready to sending data
+		pthread_mutex_lock(&ginflight_pro.mutex);
+		tx_packet_event( data_type, 
+					    notification_flag, 
+					    send_frame, 
+					    send_frame_len, 
+					    &net_fd, 
+					    command_send_guard, 
+					    dest_raw, 
+					    &udp_sin, 
+					    is_resp_data, 
+					    &resp_interval_time );
+		pthread_mutex_unlock(&ginflight_pro.mutex);
+
+		/*¼ì²é·¢ËÍ×´Ì¬*/
+		over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
 #else
 		/**
 		  *µ¥¶ÓÁÐ·¢ËÍÏß³Ìº¯Êý´¦ÀíÁ÷³Ì

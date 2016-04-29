@@ -6,15 +6,49 @@
 #include "udp_client_controller_machine.h"
 #include "wait_message.h"
 #include "camera_uart_controller_machine.h"
-#include "send_common.h"
+#include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 #include "matrix_output_input.h"
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
-uint8_t pipe_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
+static uint8_t gsys_tx_buf[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 管道数据缓冲区， 与读管道的的线程使用，使用信号量同步机制-->sem_tx
 
-void init_sem_tx_can( void ) // 初始化管道传输信号量->控制pipe_buf
+void init_sem_tx_can( void ) // 初始化管道传输信号量->控制gsys_tx_buf
 {
 	sem_init( &sem_tx, 0, 0 );
+}
+
+int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp )
+{
+	assert( frame);
+	
+	int ret = -1;
+	if( (data_type == TRANSMIT_TYPE_ADP) || (data_type == TRANSMIT_TYPE_ACMP) || (data_type == TRANSMIT_TYPE_AECP) )
+	{
+		tx_data tx;
+
+		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
+		{
+			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
+			return -1;
+		}
+
+		memset( gsys_tx_buf, 0, sizeof(gsys_tx_buf) );
+		memcpy( tx.raw_dest, dest_mac, sizeof(struct jdksavdecc_eui48) );
+		memcpy( gsys_tx_buf, (uint8_t*)frame, frame_len );
+		tx.frame = gsys_tx_buf;
+		tx.data_type = data_type;
+		tx.frame_len = frame_len;
+		tx.notification_flag = RUNINFLIGHT;
+		tx.resp = isresp;
+
+		ret = system_packet_save_send_queue( tx );
+	}
+	else
+	{
+		DEBUG_INFO( "ERR transmit data type" );
+	}
+
+	return ret;
 }
 
 /************************************************
@@ -27,65 +61,16 @@ void init_sem_tx_can( void ) // 初始化管道传输信号量->控制pipe_buf
 *		notification: decide data whether send
 *		data_type: type of data sending 
 *		isresp:  ture:response data of host controller;false: 
-*return value:none
+*return value:-1: err; 0 send OK
 **************************************************/
-void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
+int system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
 {
 	assert( dest_mac && frame);
 	
-	if( notification )
-		system_raw_queue_tx( frame, frame_len, data_type, dest_mac, isresp );
-}
+	if( !notification )
+		return -1;
 
-int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp )
-{
-	assert( frame);
-	
-	int ret = -1;
-	if( (data_type == TRANSMIT_TYPE_ADP) || (data_type == TRANSMIT_TYPE_ACMP) || (data_type == TRANSMIT_TYPE_AECP) )
-	{
-		tx_data tx;
-		uint8_t *tran_buf = pipe_buf;
-
-		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
-		{
-			DEBUG_INFO( "frame_len bigger than pipe transmit buffer!" );
-			return -1;
-		}
-
-		memset( tran_buf, 0, sizeof(pipe_buf) );
-		memcpy( tx.raw_dest, dest_mac, sizeof(struct jdksavdecc_eui48) );
-		memcpy( tran_buf, (uint8_t*)frame, frame_len );
-		tx.frame = tran_buf;
-		tx.data_type = data_type;
-		tx.frame_len = frame_len;
-		tx.notification_flag = RUNINFLIGHT;
-		tx.resp = isresp;
-
-		system_packet_save_send_queue( tx );
-	}
-	else
-	{
-		DEBUG_INFO( "ERR transmit data type" );
-	}
-
-	return ret;
-}
-
-/**************************
-*writer:YasirLiang
-*change data: 2015/10/15
-*change cotent: delect the last param "int fd"
-*	before change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type, int fd )
-*	after change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
-*
-*/
-void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
-{
-	assert( sin && frame);
-	
-	if( notification )
-		system_udp_queue_tx( frame, frame_len, data_type, sin );
+	return system_raw_queue_tx( frame, frame_len, data_type, dest_mac, isresp );
 }
 
 /**************************
@@ -104,7 +89,6 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	if( (data_type == TRANSMIT_TYPE_UDP_SVR) || (data_type == TRANSMIT_TYPE_UDP_CLT) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf = pipe_buf;
 		bool resp = is_conference_deal_data_response_type( frame, CONFERENCE_RESPONSE_POS );// 协议第二个字节位8为响应标志only userful between upper computer and host controller AS SO FAR (150909)
 		
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
@@ -113,16 +97,16 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 			return -1;
 		}
 		
-		memset( tran_buf, 0, sizeof(pipe_buf) );
-		memcpy( tran_buf, frame, frame_len );
-		tx.frame = tran_buf;
+		memset( gsys_tx_buf, 0, sizeof(gsys_tx_buf) );
+		memcpy( gsys_tx_buf, frame, frame_len );
+		tx.frame = gsys_tx_buf;
 		tx.data_type = data_type;
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 		memcpy( &tx.udp_sin, sin, sizeof( struct sockaddr_in ) );
 
-		system_packet_save_send_queue( tx );
+		ret = system_packet_save_send_queue( tx );
 	}
 	else
 	{
@@ -132,25 +116,22 @@ int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	return ret;
 }
 
-/***********************************************
-*Writer:YasirLiang
-*Data: 2015/11/25
-*Name: system_uart_packet_tx
-*Func:send data to uart output
-*Param:
-*	frame:the sending data 
-*	frame_len:the length of sending data
-*	notification: decide whether send
-*	data_type: the data type of sending data by system sending
-*Return Value:None
-************************************************/
-
-void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
+/**************************
+*writer:YasirLiang
+*change data: 2015/10/15
+*change cotent: delect the last param "int fd"
+*	before change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type, int fd )
+*	after change:void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
+*
+*/
+int system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type )
 {
-	assert( frame);
+	assert( sin && frame);
 	
-	if( notification )
-		system_uart_queue_tx( frame, frame_len, data_type, isresp );
+	if( !notification )
+		return -1;
+	
+	return system_udp_queue_tx( frame, frame_len, data_type, sin );
 }
 
 /***********************************************
@@ -172,7 +153,6 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 	if( (data_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) || (data_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) )
 	{
 		tx_data tx;
-		uint8_t *tran_buf = pipe_buf;
 		bool resp = isresp; // no need camera response data 
 
 		if( frame_len > TRANSMIT_DATA_BUFFER_SIZE )
@@ -181,15 +161,15 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 			return -1;
 		}
 
-		memset( tran_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
-		memcpy( tran_buf, frame, frame_len );
-		tx.frame = tran_buf;
+		memset( gsys_tx_buf, 0, TRANSMIT_DATA_BUFFER_SIZE );
+		memcpy( gsys_tx_buf, frame, frame_len );
+		tx.frame = gsys_tx_buf;
 		tx.data_type = data_type;
 		tx.frame_len = frame_len;
 		tx.notification_flag = RUNINFLIGHT;
 		tx.resp = resp;
 
-		system_packet_save_send_queue( tx );
+		ret = system_packet_save_send_queue( tx );
 	}
 	else
 	{
@@ -199,6 +179,87 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 	return ret;
 }
 
+/***********************************************
+*Writer:YasirLiang
+*Data: 2015/11/25
+*Name: system_uart_packet_tx
+*Func:send data to uart output
+*Param:
+*	frame:the sending data 
+*	frame_len:the length of sending data
+*	notification: decide whether send
+*	data_type: the data type of sending data by system sending
+*Return Value:None
+************************************************/
+
+int system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp )
+{
+	assert( frame);
+	
+	if( !notification )
+		return -1;
+	
+	return system_uart_queue_tx( frame, frame_len, data_type, isresp );
+}
+
+/****************************
+*Writer: YasirLiang 
+*Date: 2016/04/29
+*Name:system_tx
+*功能: 系统发送网络(raw udp...)、串口数据总接口
+*参数:
+*	frame:数据缓冲区指针
+*	frame_len:数据长度
+*	notification:是否发送数据真(发送)、假(不发)
+*	data_type:网络数据、串口数据类型
+*	isresp:是否是相应数据
+*	dest_mac:终端目的地址或1722广播地址
+*	sin:udp 目的地址
+*返回值:发送错误返回-1 
+*****************************/
+int system_tx( void *frame, 
+				uint16_t frame_len, 
+				bool notification, 
+				uint8_t data_type, 
+				bool isresp,
+				const uint8_t dest_mac[6],
+				const struct sockaddr_in *sin )
+{
+	uint8_t genre_tx = data_type;
+	uint8_t raw_dest[6] = {0};
+	struct sockaddr_in  tmp_sin;
+	int ret = -1;
+	 
+	switch( genre_tx )
+	{
+		case TRANSMIT_TYPE_ADP:
+		case TRANSMIT_TYPE_ACMP:
+		case TRANSMIT_TYPE_AECP:
+			if( dest_mac != NULL )
+			{
+				memcpy( raw_dest, dest_mac, 6 );
+				ret = system_raw_packet_tx( raw_dest, frame, frame_len, notification, data_type, isresp );
+			}
+			break;
+		case TRANSMIT_TYPE_UDP_SVR:
+		case TRANSMIT_TYPE_UDP_CLT:
+			 if( sin != NULL )
+			 {
+				memcpy( &tmp_sin, sin, sizeof(struct sockaddr_in) );
+				ret = system_udp_packet_tx( &tmp_sin, frame, frame_len, notification,  data_type );
+			 }
+			break;
+		case TRANSMIT_TYPE_CAMERA_UART_CTRL:
+		case TRANSMIT_TYPE_MATRIX_UART_CTRL:
+			ret = system_uart_packet_tx( frame, frame_len, notification, data_type, isresp );
+			break;
+		default:
+			DEBUG_INFO("SYSTEM TX ERR: NO such data type(%d)", genre_tx );
+			break;
+	}
+
+	return ret;
+}
 
 /****************************
 *writer:YasirLiang ---2015/09/09
@@ -212,10 +273,10 @@ int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bo
 *	guard:inflight 命令链表头结点.注意:inflight_frame需要重新分配内存空间来存放网络数据，
 *		因为tx_packet_event调用结束后会释放frame的空间，而inflight 命令链表则会一直存在于系统中，
 *		直到程序成功发送网络数据。
-*返回值:无
+*返回值:
 *state: 注意frame(缓冲区)的长度必须大于50个字节，否则会内存越界.
 *****************************/
-void tx_packet_event( uint8_t type,
+int tx_packet_event( uint8_t type,
 					bool notification_flag,  
 					uint8_t *frame, 
 					uint16_t frame_len, 
@@ -229,7 +290,9 @@ void tx_packet_event( uint8_t type,
 	int server_fd = 0;
 	int client_fd = 0;
 	bool istx = false;
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 	bool right_packet = true;
+#endif
 	struct sockaddr_in sin_event;
 	
 	if( notification_flag == RUNINFLIGHT )
@@ -290,20 +353,25 @@ void tx_packet_event( uint8_t type,
 		else 
 		{
 			DEBUG_INFO("NO match transmit data type, Please check!");
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 			right_packet = false;
+#endif
 		}
-		
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 		if( right_packet )
 		{
 			int status = 0;
 			status = set_wait_message_primed_state();
 			assert( status == 0 );
 		}
+#endif
 	}
 	else
 	{
 		DEBUG_INFO( "nothing entry send!" );
-		return;
+		return -1;
 	}
+
+	return 0;
 }
 

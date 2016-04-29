@@ -1,6 +1,6 @@
 #include "time_event.h"
 #include "aecp_controller_machine.h"
-#include "send_common.h"
+#include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
 void inflight_time_tick( inflight_plist guard )
 {
@@ -32,7 +32,9 @@ void inflight_time_tick( inflight_plist guard )
 				DEBUG_INFO("Err inflight data type = 0x%02x", data_type );
 				release_heap_space( &inflight_station->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 				delect_inflight_dblist_node( &inflight_station );
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 				sem_post( &sem_waiting );
+#endif
 			}
 
 			//break;// if timerout ; return.

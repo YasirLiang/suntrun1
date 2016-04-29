@@ -3,6 +3,7 @@
 #include "stream_descriptor.h"
 #include "endstation_connection.h"
 #include "connector_subject.h"
+#include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 
 static struct jdksavdecc_frame acmp_frame;
 static struct jdksavdecc_acmpdu acmpdu;
@@ -15,8 +16,11 @@ ttcnn_table_call connet_table_disconnect_call_info;// 断开回调信息
 ttcnn_table_call connet_table_connect_call_info; // 连接回调信息
 tdisconnect_connect_mic_main_set connect_mic_main_call; // 连接麦克风状态设置，主机发送状态回调。
 tdisconnect_connect_mic_main_set disconnect_mic_main_call; // 断开麦克风状态设置，主机发送状态回调。
-bool acmp_recv_resp_err = false; // acmp 接收到命令但响应错误参数
 muticast_conventioner_callback acmp_muticast_call;// 用于acmp发送数据的系统广播表的回调处理
+
+#ifndef SEND_DOUBLE_QUEUE_EABLE
+bool acmp_recv_resp_err = false; // acmp 接收到命令但响应错误参数
+#endif
 
 extern tsys_discuss_pro gdisc_flags; // 会讨参数
 
@@ -172,7 +176,6 @@ void acmp_update_input_stream_descriptor( uint16_t desc_index, struct jdksavdecc
 	input_desc->endpoint_desc.input_stream.desc[desc_index].stream_id = uint64_stream_id;
 }
 
-
 void acmp_update_output_stream_descriptor( uint16_t desc_index, struct jdksavdecc_acmpdu *acmpdu_get_rx_state_resp )
 {
 	uint64_t uint64_stream_id = convert_eui64_to_uint64_return( acmpdu_get_rx_state_resp->header.stream_id.value );
@@ -298,8 +301,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	inflight_plist acmp_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
-	uint32_t interval_timeout = 0;
-         
+
 	if( acmp_sta != NULL )
 	{
 		acmp_pstation = acmp_sta;
@@ -359,13 +361,15 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		release_heap_space( &acmp_pstation->host_tx.inflight_frame.frame);
 		delect_inflight_dblist_node( &acmp_pstation );
 
+#ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // 设置超时
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
+#endif	
 	}
 	else
 	{
 		DEBUG_INFO( "acmp resended " );
-		transmit_acmp_packet_network( frame, frame_len, acmp_pstation, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_timeout );
+		system_tx( frame,  frame_len, true, TRANSMIT_TYPE_ACMP, false, acmp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
 }
 
@@ -434,7 +438,9 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						seq_id );
 			
 			acmp_muticast_call.tarker_steam_id = 0;
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 			acmp_recv_resp_err = true;
+#endif
 		}
 
 		// 广播表更新回调，这里tx命令是更新命令rx tx 中最后发送的命令，所以在这里做成功的回调
@@ -656,8 +662,9 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			{
 				acmp_muticast_call.listener_stream_id = 0;// 广播连接表回调参数
 			}
-			
+#ifndef SEND_DOUBLE_QUEUE_EABLE			
 			acmp_recv_resp_err = true;
+#endif
 		}
 	}
 	else if((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||

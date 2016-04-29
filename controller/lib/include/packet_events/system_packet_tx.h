@@ -39,13 +39,10 @@ struct fds;
 extern sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
 void init_sem_tx_can( void );
 
-int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, const uint8_t dest_mac[6], bool isresp );
-void system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
-void system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type );
-int system_udp_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type,  const struct sockaddr_in *sin );
-void system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
-int system_uart_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, bool isresp );
-void tx_packet_event( uint8_t type,
+extern int system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
+extern int system_udp_packet_tx( const struct sockaddr_in *sin, void *frame, uint16_t frame_len, bool notification, uint8_t data_type );
+extern int system_uart_packet_tx( void *frame, uint16_t frame_len, bool notification, uint8_t data_type, bool isresp );
+extern int tx_packet_event( uint8_t type,
 					bool notification_flag,  
 					uint8_t *frame, 
 					uint16_t frame_len, 
@@ -55,5 +52,12 @@ void tx_packet_event( uint8_t type,
 					struct sockaddr_in* sin, 
 					bool resp, 
 					uint32_t *interval_time );
+extern int system_tx( void *frame, 
+				uint16_t frame_len, 
+				bool notification, 
+				uint8_t data_type, 
+				bool isresp,
+				const uint8_t dest_mac[6],
+				const struct sockaddr_in *sin );
 
 #endif
