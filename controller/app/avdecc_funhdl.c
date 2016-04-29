@@ -2,7 +2,7 @@
 #include "upper_computer.h"
 #include "terminal_pro.h"
 #include "wait_message.h"
-#include "send_pthread.h"
+#include "send_common.h"
 #include "send_work_queue.h"
 #include "func_proccess.h"
 #include "profile_system.h"

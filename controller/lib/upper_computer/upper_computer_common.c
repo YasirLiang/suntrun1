@@ -5,7 +5,7 @@
 #include "ring_buf.h"
 #include "time_handle.h"
 #include "wait_message.h"
-#include "send_pthread.h"
+#include "send_common.h"
 
 tchar_ring_buf grecv_ucmpt_buf_pro;// 上位机环形接受缓冲区 处理参数
 #define RECV_FROM_UPPTER_BUF_SIZE 2048 // 上位机环形接受缓冲区 大小

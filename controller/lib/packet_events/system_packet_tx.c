@@ -6,9 +6,7 @@
 #include "udp_client_controller_machine.h"
 #include "wait_message.h"
 #include "camera_uart_controller_machine.h"
-#include "send_interval.h"
-#include "send_work_queue.h"
-#include "send_pthread.h"
+#include "send_common.h"
 #include "matrix_output_input.h"
 
 sem_t sem_tx; // 管道数据发送等待信号量，所有线程可见，用于管道数据的控制发送。
@@ -309,21 +307,3 @@ void tx_packet_event( uint8_t type,
 	}
 }
 
-void system_packet_save_send_queue( tx_data tnt )
-{
-	// 加入网络数据发送队列
-	uint16_t frame_len = tnt.frame_len;
-
-	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len < 0) )
-	{
-		return ;
-	}
-
-	sdpwqueue*  send_wq = &net_send_queue;
-	pthread_mutex_lock( &send_wq->control.mutex );
-	
-	send_work_queue_message_save( tnt, send_wq );
-	
-	pthread_cond_signal( &send_wq->control.cond );
-	pthread_mutex_unlock( &send_wq->control.mutex ); // unlock mutex
-}

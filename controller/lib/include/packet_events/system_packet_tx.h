@@ -55,7 +55,5 @@ void tx_packet_event( uint8_t type,
 					struct sockaddr_in* sin, 
 					bool resp, 
 					uint32_t *interval_time );
-void system_packet_save_send_queue( tx_data tnt );
-
 
 #endif

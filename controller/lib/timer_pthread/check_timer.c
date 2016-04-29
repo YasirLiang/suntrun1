@@ -9,7 +9,7 @@
 #include "check_timer.h"
 #include "avdecc_funhdl.h"
 #include "wait_message.h"
-#include "send_pthread.h"
+#include "send_common.h"
 #include "send_interval.h"
 
 pthread_t check_timer_pthread;// 检查定时器线程

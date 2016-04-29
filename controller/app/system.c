@@ -7,7 +7,7 @@
 #include "udp_client_controller_machine.h"
 #include "message_queue.h"
 #include "profile_system.h"
-#include "send_pthread.h"
+#include "send_common.h"
 #include "send_work_queue.h"
 #include "stream_descriptor.h"
 #include "terminal_system.h"
@@ -43,7 +43,6 @@ void init_system( void )
 	init_terminal_system_state();// 初始化系统状态
 	init_terminal_proccess_system();
 	init_func_command_work_queue();
-	init_sem_wait_can();
 	upper_computer_common_init();
 
 	init_connector_subjector();// 初始化系统的被观察者
@@ -61,6 +60,7 @@ void init_system( void )
 	}
 	
 	init_sem_tx_can();
+	init_sem_wait_can();
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
 

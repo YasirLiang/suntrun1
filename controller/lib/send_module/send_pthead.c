@@ -7,70 +7,61 @@
 #include "send_pthread.h"
 #include <time.h>
 #include "time_handle.h"
+#include "send_common.h"
 
-sem_t sem_waiting; // ·¢ËÍµÈ´ıĞÅºÅÁ¿£¬ËùÓĞÏß³Ì¿É¼û
-sdpwqueue net_send_queue;// ÍøÂçÊı¾İ·¢ËÍ¹¤×÷¶ÓÁĞ
+#define SEND_INTERVAL_TIMEOUT 3 // ·¢ËÍ¼ä¸ôms
+
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// ±¾µØ·¢ËÍ»º³åÇø
-
-void init_sem_wait_can( void )
-{
-	sem_init( &sem_waiting, 0, -1 );
-}
-
-void init_network_send_queue( void )
-{
-	bool is_su = false;
-	
-	is_su = controll_init( &net_send_queue.control );
-	if( !is_su )
-		DABORT( is_su );
-	init_queue( &net_send_queue.work );
-	
-	is_su = controll_activate( &net_send_queue.control );
-	if( !is_su );
-		DABORT( is_su );
-}
-
-// ´İ»Ù·¢ËÍ¶ÓÁĞ
-void destroy_network_send_work_queue( void )
-{
-	p_sdpqueue_wnode q_node = NULL;
-
-	pthread_mutex_lock( &net_send_queue.control.mutex );
-	
-	while( !is_queue_empty( &net_send_queue.work ) ) // release node
-	{
-		q_node = send_queue_message_get( &net_send_queue );
-		if( NULL != q_node )
-		{
-			free( q_node );
-			q_node = NULL;	
-		}
-	}
-
-	if( is_queue_empty(&net_send_queue.work) )
-	{
-		if( net_send_queue.work.trail != NULL )
-			net_send_queue.work.trail = NULL;
-	}
-	
-	pthread_mutex_unlock( &net_send_queue.control.mutex );
-	
-	controll_deactivate( &net_send_queue.control );
-	/*bool is_su = controll_destroy( &net_send_queue.control ); 
-	if( !is_su )
-	{
-		DABORT( is_su );
-	}*/
-}
 
 int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ¹ÓÃÍ¬²½»úÖÆ2015-12-1).(¾­ÑéÖ¤201512-6´ËÏß³ÌÔİÎŞÎÊÌâ)
 {
 	sdpwqueue*  p_send_wq = &net_send_queue;
 	assert( p_send_wq );
+
+	// ÉèÖÃ·¢ËÍ¼ä¸ô
+	over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
 	
 	while( 1 )
 	{
+		if( over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL) )
+		{
+			continue;
+		}
+		
+#ifdef SEND_DOUBLE_QUEUE_EABLE// Ë«¶ÓÁĞ·¢ËÍÏß³Ìº¯Êı´¦ÀíÁ÷³Ì
+		bool write_empty = is_queue_empty( &gwrite_send_queue.work );
+		bool read_empty = is_queue_empty( &p_send_wq->work );
+
+		/**
+		  *¶ÁĞ´¶ÓÁĞ¶¼Îª¿Õ£¬Ïß³ÌË¯Ãß
+		  */ 
+		if( read_empty && write_empty )
+		{
+			pthread_mutex_lock( &p_send_wq->control.mutex );
+			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
+			pthread_mutex_unlock( &p_send_wq->control.mutex );
+			continue;
+		}
+
+		/**
+		  *¶Á¶ÓÁĞÎª¿Õ£¬Ğ´²»Îª¿Õ£¬½»»»¶ÁĞ´¶ÓÁĞ
+		  */ 
+		if( read_empty && !write_empty )
+		{
+			pthread_mutex_lock( &p_send_wq->control.mutex );
+			pthread_mutex_unlock( &p_send_wq->control.mutex );
+		}
+
+		/**
+		  *È¡³ö¶ÓÁĞÈÎÎñ´¦Àí
+		  */
+		
+		
+#else
+		/**
+		  *µ¥¶ÓÁĞ·¢ËÍÏß³Ìº¯Êı´¦ÀíÁ÷³Ì
+		  *
+		  */ 
 		uint8_t dest_raw[6] = {0};
 		struct sockaddr_in udp_sin;
 		uint32_t resp_interval_time = 0;
@@ -253,8 +244,9 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		{
 			DEBUG_INFO(" not message primed success!" );
 		}
+#endif
 	}
-	
+
 	return 0;
 }
 
