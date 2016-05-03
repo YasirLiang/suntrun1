@@ -10,7 +10,7 @@
 #include "circular_link_queue.h"
 #include "system_packet_tx.h"
 
-#define SEND_QUEUE_MAX_SIZE 120 // 最大的队列元素
+#define SEND_QUEUE_MAX_SIZE 2048 // 最大的队列元素
 
 //#pragma pack(1)
 typedef struct _type_send_data

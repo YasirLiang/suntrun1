@@ -356,6 +356,7 @@ int pthread_recv_data_fn( void *pgm )
 		terminal_vote_proccess();// 终端投票处理
 		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
 		avdecc_manage_discover_proccess();// 系统定时发现终端
+		send_common_check_squeue();// 检查发送队列发送数据
 	}
 	
 	return 0;

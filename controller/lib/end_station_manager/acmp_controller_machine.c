@@ -301,6 +301,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	inflight_plist acmp_pstation = NULL;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
+	uint32_t interval_time = 0;
 
 	if( acmp_sta != NULL )
 	{
@@ -369,7 +370,8 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	else
 	{
 		DEBUG_INFO( "acmp resended " );
-		system_tx( frame,  frame_len, true, TRANSMIT_TYPE_ACMP, false, acmp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
+		transmit_acmp_packet_network( frame, frame_len, acmp_pstation, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
+		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_ACMP, false, acmp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
 }
 

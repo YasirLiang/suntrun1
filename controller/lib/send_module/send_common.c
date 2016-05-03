@@ -12,7 +12,7 @@
 #include "send_common.h"
 #include "time_handle.h"
 
-#define CHECK_SYSTEM_SEND_QUEUE_TIMEOUT 200 //  检查系统是否发送数据完成的超时检查时间(MS)
+#define CHECK_SYSTEM_SEND_QUEUE_TIMEOUT 20 //  检查系统是否发送数据完成的超时检查时间(MS)
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 sem_t sem_waiting; // 发送等待信号量，所有线程可见,双线程则不使用信号量
@@ -131,10 +131,8 @@ void send_common_check_squeue( void )
 
 		if( !read_empty  || !write_empty )
 		{
-			if( write_empty && read_empty )
-			{
-				pthread_cond_signal( &net_send_queue.control.cond );
-			}
+			pthread_cond_signal( &net_send_queue.control.cond );
+			over_time_set( CHECK_SYSTEM_SEND_QUEUE_INDEX, CHECK_SYSTEM_SEND_QUEUE_TIMEOUT );
 		}
 	}	
 } 

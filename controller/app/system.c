@@ -171,7 +171,10 @@ void system_close( struct threads_info *p_threads )
 	en485_send_mod_cleanup();// 释放使能发送485端数据文件
 
 	// 退出线程
+#ifndef SEND_DOUBLE_QUEUE_EABLE
 	sem_post( &sem_waiting );
+#endif
+
 	for( i = 0; i < can_num; i++ )
 	{
 		ret = pthread_kill( p_threads->tid[i], SIGQUIT );

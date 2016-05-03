@@ -9,7 +9,7 @@
 #include "time_handle.h"
 #include "send_common.h"
 
-#define SEND_INTERVAL_TIMEOUT 3 // ·¢ËÍ¼ä¸ôms
+#define SEND_INTERVAL_TIMEOUT 1 // ·¢ËÍ¼ä¸ôms
 
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// ±¾µØ·¢ËÍ»º³åÇø
 
@@ -114,6 +114,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			p_send_wnode = NULL;
 		}
 
+		//DEBUG_LINE();
 		// ready to sending data
 		pthread_mutex_lock(&ginflight_pro.mutex);
 		tx_packet_event( data_type, 
@@ -220,6 +221,8 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 					    is_resp_data, 
 					    &resp_interval_time );
 		pthread_mutex_unlock(&ginflight_pro.mutex);
+
+		over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
 #if 0// ÕâÀïÒ²ÓĞ¿ÉÄÜ·¢ËÍÊı¾İ¹ı¿ì£¬¶øµ¼ÖÂÖÕ¶Ë´¦ÀíÒì³££¬2-3-2016
 		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
 			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\

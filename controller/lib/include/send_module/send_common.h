@@ -35,5 +35,7 @@ extern void init_network_send_queue( void );
 extern void init_sem_wait_can( void );
 extern void destroy_network_send_work_queue( void );
 extern int system_packet_save_send_queue( tx_data tnt );
+extern void send_common_check_squeue( void );
+
 
 #endif

@@ -2,6 +2,7 @@
 #include "upper_computer_common.h"
 #include "wait_message.h"
 #include "send_pthread.h"
+#include "send_common.h"
 
 static struct socket_info_s server_fd; // host udp as udp server information
 static inflight_plist udp_client_inflight = NULL;
@@ -129,7 +130,7 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	bool is_retried = false;
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
-	//uint32_t interval_time = 0;
+	uint32_t interval_time = 0;
          
 	if( inflight_station != NULL )
 	{
@@ -163,16 +164,17 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		// free inflight command node in the system
 		release_heap_space( &inflight_station->host_tx.inflight_frame.frame );
 		delect_inflight_dblist_node( &inflight_station );
-		
-		is_inflight_timeout = true; // 设置超时
+#ifndef SEND_DOUBLE_QUEUE_EABLE
+		is_inflight_timeout = true; // 设置超时	
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
+#endif
 	}
 	else
 	{
 		DEBUG_INFO( " udp client information resended " );
 		// udp data sending is not response
-		//transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
-		system_tx( frame,  frame_len, true, TRANSMIT_TYPE_UDP_CLT, false, NULL, &inflight_station->host_tx.inflight_frame.sin_in );
+		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
+		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_UDP_CLT, false, NULL, &inflight_station->host_tx.inflight_frame.sin_in );
 #if 0
 		int inflight_len = get_inflight_dblist_length( guard );
 		DEBUG_INFO( " inflight_len = %d", inflight_len );
