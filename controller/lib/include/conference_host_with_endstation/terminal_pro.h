@@ -54,9 +54,17 @@ typedef enum
 	RGST_QUERY,
 }register_state;	// 报到状态
 
+typedef enum // add in time 06-05-2016
+{
+	QUERY_RGST_IDLE, // 查询注册结束
+	QUERY_RGSTING,	// 正在查询注册
+	QUERY_RTST_WAIT// 查询注册等待
+}query_register_state; // 轮询注册终端状态
+
 typedef struct _type_tmnl_register_pro
 {
 	register_state rgs_state;// 注册的标识位
+	query_register_state rgs_query_state; // 查询注册标识位 是对双队列间隔发送机制的补充。防止终端在线而没注册成功的情况的出现
 	bool unregister_list_full;// 注册地址满
 	bool register_list_full;
 	uint16_t tmn_total;// 终端的总数

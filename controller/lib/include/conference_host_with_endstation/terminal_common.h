@@ -13,7 +13,7 @@
 #include "host_timer.h"
 #include <netinet/in.h>// struct sockaddr_in/socklen_t
 
-#define SYSTEM_TMNL_MAX_NUM 256	// 系统中终端最大的数量
+#define SYSTEM_TMNL_MAX_NUM 1024	// 系统中终端最大的数量
 #define INIT_ADDRESS 0xffff
 #define BRDCST_1722_ALL 0 // 
 

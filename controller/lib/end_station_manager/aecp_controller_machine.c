@@ -192,6 +192,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else
 	{
+		DEBUG_INFO( "======= aecp resend ========" );
 		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_AECP, false, aecp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}

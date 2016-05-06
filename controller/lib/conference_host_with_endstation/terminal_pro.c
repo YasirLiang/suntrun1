@@ -534,11 +534,19 @@ void system_register_terminal_pro( void )
 	}
 
 	if( reg_state == RGST_IDLE )
-		return;
+	{// ÂÖÑ¯Î´×¢²áµÄÁÐ±í ¼ä¸ô
+		if( (gregister_tmnl_pro.rgs_query_state != QUERY_RGST_IDLE) && \
+			(gregister_tmnl_pro.tmn_rgsted < gregister_tmnl_pro.tmn_total) )
+		{// ²éÑ¯×¢²áÎ´Í£Ö¹£¬¼ÌÐø×¢²áÖÕ¶Ë
+			gregister_tmnl_pro.rgs_state = RGST_WAIT;
+			over_time_set( WAIT_TMN_RESTART, 1000 );
+		}
+	}
 	else if( ((reg_state == RGST_WAIT) && over_time_listen(WAIT_TMN_RESTART)) )
 	{
 		over_time_stop(WAIT_TMN_RESTART);
 		uint16_t tmn_total = gregister_tmnl_pro.tmn_total;
+		uint16_t handled_num = gregister_tmnl_pro.tmn_rgsted;
 		if( ((gregister_tmnl_pro.rgsted_trail - gregister_tmnl_pro.rgsted_head) >= tmn_total) ||\
 			(gregister_tmnl_pro.tmn_rgsted >= tmn_total) )
 		{
@@ -586,6 +594,16 @@ void system_register_terminal_pro( void )
 					break;
 				}
 			}
+		}
+
+		DEBUG_INFO( "handled_num = %d, tmn_total = %d", handled_num, tmn_total );
+		if( handled_num >= tmn_total )
+		{// Í£Ö¹²éÑ¯×¢²á
+			gregister_tmnl_pro.rgs_query_state = QUERY_RGST_IDLE;
+		}
+		else 
+		{
+			gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT;
 		}
 		
 		gregister_tmnl_pro.rgs_state = RGST_QUERY;
@@ -642,6 +660,7 @@ void terminal_register_init( void )
 	gregister_tmnl_pro.register_list_full = false;
 	gregister_tmnl_pro.unregister_list_full = false;
 	gregister_tmnl_pro.rgs_state = RGST_IDLE;
+	gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT; // µÈ´ý²éÑ¯×¢²á
 }
 /*********************************************
 =×¢²á´¦ÀíÏà¹Øº¯Êý½áÊø

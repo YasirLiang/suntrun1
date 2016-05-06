@@ -182,7 +182,8 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 							                   uint16_t cfc_dlgh )
 {
 	//ÉèÖÃ1722¿ØÖÆÍ·
-	frame->dest_address = destination_mac;
+	//frame->dest_address = destination_mac;
+	memcpy( frame->dest_address.value, destination_mac.value, sizeof(struct jdksavdecc_eui48));
 	frame->ethertype = JDKSAVDECC_AVTP_ETHERTYPE;
 
 	aemdu->aecpdu_header.header.cd = 1;
@@ -204,7 +205,8 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 	aemdu->aecpdu_header.controller_entity_id.value[7] = frame->src_address.value[5];
 
 	aemdu->command_type = cfc_dlgh;
-	aemdu->aecpdu_header.header.target_entity_id = target_entity_id;
+	memcpy( aemdu->aecpdu_header.header.target_entity_id.value, target_entity_id.value, sizeof(struct jdksavdecc_eui64));
+	//aemdu->aecpdu_header.header.target_entity_id = target_entity_id;
 	aemdu->aecpdu_header.sequence_id = 0;
 
 	frame->length = jdksavdecc_aecpdu_aem_write( aemdu, frame->payload, 0, sizeof( frame->payload ) ) + cfc_dlgh;
