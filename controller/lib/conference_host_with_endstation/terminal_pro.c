@@ -1852,7 +1852,9 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 #ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-				trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+				if( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+					terminal_mic_status_set_callback( false, speak_node );
+				
 				terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 			}
@@ -1959,7 +1961,10 @@ void terminal_free_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			//trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			if( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+					terminal_mic_status_set_callback( false, speak_node );
+			
 			terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 		}
@@ -2001,7 +2006,9 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			if( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+				terminal_mic_status_set_callback( false, speak_node );
+
 			terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 			ret = true;
@@ -2126,7 +2133,9 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			if( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+				terminal_mic_status_set_callback( false, speak_node );
+			
 			terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 			ret = true;
@@ -2136,7 +2145,9 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 #ifdef ENABLE_CONNECT_TABLE
 			connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-			trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+			if ( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+				terminal_mic_status_set_callback( false, speak_node );
+			
 			terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 			gdisc_flags.speak_addr_list[speak_limit_num] = addr;
@@ -2167,7 +2178,9 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 #ifdef ENABLE_CONNECT_TABLE
 				connect_table_tarker_connect( speak_node->tmnl_dev.entity_id, limit_time, speak_node, true, MIC_OPEN_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
-				trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
+				if( -1 == trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node ))
+					terminal_mic_status_set_callback( false, speak_node );
+				
 				terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #endif
 				gdisc_flags.speak_addr_list[speak_limit_num1] = speak_node->tmnl_dev.address.addr;

@@ -1,6 +1,22 @@
 #ifndef _MENU_EXE_H_
 #define _MENU_EXE_H_
 
+#define CMR_CTRL_STOP       0x0000
+#define CMR_CTRL_SAVE_PRESET  0x0300
+#define CMR_CTRL_GET_PRESET   0x0700
+#define CMR_CTRL_RIGHT      0x0200
+#define CMR_CTRL_LEFT       0x0400
+#define CMR_CTRL_UP         0x0800
+#define CMR_CTRL_DOWN       0x1000
+#define CMR_CTRL_ZOOM_TELE  0x2000
+#define CMR_CTRL_ZOOM_WIDE  0x4000
+#define CMR_CTRL_FOUCE_FAR  0x8000
+#define CMR_CTRL_FOUCE_NEAR 0x0001
+#define CMR_CTRL_IRIS_OPEN  0x0002
+#define CMR_CTRL_IRIS_CLOSE 0x0004
+#define CMR_CTRL_AUTO_SCAN  0x0010
+
+
 typedef struct
 {
 	unsigned int RunFlag;
@@ -78,5 +94,12 @@ void TerminalAddAllotAddr(unsigned int value);
 void TerminalAllotAddrOver(unsigned int value);
 
 void ByteDataInit(void);
+
+void SaveWirelessAddr(unsigned char *pAddr, unsigned AddrSize);
+void GetWirelessAddr(unsigned char *pAddr, unsigned AddrSize);
+void SaveCmrPreSet( unsigned char cmd ,unsigned char *data, unsigned short data_len );
+void CmrCtrlDirect(unsigned short cmd);
+void CmrLockSave(void);
+void CameraSelect( unsigned char cmd ,unsigned char *data, unsigned short data_len );	// 1~4´ú±í1~4ºÅÉãÏñÍ·
 
 #endif

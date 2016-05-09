@@ -181,5 +181,4 @@ void MenuInit(void);
 
 short MenuScroll(short snMGSeq,int nInc);// yasir add in 2016-3-29
 void ItemSelected(short snMGSeq);// yasir add in 2016-3-29
-
 #endif //__MENU_F_H__

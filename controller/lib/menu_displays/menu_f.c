@@ -451,9 +451,9 @@ Bool RenewMenuValue(unsigned char GrpNum,unsigned char LineNum)
 			ByteDataGet(gMenuValue[i].ValueIndex,&value);
       gMG[GrpNum].Position = (short)value;
     }
-    return TRUE;
+    return BOOL_TRUE;
   }
-  return FALSE;
+  return BOOL_FALSE;
 }
 /******************************************************************************
     * 函数名：send_h_scrollBar
@@ -1416,10 +1416,10 @@ void ItemSelected(short snMGSeq)
           // 记录当前页
           if((gsnCurMGrp==0)&&(pMenu->Link!=0))
           {
-            UseDisSet(CPT_USE,TRUE);
+            UseDisSet(CPT_USE,BOOL_TRUE);
           }
           gsnCurMGrp = pMenu->Link;
-					printf("gsnCurMGrp=%d,gMG[gsnCurMGrp].Position=%d\n",gsnCurMGrp,gMG[gsnCurMGrp].Position);
+					//printf("gsnCurMGrp=%d,gMG[gsnCurMGrp].Position=%d\n",gsnCurMGrp,gMG[gsnCurMGrp].Position);
           DisplayMItem(gMG+gsnCurMGrp,-1,gMG[gsnCurMGrp].Position,MD_NORMAL);
           if(ENGLISH==MenuLang)
           {
@@ -1440,7 +1440,7 @@ void ItemSelected(short snMGSeq)
     else
     {
       usNew = gMG[snMGSeq].Count;
-			printf("snMGSeq=%d,usNew=%d\n",snMGSeq,usNew);
+			//printf("snMGSeq=%d,usNew=%d\n",snMGSeq,usNew);
       if(gMG[snMGSeq].Type==ST_VALUE)
       {
         SendMainState(0,NULL,0);
@@ -1465,11 +1465,11 @@ void ItemSelected(short snMGSeq)
     // 记录当前页
     if((usNew==0)&&(gsnCurMGrp>0))
     {
-      UseDisSet(CPT_USE,FALSE);
+      UseDisSet(CPT_USE,BOOL_FALSE);
     }
     else if((gsnCurMGrp==0)&&(usNew>0))
     {
-      UseDisSet(CPT_USE,TRUE);
+      UseDisSet(CPT_USE,BOOL_TRUE);
     }
     gsnCurMGrp = usNew;
 }
@@ -1477,7 +1477,6 @@ Bool CtrlMenuSw(short snMGSeq)
 {
   ItemSelected(snMGSeq);
 }
-
 extern unsigned char gByteData[PAR_NUM];// yasir change in 2016-4-7
 void MenuInit(void)
 {

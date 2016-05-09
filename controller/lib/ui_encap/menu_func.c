@@ -24,74 +24,92 @@
 #include "menu_exe.h"// 来自菜单命令
 
 // 非命令行菜单功能命令
-static void menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ModeSet flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuTempClosePro( uint16_t value, uint8_t  *p_GetParam )
+static int menuTempClosePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "TempClose flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_TEMP_CLOSE_SET, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuChairmanHintPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuChairmanHintPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ChairmanHint flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_MUSIC_EN_SET, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuCameraTrackPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuCameraTrackPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraTrack flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_TRACK, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
+static int menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "AutoClose flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint16_t));
+
+	return 0;
 }
 
-static void menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuSpeakLimitPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "SpeakLimit flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_SPK_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuApplyNumSetPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuApplyNumSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "ApplyNum flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MUNU_APPLY_LIMIT_NUM_SET, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuReAllotPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuReAllotPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	terminal_system_reallot_addr();
+
+	return 0;
 }
 
-static void menuNewAllotPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuNewAllotPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	terminal_new_endstation_allot_address( 0 );
+
+	return 0;
 }
 
 extern struct threads_info threads;
-static void menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the program
+static int menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the program
 {
 	uint16_t temp = value;
 	DEBUG_INFO( "SetFinish flags  = %d", temp );
@@ -102,98 +120,121 @@ static void menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot th
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);
+	return 0;
 }
 
-static void menuCameraCtlLeftRightPro( uint16_t value, uint8_t  *p_GetParam ) // 0 left 1 right
+static int menuCameraCtlLeftRightPro( uint16_t value, uint8_t  *p_GetParam ) // 0 left 1 right
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlLeftRight flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_LR, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuCameraCtlUpDownPro( uint16_t value, uint8_t  *p_GetParam )// 0 down 1 up
+static int menuCameraCtlUpDownPro( uint16_t value, uint8_t  *p_GetParam )// 0 down 1 up
 {
 	uint8_t temp = (uint8_t)value;	
 	DEBUG_INFO( "CameraCtlUpDown flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_UD, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuCameraCtlFoucePro( uint16_t value, uint8_t  *p_GetParam )
+static int menuCameraCtlFoucePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlFouce flags  = %d", temp );
 	
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_FOUCE, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuCameraCtlIrisPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuCameraCtlIrisPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlIris flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_APERT, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuCameraCtlZoomPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuCameraCtlZoomPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "CameraCtlZoom flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ZOOM, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuDistanceCtlPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuDistanceCtlPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "DistanceCtl flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CTRL_ALIGN, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuPresetSavePro( uint16_t value, uint8_t  *p_GetParam )
+static int menuPresetSavePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	find_func_command_link( MENUMENT_USE, MENU_CMR_SAVE_PRESET, 0, NULL, 0 );
+
+	return 0;
 }
 
-static void menuSwitchCmrPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuSwitchCmrPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "SwitchCmr Num = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_SEL_CMR, 0, &temp, sizeof(uint8_t));
+
+	return 0;
 }
 
-static void menuClearPresetPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuClearPresetPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint16_t temp = value;
 	DEBUG_INFO( "ClearPreset flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
+
+	return 0;
 }
 
-static void menuSelectPresetAddrPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuSelectPresetAddrPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	uint16_t addr = value;
 	DEBUG_INFO( "SelectPresetAddr  = %d", addr );
 
 	find_func_command_link( SYSTEM_USE, SYS_PRESET_ADDR, 0, (uint8_t*)&addr, sizeof(uint16_t));
+
+	return 0;
 }
 
-static void menuEnterEscPresetPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuEnterEscPresetPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	value?camera_pro_enter_preset():camera_pro_esc_preset();
+
+	return 0;
 }
 
 extern thost_system_set gset_sys; // 系统配置文件的格式
-static void menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
+static int menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
 {
 	thost_system_set set_sys; // 系统配置文件的格式
 	
 	assert( NULL != p_GetParam );
 	if( p_GetParam == NULL )
-		return;
+		return -1;
 	
 	if ( -1 == system_db_queue_configure_system_table( &set_sys ))
 	{// load from memory(system.dat)
@@ -222,15 +263,17 @@ static void menuGetMeetParamPro( uint16_t value, uint8_t  *p_GetParam )
 		*p_GetParam = set_sys.menu_language;
 	else
 		DEBUG_INFO( "Error EPar value!" );
+
+	return 0;
 }
 
-static void menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
+static int menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
 {
 	uint8_t save_value;
 	thost_system_set set_sys; // 系统配置文件的格式
 	assert( p_saveParam != NULL );
 	if( p_saveParam == NULL )
-		return;
+		return -1;
 
 	if ( -1 == system_db_queue_configure_system_table( &set_sys ))
 	{// load from memory(system.dat)
@@ -265,17 +308,53 @@ static void menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
 	{
 		memcpy( &gset_sys, &set_sys, sizeof(thost_system_set));
 	}
+	
+	return 0;
 }
 
-static void menuSendMainStatePro( uint16_t value, uint8_t  *p_GetParam )
+static int menuSendMainStatePro( uint16_t value, uint8_t  *p_GetParam )
 {
 	find_func_command_link( TERMINAL_USE, HOST_SEND_STATUS, 0, NULL, 0);
+	
+	return 0;
+}
+
+static int menuSaveWireAddrPro( uint16_t save_vsize, uint8_t  *p_GetParam )
+{
+	Sdb_wireless_addr_entity wire;
+	
+	assert( p_GetParam != NULL );
+	if( p_GetParam == NULL || save_vsize != 3 )
+		return -1;
+
+	memcpy( wire.addrlist, p_GetParam, save_vsize );
+	system_db_update_wireless_addr_table( wire );
+
+	return 0;
+}
+
+static int menuGetWireAddrPro( uint16_t get_value_size, uint8_t  *p_GetParam )
+{
+	Sdb_wireless_addr_entity wire;
+	int ret = -1;
+	
+	assert( p_GetParam != NULL );
+	if( p_GetParam == NULL ||(3 != get_value_size) )
+		return -1;
+
+	if( 0 == system_db_query_wireless_addr_table( wire ) )
+	{
+		memcpy( p_GetParam, wire.addrlist, 3 );
+		ret = 0;
+	}
+
+	return ret;
 }
 
 struct _type_menu_command_command
 {
 	enum enum_menu_cmd menu_cmd;
-	void (*menu_run_commmand)( uint16_t value, uint8_t  *p_GetParam );
+	int (*menu_run_commmand)( uint16_t value, uint8_t  *p_GetParam );
 };
 
 static struct _type_menu_command_command gtable_menu_command[] = 
@@ -304,6 +383,8 @@ static struct _type_menu_command_command gtable_menu_command[] =
 	{ MENU_UI_GET_PARAM, menuGetMeetParamPro },
 	{ MENU_UI_SAVE_PARAM, menuSaveMeetParamPro },
 	{ MENU_UI_SEND_MAIN_STATE, menuSendMainStatePro },
+	{ MENU_UI_SAVE_WIRE_ADDR, menuSaveWireAddrPro },
+	{ MENU_UI_GET_WIRE_ADDR, menuGetWireAddrPro },
 	{ MENU_UI_MENU_CMD_ERR, NULL }
 };
 
@@ -316,8 +397,9 @@ static struct _type_menu_command_command gtable_menu_command[] =
 //		value:菜单产生的值
 //return Value: None
 /*************************************************************/
-void menu_cmd_run( enum enum_menu_cmd menu_cmd, uint16_t value, uint8_t  *p_GetParam )
+int menu_cmd_run( enum enum_menu_cmd menu_cmd, uint16_t value, uint8_t  *p_GetParam )
 {	
+	int ret = -1;
 	struct _type_menu_command_command *p = &gtable_menu_command[0];
 
 	while( p->menu_cmd != MENU_UI_MENU_CMD_ERR )
@@ -325,12 +407,15 @@ void menu_cmd_run( enum enum_menu_cmd menu_cmd, uint16_t value, uint8_t  *p_GetP
 		if( menu_cmd ==  p->menu_cmd )
 		{
 			if( p->menu_run_commmand != NULL )
-				p->menu_run_commmand( value, p_GetParam );
+				ret = p->menu_run_commmand( value, p_GetParam );
 			
-			return;
+			ret = 0;
+			break;
 		}
 
 		p++;
 	}
+
+	return ret;
 }
 

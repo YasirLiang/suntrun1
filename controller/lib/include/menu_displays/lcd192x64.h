@@ -57,8 +57,8 @@ typedef struct stDispMem{
 
 typedef enum
 {
-	FALSE=0,
-	TRUE,
+	BOOL_FALSE=0,
+	BOOL_TRUE,
 }Bool;
 
 void clear_block(unsigned char x1, unsigned char y1, unsigned char x2, unsigned char y2);

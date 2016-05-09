@@ -12,9 +12,15 @@
 #include <sqlite3.h>
 
 #define SQL_STRING_LEN 1024 // sqlÓï¾äµÄ³¤¶È
+#define  FUNC_CREATE_SQLTABLE create_database_table
 
 #define CREATE_TATBLE_SQL_FORM( sql_buf, table_name, column_name ) do{\
 		sprintf( sql_buf, "create table %s(%s)", table_name, column_name );\
+	}while(0)
+
+#define SQL3_TABLE_CREATE( sql_buf, table_name, column_name, sqlite3_fd_handle ) do{\
+	CREATE_TATBLE_SQL_FORM((sql_buf), (table_name), (column_name));\
+	FUNC_CREATE_SQLTABLE( (sqlite3_fd_handle), (sql_buf), strlen((sql_buf)), (table_name));\
 	}while(0)
 	
 sqlite3 *db_open_file( const char *path_name );

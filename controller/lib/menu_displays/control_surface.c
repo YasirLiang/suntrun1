@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -14,16 +13,72 @@
 
 #include "lcd192x64.h"
 #include "menu_f.h"
+#include "uart.h"
+#include "wireless.h"
+
+#define INPUT_MSG_LEN	6
+#define INPUT_MSG_CMD_INDEX	3
+
+unsigned char CrcChk(unsigned char *ccp)
+{
+	unsigned char aa;
+	unsigned char bb;
+	aa=*ccp;
+	
+	for (bb=0;bb<4;bb++)
+	{
+		ccp++;
+		aa+=*ccp;
+	}
+	
+	aa=~aa;
+	
+	return(aa);
+}
+void knob_pross(unsigned char cmd)
+{
+	if(cmd&1)
+	{
+		MenuScroll(gsnCurMGrp,1);
+	}
+	else if(cmd&(1<<1))
+	{
+		MenuScroll(gsnCurMGrp,-1);
+	}
+
+	if(cmd&(1<<2))
+	{
+		ItemSelected(gsnCurMGrp);
+	}
+}
+void input_recv_pro(unsigned char *p_buf, unsigned recv_len)
+{
+	if(recv_len<INPUT_MSG_LEN)
+	{
+		return;
+	}
+	if(p_buf[5]==CrcChk(p_buf))
+  	{
+		if(p_buf[INPUT_MSG_CMD_INDEX]==0xAA)
+		{
+			knob_pross(p_buf[INPUT_MSG_CMD_INDEX+1]);
+		}
+		else
+		{
+			wireless_pross(p_buf);
+		}
+	}
+}
 
 void *thread_control_surface(void *arg)
 {
-	int ret=0;
-	int fd;  
-  unsigned char key_val; 
-	int key_down_flag=0;	
-	struct timeval turn_tv0,turn_tv1,click_tv0,click_tv1;
-	double interval=0;
-	
+	int ret;
+	int fd = -1;
+	int err;
+	int recv_len;
+	unsigned char recv_buf[INPUT_MSG_LEN]; 
+
+
 	ret = lcd192x64_init();
 	if (ret)
 	{
@@ -32,58 +87,34 @@ void *thread_control_surface(void *arg)
 	}
 
 	MenuInit();
- 
-  fd = open("/dev/buttons",O_RDWR);  
-  if (fd < 0)  
-  {  
-		printf("open(/dev/buttons) failed.\n"); 
-  }  
-	memset((void *)&turn_tv0,0,sizeof(turn_tv0));
+
+	fd = UART_File_Open(fd,UART4);//打开串口，返回文件描述符 
+	if( fd == -1 )
+	{
+		printf("Open Port Failed!\n");  
+	}
+	
+	do
+	{  
+		err = UART_File_Init( fd, 9600, 0, 8, 1, 'N' );
+		printf("Set Port Exactly!\n");  
+	}while( FALSE == err||FALSE == fd ); 
+
+
+	
 	while(1)
 	{
-		read(fd,&key_val,1);  
-		switch(key_val&0x0F)
+		recv_len=UART_File_Recv(fd,recv_buf,INPUT_MSG_LEN);
+		printf("uart recv: ");
+		int i;
+		for(i=0; i<recv_len; i++)
 		{
-			case 1://旋转
-				gettimeofday(&turn_tv1,0);
-				interval=(turn_tv1.tv_sec-turn_tv0.tv_sec)*1000+(turn_tv1.tv_usec-turn_tv0.tv_usec)/1000;
-				if((interval>100)||(interval<0))
-				{
-					memcpy((void *)&turn_tv0,(void *)&turn_tv1,sizeof(turn_tv0));
-					if(key_val&0x80)
-					{
-						MenuScroll(gsnCurMGrp,-1);
-						printf("knob turn left!\n");  
-					}
-					else
-					{
-						MenuScroll(gsnCurMGrp,1);
-						printf("knob turn right!\n");  
-					}
-				}
-				break;
-			case 2://按键
-				if(!(key_val&0x10))//按下
-				{
-					if(!key_down_flag)
-					{
-						gettimeofday(&click_tv0,0);
-						key_down_flag=1;
-					}
-				}
-				else
-				{
-					gettimeofday(&click_tv1,0);
-					interval=(click_tv1.tv_sec-click_tv0.tv_sec)*1000+(click_tv1.tv_usec-click_tv0.tv_usec)/1000;
-					if(key_down_flag&&(interval>100))
-					{
-						ItemSelected(gsnCurMGrp);
-						key_down_flag=0;
-						printf("key click!\n");  
-					}
-				}
-				break;
+			printf("0x%x ",recv_buf[i]);
 		}
+		printf("\n");
+		
+		input_recv_pro(recv_buf,recv_len);
 	}
+  
 }
 

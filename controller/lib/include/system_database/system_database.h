@@ -48,6 +48,16 @@
 #define SYS_DB_AVDECC_SET_TABLE "avdecc_set" // 设置avdecc设置参数
 #define SYSTEM_AVDECC_SET_COLUMN   "enable_discover int,discover_interval int, poll_descripor int, poll_descripor_interval int,automatic_remove int, remove_interval int"// 时间的单位是ms
 
+/*{@ 无线遥控地址add in time 20160509*/
+#define SYS_DB_WIREADDR_TABLE "wireless_addr" // 遥控其地址码保存
+#define SYSTEM_WIREADDR_COLUMN   "wireless_addr1 int, wireless_addr2 int, wireless_addr3 int"// 时间的单位是ms
+
+typedef struct type_struct_wireless_addr
+{
+	uint8_t addrlist[3];
+}Sdb_wireless_addr_entity;
+/*@}*/
+
 typedef struct type_struct_database_handle
 {
 	void *data_elem;// 操作数据类型
@@ -184,6 +194,12 @@ int system_db_avdecc_info_insert(  tavdecc_manage discover_info, tavdecc_manage 
 int system_db_avdecc_info_queue(  tavdecc_manage* p_discover_info, tavdecc_manage* p_descripor_info, tavdecc_manage* p_device_remove );
 int system_db_avdecc_info_update( tavdecc_manage discover_info, tavdecc_manage descripor_info, tavdecc_manage device_remove );
 /**=========================结束avdecc管理数据库表操作======================================**/
+
+/**=========================开始系统无线遥控地址表操作======================================**/
+int system_db_insert_wireless_addr_table( Sdb_wireless_addr_entity wire );
+int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire );
+int system_db_update_wireless_addr_table( Sdb_wireless_addr_entity wire );
+/**=========================结束系统无线遥控地址表操作======================================**/
 
 void system_database_init( void );
 void system_database_destroy( void );

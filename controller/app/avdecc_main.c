@@ -7,6 +7,7 @@
 #include "send_pthread.h"
 #include "check_timer.h"
 #include "log_machine.h"// 日志记录机制头文件
+#include "control_surface.h" // 界面控制显示
 #include <signal.h>
 #include <ucontext.h>
 
@@ -226,8 +227,6 @@ void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32
 	}
 }
 
-
-extern void *thread_control_surface(void *arg);// 界面处理线程函数
 int main( int argc, char *argv[] )
 {
 	__asm__( "mov %0, fp\n" : "=r"(gmain_stack_fp));

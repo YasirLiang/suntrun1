@@ -802,54 +802,131 @@ int system_db_avdecc_info_update( tavdecc_manage discover_info, tavdecc_manage d
 }
 /**=========================结束avdecc管理数据库表操作======================================**/
 
+/**=========================开始系统无线遥控地址表操作======================================**/
+int system_db_insert_wireless_addr_table( Sdb_wireless_addr_entity wire )
+{
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(wireless_addr1,wireless_addr2,wireless_addr3) values(%d,%d,%d);", \
+			SYS_DB_WIREADDR_TABLE,\
+			wire.addrlist[0], wire.addrlist[1],wire.addrlist[2] );
+
+	return db_excute_sql( gsystem_db, gsql );
+}
+
+int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, i = 0, ret = -1;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select* from %s;", SYS_DB_WIREADDR_TABLE );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			for( i = 0; i < sizeof(Sdb_wireless_addr_entity); i++ )
+			{
+				wire.addrlist[i] = atoi( db_result[ncolumn+i]);
+			}
+
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+// 改表中所有记录
+int system_db_update_wireless_addr_table( Sdb_wireless_addr_entity wire )
+{
+	Sdb_wireless_addr_entity temp_wire;
+	if( 0 == system_db_query_wireless_addr_table( temp_wire ))// has record?
+	{// update new system set
+		INIT_ZERO( gsql, SQL_STRING_LEN );
+		sprintf( gsql, "update %s set wireless_addr1 = %d,wireless_addr2 = %d,\
+			wireless_addr3 = %d;", \
+			SYS_DB_WIREADDR_TABLE, wire.addrlist[0], wire.addrlist[1],wire.addrlist[2] );
+		
+		db_excute_sql( gsystem_db, gsql );
+	}
+	else 
+	{// insert record
+		system_db_insert_wireless_addr_table( wire );
+	}
+
+	return 0;
+}
+/**=========================结束系统无线遥控地址表操作======================================**/
+
 /*系统数据库模块的初始化*/
 void system_database_init( void )
 {	
 	gsystem_db = db_open_file( SYSTEM_DB_FILE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_SYSTEM_SET_TABLE, SYSTEM_CONFIG_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_SYSTEM_SET_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_SYSTEM_SET_TABLE, SYSTEM_CONFIG_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_SYSTEM_SET_TABLE, SYSTEM_CONFIG_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_SYSTEM_SET_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_CONTROL_TABLE, MATRIX_CONTROL_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_CONTROL_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_CONTROL_TABLE, MATRIX_CONTROL_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_CONTROL_TABLE, MATRIX_CONTROL_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_CONTROL_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_AVSW_TABLE, MATRIX_AVSW_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_AVSW_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_AVSW_TABLE, MATRIX_AVSW_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_AVSW_TABLE, MATRIX_AVSW_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_AVSW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_VSW_TABLE, MATRIX_VSW_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_VSW_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_VSW_TABLE, MATRIX_VSW_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_VSW_TABLE, MATRIX_VSW_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_VSW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_ASW_TABLE, MATRIX_ASW_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_ASW_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_ASW_TABLE, MATRIX_ASW_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_ASW_TABLE, MATRIX_ASW_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_ASW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_USER_TABLE, TERMINA_USER_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_USER_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_USER_TABLE, TERMINA_USER_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_USER_TABLE, TERMINA_USER_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_USER_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_CAMERA_PRE_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_CAMERA_PRE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_VOTE_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_VOTE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_SELECT_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_SELECT_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_GRADE_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_GRADE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
-	CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN );
-	create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_AVDECC_SET_TABLE );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_AVDECC_SET_TABLE );
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_WIREADDR_TABLE, SYSTEM_WIREADDR_COLUMN, gsystem_db );
+	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_WIREADDR_TABLE, SYSTEM_WIREADDR_COLUMN );
+	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_WIREADDR_TABLE );
 
 	INIT_ZERO( &gmatrix_record, sizeof(gmatrix_record));
 	if( -1 == system_db_queue_matrix_config_record( &gmatrix_record ))
