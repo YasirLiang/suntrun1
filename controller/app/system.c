@@ -58,7 +58,7 @@ void init_system( void )
 		DEBUG_INFO( "init mitucast conventionr list failed" );
 		exit( -1 );
 	}
-	
+
 	init_sem_tx_can();
 	init_sem_wait_can();
 	init_network_send_queue();
