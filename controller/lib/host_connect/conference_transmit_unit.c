@@ -68,6 +68,9 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 		return -1;
 	}
 
+	/*更新连接状态add in 2016-5-17*/
+	acmp_tx_state_avail( endtity_id, stream_output_desc.descriptor_index );
+
 	//********* 
 	//搜索是否存在endtity_id 的链表节点
 	tconference_trans_pmodel p_temp_node = NULL;
@@ -125,7 +128,6 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 			if( p_node != NULL )
 			{
 				output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
-				INIT_LIST_HEAD( &p_node->input_head.list );// 初始化outstream对应的inputstream链表
 				output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
 
 #ifdef __CONFERENCE_TRANSMIT_DEBUG__

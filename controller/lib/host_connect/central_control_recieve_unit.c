@@ -275,6 +275,9 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 		return -1;
 	}
 
+	/*更新连接状态add in 2016-5-17*/
+	acmp_rx_state_avail( endtity_id, stream_input_desc.descriptor_index );
+
 	/*
 	**寻找可用模块
 	**1、若模块从未初始化，则选择当前元素

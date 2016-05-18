@@ -37,5 +37,4 @@ bool is_wait_messsage_idle_state( void );
 bool is_wait_messsage_primed_state( void );
 bool is_wait_messsage_active_state( void );
 
-
 #endif

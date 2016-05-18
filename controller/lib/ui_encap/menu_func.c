@@ -116,7 +116,7 @@ static int menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the
 
 	sync();// 同步所有文件
 	DEBUG_INFO( "System Close......" );
-	//system_close( &threads );
+	system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);

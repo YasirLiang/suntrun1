@@ -59,3 +59,43 @@ int  get_input_channel_list_double_list_length( struct list_head *list_gurad )
 	
 	return i;
 }
+
+int universe_input_channel_list_add_trail( T_pInChannel_universe p_Inputnode, struct list_head *head )
+{
+	assert( p_Inputnode && head );
+	if( p_Inputnode == NULL || head == NULL )
+		return -1;
+
+	list_add_tail( &p_Inputnode->list, head );
+	
+	return 0;
+}
+
+bool universe_input_channel_list_node_init( T_pInChannel_universe p_Inputnode, const uint64_t channel_id, uint16_t channel_index )
+{
+	assert( p_Inputnode );
+	if( p_Inputnode == NULL )
+		return false;
+
+	p_Inputnode->tarker_id = 0; // not useful
+	p_Inputnode->tarker_index = 0;
+	p_Inputnode->listener_index = channel_index;
+	p_Inputnode->status = INCHANNEL_FREE;
+	p_Inputnode->pro_status = INCHANNEL_PRO_FINISH;
+	p_Inputnode->timetimp = 0;// 表示未连接
+
+	return true;
+}
+
+int universe_intput_channel_list_node_create( T_pInChannel_universe *pInChannelNode )
+{
+	if( NULL == pInChannelNode )
+		return -1;
+	
+	*pInChannelNode = (T_pInChannel_universe)malloc( sizeof(TInChannel_universe) );
+	if( *pInChannelNode == NULL )
+		return -1;
+	
+	return 0;
+}
+

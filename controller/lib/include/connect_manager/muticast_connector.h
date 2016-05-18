@@ -14,7 +14,6 @@
 #include "conference_recieve_unit.h"
 #include "central_control_recieve_unit.h"
 
-
 #define MAX_BD_CONNECT_NUM (SYSTEM_TMNL_MAX_NUM) // 最大连接数
 #define MAX_CVNT_CONNECT_NUM		5 // 最大的与会连接失败的次数
 #define CVNT_CONNECT_TIME_OUT  	10
@@ -23,7 +22,7 @@
 
 #define CVNT_MUTICAST_NAME CCU_TR_MODEL_NAME // 是中央处理接收发送模块
 #define CVNT_MUTICAST_OUT_CHANNEL 0// 定义模块输出通道为0
-#define CVNT_MUTICAST_IN_CHNNEL CONFERENCE_RECIEVE_UNIT_IN_CHNNEL// 定义会议接收单元输入通道为0
+#define CVNT_MUTICAST_IN_CHNNEL CONFERENCE_MUTICASTED_INPUT_CHANNEL// 定义会议接收单元输入通道为0
 
 #define CONVENTIONER_CNNT_ERR_LOG_TIMEOUT 30 // 连接出错 记录日志超时时间ms单位
 
@@ -33,7 +32,8 @@ typedef enum _econventioner_state
 	CVNT_ONLINE,// 此状态可发送查看连接转状态的命令
 	CVNT_OUT_CONNECT,	// 未连接成功,update 成功时可改变为CVNT_ONLINE，或count为0时可置为CVNT_OFFLINE 此状态可发送连接的命令
 	CVNT_STREAM_ON,
-	CVNT_STREAM_OFF
+	CVNT_STREAM_OFF,
+	CVNT_LISTENER_EXCUTE// 被广播者已被连接
 }econventioner_state;
 
 struct host_muticastor	// 主机的广播者

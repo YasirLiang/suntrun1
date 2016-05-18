@@ -139,7 +139,9 @@ int muticast_connector_proccess_online_callback( uint64_t tarker_stream_id, uint
 {
 	int ret = -1;
 	
-	assert( connect_node );
+	if( connect_node == NULL )
+		return -1;
+	
 	DEBUG_INFO( "success( %d )-current listener( 0x%016llx-0x%016llx )---- tarker_stream: listern_stream( 0x%016llx-0x%016llx ) ", \
 		success, gmuti_connect_pro.current_listener->uid, connect_node->uid, \
 		tarker_stream_id, listern_stream_id );
@@ -348,6 +350,7 @@ int muticast_connector_time_tick( void )
 	{
 		DEBUG_INFO( "muticast table current index = %d", *p_current_index );
 		conventor_state = p_cur_node->state;
+		//conventioner_cnnt_node = p_cur_node;
 		switch( conventor_state )
 		{
 			case CVNT_ONLINE:
@@ -521,6 +524,7 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 			gmuti_connect_pro.muticastor.muticastor_exsit = true;
 			gmuti_connect_pro.muticastor.solid_node = solid_node;
 			over_time_set( CCU_TRANS_CONNECT_BEGIN_TIME, 10*1000 );
+			//acmp_tx_state_avail( endtity_id, stream_output_desc.descriptor_index );
 			DEBUG_INFO( "muticastor enstation is 0x%016llx ", gmuti_connect_pro.muticastor.uid );
 		}
 	}
@@ -540,8 +544,8 @@ int muticast_connector_connect_table_init_node( const bool is_input_desc, const 
 			list_node[*p_num].connect_flag = false;
 			list_node[*p_num].solid_node = solid_node;
 			host_timer_start( 200, &(list_node[*p_num].timeout));// set 200ms time for the first time
-
 			(*p_num)++;
+			//acmp_rx_state_avail( endtity_id, stream_output_desc.descriptor_index );//update for connect stream
 			DEBUG_INFO( "list conventioner number is  %d conventioner (0X%016llx)is in!", *p_num, endtity_id );
 			ret = true;	
 		}
@@ -584,6 +588,8 @@ int muticast_connector_init( void )
 	}
 	
 	gmuti_connect_pro.current_listener = pgconventioner_cnnt_list;
+
+	//conference_recieve_uinit_init();// 初始化观察者
 
 	return 0;
 }

@@ -18,12 +18,13 @@
 #include "terminal_common.h"
 #include "descriptor.h"
 #include "host_timer.h"
+#include "global.h"
 
-#define CONFERENCE_OUTPUT_INDEX 0// 定义为零通道输出
+#define CONFERENCE_OUTPUT_INDEX conference_uint_transmit_uint_ouput// 定义为零通道输出
 #define CONFERENCE_OUTCHANNEL_MAX_NUM 8// 定义模块最大输出数量
 #define CONFERENCE_PER_MODEL_OUT_MAX_NUM 2// 定义同时能最大的输出数量
 
-#define CONFERENCE_TRANSMIT_UNIT_NAME "DCS6000-UNITE"
+#define CONFERENCE_TRANSMIT_UNIT_NAME conference_uint_name
 
 typedef struct _confenrence_trans_model
 {

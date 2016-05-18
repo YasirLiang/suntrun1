@@ -309,7 +309,7 @@ int camera_control_align( uint16_t cmd, void *data, uint32_t data_len )
 	}
 	else
 	{
-		grctrl_align_enable = true;
+		grctrl_align_enable = false;
 	}
 	
 	return 0;

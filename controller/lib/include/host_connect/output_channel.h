@@ -21,7 +21,7 @@ typedef struct _type_input_connect_node// 输出连接的输入节点
 	uint64_t listener_id;
 	uint16_t listen_index;
 	struct list_head list;
-}Input_Channel, *Input_pChannel;
+}Input_Channel, *Input_pChannel;// 输入流输入通道节点
 
 typedef struct _type_output_channel// 连接输入的通道
 {

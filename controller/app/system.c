@@ -163,12 +163,14 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 }
 
 extern FILE *glog_file_fd;
+extern int lcd192x64_close( void );// yasirLiang add in 2016/05/16
 void system_close( struct threads_info *p_threads )
 {	
 	int can_num = p_threads->pthread_nums;
 	int i = 0, ret;
 
 	en485_send_mod_cleanup();// 释放使能发送485端数据文件
+	lcd192x64_close();// yasirLiang add in 2016/05/16
 
 	// 退出线程
 #ifndef SEND_DOUBLE_QUEUE_EABLE

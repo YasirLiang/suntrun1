@@ -32,7 +32,8 @@ CFG_INC += -I$(ROOTPATH)/controller/app/include \
 		   -I$(CONTROLINCPATH)/ui_encap\
 		   -I$(CONTROLINCPATH)/host_connect\
 		   -I$(CONTROLINCPATH)/menu_displays\
-		   -I$(CONTROLINCPATH)/log_event
+		   -I$(CONTROLINCPATH)/log_event\
+		   -I$(CONTROLINCPATH)/global
 export CFG_INC CFGS CCFLAGS ROOTPATH
 
 SUBDIRS=$(shell ls -l | grep ^d | awk '{if($$9 != "controller") print $$9}')

@@ -1,10 +1,7 @@
 #include <string.h>
-
 #include "wireless.h"
 #include "menu_exe.h"
 #include "menu_f.h"
-
-#include "menu_exe.h"
 
 #define WIRE_ADDR_BUF_SIZE  3
 

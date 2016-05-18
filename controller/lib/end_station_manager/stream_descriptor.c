@@ -162,6 +162,11 @@ void store_stream_input_desc( const uint8_t *frame, int pos, size_t frame_len, d
 
 	uint8_t num = ++desc_info_node->endpoint_desc.input_stream.num;
 	assert( desc_info_node && num <=  MAX_STREAM_NUM );
+	if( desc_info_node == NULL ||num >  MAX_STREAM_NUM )
+	{
+		return;
+	}
+	
 	desc_info_node->endpoint_desc.input_stream.desc[num-1].descriptor_type = stream_input_desc.descriptor_type;
 	desc_info_node->endpoint_desc.input_stream.desc[num-1].descriptor_index = stream_input_desc.descriptor_index;
 	desc_info_node->endpoint_desc.input_stream.desc[num-1].current_format = stream_input_desc.current_format;
@@ -181,6 +186,11 @@ void store_stream_output_desc( const uint8_t *frame, int pos, size_t frame_len, 
 
 	uint8_t num = ++desc_info_node->endpoint_desc.output_stream.num;
 	assert( desc_info_node && num <=  MAX_STREAM_NUM );
+	if( desc_info_node == NULL ||num >  MAX_STREAM_NUM )
+	{
+		return;
+	}
+	
 	desc_info_node->endpoint_desc.output_stream.desc[num-1].descriptor_type = stream_output_desc.descriptor_type;
 	desc_info_node->endpoint_desc.output_stream.desc[num-1].descriptor_index = stream_output_desc.descriptor_index;
 	desc_info_node->endpoint_desc.output_stream.desc[num-1].current_format = stream_output_desc.current_format;

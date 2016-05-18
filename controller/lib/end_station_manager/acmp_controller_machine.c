@@ -476,6 +476,9 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			elem.listener_index = node_acmpdu.listener_unique_id;
 			elem.tarker_id = tarker_id;
 			elem.tarker_index = node_acmpdu.talker_unique_id;
+			elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
+			elem.ctrl_msg.msg_type = msg_type;
+			elem.ctrl_msg.msg_resp_status = status;
 			set_subject_data( elem, &gconnector_subjector );
 			notify_observer( &gconnector_subjector );
 			

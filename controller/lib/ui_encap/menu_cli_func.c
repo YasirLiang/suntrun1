@@ -186,7 +186,7 @@ static void menuCliSetFinishPro( char (*args)[CMD_OPTION_STRING_LEN] )// ÷ÿ∆Ù≥Ã–
 {
 	sync();
 	DEBUG_INFO( "System Close......" );
-	//system_close( &threads );
+	system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);

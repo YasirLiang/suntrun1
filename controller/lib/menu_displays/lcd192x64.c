@@ -582,4 +582,13 @@ int lcd192x64_init(void)
     update_disp_data(0,0,192,64);
 		return 0;
 }
+
+int lcd192x64_close( void )// yasirLiang add in 2016/05/16
+{
+	if( g_lcd_gpio_fd > 0 )
+		close( g_lcd_gpio_fd );
+
+	return 0;
+}
+
 //===============================================================================
