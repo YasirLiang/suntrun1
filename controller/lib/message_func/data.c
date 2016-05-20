@@ -3,6 +3,7 @@
 #include "upper_computer_pro.h"
 #include "camera_pro.h"
 #include "terminal_system.h"
+#include "muticast_connect_manager.h"
 
 const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 {
@@ -124,5 +125,11 @@ const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =
 
 	{ SYSTEM_USE, SYS_PRESET_ADDR, FUNC_SYS_PRESET_ADDR, 0},
 	{ SYSTEM_USE, SYS_GET_PRESET, FUNC_SYS_GET_PRESET, 0}
+};
+
+const struct str_db_callback gdb_callback_table[DB_CALLBACK_FUNC_NUM+1] =
+{
+	{ MUTICASTOR, MUTICASTOR_GET_HOST_MUTICAST, muticast_connect_manger_database_update },
+	{ ERROR_OWNER, 0xffffffff, NULL }
 };
 

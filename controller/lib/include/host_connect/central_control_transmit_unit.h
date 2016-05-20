@@ -45,13 +45,6 @@ typedef struct _type_central_control_trans_model// 中央传输模块
 	struct list_head list; 
 }TccuTModel,*T_pccuTModel;
 
-typedef struct _type_central_control_trans_pro// 主机广播者信息
-{
-	EccuTModelOutputState model_out_ch_state;
-	TOutChannel *p_current_out_ch;
-	T_pccuTModel p_current_model;
-}tcentral_control_trans_pro;
-
 //************************************//
 
 #endif

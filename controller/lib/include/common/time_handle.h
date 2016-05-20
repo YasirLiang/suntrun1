@@ -33,10 +33,13 @@ typedef enum enum_overtime_handle
 	NET_SEND_INTERVAL,
 	MIND_UPPER_CMPT_SIGN_RESULT,// 提醒上位机终端签到
 	SENDING_INTERVAL,// 发送间隔
-	OVER_TIME_ITEMS_NUM,
 	CCU_TRANS_CONNECT_BEGIN_TIME, // ccu 发送开始超时时间
 	SYSTEM_SQUEUE_SEND_INTERVAL, // 系统发送队列的发送间隔
-	CHECK_SYSTEM_SEND_QUEUE_INDEX //  检查系统是否发送数据完成
+	CHECK_SYSTEM_SEND_QUEUE_INDEX, //  检查系统是否发送数据完成
+	CHANGE_MUTICASTOR_TIMEOUT_INDEX,// 改变广播者的超时时间
+
+	
+	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;
 
 void over_time_set( enum_overtime_handle handle, uint32_t over_time );

@@ -18,7 +18,6 @@
 #include "host_controller_debug.h"
 
 static observer_t gccu_transmit_observer;// 中央发送单元观察者
-static tcentral_control_trans_pro gccumodel_trans_pro; // 中央传输单元处理参数
 LIST_HEAD(gccu_trans_model_guard);// 创建并初始化中央传输单元头节点
 
 int central_control_transmist_insert_model_list_trail( T_pccuTModel ptr_model, struct list_head *head )

@@ -342,7 +342,7 @@ static int menuGetWireAddrPro( uint16_t get_value_size, uint8_t  *p_GetParam )
 	if( p_GetParam == NULL ||(3 != get_value_size) )
 		return -1;
 
-	if( 0 == system_db_query_wireless_addr_table( wire ) )
+	if( 0 == system_db_query_wireless_addr_table( &wire ) )
 	{
 		memcpy( p_GetParam, wire.addrlist, 3 );
 		ret = 0;

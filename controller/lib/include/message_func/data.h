@@ -41,8 +41,30 @@ enum menu_command//菜单相关命令定义
 	MENU_FUNC_NUM
 };
 
+/*{@*/
+enum enum_db_call_table_owner
+{
+	MUTICASTOR = 0,
+	ERROR_OWNER = 0xffffff
+};
+
+enum enum_db_call_func_link
+{
+	MUTICASTOR_GET_HOST_MUTICAST = 0,
+	DB_CALLBACK_FUNC_NUM
+};
+
+struct str_db_callback
+{
+	enum enum_db_call_table_owner owner;
+	uint32_t func_link;
+	int (*func_proccess)( void* );
+};
+/*@}*/
+
 extern const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS];
 extern const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS];
+extern const struct str_db_callback gdb_callback_table[DB_CALLBACK_FUNC_NUM+1];
 
 #endif
 

@@ -58,6 +58,32 @@ typedef struct type_struct_wireless_addr
 }Sdb_wireless_addr_entity;
 /*@}*/
 
+/*{@ 广播表配置20160520*/
+#define SYS_DB_MUTICAST_TABLE "muticastor_setor" // 遥控其地址码保存
+#define SYSTEM_MUTICAST_COLUMN   "muti_flag int, en_default_muti int, reconnect_self int, offline_connect int, reconnect_timeout int, failed_connect_count int, discut_self int, log_err int, log_discut int, log_none_muticast int, log_timeout int, query_timeout int"// 时间的单位是ms
+
+typedef struct _type_muticast_manager_system_parameter
+{
+	bool muti_flag;// 是否广播
+	bool en_default_muti;// 是否使能默认广播，为真时不能改变当前广播者
+	
+	bool reconnect_self;// 本机是否重连，确定本机在说话完毕后断开的是否重连
+	bool offline_connect;//掉线是否重连
+	uint16_t  reconnect_timeout;//重连超时时间
+	
+	uint16_t failed_connect_count;//最大失败连接次数
+	bool discut_self;// 断开本机
+	
+	bool log_err;//是否日志记录出错
+	bool log_discut;//是否掉线记录（默认记录（1））；
+	bool log_none_muticast;//是否无广播者记录（默认记录（1））；
+	uint16_t log_timeout;//日志记录超时时间（秒）。
+	uint16_t query_timeout;// 查询超时时间（秒）；
+}Tstr_sysmuti_param;
+
+/*@}*/
+
+
 typedef struct type_struct_database_handle
 {
 	void *data_elem;// 操作数据类型
@@ -197,7 +223,7 @@ int system_db_avdecc_info_update( tavdecc_manage discover_info, tavdecc_manage d
 
 /**=========================开始系统无线遥控地址表操作======================================**/
 int system_db_insert_wireless_addr_table( Sdb_wireless_addr_entity wire );
-int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire );
+int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity *p_wire );
 int system_db_update_wireless_addr_table( Sdb_wireless_addr_entity wire );
 /**=========================结束系统无线遥控地址表操作======================================**/
 

@@ -6,6 +6,7 @@
 */
 
 #include "system_database.h"
+#include "data_common_pro.h"
 
 static sqlite3* gsystem_db = NULL;
 static char gsql[SQL_STRING_LEN] = {'\0'};
@@ -814,10 +815,13 @@ int system_db_insert_wireless_addr_table( Sdb_wireless_addr_entity wire )
 	return db_excute_sql( gsystem_db, gsql );
 }
 
-int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire )
+int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity *p_wire )
 {
 	char **db_result = NULL;
 	int nrow, ncolumn, i = 0, ret = -1;
+
+	if( p_wire == NULL )
+		return -1;
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	sprintf( gsql, "select* from %s;", SYS_DB_WIREADDR_TABLE );
@@ -831,7 +835,7 @@ int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire )
 #endif
 			for( i = 0; i < sizeof(Sdb_wireless_addr_entity); i++ )
 			{
-				wire.addrlist[i] = atoi( db_result[ncolumn+i]);
+				p_wire->addrlist[i] = atoi( db_result[ncolumn+i]);
 			}
 
 			ret = 0;
@@ -845,7 +849,7 @@ int system_db_query_wireless_addr_table( Sdb_wireless_addr_entity wire )
 int system_db_update_wireless_addr_table( Sdb_wireless_addr_entity wire )
 {
 	Sdb_wireless_addr_entity temp_wire;
-	if( 0 == system_db_query_wireless_addr_table( temp_wire ))// has record?
+	if( 0 == system_db_query_wireless_addr_table( &temp_wire ))// has record?
 	{// update new system set
 		INIT_ZERO( gsql, SQL_STRING_LEN );
 		sprintf( gsql, "update %s set wireless_addr1 = %d,wireless_addr2 = %d,\
@@ -862,6 +866,96 @@ int system_db_update_wireless_addr_table( Sdb_wireless_addr_entity wire )
 	return 0;
 }
 /**=========================结束系统无线遥控地址表操作======================================**/
+
+/**=========================开始广播表配置操作======================================**/
+int system_db_insert_muticast_table( Tstr_sysmuti_param sys_muti )
+{
+	int ret = -1;
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, \
+			"insert into %s(muti_flag, en_default_muti, reconnect_self, offline_connect,\
+			reconnect_timeout, failed_connect_count , discut_self, log_err , \
+			log_discut, log_none_muticast, log_timeout, query_timeout ) \
+			values( %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d );", SYS_DB_MUTICAST_TABLE,\
+			sys_muti.muti_flag, sys_muti.en_default_muti, sys_muti.reconnect_self, sys_muti.offline_connect,\
+			sys_muti.reconnect_timeout , sys_muti.failed_connect_count , sys_muti.discut_self , sys_muti.log_err , \
+			sys_muti.log_discut , sys_muti.log_none_muticast, sys_muti.log_timeout , sys_muti.query_timeout );
+
+	// insert record
+	ret = db_excute_sql( gsystem_db, gsql );
+
+	if( ret == 0 )
+	{
+		// 更新全局数据
+		run_db_callback_func( MUTICASTOR, MUTICASTOR_GET_HOST_MUTICAST, &sys_muti );
+	}
+
+	return ret;
+}
+
+int system_db_query_muticast_table( Tstr_sysmuti_param *p_sys_muti )
+{
+	char **db_result = NULL;
+	int nrow, ncolumn, i = 0, ret = -1;
+
+	if( p_sys_muti == NULL )
+		return -1;
+
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "select* from %s;", SYS_DB_MUTICAST_TABLE );
+	db_get_table( gsystem_db, gsql, strlen(gsql), &db_result, &nrow, &ncolumn );
+	if( db_result != NULL )
+	{
+		if( nrow != 0 && ncolumn != 0 )
+		{
+#ifdef __SYSTEM_DB_DEBUG__
+			system_db_table_result_print( nrow, ncolumn, db_result );
+#endif
+			p_sys_muti->muti_flag =  atoi( db_result[ncolumn]);
+			p_sys_muti->en_default_muti = atoi( db_result[ncolumn+1]);
+			p_sys_muti->reconnect_self = atoi( db_result[ncolumn+2]);
+			p_sys_muti->offline_connect = atoi( db_result[ncolumn+3]);
+			p_sys_muti->reconnect_timeout = atoi( db_result[ncolumn+4]);
+			p_sys_muti->failed_connect_count = atoi( db_result[ncolumn+5]);
+			p_sys_muti->discut_self = atoi( db_result[ncolumn+6]);
+			p_sys_muti->log_err = atoi( db_result[ncolumn+7]);
+			p_sys_muti->log_discut = atoi( db_result[ncolumn+8]);
+			p_sys_muti->log_none_muticast = atoi( db_result[ncolumn+9]);
+			p_sys_muti->log_timeout = atoi( db_result[ncolumn+10]);
+			p_sys_muti->query_timeout = atoi( db_result[ncolumn+11]);
+			ret = 0;
+		}
+	}
+	
+	return ret;
+}
+
+// 改表中所有记录
+int system_db_update_muticast_table( Tstr_sysmuti_param sys_muti )
+{
+	Tstr_sysmuti_param temp_muti;
+	int ret = -1;
+	
+	// update new system set
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	sprintf( gsql, "update %s set muti_flag = %d, en_default_muti = %d, reconnect_self = %d, offline_connect = %d,\
+		reconnect_timeout = %d, failed_connect_count = %d, discut_self = %d, log_err = %d, \
+		log_discut = %d, log_none_muticast = %d, log_timeout = %d, query_timeout = %d;", SYS_DB_MUTICAST_TABLE, \
+		sys_muti.muti_flag, sys_muti.en_default_muti, sys_muti.reconnect_self, sys_muti.offline_connect,\
+		sys_muti.reconnect_timeout , sys_muti.failed_connect_count , sys_muti.discut_self , sys_muti.log_err , \
+		sys_muti.log_discut , sys_muti.log_none_muticast, sys_muti.log_timeout , sys_muti.query_timeout );
+	
+	ret = db_excute_sql( gsystem_db, gsql );
+
+	if( ret == 0 )
+	{
+		// 更新全局数据
+		run_db_callback_func( MUTICASTOR, MUTICASTOR_GET_HOST_MUTICAST, &sys_muti );
+	}
+
+	return ret;
+}
+/**=========================结束广播表配置操作======================================**/
 
 /*系统数据库模块的初始化*/
 void system_database_init( void )
@@ -928,6 +1022,9 @@ void system_database_init( void )
 	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_WIREADDR_TABLE, SYSTEM_WIREADDR_COLUMN );
 	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_WIREADDR_TABLE );
 
+	INIT_ZERO( gsql, SQL_STRING_LEN );
+	SQL3_TABLE_CREATE( gsql, SYS_DB_MUTICAST_TABLE, SYSTEM_MUTICAST_COLUMN, gsystem_db );
+
 	INIT_ZERO( &gmatrix_record, sizeof(gmatrix_record));
 	if( -1 == system_db_queue_matrix_config_record( &gmatrix_record ))
 	{
@@ -958,6 +1055,30 @@ void system_database_init( void )
 	}
 	else
 		memcpy( &gmatrix_io_sw_array[A_SWITCH], &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
+
+	// 第一次初始化化默认数据
+	Tstr_sysmuti_param sys_muti;
+	if( -1 == system_db_query_muticast_table(&sys_muti) ) 
+	{
+		sys_muti.muti_flag = true; 
+		sys_muti.en_default_muti = false;
+		sys_muti.reconnect_self = true; 
+		sys_muti.offline_connect = true;
+		sys_muti.reconnect_timeout = 10;// 10s
+		sys_muti.failed_connect_count = 10;// 10次
+		sys_muti.discut_self = false;
+		sys_muti.log_err = true;
+		sys_muti.log_discut = true;
+		sys_muti.log_none_muticast = true;
+		sys_muti.log_timeout = 30;// 30s
+		sys_muti.query_timeout = 10;// 10s
+		
+		system_db_insert_muticast_table( sys_muti );
+	}
+	else
+	{// 更新全局数据
+		run_db_callback_func( MUTICASTOR, MUTICASTOR_GET_HOST_MUTICAST, &sys_muti );
+	}
 }
 
 void system_database_destroy( void )

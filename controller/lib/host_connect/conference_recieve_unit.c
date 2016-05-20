@@ -25,12 +25,31 @@ conventioner_cnnt_list_node* conventioner_cnnt_node = NULL;
 
 LIST_HEAD(gconferenc_recv_model_list);
 
-tcrModelMuticasted_pro gconference_recv_pro;// 用于维护系统的中央广播者对会议单元的广播连接
-
 observer_t gconference_recieve_observer;// 用于更新被广播单元模块的连接状态
 
 extern solid_pdblist endpoint_list;
 extern desc_pdblist descptor_guard;
+
+bool conference_recieve_model_is_right( struct list_head * p_cur_model )
+{
+	if( p_cur_model == NULL )
+		return false;
+	
+	return (p_cur_model == &gconferenc_recv_model_list)?false:true;
+}
+
+bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model )
+{
+	struct list_head *loop_tmp = NULL;
+
+	assert( p_cur_model != NULL || (p_next_model != NULL));
+	if( p_cur_model == NULL || (p_next_model == NULL) )
+		return false;
+
+	*p_next_model = p_cur_model->next;	
+	
+	return true;
+}
 
 int conference_recieve_model_node_insert_to_list( T_Ptrconference_recieve_model p_recv_model, struct list_head *head )
 {
