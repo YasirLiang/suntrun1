@@ -39,4 +39,7 @@ typedef struct _type_conference_recieve_model
 	struct list_head list;
 }tconference_recieve_model, *T_Ptrconference_recieve_model;// 会议接收单元
 
+bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model );
+bool conference_recieve_model_is_right( struct list_head * p_cur_model );
+
 #endif

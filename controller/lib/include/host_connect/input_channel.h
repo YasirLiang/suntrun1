@@ -67,6 +67,9 @@ int input_channel_list_add_trail( T_pInChannel p_Inputnode, struct list_head *li
 T_pInChannel intput_channel_list_node_create( void );
 bool input_channel_list_node_init( T_pInChannel p_Inputnode, uint64_t channel_id, uint16_t channel_index );
 int  get_input_channel_list_double_list_length( struct list_head *list_gurad );
+int universe_input_channel_list_add_trail( T_pInChannel_universe p_Inputnode, struct list_head *head );
+bool universe_input_channel_list_node_init( T_pInChannel_universe p_Inputnode, const uint64_t channel_id, uint16_t channel_index );
+int universe_intput_channel_list_node_create( T_pInChannel_universe *pInChannelNode );
 
 // **************************************************//
 

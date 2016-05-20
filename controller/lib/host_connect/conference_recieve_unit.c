@@ -16,6 +16,7 @@
 #include "jdksavdecc_aem_descriptor.h"
 #include "enum.h"
 #include "host_controller_debug.h"
+#include "linked_list_unit.h"
 
 #if 0
 uint64_t gacmp_tx_tarker_stream_id = 0;
@@ -40,8 +41,6 @@ bool conference_recieve_model_is_right( struct list_head * p_cur_model )
 
 bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model )
 {
-	struct list_head *loop_tmp = NULL;
-
 	assert( p_cur_model != NULL || (p_next_model != NULL));
 	if( p_cur_model == NULL || (p_next_model == NULL) )
 		return false;
@@ -74,6 +73,8 @@ int conference_recieve_model_node_init( T_Ptrconference_recieve_model p_recv_mod
 	p_recv_model->chanel_connect_num = 0;
 	p_recv_model->p_ccu_muticast_channel = NULL;
 	INIT_LIST_HEAD( &p_recv_model->channel_list );
+
+	return 0;
 }
 
 int conference_recieve_model_node_create( T_Ptrconference_recieve_model *pp_recv_model )
@@ -136,7 +137,7 @@ int conference_recieve_model_node_create( T_Ptrconference_recieve_model *pp_recv
 	 *3、若endtity_id没找到则创造，包括input通道信息节点，
 	 */
 	T_Ptrconference_recieve_model p_cfc_recv_model = NULL;
-	T_pInChannel_universe *p_input_node = NULL;
+	T_pInChannel_universe p_input_node = NULL;
 	struct list_head *p_loop_list = NULL;
 	list_for_each( p_loop_list, &gconferenc_recv_model_list )
 	{
@@ -184,7 +185,19 @@ int conference_recieve_model_node_create( T_Ptrconference_recieve_model *pp_recv
 		if( p_input_node != NULL )
 		{
 			universe_input_channel_list_node_init( p_input_node, endtity_id, stream_input_desc.descriptor_index );
-			universe_input_channel_list_add_trail( p_input_node, p_cfc_recv_model->channel_list );
+			universe_input_channel_list_add_trail( p_input_node, &p_cfc_recv_model->channel_list );
+
+			// 初始化广播通道
+			if( p_input_node->listener_index == CONFERENCE_MUTICASTED_INPUT_CHANNEL )
+			{
+				p_cfc_recv_model->p_ccu_muticast_channel =&p_input_node->list;
+				p_cfc_recv_model->query_stop = false;
+				p_cfc_recv_model->tark_discut = false;
+				host_timer_start( 5*1000, &p_cfc_recv_model->muticast_query_timer );// 初始查询时间为5s
+				host_timer_start( 10*1000, &p_cfc_recv_model->errlog_timer );
+			}
+
+			p_cfc_recv_model->channel_num++;
 		}
 	}
 

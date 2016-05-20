@@ -21,12 +21,14 @@
 #include "central_control_transmit_unit.h"
 #include "time_handle.h"
 #include "log_machine.h"
+#include "acmp_controller_machine.h"
+#include "muticast_connect_manager.h"
 
 static Tstr_MMPro gmuticast_manager_pro;
 static uint16_t gacmp_sequence_id = 0;
 
-static struct list_head *gpdefault_muticastor;// 默认广播者
-static struct list_head *gpdefault_muticastor_output;// 默认广播者下的输出通道
+static struct list_head *gpdefault_muticastor = NULL ;// 默认广播者
+static struct list_head *gpdefault_muticastor_output = NULL;// 默认广播者下的输出通道
 
 extern solid_pdblist endpoint_list;// 全局1722终端列表
 
@@ -41,7 +43,6 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 													T_Ptrconference_recieve_model ptr_recv_model )
 {
 	bool disconnect_flags = true;
-	bool model_tark_discut = false;
 	enum input_channel_status in_status;
 	struct jdksavdecc_eui64 talker_entity_id, listen_entity_id;
 	int ret = -1;
@@ -127,7 +128,9 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 
 	if( ptr_Inchn->pro_status != INCHANNEL_PRO_FINISH )
 	{
-		DEBUG_INFO( "Input Node does not proccess Finish......" );
+		DEBUG_INFO( "0x%016llx - %d Input Node does not proccess Finish......", \
+			local_listen_id, ptr_Inchn->listener_index );
+		
 		return 0;
 	}
 
@@ -155,6 +158,8 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 							ptr_Inchn->listener_index,
 							1, 
 							gacmp_sequence_id++ );
+
+				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
 			}
 			break;
 		case INCHANNEL_BUSY:// 被占用了
@@ -172,6 +177,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 				if( update_flags )
 				{
 					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
+					ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
 				}
 			}
 			else
@@ -184,7 +190,9 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 					ptr_Inchn->listener_index, 
 					1, 
 					gacmp_sequence_id++ );
-
+				
+				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
+#if 0
 				if( muticastor_exit )
 				{
 					memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
@@ -196,6 +204,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 								2, 
 								gacmp_sequence_id++ );
 				}
+#endif
 			}
 			break;
 		default:
@@ -236,7 +245,6 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
 	int ret = -1;
 	T_Ptrconference_recieve_model ptr_recv_model = NULL;
 	uint32_t query_timeout = (uint32_t)gmuticast_manager_pro.mm_sys_flags.query_timeout*1000;	
-
 
 	ptr_recv_model = list_entry( gmuticast_manager_pro.ptr_curcfc_recv_model, tconference_recieve_model, list );
 	if( ptr_recv_model != NULL )
@@ -334,13 +342,22 @@ static int muticast_connect_manger_muticastor_default_change_pro( void )
 	{
 		if( over_time_listen( CHANGE_MUTICASTOR_TIMEOUT_INDEX ) )
 		{
-			if( (gmuticast_manager_pro.ptr_muticastor != gpdefault_muticastor) &&
-				((gmuticast_manager_pro.ptr_muticastor_output != gpdefault_muticastor_output)))
+			bool change_default = true;
+			
+			if( gmuticast_manager_pro.mm_sys_flags.en_default_muti && \
+					gmuticast_manager_pro.muticast_exist )
+			{// 不能改变
+				change_default = false;
+			}
+			
+			if( change_default && \
+				gpdefault_muticastor != gmuticast_manager_pro.ptr_muticastor &&\
+				gpdefault_muticastor_output != gmuticast_manager_pro.ptr_muticastor )
 			{
 				gmuticast_manager_pro.ptr_muticastor = gpdefault_muticastor;
 				gmuticast_manager_pro.ptr_muticastor_output = gpdefault_muticastor_output;
 				gmuticast_manager_pro.muticast_exist = true;
-				host_timer_start( (uint32_t)gmuticast_manager_pro.mm_sys_flags.log_timeout*1000,
+				host_timer_start( (uint32_t)gmuticast_manager_pro.mm_sys_flags.log_timeout*1000,\
 								&gmuticast_manager_pro.mm_errlog_timer );
 			}
 
@@ -412,7 +429,6 @@ static int muticast_connect_manger_error_log( void )
 static int muticast_connect_manger_not_muticast_pro( void )
 {
 	int ret = -1;
-	T_Ptrconference_recieve_model ptr_recv_model = NULL;
 
 	// 当改变广播者时，不能改变当前的广播者
 	if( gmuticast_manager_pro.mm_cha_state == MUTICAST_CHANGE_BEGIN )

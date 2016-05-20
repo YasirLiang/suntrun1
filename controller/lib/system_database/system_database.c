@@ -896,7 +896,7 @@ int system_db_insert_muticast_table( Tstr_sysmuti_param sys_muti )
 int system_db_query_muticast_table( Tstr_sysmuti_param *p_sys_muti )
 {
 	char **db_result = NULL;
-	int nrow, ncolumn, i = 0, ret = -1;
+	int nrow, ncolumn, ret = -1;
 
 	if( p_sys_muti == NULL )
 		return -1;
@@ -933,7 +933,6 @@ int system_db_query_muticast_table( Tstr_sysmuti_param *p_sys_muti )
 // 改表中所有记录
 int system_db_update_muticast_table( Tstr_sysmuti_param sys_muti )
 {
-	Tstr_sysmuti_param temp_muti;
 	int ret = -1;
 	
 	// update new system set

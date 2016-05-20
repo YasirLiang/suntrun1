@@ -16,6 +16,7 @@
 #include "jdksavdecc_aem_descriptor.h"
 #include "enum.h"
 #include "host_controller_debug.h"
+#include "muticast_connect_manager.h"
 
 static observer_t gccu_transmit_observer;// 中央发送单元观察者
 LIST_HEAD(gccu_trans_model_guard);// 创建并初始化中央传输单元头节点
@@ -150,6 +151,11 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 			output_channel_insert_node_to_list( &ptr_model->out_ch.list, p_outch );
 			DEBUG_INFO( "New Transmit  CCU (0x%016llx) Out Channel ( Index = %d)",
 						endtity_id, stream_out_desc.descriptor_index );
+
+			if( p_outch->tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
+			{
+				muticast_connect_manger_chdefault_outmuticastor( &ptr_model->list, &p_outch->list );
+			}
 		}
 	}
 	

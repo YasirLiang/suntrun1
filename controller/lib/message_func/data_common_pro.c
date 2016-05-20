@@ -11,7 +11,8 @@
 // 后期可以加入消息队列
 void run_db_callback_func( enum enum_db_call_table_owner usr, uint32_t link, void *p_data )
 {
-	struct str_db_callback *p = &gdb_callback_table[0];
+	const struct str_db_callback *p = &gdb_callback_table[0];
+	
 	while( p->owner != ERROR_OWNER )
 	{
 		if( (p->owner == usr )&&\
