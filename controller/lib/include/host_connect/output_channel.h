@@ -36,6 +36,6 @@ T_pOutChannel out_channel_node_create_can_init( void );
 bool input_connect_node_insert_node_to_list( struct list_head *head, Input_pChannel p_node );
 bool input_connect_node_init_by_index( Input_pChannel p_node, uint64_t  listen_id, uint16_t listen_index  );
 Input_pChannel input_connect_node_create( void );
-
+bool input_connect_node_delect_node_from_list( struct list_head *head, Input_pChannel *pp_node );
 
 #endif

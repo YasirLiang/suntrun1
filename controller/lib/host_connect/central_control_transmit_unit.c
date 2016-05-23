@@ -162,14 +162,165 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 	return 0;
 }
 
+void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t tarker_id,
+															const uint16_t tarker_index,
+ 															const uint64_t listern_id, 
+ 															const uint16_t listern_id_index,
+ 															int resp_status )
+{
+	T_pccuTModel ptr_model = NULL;
+	T_pOutChannel p_outch = NULL;
+	struct list_head *p_list = NULL;
+	bool found_model = false, found_output = false;
+
+	if( (resp_status != 0) ||(tarker_id == 0) ||(listern_id == 0))// response not right?
+		return;
+	
+	list_for_each( p_list, &gccu_trans_model_guard )
+	{
+		T_pccuTModel ptr_tmp_model = NULL;
+		ptr_tmp_model = list_entry( p_list, TccuTModel, list );
+		if( ptr_tmp_model != NULL )
+		{
+			if( ptr_tmp_model->tarker_id == listern_id )
+			{// search model
+				ptr_model = ptr_tmp_model;
+				found_model = true;
+				break;
+			}
+		}
+	}
+
+	if( found_model )
+	{// 找output
+		list_for_each( p_list, &ptr_model->out_ch.list )
+		{
+			T_pOutChannel p_tmp_outch = NULL;
+			p_tmp_outch = list_entry( p_list, TOutChannel, list );
+			if( (p_tmp_outch != NULL) && (p_tmp_outch->tarker_index == tarker_index) )
+			{// found output
+				found_output = true;
+				p_outch = p_tmp_outch;
+				break;
+			}
+		}
+	}
+
+	if( found_output  )// found ?
+	{
+		Input_pChannel p_intput = input_connect_node_create();
+		if( p_intput != NULL )
+		{// create success
+			input_connect_node_init_by_index( p_intput, listern_id, listern_id_index );
+			input_connect_node_insert_node_to_list( &p_outch->list, p_intput );
+		}
+	}
+}
+
+void central_control_transmit_unit_update_by_disconnect_rx_state( const uint64_t tarker_id,
+															const uint16_t tarker_index,
+ 															const uint64_t listern_id, 
+ 															const uint16_t listern_id_index,
+ 															int resp_status )
+{
+	T_pccuTModel ptr_model = NULL;
+	T_pOutChannel p_outch = NULL;
+	struct list_head *p_list = NULL;
+	bool found_model = false, found_output = false;
+
+	if( (resp_status != 0) ||(tarker_id == 0) ||(listern_id == 0))// response not right?
+		return;
+
+	// 1、search output model
+	// 2\search ouput model
+	// 3\search output model's connect input channel
+	list_for_each( p_list, &gccu_trans_model_guard )
+	{
+		T_pccuTModel ptr_tmp_model = NULL;
+		ptr_tmp_model = list_entry( p_list, TccuTModel, list );
+		if( ptr_tmp_model != NULL )
+		{
+			if( ptr_tmp_model->tarker_id == tarker_id )
+			{// search model
+				ptr_model = ptr_tmp_model;
+				found_model = true;
+				break;
+			}
+		}
+	}
+
+	if( found_model )
+	{// 找output
+		list_for_each( p_list, &ptr_model->out_ch.list )
+		{
+			T_pOutChannel p_tmp_outch = NULL;
+			p_tmp_outch = list_entry( p_list, TOutChannel, list );
+			if( (p_tmp_outch != NULL) && (p_tmp_outch->tarker_index == tarker_index) )
+			{// found output
+				found_output = true;
+				p_outch = p_tmp_outch;
+				break;
+			}
+		}
+	}
+
+	if( found_output  )// found ?
+	{
+		p_list = NULL;
+		list_for_each( p_list, &p_outch->list )
+		{
+			Input_pChannel p_tmp_inputch = NULL;
+			p_tmp_inputch = list_entry( p_list, Input_Channel, list );
+			if( (p_tmp_inputch != NULL) && (p_tmp_inputch->listener_id == listern_id)
+				&& ((p_tmp_inputch->listen_index == listern_id_index)))
+			{// found output
+				input_connect_node_delect_node_from_list( &p_outch->list, &p_tmp_inputch );
+				break;
+			}
+		}
+	}
+}
+
+
 void central_control_transmit_unit_update( subject_data_elem reflesh_data )// 更新会议接收单元模块的连接状态
 {
 	uint16_t data_type = reflesh_data.ctrl_msg.data_type;
 	uint16_t msg_type = reflesh_data.ctrl_msg.msg_type;
 	int repson_status = reflesh_data.ctrl_msg.msg_resp_status;
+	
+	if( data_type != JDKSAVDECC_SUBTYPE_ACMP || 
+		(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) )
+	{// not acmp msg or tramsit model do nothing with tx state response,in the meantime, transmit model do nothing with rx state response.
+	 // Because stream Id is tarker id , transmit model also do nothing with TX state response.
+		return;
+	}
+
+	switch( msg_type )
+	{
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE:
+			// do nothing
+			break;
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE:
+			central_control_transmit_unit_update_by_connect_rx_state( reflesh_data.tarker_id,
+									reflesh_data.tarker_index,
+									reflesh_data.listener_id,
+									reflesh_data.listener_index,
+									repson_status );
+			break;
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE:
+			central_control_transmit_unit_update_by_disconnect_rx_state( reflesh_data.tarker_id,
+									reflesh_data.tarker_index,
+									reflesh_data.listener_id,
+									reflesh_data.listener_index,
+									repson_status );
+			break;
+		default:
+			DEBUG_INFO( "update cfc recv model msg type(0x%02x) info err!", msg_type );
+			break;
+	}
 }
 
-void conference_recieve_uinit_init( void )
+void central_control_transmit_unit_model_pro_init( void )
 {
 	// 初始化观察者
 	init_observer( &gccu_transmit_observer, central_control_transmit_unit_update );

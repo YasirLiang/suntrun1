@@ -50,5 +50,7 @@ typedef struct _type_muticast_manager
 extern int muticast_connect_manger_timeout_event_image( void );
 extern int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_muti, struct list_head *p_muit_out );
 extern int muticast_connect_manger_database_update( void* p_muti_param );
+extern bool muticast_muticast_connect_manger_get_discut_self_flag( void );
+extern bool muticast_muticast_connect_manger_get_discut_self_flag( void );
 
 #endif

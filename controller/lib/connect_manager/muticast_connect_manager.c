@@ -191,8 +191,6 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 					1, 
 					gacmp_sequence_id++ );
 				
-				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
-#if 0
 				if( muticastor_exit )
 				{
 					memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
@@ -204,7 +202,8 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 								2, 
 								gacmp_sequence_id++ );
 				}
-#endif
+
+				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
 			}
 			break;
 		default:
@@ -541,5 +540,10 @@ int muticast_connect_manger_database_update( void* p_muti_param_tmp )
 		p_mm_sys_flags->query_timeout = p_muti_param->query_timeout;
 
 	return 0;
+}
+
+bool muticast_muticast_connect_manger_get_discut_self_flag( void )
+{
+	return gmuticast_manager_pro.mm_sys_flags.discut_self;
 }
 

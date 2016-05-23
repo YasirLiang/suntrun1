@@ -6,9 +6,10 @@
 #include "send_work_queue.h"
 #include "func_proccess.h"
 #include "profile_system.h"
-#include "muticast_connector.h"
+//#include "muticast_connector.h" // 注释为了使用muticast_connect_manager.h
 #include "matrix_output_input.h"
 #include "control_matrix_common.h"
+#include "muticast_connect_manager.h"
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE // 没有定义
 volatile bool is_inflight_timeout = false;
@@ -51,7 +52,11 @@ int fn_timer_cb( struct epoll_priv*priv )
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
+#if 0
 	muticast_connector_time_tick();
+#else
+	muticast_connect_manger_timeout_event_image();
+#endif
 	
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 	if( is_inflight_timeout && is_wait_messsage_active_state() )

@@ -16,6 +16,7 @@
 #include "output_channel.h"
 #include "global.h"
 #include "descriptor.h"
+#include "connector_subject.h"
 
 //************************************
 
@@ -44,6 +45,10 @@ typedef struct _type_central_control_trans_model// 中央传输模块
 	TOutChannel out_ch; // 输出通道，表为空则无输出
 	struct list_head list; 
 }TccuTModel,*T_pccuTModel;
+
+extern int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_len, const desc_pdblist desc_node, const uint64_t endtity_id );
+extern void central_control_transmit_unit_update( subject_data_elem reflesh_data );// 更新会议接收单元模块的连接状态
+extern void central_control_transmit_unit_model_pro_init( void );
 
 //************************************//
 

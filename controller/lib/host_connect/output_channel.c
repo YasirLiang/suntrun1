@@ -56,6 +56,22 @@ bool input_connect_node_insert_node_to_list( struct list_head *head, Input_pChan
 	return true;
 }
 
+bool input_connect_node_delect_node_from_list( struct list_head *head, Input_pChannel *pp_node )
+{
+	assert( head && pp_node );
+	if( head == NULL || pp_node == NULL )
+		return false;
+	
+	__list_del_entry( &((*pp_node)->list) );// delect connect input node
+	if( *pp_node != NULL )
+	{
+		free(*pp_node);
+		*pp_node = NULL;
+		return true;
+	}
+	
+	return false;
+}
 
 bool input_connect_node_init_by_index( Input_pChannel p_node, uint64_t  listen_id, uint16_t listen_index  )
 {

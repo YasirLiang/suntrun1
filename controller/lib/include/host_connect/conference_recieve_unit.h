@@ -33,13 +33,19 @@ typedef struct _type_conference_recieve_model
 	struct list_head *p_ccu_muticast_channel;// 中央连接单元对本模块广播的输入通道定义表节点类型是TInChannel_universe
 	host_timer muticast_query_timer, errlog_timer;// 广播查询超时定时器, 错误日志定时器
 	bool tark_discut;// 讲话断开,当mic 打开，而系统本机断开时，该值为true
+	bool discut_flag;// 断开本机
 	bool query_stop; // 查询结束标志位
 	uint16_t channel_num;// 通道数
 	uint16_t chanel_connect_num;// 模块已连接数
 	struct list_head list;
 }tconference_recieve_model, *T_Ptrconference_recieve_model;// 会议接收单元
 
-bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model );
-bool conference_recieve_model_is_right( struct list_head * p_cur_model );
+extern bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model );
+extern bool conference_recieve_model_is_right( struct list_head * p_cur_model );
+extern void conference_recieve_uinit_proccess_init( void );
+int conference_recieve_model_connect_self( uint64_t listern_id );
+int conference_recieve_model_discut_self( uint64_t listern_id );
+int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_len, const desc_pdblist desc_node, const uint64_t endtity_id );
+
 
 #endif

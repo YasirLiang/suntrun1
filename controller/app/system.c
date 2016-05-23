@@ -14,7 +14,7 @@
 #include "profile_system.h"
 #include "camera_pro.h"
 #include "camera_common.h"
-#include "muticast_connector.h"
+//#include "muticast_connector.h"
 #include "check_timer.h"
 #include "matrix_output_input.h"// 矩阵输出
 #include "control_matrix_common.h"
@@ -25,6 +25,8 @@
 #include "avdecc_manage.h"
 #include "log_machine.h"
 #include "en485_send.h"
+
+#include "central_control_transmit_unit.h"
 
 void init_system( void )
 {
@@ -48,16 +50,21 @@ void init_system( void )
 	init_connector_subjector();// 初始化系统的被观察者
 	conference_transmit_model_init();// 初始化系统会议单元传输模块
 	central_control_recieve_uinit_init_list();// 初始化中央接收模块
+	conference_recieve_uinit_proccess_init();// 初始化会议接收模块
+	central_control_transmit_unit_model_pro_init();// 初始化中央传输单元模块处理
 	
 #ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	connect_table_info_init();/*初始化连接表*/
 #endif
 
+#if 0
 	if( -1 == muticast_connector_init())// 初始广播表
 	{
 		DEBUG_INFO( "init mitucast conventionr list failed" );
 		exit( -1 );
 	}
+#else
+#endif
 
 	init_sem_tx_can();
 	init_sem_wait_can();
@@ -223,7 +230,10 @@ void system_close( struct threads_info *p_threads )
 	connect_table_destroy();// 释放连接表资源
 #endif
 
+#if 0
 	muticast_connector_destroy();// 释放广播表资源
+#else
+#endif
 
 	profile_system_close();// 保存配置文件的信息
 	camera_pro_system_close();// 摄像头相关的资源释放

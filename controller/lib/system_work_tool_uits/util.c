@@ -861,3 +861,23 @@ const char* logging_level_string_get( int32_t level_value )
 	return "UNKNOWN";
 }
 
+// ×ª»»Á÷idµ½tarker id
+uint64_t convert_stream_id_to_tarker_id( const uint64_t listern_stream_id )
+{
+	struct jdksavdecc_eui64 array;
+	uint64_t id = 0;
+
+	array.value[0] = (uint8_t)(listern_stream_id>>(7*8));
+	array.value[1] = (uint8_t)(listern_stream_id>>(6*8));
+	array.value[2] = (uint8_t)(listern_stream_id>>(5*8));
+	array.value[3] = 0xff;
+	array.value[4] = 0xfe;
+	array.value[5] = (uint8_t)(listern_stream_id>>(4*8));
+	array.value[6] = (uint8_t)(listern_stream_id>>(3*8));
+	array.value[7] = (uint8_t)(listern_stream_id>>(2*8));
+
+	convert_eui64_to_uint64( array.value, &id );
+
+	return id;
+}
+

@@ -23,19 +23,19 @@ typedef struct _type_command
 {
 	uint16_t data_type;// 数据类型
 	uint16_t msg_type;// 消息类型
+	uint16_t desc; // 后面可加aecp \app等的命令 ,desc 类型
+	uint16_t desc_index;
 	int msg_resp_status;// 命令的返回值状态;-1为发送数据超时状态
-	//uint16_t desc; // 后面可加aecp \app等的命令 
-	//uint16_t desc_index;
 }tsubject_control_command;
 
 typedef struct _elem_data
 {
 	uint64_t listener_id;
-	uint64_t tarker_id;
+	uint64_t tarker_id;// 当响应数据是rx_state时，此时为流ID
 	uint16_t listener_index;
 	uint16_t tarker_index;
-	bool connect_flag;// true :cnnt success :false disconnect success!
-	tsubject_control_command ctrl_msg;// 控制命令
+	bool connect_flag;// true :cnnt success :false disconnect success! 前面的结构定义
+	tsubject_control_command ctrl_msg;// 控制命令后面的结构定义
 }subject_data_elem;
 
 typedef struct 
