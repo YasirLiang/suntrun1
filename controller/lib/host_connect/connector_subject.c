@@ -78,6 +78,11 @@ int set_subject_data( subject_data_elem data, subject_t *subject )
 	subject->sub_data.listener_index = data.listener_index;
 	subject->sub_data.tarker_id = data.tarker_id;
 	subject->sub_data.tarker_index = data.tarker_index;
+	subject->sub_data.ctrl_msg.data_type = data.ctrl_msg.data_type;
+	subject->sub_data.ctrl_msg.desc = data.ctrl_msg.desc;
+	subject->sub_data.ctrl_msg.desc_index = data.ctrl_msg.desc_index;
+	subject->sub_data.ctrl_msg.msg_resp_status = data.ctrl_msg.msg_resp_status;
+	subject->sub_data.ctrl_msg.msg_type = data.ctrl_msg.msg_type;
 
 	return 0;
 }

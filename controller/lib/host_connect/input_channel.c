@@ -83,6 +83,7 @@ bool universe_input_channel_list_node_init( T_pInChannel_universe p_Inputnode, c
 	p_Inputnode->status = INCHANNEL_FREE;
 	p_Inputnode->pro_status = INCHANNEL_PRO_FINISH;
 	p_Inputnode->timetimp = 0;// 表示未连接
+	p_Inputnode->connect_failed_count = 0;
 
 	return true;
 }

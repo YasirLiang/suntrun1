@@ -205,6 +205,10 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 	const bool cnnt_flag = connect_info.connect_flag;
 	tconference_trans_pmodel p_temp_node = NULL;
 
+	if( connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE ||
+		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE )
+		return ;
+
 	if( !cnnt_flag )// connferenc Mic close
 	{
 		list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )

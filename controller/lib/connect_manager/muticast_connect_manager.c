@@ -182,6 +182,8 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 			}
 			else
 			{// 不是默认广播者
+				DEBUG_INFO( "listener id = 0x%016llx, current tarker id = 0x%016llx -%d,	default id =  0x%016llx-%d",
+					local_listen_id, ptr_Inchn->tarker_id, ptr_Inchn->tarker_index,muticastor_id, muticast_output->tarker_index );
 				convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
 				convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
 				acmp_disconnect_avail( talker_entity_id.value, 
@@ -371,7 +373,7 @@ static int muticast_connect_manger_muticastor_default_change_pro( void )
 static int muticast_connect_manger_error_log( void )
 {
 	uint32_t log_timeout = gmuticast_manager_pro.mm_sys_flags.log_timeout*1000;// s
-	uint8_t failed_connect_count = gmuticast_manager_pro.mm_sys_flags.failed_connect_count;
+	uint16_t failed_connect_count = gmuticast_manager_pro.mm_sys_flags.failed_connect_count;
 	T_Ptrconference_recieve_model ptr_curcfc_recv_model = list_entry( gmuticast_manager_pro.ptr_curcfc_recv_model, tconference_recieve_model, list);
 	
 	if( !gmuticast_manager_pro.mm_sys_flags.log_err )
@@ -414,9 +416,11 @@ static int muticast_connect_manger_error_log( void )
 		{
     				gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 								LOGGING_LEVEL_NOTICE, 
-								"Terminal (0x%016llx) - %d Out of Line:Please Check!", 
+								"Terminal (0x%016llx) - %d(Failed cont(Max-already): %d-%d) Out of Line:Please Check!", 
 								ptr_curcfc_recv_model->listener_id,
-								ptr_Inchn->listener_index );
+								ptr_Inchn->listener_index,
+								failed_connect_count,
+								ptr_Inchn->connect_failed_count );
 
 			host_timer_update( log_timeout, &ptr_curcfc_recv_model->errlog_timer );
 		}

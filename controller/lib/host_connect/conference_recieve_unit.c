@@ -37,11 +37,14 @@ bool conference_recieve_model_is_right( struct list_head * p_cur_model )
 
 bool conference_recieve_model_found_next( struct list_head * p_cur_model, struct list_head **p_next_model )
 {
-	assert( p_cur_model != NULL || (p_next_model != NULL));
-	if( p_cur_model == NULL || (p_next_model == NULL) )
+	assert( p_next_model != NULL);
+	if( p_next_model == NULL )
 		return false;
 
-	*p_next_model = p_cur_model->next;	
+	if( p_cur_model == NULL)
+		*p_next_model = &gconferenc_recv_model_list;
+	else
+		*p_next_model = p_cur_model->next;	
 	
 	return true;
 }
@@ -293,24 +296,21 @@ int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_l
 }
 
 void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t listern_stream_id,
+															const uint16_t tarker_index,
  															const uint64_t listern_id, 
  															const uint16_t listern_id_index,
  															int resp_status)
-{
+{// listern_stream_id为tarker id or listen's stream id,一般设成tarker id
  	uint64_t tarker_id = 0;
 	struct list_head *p_list = NULL;
 	T_Ptrconference_recieve_model p_cfc_recv_model = NULL;
 	T_pInChannel_universe p_Inchannel = NULL;
 
-	if( listern_stream_id == 0 || (resp_status != 0))
-	{// rigth response
-		return;
-	}
-
 	tarker_id = convert_stream_id_to_tarker_id( listern_stream_id );
-	DEBUG_INFO( "Taker Id = 0x%016llx", tarker_id );
-	if( tarker_id == 0 )
-		return;
+	if( tarker_id == listern_stream_id && listern_stream_id != 0 )
+		DEBUG_INFO( "listern_stream_id( 0x%016llx ) is Stream ID", listern_stream_id );
+	else
+		DEBUG_INFO( "listern_stream_id( 0x%016llx ) is  Stream's Tarker ID(Not zero)", listern_stream_id );
 
 	list_for_each( p_list, &gconferenc_recv_model_list )
 	{
@@ -349,11 +349,9 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 			p_Inchannel->pro_status = INCHANNEL_PRO_HANDLING;
 		}
 
-		if( p_Inchannel->tarker_id != tarker_id )
-			p_Inchannel->tarker_id = tarker_id;
-
 		if( p_Inchannel->status == INCHANNEL_FREE )
 		{
+#if 0			
 			// look for tarker index 
 			desc_pdblist out_desc = descptor_guard->next;
 			int out_stream_index = 0;
@@ -384,9 +382,21 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 				if( found )
 					break;
 			}
+
+			if( listern_stream_id != 0 && (resp_status == 0))
+				if( found && p_Inchannel->tarker_index != out_stream_index )// tarker must recv tx state right resonpse first?
+					p_Inchannel->tarker_index = out_stream_index;
+#else
+			if( listern_stream_id != 0 && (resp_status == 0))
+			{// rigth response
+				if( p_Inchannel->tarker_id != listern_stream_id )
+					p_Inchannel->tarker_id = listern_stream_id;
 		
-			if( found && p_Inchannel->tarker_index != out_stream_index )// tarker must recv tx state right resonpse first?
-				p_Inchannel->tarker_index = out_stream_index;
+				if( p_Inchannel->tarker_index != tarker_index )
+					p_Inchannel->tarker_index = tarker_index;
+			}
+#endif
+
 
 			p_Inchannel->status = INCHANNEL_BUSY;
 		}
@@ -404,12 +414,7 @@ void conference_recieve_model_unit_update_by_connect_rx_state(const uint64_t tar
 	struct list_head *p_list = NULL;
 	T_Ptrconference_recieve_model p_cfc_recv_model = NULL;
 	T_pInChannel_universe p_Inchannel = NULL;
-
-	if(  (resp_status != 0))
-	{// not rigth response, include timeout status return.
-		return;
-	}
-
+	
 	list_for_each( p_list, &gconferenc_recv_model_list )
 	{
 		if( p_list != NULL )
@@ -448,12 +453,21 @@ void conference_recieve_model_unit_update_by_connect_rx_state(const uint64_t tar
 			p_Inchannel->pro_status = INCHANNEL_PRO_HANDLING;
 		}
 
-		if( (0 != tarker_id) && p_Inchannel->tarker_id != tarker_id )
-			p_Inchannel->tarker_id = tarker_id;
+		if(  (resp_status == 0))
+		{//  rigth response, 
+			if( (0 != tarker_id) && p_Inchannel->tarker_id != tarker_id )
+				p_Inchannel->tarker_id = tarker_id;
 
-		if( p_Inchannel->tarker_index != tarker_index )
-			p_Inchannel->tarker_index = tarker_index;
+			if( p_Inchannel->tarker_index != tarker_index )
+				p_Inchannel->tarker_index = tarker_index;
 
+			p_Inchannel->connect_failed_count = 0;// 成功连接后清零
+		}
+		else
+		{// 连接失败次数+1
+			p_Inchannel->connect_failed_count++;
+		}
+		
 		p_Inchannel->status = INCHANNEL_BUSY;
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
 	}
@@ -513,13 +527,14 @@ void conference_recieve_model_unit_update_by_disconnect_rx_state( const uint64_t
 			p_Inchannel->tarker_index = 0xffff;// not valid output
 
 			if( p_cfc_recv_model->discut_flag && muticast_muticast_connect_manger_get_discut_self_flag() )
-			{// 本机已经断开且数据库也是
+			{// 本机已经断开且数据库也是断开本机
 				p_cfc_recv_model->discut_flag = false;
-				p_cfc_recv_model->tark_discut = true;
+				p_cfc_recv_model->tark_discut = true;// 成功断开本机
 			}
+
+			p_Inchannel->status = INCHANNEL_FREE;
 		}
 
-		p_Inchannel->status = INCHANNEL_FREE;
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
 	}
 }
@@ -541,6 +556,7 @@ void conference_recieve_model_unit_update( subject_data_elem reflesh_data )// 更
 	{
 		case JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE:
 			conference_recieve_model_unit_update_by_get_rx_state( reflesh_data.tarker_id,
+									reflesh_data.tarker_index,
 									reflesh_data.listener_id,
 									reflesh_data.listener_index,
 									repson_status );

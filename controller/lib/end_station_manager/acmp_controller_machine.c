@@ -412,6 +412,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 	uint64_t end_station_entity_id;
 	struct jdksavdecc_eui64 stream_entity_station = jdksavdecc_common_control_header_get_stream_id( frame, ZERO_OFFSET_IN_PAYLOAD );
 	uint64_t end_stream_id = jdksavdecc_uint64_get(&stream_entity_station, 0);
+	subject_data_elem elem;
 
 	// acmp info
 	struct jdksavdecc_acmpdu node_acmpdu;
@@ -473,7 +474,6 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE) || \
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE)))// udpate system descriptor connect list 
 		{
-			subject_data_elem elem;
 			elem.connect_flag = (msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE)?true:false;
 			elem.listener_id = end_station_entity_id;
 			elem.listener_index = node_acmpdu.listener_unique_id;
@@ -579,7 +579,6 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						0, 
 						acmp_cmd_status_value_to_name(status));
 
-			subject_data_elem elem;
 			elem.listener_id = end_station_entity_id;
 			elem.listener_index = node_acmpdu.listener_unique_id;
 			elem.tarker_id = tarker_id;
@@ -605,7 +604,6 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 							acmp_cmd_status_value_to_name(status),
 							seq_id);
 
-			subject_data_elem elem;
 			elem.connect_flag = false;
 			elem.listener_id = end_station_entity_id;
 			elem.listener_index = node_acmpdu.listener_unique_id;

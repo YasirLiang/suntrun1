@@ -378,7 +378,13 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 	const bool cnnt_flag = connect_info.connect_flag;
 	T_pInChannel p_temp_chNode = NULL;
 	int i = 0;
-
+	
+	//DEBUG_INFO( "msg = %d, subtype = %d",  connect_info.ctrl_msg.msg_type, connect_info.ctrl_msg.data_type );
+	if( (connect_info.ctrl_msg.data_type != JDKSAVDECC_SUBTYPE_ACMP) ||\
+		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE ||
+		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE )
+		return ;
+	
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
 		if( cnnt_flag )// connect success?
