@@ -4,6 +4,7 @@
 #include "menu_f.h"
 #include "menu_func.h"
 #include "host_controller_debug.h"// yasir add in 2016-3-29
+#include "host_time.h"
 
 unsigned char  gUseDis;
 unsigned char gByteData[PAR_NUM];
@@ -103,16 +104,29 @@ void CameraAperture(unsigned int value)
 	menu_cmd_run( MENU_UI_CAMERACTLIRIS, value,NULL );
 }
 
+extern uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
 unsigned short FindTmnAddr(unsigned short Addr, Bool NextFlag)
 {
+	unsigned short addr = 0xffff;
+	
 	printf("CameraAperture(Addr=0x%x,NextFlag=%d)\n",Addr,NextFlag);
-	return 0;
+	if( NextFlag )
+	{
+		addr = terminal_pro_get_address( 1, Addr );
+	}
+	else
+	{
+		addr = terminal_pro_get_address( -1, Addr );
+	}
+	
+	return addr;
 }
+
 TPresetTmnSelPro gPresetTmnSelPro;
 void PresetTmnSel(unsigned int value)
 {
   unsigned short Addr;
-
+printf(" gPresetTmnSelPro.Addr = 0x%04x\n", gPresetTmnSelPro.Addr);
   if(gPresetTmnSelPro.Addr>FULL_VIEW_ADDR)
   {
     Addr=FULL_VIEW_ADDR;
@@ -149,23 +163,26 @@ void PresetTmnSel(unsigned int value)
   }
   ShowSelTmn(Addr);
 	gPresetTmnSelPro.Addr = Addr;
-	//gPresetTmnSelPro.Time=gu32SysTick;
-	//gPresetTmnSelPro.RunFlag = BOOL_TRUE;
-	printf("PresetTmnSel(value=%d,Addr=0x%x)\n",value,Addr);
+	gPresetTmnSelPro.Time= get_current_time();
+	gPresetTmnSelPro.RunFlag = BOOL_TRUE;
+	printf("PresetTmnSel(value=%d,Addr=0x%04x)\n",value,Addr);
+	menu_cmd_run( MENU_UI_SELECTPRESETADDR, gPresetTmnSelPro.Addr,NULL );
 }
+
 #if 0
-void PresetTmnSelPro(void)
+void PresetTmnSelPro(void)// 处理预置位选择
 {
 	if(gPresetTmnSelPro.RunFlag)
 	{
-		if(gu32SysTick-gPresetTmnSelPro.Time>500)
+		if((get_current_time()-gPresetTmnSelPro.Time)>500)
 		{
-			FindFuncId(SYS_USE,SYS_PRESET_ADDR,0,(unsigned char *)&gPresetTmnSelPro.Addr,2);
+			menu_cmd_run( MENU_UI_SELECTPRESETADDR, gPresetTmnSelPro.Addr,NULL );
 			gPresetTmnSelPro.RunFlag = BOOL_FALSE;
 		}
 	}
 }
 #endif
+
 /*
 #define PPT_MODE		0
 #define	LIMIT_MODE	1

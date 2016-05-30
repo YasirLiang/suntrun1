@@ -387,16 +387,17 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 				if( found && p_Inchannel->tarker_index != out_stream_index )// tarker must recv tx state right resonpse first?
 					p_Inchannel->tarker_index = out_stream_index;
 #else
-			if( listern_stream_id != 0 && (resp_status == 0))
-			{// rigth response
-				if( p_Inchannel->tarker_id != listern_stream_id )
-					p_Inchannel->tarker_id = listern_stream_id;
-		
-				if( p_Inchannel->tarker_index != tarker_index )
-					p_Inchannel->tarker_index = tarker_index;
-			}
+			
 #endif
+		}
 
+		if( listern_stream_id != 0 && (resp_status == 0))
+		{// rigth response
+			if( p_Inchannel->tarker_id != listern_stream_id )
+				p_Inchannel->tarker_id = listern_stream_id;
+	
+			if( p_Inchannel->tarker_index != tarker_index )
+				p_Inchannel->tarker_index = tarker_index;
 
 			p_Inchannel->status = INCHANNEL_BUSY;
 		}

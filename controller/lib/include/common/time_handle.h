@@ -37,7 +37,7 @@ typedef enum enum_overtime_handle
 	SYSTEM_SQUEUE_SEND_INTERVAL, // 系统发送队列的发送间隔
 	CHECK_SYSTEM_SEND_QUEUE_INDEX, //  检查系统是否发送数据完成
 	CHANGE_MUTICASTOR_TIMEOUT_INDEX,// 改变广播者的超时时间
-
+	CHANGE_MUTICASTOR_INTERVAL,// 改变广播者的间隔时间
 	
 	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;

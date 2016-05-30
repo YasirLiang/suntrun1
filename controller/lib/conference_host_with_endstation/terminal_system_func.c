@@ -26,6 +26,9 @@ void terminal_system_reallot_addr( void )
 	/* 清除终端链表 ,除了头结点*/
 	terminal_system_dblist_except_free();
 
+	/*重新初始化当前终端节点*/
+	terminal_pro_init_cur_terminal_node();
+
 	/* 打开地址文件，并清除文件内容 */
 	terminal_open_addr_file_wt_wb();
 

@@ -241,7 +241,8 @@ void terminal_system_dblist_destroy( void );
 /*@}*/
 
 void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_node );
-
+uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
+void terminal_pro_init_cur_terminal_node( void );
 
 #endif
 

@@ -85,6 +85,7 @@ static const char *commands_list[COMMANDS_MAX_NUM] =
 	"ClearPreset",
 	"SelectPresetAddr",
 	"EnterEscPreset",
+	"ChangeMuticastor",
 	"help",// 菜单功能测试 ////////////////
 	// 结束-系统功能
 	

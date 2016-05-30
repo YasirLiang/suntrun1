@@ -17,6 +17,7 @@
 #include "enum.h"
 #include "host_controller_debug.h"
 #include "muticast_connect_manager.h"
+#include "time_handle.h"
 
 static observer_t gccu_transmit_observer;// 中央发送单元观察者
 LIST_HEAD(gccu_trans_model_guard);// 创建并初始化中央传输单元头节点
@@ -155,6 +156,7 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 			if( p_outch->tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
 			{
 				muticast_connect_manger_chdefault_outmuticastor( &ptr_model->list, &p_outch->list );
+				over_time_set( CHANGE_MUTICASTOR_INTERVAL, 15*1000 );// 15s timeout 
 			}
 		}
 	}
@@ -326,5 +328,63 @@ void central_control_transmit_unit_model_pro_init( void )
 	init_observer( &gccu_transmit_observer, central_control_transmit_unit_update );
 	// 加入观察者到被观察者
 	attach_observer( &gconnector_subjector, &gccu_transmit_observer );
+}
+
+bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output )
+{
+	bool bret = true;
+	
+	if( pp_model == NULL || pp_model_output == NULL )
+		return false;
+
+	if( bret )
+	{
+		T_pccuTModel ptr_model = NULL;
+		T_pOutChannel p_outch = NULL;
+		struct list_head *p_list = NULL;
+		bool found_model = false, found_output = false;
+
+		list_for_each( p_list, &gccu_trans_model_guard )
+		{
+			T_pccuTModel ptr_tmp_model = NULL;
+			ptr_tmp_model = list_entry( p_list, TccuTModel, list );
+			if( ptr_tmp_model != NULL )
+			{
+				if( ptr_tmp_model->tarker_id == tarker_id )
+				{// search model
+					ptr_model = ptr_tmp_model;
+					found_model = true;
+					break;
+				}
+			}
+		}
+
+		if( found_model )
+		{// 找output
+			list_for_each( p_list, &ptr_model->out_ch.list )
+			{
+				T_pOutChannel p_tmp_outch = NULL;
+				p_tmp_outch = list_entry( p_list, TOutChannel, list );
+				if( (p_tmp_outch != NULL) && (p_tmp_outch->tarker_index == tarker_index) )
+				{// found output
+					found_output = true;
+					p_outch = p_tmp_outch;
+					break;
+				}
+			}
+		}
+
+		if( found_output && ptr_model != NULL && p_outch != NULL )
+		{
+			*pp_model = &ptr_model->list;
+			*pp_model_output = &p_outch->list;
+		}
+		else
+		{
+			bret = false;
+		}
+	}
+
+	return bret;
 }
 

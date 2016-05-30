@@ -28,6 +28,7 @@
 
 #include "central_control_transmit_unit.h"
 
+extern void muticast_muticast_connect_manger_init( void );
 void init_system( void )
 {
 	endpoint_list = init_endpoint_dblist( &endpoint_list );
@@ -83,6 +84,7 @@ void init_system( void )
 	avdecc_manage_init();// 初始化avdecc 管理 
 
 	en485_send_init(); // 使能发送485端数据
+	muticast_muticast_connect_manger_init();
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );

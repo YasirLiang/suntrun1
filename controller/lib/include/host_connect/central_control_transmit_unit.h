@@ -49,6 +49,8 @@ typedef struct _type_central_control_trans_model// 中央传输模块
 extern int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_len, const desc_pdblist desc_node, const uint64_t endtity_id );
 extern void central_control_transmit_unit_update( subject_data_elem reflesh_data );// 更新会议接收单元模块的连接状态
 extern void central_control_transmit_unit_model_pro_init( void );
+extern bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output );
+
 
 //************************************//
 

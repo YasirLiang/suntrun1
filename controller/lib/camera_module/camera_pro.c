@@ -168,6 +168,9 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 					true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
 #else
 				trans_model_unit_disconnect( close_node->tmnl_dev.entity_id, close_node );
+
+				terminal_mic_state_set( MIC_COLSE_STATUS, gcurpresetcmr.tmnl_addr, 
+							close_node->tmnl_dev.entity_id, false, close_node );
 #endif
 			}
 		}
@@ -589,6 +592,7 @@ void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
 void camera_pro_system_close( void )
 {
 	/*写入配置文件*/
+#if 0
 	camera_profile_format cmr_file;
 	int write_byte = 0;
 	
@@ -601,9 +605,8 @@ void camera_pro_system_close( void )
 		camera_profile_write( gpreset_fd, &cmr_file );
 		Fflush( gpreset_fd );
 	}
-
+#endif
 	/*2016-1-26不能正常关闭*/ 
-	/*
 	if( gpreset_fd != NULL )
 	{
 		DEBUG_INFO( "============>camera system close Success!<=======" );
@@ -611,7 +614,7 @@ void camera_pro_system_close( void )
 		gpreset_fd = NULL;
 	}
 
-	DEBUG_INFO( "============>camera system close Success!<=======" );*/
+	DEBUG_INFO( "============>camera system close Success!<=======" );
 }
 
 /*=============================

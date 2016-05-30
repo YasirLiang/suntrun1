@@ -26,6 +26,7 @@ FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
 tmnl_pdblist dev_terminal_list_guard = NULL; 				// 终端链表表头结点，对其正确地操作，必须先注册完终端
+tmnl_pdblist gcur_tmnl_list_node = NULL;
 volatile bool reallot_flag = false; 							// 重新分配标志
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
@@ -115,6 +116,7 @@ inline void init_terminal_device_double_list( void )
 	// init terminal system double list
 	init_terminal_dblist( &dev_terminal_list_guard );
 	assert( dev_terminal_list_guard != NULL );
+	gcur_tmnl_list_node = dev_terminal_list_guard;
 }
 
 /*
@@ -4537,6 +4539,8 @@ tmnl_pdblist terminal_system_dblist_except_free( void )
 	tmnl_pdblist p_node = NULL;
 	
 	p_node = terminal_dblist_except_free( dev_terminal_list_guard );
+	if( p_node == dev_terminal_list_guard )
+		gcur_tmnl_list_node = dev_terminal_list_guard;
 
 	return p_node;
 }
@@ -4569,4 +4573,53 @@ void terminal_system_dblist_destroy( void )
 /*===================================================
 end reallot address
 =====================================================*/
+
+uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
+{
+	uint16_t addr = 0xffff;
+
+	assert( gcur_tmnl_list_node );
+	if( gcur_tmnl_list_node != NULL )
+	{
+		if( get_flags == 1 )
+		{
+			if( gcur_tmnl_list_node->next != dev_terminal_list_guard )
+			{
+				if( gcur_tmnl_list_node->next->tmnl_dev.address.addr != 0xffff &&\
+					gcur_tmnl_list_node->next->tmnl_dev.tmnl_status.is_rgst )
+				{// gcur_tmnl_list_node 只移到最后一个已注册终端
+					addr = gcur_tmnl_list_node->next->tmnl_dev.address.addr;
+					gcur_tmnl_list_node = gcur_tmnl_list_node->next;
+				}
+			}
+		}
+		else if( get_flags == -1 )
+		{
+			if( gcur_tmnl_list_node->prior != dev_terminal_list_guard )
+			{
+				if( gcur_tmnl_list_node->prior->tmnl_dev.address.addr != 0xffff &&\
+					gcur_tmnl_list_node->prior->tmnl_dev.tmnl_status.is_rgst )
+				{// gcur_tmnl_list_node 只移到最前一个已注册终端
+					addr = gcur_tmnl_list_node->prior->tmnl_dev.address.addr;
+					gcur_tmnl_list_node = gcur_tmnl_list_node->prior;
+				}
+			}
+			else
+			{
+				if( gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&\
+					gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst )
+				{// gcur_tmnl_list_node 只移到最前一个已注册终端
+					addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
+				}
+			}
+		}
+	}
+
+	return addr;
+}
+
+void terminal_pro_init_cur_terminal_node( void )
+{
+	gcur_tmnl_list_node = dev_terminal_list_guard;
+}
 

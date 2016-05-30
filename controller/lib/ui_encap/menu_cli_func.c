@@ -19,6 +19,8 @@
 #include "camera_pro.h"
 #include "system_database.h"
 #include "system.h"
+#include "muticast_connect_manager.h"
+#include "central_control_transmit_unit.h"
 
 static void menuClihelpPro( char (*args)[CMD_OPTION_STRING_LEN] )
 {
@@ -45,6 +47,7 @@ static void menuClihelpPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	MSGINFO( "ClearPreset: 清除预置位" );
 	MSGINFO( "SelectPresetAddr: 预置位终端选择" );
 	MSGINFO( "EnterEscPreset: 在进行摄像头控制时必须设置 0:退出 1:进入" );
+	MSGINFO( "ChangeMuticastor: ChangeMuticastor 0x0011223344556677 0(改变广播者)" );
 	MSGINFO( "help: 帮助菜单" );
 	MSGINFO( "quit: 退出菜单控制,返回主菜单" );
 }
@@ -184,9 +187,9 @@ static void menuCliNewAllotPro( char (*args)[CMD_OPTION_STRING_LEN] )
 extern struct threads_info threads;
 static void menuCliSetFinishPro( char (*args)[CMD_OPTION_STRING_LEN] )// 重启程序
 {
-	sync();
+	//sync();
 	DEBUG_INFO( "System Close......" );
-	system_close( &threads );
+	//system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);
@@ -378,6 +381,41 @@ static void menuCliEnterEscPresetPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	temp?camera_pro_enter_preset():camera_pro_esc_preset();
 }
 
+// 格式:ChangeMuticastor 0x1122334455667788 0
+static void menuCliChangeMuticastorPro( char (*args)[CMD_OPTION_STRING_LEN] )
+{
+	struct jdksavdecc_eui64 tarker_array;
+	uint8_t tarker_index = 0xff;
+	uint64_t tarker_id;
+	struct list_head *tarker_model = NULL, *taker_model_output = NULL;
+
+	assert( NULL != args || ( args[1] ) ||( args[2] ) );
+	if( NULL == args ||( args[1] == NULL ) ||( args[2] == NULL))
+		return;
+
+	if( convert_str_to_eui64( args[1], tarker_array.value ) )
+	{
+		convert_eui64_to_uint64( tarker_array.value, &tarker_id );
+		tarker_index = (uint8_t)atoi( args[2] );
+
+		if (central_control_transmit_unit_can_output_found( tarker_id, tarker_index, &tarker_model, &taker_model_output ))
+		{
+			if( tarker_model != NULL && NULL != taker_model_output )
+			{
+				if( tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
+				{
+					muticast_connect_manger_chdefault_outmuticastor( tarker_model, taker_model_output );
+					DEBUG_INFO( "Change Muticastor Id = 0x%016llx index = %d Success!", tarker_id, tarker_index );
+				}
+				else 
+				{
+					DEBUG_INFO( "Muticastor Id = 0x%016llx's index = %d Not Right  Muticastor Ouput(right is %d)!", tarker_id, tarker_index, CCU_CONTROL_TRANSMIT_UINT_OUTPUT );
+				}
+			}
+		}	
+	}
+}
+
 struct _type_menu_command_line_command
 {
 	char *cmd_string;
@@ -408,6 +446,7 @@ static struct _type_menu_command_line_command gtable_menu_command_line[] =
 	{ "ClearPreset", menuCliClearPresetPro },
 	{ "SelectPresetAddr", menuCliSelectPresetAddrPro },
 	{ "EnterEscPreset", menuCliEnterEscPresetPro },
+	{ "ChangeMuticastor", menuCliChangeMuticastorPro },
 	{ "help", menuClihelpPro },
 	{ "NULL", NULL }
 };

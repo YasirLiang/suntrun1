@@ -114,9 +114,9 @@ static int menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the
 	uint16_t temp = value;
 	DEBUG_INFO( "SetFinish flags  = %d", temp );
 
-	sync();// 同步所有文件
+	//sync();// 同步所有文件
 	DEBUG_INFO( "System Close......" );
-	system_close( &threads );
+	//system_close( &threads );
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);
@@ -185,7 +185,8 @@ static int menuDistanceCtlPro( uint16_t value, uint8_t  *p_GetParam )
 
 static int menuPresetSavePro( uint16_t value, uint8_t  *p_GetParam )
 {
-	find_func_command_link( MENUMENT_USE, MENU_CMR_SAVE_PRESET, 0, NULL, 0 );
+	uint16_t temp = value;
+	find_func_command_link( MENUMENT_USE, MENU_CMR_SAVE_PRESET, 0,  (uint8_t*)&temp, sizeof(uint16_t) );
 
 	return 0;
 }
@@ -205,7 +206,7 @@ static int menuClearPresetPro( uint16_t value, uint8_t  *p_GetParam )
 	uint16_t temp = value;
 	DEBUG_INFO( "ClearPreset flags  = %d", temp );
 
-	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, (uint8_t*)&temp, sizeof(uint16_t) );
 
 	return 0;
 }

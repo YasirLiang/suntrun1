@@ -128,8 +128,10 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
 	
 	// save message
 #ifdef __FUNC_LINK_PROCCESS__
-	DEBUG_INFO( " pro func index = %d/%d; system state = %02x", index, i,  get_sys_state() );
+	DEBUG_INFO( " pro func index = %d/%d; system state = %02x premit = %02x data_len = %d", 
+				index, i,  get_sys_state(), proccess_func_link_tables[i].permit, data_len );
 #endif
+	assert( ( NULL != pdata ) );
 	if( ( NULL != pdata ) && (data_len >0) && (index <  MAX_PROCCESS_FUNC) && (proccess_func_link_tables[i].permit & get_sys_state()))
 	{
 		queue_data_elem.func_msg_head.func_index = index;

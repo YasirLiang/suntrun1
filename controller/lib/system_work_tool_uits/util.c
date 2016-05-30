@@ -698,18 +698,21 @@ uint64_t convert_entity_id_to_uit64_mac_address( uint64_t entity_id )
 	return mac;
 }
 
-void convert_str_to_eui64( char *in, uint8_t output[8] )	// p 的格式如0x0011223344556677
+int convert_str_to_eui64( char *in, uint8_t output[8] )	// p 的格式如0x0011223344556677
 {
 	char *p = in + 2;
+	int r = 0;
 	
-	jdksavdecc_util_parse_byte( &output[0], p[0], p[1] );
-	jdksavdecc_util_parse_byte( &output[1], p[2], p[3] );
-	jdksavdecc_util_parse_byte( &output[2], p[4], p[5] );
-	jdksavdecc_util_parse_byte( &output[3], p[6], p[7] ); 
-	jdksavdecc_util_parse_byte( &output[4], p[8], p[9] ); 
-	jdksavdecc_util_parse_byte( &output[5], p[10], p[11] ); 
-	jdksavdecc_util_parse_byte( &output[6], p[12], p[13] );
-	jdksavdecc_util_parse_byte( &output[7], p[14], p[15] );
+	r = jdksavdecc_util_parse_byte( &output[0], p[0], p[1] );
+	r = jdksavdecc_util_parse_byte( &output[1], p[2], p[3] );
+	r = jdksavdecc_util_parse_byte( &output[2], p[4], p[5] );
+	r = jdksavdecc_util_parse_byte( &output[3], p[6], p[7] ); 
+	r = jdksavdecc_util_parse_byte( &output[4], p[8], p[9] ); 
+	r = jdksavdecc_util_parse_byte( &output[5], p[10], p[11] ); 
+	r = jdksavdecc_util_parse_byte( &output[6], p[12], p[13] );
+	r = jdksavdecc_util_parse_byte( &output[7], p[14], p[15] );
+
+	return r;
 }
 
 void convert_str_to_eui32( char *in, uint8_t output[4] )	// p 的格式如0x00112233

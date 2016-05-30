@@ -38,7 +38,7 @@ const char* get_aem_command_string( uint16_t cmd_values );
 uint8_t conference_command_type_read( void *base, uint16_t offerset);
 void convert_entity_id_to_eui48_mac_address( uint64_t entity_id, uint8_t value[6] );
 uint64_t convert_entity_id_to_uit64_mac_address( uint64_t entity_id );
-void convert_str_to_eui64(char *p, uint8_t output[8] )	;// p 的格式0x----------------
+int convert_str_to_eui64(char *p, uint8_t output[8] )	;// p 的格式0x----------------
 uint64_t convert_eui64_to_uint64_return(const uint8_t value [8]);
 bool is_mac_equal( const uint8_t mac_value1[6], const uint8_t mac_value2[6] );
 bool get_adpdu_msg_type_value_with_str(const char* msg_str, uint16_t *msg_code );
