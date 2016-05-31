@@ -300,9 +300,11 @@ void central_control_transmit_unit_update( subject_data_elem reflesh_data )// ¸ü
 	switch( msg_type )
 	{
 		case JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE:
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_COMMAND:
 			// do nothing
 			break;
 		case JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE:
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_COMMAND:
 			central_control_transmit_unit_update_by_connect_rx_state( reflesh_data.tarker_id,
 									reflesh_data.tarker_index,
 									reflesh_data.listener_id,
@@ -310,6 +312,7 @@ void central_control_transmit_unit_update( subject_data_elem reflesh_data )// ¸ü
 									repson_status );
 			break;
 		case JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE:
+		case JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND:
 			central_control_transmit_unit_update_by_disconnect_rx_state( reflesh_data.tarker_id,
 									reflesh_data.tarker_index,
 									reflesh_data.listener_id,
