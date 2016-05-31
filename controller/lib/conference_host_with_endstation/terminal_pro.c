@@ -4577,6 +4577,7 @@ end reallot address
 uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 {
 	uint16_t addr = 0xffff;
+	static int person = 0;// 1 链表最后一个；-1链表前一个可用节点
 
 	assert( gcur_tmnl_list_node );
 	if( gcur_tmnl_list_node != NULL )
@@ -4587,24 +4588,44 @@ uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 			{
 				if( gcur_tmnl_list_node->next->tmnl_dev.address.addr != 0xffff &&\
 					gcur_tmnl_list_node->next->tmnl_dev.tmnl_status.is_rgst )
-				{// gcur_tmnl_list_node 只移到最后一个已注册终端
+				{// gcur_tmnl_list_node 只移到最后一个已注册终端(有效节点)
 					addr = gcur_tmnl_list_node->next->tmnl_dev.address.addr;
 					gcur_tmnl_list_node = gcur_tmnl_list_node->next;
 				}
+				else
+					person = 1;
+			}
+			else 
+			{
+				person = 1;
 			}
 		}
 		else if( get_flags == -1 )
 		{
-			if( gcur_tmnl_list_node->prior != dev_terminal_list_guard )
+			if( person && gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&
+				 gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst )
+			{// 最后一个可用节点
+				addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
+				person = 0;
+			}
+			else if( gcur_tmnl_list_node->prior != dev_terminal_list_guard && gcur_tmnl_list_node->prior->tmnl_dev.address.addr != 0xffff )
 			{
-				if( gcur_tmnl_list_node->prior->tmnl_dev.address.addr != 0xffff &&\
-					gcur_tmnl_list_node->prior->tmnl_dev.tmnl_status.is_rgst )
+				if(  gcur_tmnl_list_node->prior->tmnl_dev.tmnl_status.is_rgst )
 				{// gcur_tmnl_list_node 只移到最前一个已注册终端
 					addr = gcur_tmnl_list_node->prior->tmnl_dev.address.addr;
 					gcur_tmnl_list_node = gcur_tmnl_list_node->prior;
 				}
 			}
-			else
+			else if(gcur_tmnl_list_node->prior != dev_terminal_list_guard && gcur_tmnl_list_node->prior->tmnl_dev.address.addr == 0xffff )
+			{// 不可用节点0xffff
+				gcur_tmnl_list_node = gcur_tmnl_list_node->prior;
+				if( gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&
+				 	gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst)
+				{// 最后一个可用节点
+					addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
+				}
+			}
+			else if( gcur_tmnl_list_node->prior == dev_terminal_list_guard )
 			{
 				if( gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&\
 					gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst )
