@@ -354,7 +354,7 @@ static void menuCliClearPresetPro( char (*args)[CMD_OPTION_STRING_LEN] )
 	uint8_t temp = (uint8_t)atoi( args[1] );
 	DEBUG_INFO( "ClearPreset flags = %d ", temp );
 	
-	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, NULL, 0 );
+	find_func_command_link( MENUMENT_USE, MENU_CMR_CLR_PRESET, 0, &temp, 1 );
 }
 
 static void menuCliSelectPresetAddrPro( char (*args)[CMD_OPTION_STRING_LEN] )

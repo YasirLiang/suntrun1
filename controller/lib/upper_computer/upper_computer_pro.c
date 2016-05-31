@@ -110,7 +110,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.auto_close )
 			{
 				// 自动关闭麦克风
-				find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, NULL, 0 );
+				find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp_status, 1 );
 			}
 
 			temp_status = set_dis_para.discuss_mode;

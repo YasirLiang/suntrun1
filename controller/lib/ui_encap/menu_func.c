@@ -315,7 +315,8 @@ static int menuSaveMeetParamPro( uint16_t value, uint8_t  *p_saveParam )
 
 static int menuSendMainStatePro( uint16_t value, uint8_t  *p_GetParam )
 {
-	find_func_command_link( TERMINAL_USE, HOST_SEND_STATUS, 0, NULL, 0);
+	uint16_t temp = value;
+	find_func_command_link( TERMINAL_USE, HOST_SEND_STATUS, 0, (uint8_t*)&temp, 2);
 	
 	return 0;
 }
