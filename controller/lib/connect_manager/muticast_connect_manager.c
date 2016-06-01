@@ -527,9 +527,11 @@ int muticast_connect_manger_database_update( void* p_muti_param_tmp )
 		p_mm_sys_flags->failed_connect_count = p_muti_param->failed_connect_count;
 
 	if( p_mm_sys_flags->discut_self != p_muti_param->discut_self )
+	{
 		p_mm_sys_flags->discut_self = p_muti_param->discut_self?true:false;
+		DEBUG_INFO( "======>>>>discut flags = %d", p_muti_param->discut_self );
+	}
 
-	
 	if( p_mm_sys_flags->log_err != p_muti_param->log_err )
 		p_mm_sys_flags->log_err = p_muti_param->log_err?true:false;
 	

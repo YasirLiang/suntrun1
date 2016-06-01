@@ -1055,17 +1055,17 @@ void system_database_init( void )
 	else
 		memcpy( &gmatrix_io_sw_array[A_SWITCH], &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
 
-	// 第一次初始化化默认数据
 	Tstr_sysmuti_param sys_muti;
 	if( -1 == system_db_query_muticast_table(&sys_muti) ) 
 	{
+		// 第一次初始化化默认数据
 		sys_muti.muti_flag = true; 
 		sys_muti.en_default_muti = false;
-		sys_muti.reconnect_self = true; 
+		sys_muti.reconnect_self = false; // 本机不重连且断开本机才能断开本机
 		sys_muti.offline_connect = true;
 		sys_muti.reconnect_timeout = 10;// 10s
 		sys_muti.failed_connect_count = 10;// 10次
-		sys_muti.discut_self = false;
+		sys_muti.discut_self = true;
 		sys_muti.log_err = true;
 		sys_muti.log_discut = true;
 		sys_muti.log_none_muticast = true;

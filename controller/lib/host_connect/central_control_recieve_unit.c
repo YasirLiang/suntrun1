@@ -468,6 +468,7 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 			if( gchannel_allot_pro.p_current_input_channel->status == INCHANNEL_FREE )
 			{
 				conference_recieve_model_discut_self( talker_id );// ¶Ï¿ª±¾»ú
+				
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
 				convert_uint64_to_eui64( talker_entity_id.value, talker_id );
 				convert_uint64_to_eui64( listener_entity_id.value, gchannel_allot_pro.p_current_input_channel->listener_id );
@@ -516,6 +517,7 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 							p_temp_chNode->listener_index, 
 							1, ++gccu_acmp_sequeue_id );
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
+
 				return 0;
 			}
 		}
