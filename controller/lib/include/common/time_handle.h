@@ -38,6 +38,7 @@ typedef enum enum_overtime_handle
 	CHECK_SYSTEM_SEND_QUEUE_INDEX, //  检查系统是否发送数据完成
 	CHANGE_MUTICASTOR_TIMEOUT_INDEX,// 改变广播者的超时时间
 	CHANGE_MUTICASTOR_INTERVAL,// 改变广播者的间隔时间
+	STOP_CAMERA_INTERVAL,// 停止摄像头
 	
 	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;

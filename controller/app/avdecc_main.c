@@ -272,7 +272,7 @@ int main( int argc, char *argv[] )
 	pthread_handle_create( &h_thread, &net_fd ); // 创建接收数据处理线程
 	threads.tid[threads.pthread_nums++] = h_thread;
 	pthread_detach( h_thread );
-
+	
 	pthread_t proccess_thread;
 	pthread_proccess_recv_data_create( &proccess_thread, NULL );
 	threads.tid[threads.pthread_nums++] = proccess_thread;
@@ -316,6 +316,7 @@ int main( int argc, char *argv[] )
 	check_timer_create( &timer_pthread );
 #endif
 
+#if 0
 	/**
 	*创建界面处理线程
 	*/
@@ -328,7 +329,7 @@ int main( int argc, char *argv[] )
 	}
 	threads.tid[threads.pthread_nums++] = th;
 	pthread_detach( th );// 与主线程分离
-
+#endif
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 

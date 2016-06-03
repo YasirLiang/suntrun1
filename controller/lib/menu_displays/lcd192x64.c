@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h> 
+#include <sys/ioctl.h>
 
 #include "matrix.h"
 #include "lcd192x64.h"

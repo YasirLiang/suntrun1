@@ -10,6 +10,7 @@
 #include <sys/time.h> 
 #include <unistd.h> 
 #include <time.h>
+#include <semaphore.h>
 
 #include "lcd192x64.h"
 #include "menu_f.h"
@@ -18,6 +19,11 @@
 
 #define INPUT_MSG_LEN	6
 #define INPUT_MSG_CMD_INDEX	3
+
+unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN]; 
+volatile unsigned char gcontrol_sur_msg_len = 0; 
+int gcontrol_sur_fd = -1;
+//sem_t gsem_surface;
 
 unsigned char CrcChk(unsigned char *ccp)
 {
@@ -73,11 +79,10 @@ void input_recv_pro(unsigned char *p_buf, unsigned recv_len)
 void *thread_control_surface(void *arg)
 {
 	int ret;
-	int fd = -1;
-	int err;
-	int recv_len;
-	unsigned char recv_buf[INPUT_MSG_LEN]; 
-
+	//int fd = -1;
+	//int err;
+	//int recv_len;
+	//unsigned char recv_buf[INPUT_MSG_LEN]; 
 
 	ret = lcd192x64_init();
 	if (ret)
@@ -88,6 +93,7 @@ void *thread_control_surface(void *arg)
 
 	MenuInit();
 
+#if 0
 	fd = UART_File_Open(fd,UART4);//打开串口，返回文件描述符 
 	if( fd == -1 )
 	{
@@ -100,20 +106,14 @@ void *thread_control_surface(void *arg)
 		printf("Set Port Exactly!\n");  
 	}while( FALSE == err||FALSE == fd ); 
 
+	gcontrol_sur_fd = fd;
+	sem_init( &gsem_surface, 0, 0 );
+#endif
 
-	
 	while(1)
 	{
-		recv_len=UART_File_Recv(fd,recv_buf,INPUT_MSG_LEN);
-		printf("uart recv: ");
-		int i;
-		for(i=0; i<recv_len; i++)
-		{
-			printf("0x%x ",recv_buf[i]);
-		}
-		printf("\n");
-		
-		input_recv_pro(recv_buf,recv_len);
+		//sem_wait( &gsem_surface );
+		//input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
 	}
   
 }

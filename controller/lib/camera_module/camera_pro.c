@@ -15,6 +15,7 @@
 #include "camera_common.h"
 #include "control_matrix_pro.h"
 #include "conference_transmit_unit.h"
+#include "time_handle.h"
 
 preset_point_format gpresetcmr_list[PRESET_NUM_MAX];	// 预置点列表
 preset_point_format gcurpresetcmr;					// 当前预置点
@@ -29,6 +30,8 @@ uint8_t gfull_view_index[2]; // 全景切换索引
 uint8_t gscene_out;
 
 get_cmrpreset_pro ggetcmrpreset_pro;
+static uint8_t gstop_addr =  0xff;
+
 
 uint8_t gmatrix_output[ MATRIX_OUTPUT_NUM ];
 
@@ -502,8 +505,21 @@ int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uin
 	if( (d_cmd == CAMERA_CTRL_PRESET_SET) ||\
 		d_cmd == CAMERA_CTRL_PRESET_CALL)
 		return 0;
-	
-	return (camera_form_can_send( cmr_addr, 0, 0, 0 )); // stop the camera
+
+	gstop_addr = cmr_addr;
+	over_time_set( STOP_CAMERA_INTERVAL, 500 );// 500 ms later stop camera
+	return 0;
+}
+
+int camera_pro_timetick( void )
+{
+	if( over_time_listen(STOP_CAMERA_INTERVAL) )
+	{
+		camera_form_can_send( gstop_addr, 0, 0, 0 ); // stop the camera
+		over_time_stop( STOP_CAMERA_INTERVAL );
+	}
+
+	return 0;
 }
 
 /*初始化预置点文件(系统第一次启动)与初始化预置点列表*/
@@ -582,9 +598,12 @@ void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
 		preset_camera_list_info();
 #endif
 	}
+	
 	gcurpresetcmr.camera_num = gset_sys.current_cmr;
 	gcurpresetcmr.preset_point_num = 0;
 	gcurpresetcmr.tmnl_addr = 0xffff;
+
+	over_time_stop( STOP_CAMERA_INTERVAL );
 }
 
 

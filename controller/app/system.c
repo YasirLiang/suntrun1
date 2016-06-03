@@ -26,9 +26,15 @@
 #include "log_machine.h"
 #include "en485_send.h"
 
+#include "lcd192x64.h"// lcd 界面显示
+#include "menu_f.h"
+
 #include "central_control_transmit_unit.h"
 
 extern void muticast_muticast_connect_manger_init( void );
+extern int gcontrol_sur_fd;
+extern sem_t gsem_surface;
+
 void init_system( void )
 {
 	endpoint_list = init_endpoint_dblist( &endpoint_list );
@@ -85,6 +91,37 @@ void init_system( void )
 
 	en485_send_init(); // 使能发送485端数据
 	muticast_muticast_connect_manger_init();
+
+	/*
+	  * 初始化化界面控制数据串口传输
+	  * 文件描述符
+	  */
+	int fd = -1;
+	fd = UART_File_Open(fd,UART4);//打开串口，返回文件描述符 
+	if( fd == -1 )
+	{
+		printf("Open Port Failed!\n");  
+	}
+
+	if( (UART_File_Init( fd, 9600, 0, 8, 1, 'N' ) != -1) && fd != -1 )
+	{
+		gcontrol_sur_fd = fd;
+		//sem_init( &gsem_surface, 0, 0 );
+	}
+
+	/*
+	  * 初始化化界面显示
+	  *
+	  */
+	int ret ;
+	ret = lcd192x64_init();
+	if (ret)
+	{
+		printf("lcd192x64_init fail\n");
+		exit(1);
+	}
+
+	MenuInit();
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );

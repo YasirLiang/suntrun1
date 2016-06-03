@@ -1,10 +1,15 @@
 #include <stddef.h>
 #include <stdio.h> 
 #include <string.h>
+#include <unistd.h>
 #include "lcd192x64.h"
 #include "ico_data.h"
 #include "menu_exe.h"
 #include "menu_f.h"
+
+extern Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir liang add 20160603
+extern Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir liang add 20160603
+
 
 //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 //	目前每组菜单限制最大32项
@@ -266,17 +271,17 @@ TMGrpData gMG[]=  	//Text				    SubMenu			ItemsCount						Level	Min & Max		Posi
     {(char *)gMGTitle[MGS_M12],	(TMenu*)gM12,	ST_CMN,sizeof(gM12)/sizeof(TMenu),		2},
     {(char *)gMGTitle[MGS_M13],	(TMenu*)gM13,	ST_CMN,sizeof(gM13)/sizeof(TMenu),		2},
     {(char *)gMGTitle[MGS_M21],	(TMenu*)gM21,	ST_CMN,sizeof(gM21)/sizeof(TMenu),		3},
-    {(char *)gMGTitle[MGS_CCM],	NULL,			ST_VALUE,MGS_M12,				3,		(0x01 | (0x04<<16))},		//当前摄像头
-    {(char *)gMGTitle[MGS_ONUM],	NULL,			ST_VALUE,MGS_M11,				3,		(0x01 | (0x06<<16))},			//开启量上限
-    {(char *)gMGTitle[MGS_ANUM],	NULL,			ST_VALUE,MGS_M11,				3,		(0x01 | (0x06<<16))},			//申请上限
-    {(char *)gMGTitle[MGS_LR],	NULL,			ST_LR,MGS_M21,				4,		(0x00 | (0x01<<16))},			//左右调节
-    {(char *)gMGTitle[MGS_UD],	NULL,			ST_UD,MGS_M21,				4,		(0x00 | (0x01<<16))},			//上下调节
-    {(char *)gMGTitle[MGS_FOCUS],	NULL,			ST_UD,MGS_M21,				4,		(0x00 | (0x01<<16))},			//聚焦调节
-    {(char *)gMGTitle[MGS_ZOOM],	NULL,		ST_UD,MGS_M21,				4,		(0x00 | (0x01<<16))},			//缩放调节
-    {(char *)gMGTitle[MGS_APERTURE],	NULL,		ST_UD,MGS_M21,				4,		(0x00 | (0x01<<16))},			//光圈调节
-		{(char *)gMGTitle[MGS_MODE],	NULL,		ST_MODE,MGS_M11,				3,		(0x00 | (0x03<<16))},			//模式设定
+    {(char *)gMGTitle[MGS_CCM],	NULL,			ST_VALUE,MGS_M12,				3,		{(0x01 | (0x04<<16))}},		//当前摄像头
+    {(char *)gMGTitle[MGS_ONUM],	NULL,			ST_VALUE,MGS_M11,				3,		{(0x01 | (0x06<<16))}},			//开启量上限
+    {(char *)gMGTitle[MGS_ANUM],	NULL,			ST_VALUE,MGS_M11,				3,		{(0x01 | (0x06<<16))}},			//申请上限
+    {(char *)gMGTitle[MGS_LR],	NULL,			ST_LR,MGS_M21,				4,		{(0x00 | (0x01<<16))}},			//左右调节
+    {(char *)gMGTitle[MGS_UD],	NULL,			ST_UD,MGS_M21,				4,		{(0x00 | (0x01<<16))}},			//上下调节
+    {(char *)gMGTitle[MGS_FOCUS],	NULL,			ST_UD,MGS_M21,				4,		{(0x00 | (0x01<<16))}},			//聚焦调节
+    {(char *)gMGTitle[MGS_ZOOM],	NULL,		ST_UD,MGS_M21,				4,		{(0x00 | (0x01<<16))}},			//缩放调节
+    {(char *)gMGTitle[MGS_APERTURE],	NULL,		ST_UD,MGS_M21,				4,		{(0x00 | (0x01<<16))}},			//光圈调节
+    {(char *)gMGTitle[MGS_MODE],	NULL,		ST_MODE,MGS_M11,				3,		{(0x00 | (0x03<<16))}},			//模式设定
     {(char *)gMGTitle[MGS_TMN_SEL],NULL,     ST_TMN_SEL,MGS_M12,     3},//预置位终端选择
-    {NULL,	                (TMenu*)gMState,	sizeof(gMState)/sizeof(TMenu),	0xFF},
+    {NULL,	                (TMenu*)gMState,	sizeof(gMState)/sizeof(TMenu),	0xFF}
 };
 
 
@@ -700,7 +705,8 @@ void DisplayMItem(TMGrpData *pMGrp,int nLine,int nSeq,int nMode)
 //显示滚动条(竖)或进度条邋(横)
 void DisplaySBar(int nTotal, int nPosi, int nVert)
 {
-    unsigned char ucY,ucWidth,ucHeight;
+    unsigned char ucY, ucHeight;// yasirliang change in 20160603
+    //unsigned char ucY,ucWidth,ucHeight;
     unsigned char MenuLang;
 
     ByteDataGet(VAL_MENU_LANG,&MenuLang);
@@ -846,7 +852,7 @@ void DisplayVal(short snMGSeq, int nTotal, int nPosi, int nVert)
 }
 unsigned char GetDiscussModeText(int Mode,unsigned char *pText,int Language)
 {
-  unsigned char Len=0;
+  //unsigned char Len=0;// yasirliang change in 20160603
   if(ENGLISH==Language)
   {
     memcpy(pText,gModeText_E[Mode],MODE_TEXT_E_LEN);
@@ -1126,9 +1132,9 @@ void DisplayAllState(int nStateBit,int nStNum[])
 {
     unsigned char caItem[16];		//中文时需要8个字符，英文时需要16
     int Temp;
-    TMenu *pMenu;
-    int nState;
-    unsigned char ucLine,ucMode;
+    //TMenu *pMenu;// yasirliang change in 20160603
+   // int nState;
+    //unsigned char ucLine,ucMode;// yasirliang change in 20160603
     unsigned char Len;
 
 	int i;
@@ -1365,12 +1371,14 @@ void DisplayGroup(short snMGSeq)
 
 //选中菜单项
 //	参数为当前菜单组
+extern Bool UseDisSet(unsigned char Use,Bool Set);// yasirliang add 20160603
+extern int SendMainState(short int snCmd, void *pData, unsigned long ulLen);// yasirliang add 20160603
 void ItemSelected(short snMGSeq)
 {
     TMenu *pMenu;
     short usNew;
-    unsigned char Index;
-    int i;
+    //unsigned char Index;// yasirliang change in 20160603
+   // int i; // yasirliang change in 20160603
     unsigned char MenuLang;
 
     
@@ -1476,11 +1484,12 @@ void ItemSelected(short snMGSeq)
 Bool CtrlMenuSw(short snMGSeq)
 {
   ItemSelected(snMGSeq);
+  return BOOL_TRUE;// yasirLiang add in20160603
 }
 extern unsigned char gByteData[PAR_NUM];// yasir change in 2016-4-7
 void MenuInit(void)
 {
-  int i;
+  //int i;// yasirLiang add in20160603
   unsigned char MenuLang;
 
   ByteDataGet(VAL_MENU_LANG,&MenuLang);

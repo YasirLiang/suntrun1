@@ -173,6 +173,32 @@ int matrix_control_uart_recv_fn( struct epoll_priv *priv )
 	return 0;
 }
 
+#define INPUT_MSG_LEN	6
+extern unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN]; 
+extern volatile unsigned char gcontrol_sur_msg_len; 
+extern int gcontrol_sur_fd;
+//extern sem_t gsem_surface;
+int control_surface_recv_fn( struct epoll_priv *priv )
+{
+	memset( gcontrol_sur_recv_buf, 0, INPUT_MSG_LEN );
+	gcontrol_sur_msg_len = read( priv->fd, gcontrol_sur_recv_buf, INPUT_MSG_LEN );
+	if( gcontrol_sur_msg_len  > 0 )
+	{
+#ifdef __DEBUG__
+		printf("uart recv: ");
+		int i;
+		for(i=0; i<gcontrol_sur_msg_len; i++)
+		{
+			printf("0x%x ",gcontrol_sur_recv_buf[i]);
+		}
+		printf("\n");
+#endif
+		//sem_post( &gsem_surface );
+	}
+	
+	return 0;
+}
+
 int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_event *ev)
 {
 	priv->fd = fd;
@@ -213,6 +239,15 @@ int thread_fn(void *pgm)
 	}
 	else 
 		DEBUG_INFO( "init matrix uart recv thread handle failed!" );
+
+	if( gcontrol_sur_fd > 0 )
+	{
+		prep_evt_desc( gcontrol_sur_fd, &control_surface_recv_fn, &fd_fns[5], &ev );
+		epoll_ctl( epollfd, EPOLL_CTL_ADD, fd_fns[5].fd, &ev );
+
+	}
+	else 
+		DEBUG_INFO( "init gcontrol_sur_fd recv thread handle failed!" );
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );

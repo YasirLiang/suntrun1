@@ -7,6 +7,7 @@
 #include "time_handle.h"
 #include "avdecc_manage.h"// 发现终端，读描述符，移除终端
 #include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
+#include "camera_pro.h"
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -322,6 +323,10 @@ int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items 
 	return 0;
 }
 
+#define INPUT_MSG_LEN	6
+extern void input_recv_pro(unsigned char *p_buf, unsigned recv_len);
+extern unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN]; 
+extern volatile unsigned char gcontrol_sur_msg_len; 
 #define SYS_BUF_RECV_COUNT 2
 int pthread_recv_data_fn( void *pgm )
 {
@@ -357,6 +362,17 @@ int pthread_recv_data_fn( void *pgm )
 		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
 		avdecc_manage_discover_proccess();// 系统定时发现终端
 		send_common_check_squeue();// 检查发送队列发送数据
+		camera_pro_timetick();// 摄像头处理流程
+
+		/*
+		  *
+		  *串口接收数据处理与菜单显示处理
+		  */
+		if( gcontrol_sur_msg_len > 0 )
+		{
+			input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
+			gcontrol_sur_msg_len = 0;
+		}
 	}
 	
 	return 0;
