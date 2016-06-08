@@ -166,7 +166,7 @@ int matrix_control_uart_recv_fn( struct epoll_priv *priv )
 	if( recv_len  > 0 )
 	{
 		// save message to ring buf
-		//DEBUG_INFO( " Recv matrix msg %s", recv_buf );
+		DEBUG_INFO( " Recv matrix msg %s", recv_buf );
 		control_matrix_common_recv_message_save( recv_buf, recv_len );
 	}
 	
