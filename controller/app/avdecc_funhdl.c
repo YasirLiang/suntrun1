@@ -195,6 +195,13 @@ int control_surface_recv_fn( struct epoll_priv *priv )
 #endif
 		//sem_post( &gsem_surface );
 	}
+	else
+	{
+#ifdef __DEBUG__
+		perror("uart recv failed:" );
+		printf("\n");
+#endif
+	}
 	
 	return 0;
 }

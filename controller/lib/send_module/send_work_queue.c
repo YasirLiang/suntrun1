@@ -83,7 +83,7 @@ bool swap_sdpqueue( sdpwqueue *sdpw_queue1, sdpwqueue *sdpw_queue2 )// ½»»»·¢ËÍ¶
 	sdpw_queue2->work.head = tmp_queue.head;
 	sdpw_queue2->work.trail =  tmp_queue.trail;
 
-	DEBUG_INFO( "Queue Swap...OK" );
+	//DEBUG_INFO( "Queue Swap...OK" );
 	
 	return true;
 }
