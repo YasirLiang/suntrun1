@@ -4101,7 +4101,7 @@ int terminal_speak_track( uint16_t addr, bool track_en )// ÉãÏñ¸ú×Ù½Ó¿Ú
 	uint8_t cmr_track;
 
 	cmr_track = gset_sys.camara_track;
- 	if( cmr_track )
+ 	if( !cmr_track )
 	{
 		return -1;
 	}
