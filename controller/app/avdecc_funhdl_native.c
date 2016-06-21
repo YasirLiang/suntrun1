@@ -362,7 +362,7 @@ int pthread_recv_data_fn( void *pgm )
 		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
 		avdecc_manage_discover_proccess();// 系统定时发现终端
 		send_common_check_squeue();// 检查发送队列发送数据
-		camera_pro_timetick();// 摄像头处理流程
+		camera_pro();// 摄像头处理流程
 
 		/*
 		  *

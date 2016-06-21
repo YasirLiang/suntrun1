@@ -349,6 +349,7 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // 此函数未
 	uint16_t i;
 	uint16_t index;
 	uint8_t scene_switch = 0;
+	uint8_t matrix_output[MATRIX_OUTPUT_NUM] = {0};
 
 	addr = *(uint16_t *)data;
 	for( i = 0; i < PRESET_NUM_MAX; i++ )
@@ -365,7 +366,7 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // 此函数未
 			}
 			
 			if((gfull_view_index[0]!=PRESET_NUM_MAX)&&(gfull_view_index[1]!=PRESET_NUM_MAX)
-				&&( addr != FULL_VIEW_ADDR)&&\
+				&&( addr != FULL_VIEW_ADDR)&& (gscene_out < 2) &&\
 				(gpresetcmr_list[i].camera_num == gpresetcmr_list[gfull_view_index[gscene_out]].camera_num))
 			{
 				gscene_out++;
@@ -373,9 +374,9 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // 此函数未
 				camera_pro_control(gpresetcmr_list[gfull_view_index[gscene_out]].camera_num,\
 					CAMERA_CTRL_PRESET_CALL,0,(gpresetcmr_list+gfull_view_index[gscene_out])->preset_point_num); 
 				
-				gmatrix_output[0] = CAMERA_OUT_FULL_VIEW;
+				matrix_output[0] = CAMERA_OUT_FULL_VIEW;
 				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
-					gpresetcmr_list[gfull_view_index[gscene_out]].camera_num, gmatrix_output, 1 );
+					gpresetcmr_list[gfull_view_index[gscene_out]].camera_num, matrix_output, 1 );
 				scene_switch = 1;
 			}
 			
@@ -385,15 +386,16 @@ int camera_get_preset( uint16_t cmd, void *data, uint32_t data_len ) // 此函数未
 				ggetcmrpreset_pro.preset_num = gpresetcmr_list[index].preset_point_num;
 				ggetcmrpreset_pro.out = CAMERA_OUT_TRACK_VIEW;
 				ggetcmrpreset_pro.busy_flag = 1;
+				over_time_set( CGPS_GAP_HANDLE, 200 );// switch after 200ms
 			}
 			else
 			{
 				camera_pro_control( gpresetcmr_list[index].camera_num,CAMERA_CTRL_PRESET_CALL,\
 					0, gpresetcmr_list[index].preset_point_num );
 				
-				gmatrix_output[0] = CAMERA_OUT_TRACK_VIEW;
+				matrix_output[0] = CAMERA_OUT_TRACK_VIEW;
 				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
-					(gpresetcmr_list+index)->camera_num, gmatrix_output, 1 );
+					(gpresetcmr_list+index)->camera_num, matrix_output, 1 );
 			}
 
 			gcamer_presetdndex = index;
@@ -511,6 +513,9 @@ int camera_pro_control( uint8_t  cmr_addr, uint16_t d_cmd, uint8_t speed_lv, uin
 	return 0;
 }
 
+bool switch_screen = false;
+bool switch_track = false;
+bool gfirst_switch = true;
 int camera_pro_timetick( void )
 {
 	if( over_time_listen(STOP_CAMERA_INTERVAL) )
@@ -519,7 +524,90 @@ int camera_pro_timetick( void )
 		over_time_stop( STOP_CAMERA_INTERVAL );
 	}
 
+	if (ggetcmrpreset_pro.busy_flag && over_time_listen(CGPS_GAP_HANDLE))
+	{
+		uint8_t matrix_output[MATRIX_OUTPUT_NUM] = {CAMERA_OUT_TRACK_VIEW, 0};
+		camera_pro_control(ggetcmrpreset_pro.camera_num, CAMERA_CTRL_PRESET_CALL,\
+			0, ggetcmrpreset_pro.preset_num);
+		control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
+					ggetcmrpreset_pro.camera_num, matrix_output, 1 );
+		ggetcmrpreset_pro.busy_flag = 0;
+		over_time_stop(CGPS_GAP_HANDLE);
+	}
+
+	if (gfirst_switch && over_time_listen(CGPS_GAP_HANDLE))
+	{
+		uint16_t index = PRESET_NUM_MAX;
+		uint16_t backup_index = PRESET_NUM_MAX;
+		uint8_t matrix_output[MATRIX_OUTPUT_NUM] = {0};
+
+		if (camera_preset_list_exit_addr(FULL_VIEW_ADDR, &index))
+		{
+			gfull_view_index[0] = index;
+		}
+		else
+			gfull_view_index[0] = PRESET_NUM_MAX;
+
+		if (camera_preset_list_exit_addr(BACKUP_FULL_VIEW_ADDR, &backup_index))
+		{
+			gfull_view_index[1] = backup_index;
+		}
+		else
+			gfull_view_index[1] = PRESET_NUM_MAX;
+			
+
+		if (gfull_view_index[0] != PRESET_NUM_MAX )
+		{
+			if (!switch_screen && !switch_track )
+			{
+				matrix_output[0] = CAMERA_OUT_FULL_VIEW;
+				camera_pro_control(gpresetcmr_list[index].camera_num, CAMERA_CTRL_PRESET_CALL,\
+						0, gpresetcmr_list[index].preset_point_num );
+				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
+						(gpresetcmr_list+index)->camera_num, matrix_output, 1 );
+				over_time_set( CGPS_GAP_HANDLE, 200 );// switch after 5000ms
+				switch_screen = true;
+			}
+			else if (switch_screen && !switch_track)
+			{
+				matrix_output[0] = CAMERA_OUT_TRACK_VIEW;
+				control_matrix_input_output_switch( MATRIX_AV_SWITCH, \
+						(gpresetcmr_list+index)->camera_num, matrix_output, 1 );
+				over_time_stop( CGPS_GAP_HANDLE );
+				switch_track = true;
+				gfirst_switch = false;
+			}
+			
+			gscene_out = 0;
+		}
+		else
+		{
+			if (!switch_screen && !switch_track )
+			{
+				matrix_output[0] = CAMERA_OUT_FULL_VIEW;
+				control_matrix_input_output_switch( MATRIX_AV_SWITCH, 	1, matrix_output, 1 );
+				over_time_set( CGPS_GAP_HANDLE, 200 );// switch after 200ms
+				switch_screen = true;
+			}
+			else if (switch_screen && !switch_track)
+			{
+				matrix_output[0] = CAMERA_OUT_TRACK_VIEW;
+				control_matrix_input_output_switch( MATRIX_AV_SWITCH, 1, matrix_output, 1 );
+				over_time_stop( CGPS_GAP_HANDLE );
+				switch_track = true;
+				gfirst_switch = false;
+			}
+			
+			gscene_out = 2;
+		}
+	}
+
 	return 0;
+}
+
+void camera_pro( void )
+{
+	camera_pro_timetick();
 }
 
 /*初始化预置点文件(系统第一次启动)与初始化预置点列表*/
@@ -591,21 +679,21 @@ int camera_pro_preset_file_list_init( void )
 }
 
 void camera_pro_init( void ) // 必须在系统配置参数读取完成才能调用
-{
+{	
 	if( camera_pro_preset_file_list_init() == 0 )
 	{
 #ifdef __CAMERA_DEBUG__
 		preset_camera_list_info();
 #endif
 	}
-	
+
 	gcurpresetcmr.camera_num = gset_sys.current_cmr;
 	gcurpresetcmr.preset_point_num = 0;
 	gcurpresetcmr.tmnl_addr = 0xffff;
 
 	over_time_stop( STOP_CAMERA_INTERVAL );
+	over_time_set( CGPS_GAP_HANDLE, 5*1000 );// switch after 5000ms
 }
-
 
 /*清除摄像头系统信息, 这里把内存的对应的所有数据都保存到了文件中*/ 
 void camera_pro_system_close( void )

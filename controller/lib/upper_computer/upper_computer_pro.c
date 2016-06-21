@@ -588,6 +588,9 @@ int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint
 	
 	if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_SET)
 	{
+		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
+			VIDICON_OUTPUT, NULL, 0 );
+
 		upper_cmpt_camera_output_flag_get( data, &out_chn, CMPT_DATA_OFFSET, 0 );
 		if( out_chn.camara_output_1 )
 		{
@@ -602,9 +605,6 @@ int proccess_upper_cmpt_vidicon_output( uint16_t protocal_type, void *data, uint
 			control_matrix_input_output_switch( MATRIX_AV_SWITCH, out_chn.camara_output_2, out, 1 );
 			//camera_output_switch( out_chn.camara_output_2, 2, true );
 		}
-		
-		send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, \
-			VIDICON_OUTPUT, NULL, 0 );
 	}
 	else if( (protocal_type & CMPT_MSG_TYPE_MARK) == CMPT_MSG_TYPE_QUERY )
 	{

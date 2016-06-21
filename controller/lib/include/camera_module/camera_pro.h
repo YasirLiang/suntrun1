@@ -65,6 +65,7 @@ int camera_pro_preset_file_list_init( void );
 void camera_pro_init( void ); // 必须在系统配置参数读取完成才能调用
 void camera_pro_system_close( void );
 int camera_pro_timetick( void );
+void camera_pro( void );
 /*=============================
 *结束摄像头流程处理
 *==============================*/

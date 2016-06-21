@@ -78,12 +78,12 @@ void init_system( void )
 	init_network_send_queue();
 	send_interval_init();// 发送间隔
 
-	camera_common_control_init(); // 串口初始化
-	camera_pro_init();// 初始化预置点配置文件
-
 	inflight_proccess_init();// 初始化inflight 处理参数
 	matrix_output_init();// 初始化矩阵输出端口
 	control_matrix_common_init();
+
+	camera_common_control_init(); // 串口初始化
+	camera_pro_init();// 初始化预置点配置文件
 
 	system_database_init();// 打开数据库
 
