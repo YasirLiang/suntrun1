@@ -1061,11 +1061,11 @@ void system_database_init( void )
 		// 第一次初始化化默认数据
 		sys_muti.muti_flag = true; 
 		sys_muti.en_default_muti = false;
-		sys_muti.reconnect_self = false; // 本机不重连且断开本机才能断开本机
+		sys_muti.reconnect_self = true; // true 解析:本机断开重连本机;false 解析:本机不重连且断开本机才能断开本机
 		sys_muti.offline_connect = true;
 		sys_muti.reconnect_timeout = 10;// 10s
 		sys_muti.failed_connect_count = 10;// 10次
-		sys_muti.discut_self = true;
+		sys_muti.discut_self = false;// 本机发言时不断开本机
 		sys_muti.log_err = true;
 		sys_muti.log_discut = true;
 		sys_muti.log_none_muticast = true;

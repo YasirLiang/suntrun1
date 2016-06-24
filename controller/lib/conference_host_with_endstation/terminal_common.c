@@ -263,6 +263,7 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		assert( send_len >= 0 );
 	}
 
+	//DEBUG_SEND( send_frame.payload, send_len, "Terminal Send Data:" );
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	
 	return (uint16_t)send_len;

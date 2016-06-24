@@ -175,6 +175,7 @@ bool conference_end_to_host_crc_is_right(const struct endstation_to_host pend/* 
 // 读取会议数据之前的数据校验
 bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos)
 {
+#if 0
 	assert( data );
 	
 	uint8_t *p = (( uint8_t * )data) + pos; 
@@ -192,5 +193,22 @@ bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos)
 		return true;
 	else
 		return false;
+#else
+	uint8_t crc = 0;
+	int i = 0;
+	uint8_t *p = NULL; 
+
+	assert( data );
+	p = (uint8_t*)data;
+	for (i = 0; i < lng; i++)
+	{
+		crc ^= p[i];
+	}
+
+	if (crc == 0)
+		return true;
+
+	return false;
+#endif
 }
 

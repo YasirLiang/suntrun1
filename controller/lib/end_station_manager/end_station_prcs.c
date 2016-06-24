@@ -25,6 +25,12 @@ void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *fra
 	struct terminal_deal_frame conference_frame;
 	uint16_t connference_len = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 	bool crc_right = false;
+
+	// 协议数据至少12位,包括备份
+	if (connference_len < END_TO_HOST_CMD_LEN*2)
+	{
+		return;
+	}
 	
 	memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
 	conference_frame.payload_len = connference_len;
