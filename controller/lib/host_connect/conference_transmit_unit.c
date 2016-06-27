@@ -184,6 +184,11 @@ int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_nod
 	return (found?0:-1);
 }
 
+bool trans_model_unit_is_connected( uint64_t tarker_id )
+{
+	return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+}
+
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
 {
 	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )

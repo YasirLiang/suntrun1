@@ -109,7 +109,7 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 	{// 若超出了系统的连接数，则断开其中一个连接,连接时间最长的
 		bret = false;
 	}
-
+#if 0
 	if( !bret && gchannel_allot_pro.elem_num != 0 )
 	{
 		for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
@@ -203,7 +203,7 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 			bret = true;
 		}
 	}
-
+#endif
 	// has searched woring :1\disconnect. 2\delect from connect list 3\add to unconnect list
 	return bret;
 }
@@ -452,6 +452,31 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 			}
 		}
 	}
+}
+
+bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index )
+{
+	T_pInChannel p_temp_chNode = NULL;
+	int i = 0;
+	bool bret = false;
+	
+	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
+	{
+		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
+		{
+			if( (p_temp_chNode->tarker_id == talker_id) &&\
+				(p_temp_chNode->tarker_index == talker_index) )
+			{
+				bret = true;
+				break;
+			}
+		}
+
+		if( bret )
+			break;
+	}
+
+	return bret;
 }
 
 int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )

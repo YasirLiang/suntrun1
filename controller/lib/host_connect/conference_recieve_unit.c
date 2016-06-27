@@ -20,6 +20,10 @@
 #include "muticast_connect_manager.h"
 #include "acmp_controller_machine.h"
 
+#ifdef __DEBUG__
+//#define __CONFERENCE_RECV_UNIT_DEBUG__
+#endif
+
 LIST_HEAD(gconferenc_recv_model_list);
 observer_t gconference_recieve_observer;// 用于更新被广播单元模块的连接状态
 static uint16_t gccu_recv_acmp_sequeue_id = 0;
@@ -188,13 +192,17 @@ int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_l
 	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_input_desc, frame, pos, frame_len );
         if (ret < 0)
         {
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
         	DEBUG_INFO( "conference_recieve_model_init: stream_input_desc_read error" );
+#endif
 		return -1;
         }
 
 	if( stream_input_desc.descriptor_index >= CONFERENCE_RECIEVE_UNIT_IN_CHNNEL_MAX_NUM )
 	{
-        	DEBUG_INFO( "conference_recieve_model_init : descriptor_index = %d out of range:  error",stream_input_desc.descriptor_index);
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
+		DEBUG_INFO( "conference_recieve_model_init : descriptor_index = %d out of range:  error",stream_input_desc.descriptor_index);
+#endif
 		return -1;
 	}
 
@@ -209,15 +217,19 @@ int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_l
 	memcpy( &entity_name, &desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
 	if( strcmp( (char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME) != 0 )
 	{
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
 		DEBUG_INFO( "not a right conference recieve model = %s:ring name is %s", \
 			(char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME );
+#endif
 		return -1;
 	}
 
 	solid_node = search_endtity_node_endpoint_dblist( endpoint_list, endtity_id );
 	if( solid_node == NULL )
 	{
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
 		DEBUG_INFO( "central control not found solid endtity( id = 0x%016llx)", endtity_id );
+#endif
 		return -1;
 	}
 
@@ -308,9 +320,17 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 
 	tarker_id = convert_stream_id_to_tarker_id( listern_stream_id );
 	if( tarker_id == listern_stream_id && listern_stream_id != 0 )
+	{
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
 		DEBUG_INFO( "listern_stream_id( 0x%016llx ) is Stream ID", listern_stream_id );
+#endif
+	}
 	else
+	{
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
 		DEBUG_INFO( "listern_stream_id( 0x%016llx ) is  Stream's Tarker ID(Not zero)", listern_stream_id );
+#endif
+	}
 
 	list_for_each( p_list, &gconferenc_recv_model_list )
 	{
@@ -580,7 +600,9 @@ void conference_recieve_model_unit_update( subject_data_elem reflesh_data )// 更
 									repson_status );
 			break;
 		default:
+#ifdef __CONFERENCE_RECV_UNIT_DEBUG__
 			DEBUG_INFO( "update cfc recv model msg type(0x%02x) info err!", msg_type );
+#endif
 			break;
 	}
 }

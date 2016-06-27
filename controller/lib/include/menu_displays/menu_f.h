@@ -47,7 +47,6 @@ extern TDispMem gstDispMem;
 #define	FIFO_MODE 	2
 #define	APPLY_MODE	3
 
-
 #define FULL_VIEW_ADDR  0x1000
 #define BACKUP_FULL_VIEW_ADDR	0x0FFF
 

@@ -5,6 +5,10 @@
 #include "connector_subject.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
+#ifdef __DEBUG__
+//#define __ACMP_MACHINE_DEBUG__
+#endif
+
 static struct jdksavdecc_frame acmp_frame;
 static struct jdksavdecc_acmpdu acmpdu;
 static uint32_t acmp_sequence_id = 0;
@@ -130,7 +134,9 @@ int acmp_update_endstation_connections_networks( void )
 	desc_pdblist desc_in_out_put = acmp_desc_guard;
 	if( desc_in_out_put->next == desc_in_out_put )
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "there is no descriptor list node : nothing to send!" );
+#endif
 		return -1;
 	}
 
@@ -139,7 +145,9 @@ int acmp_update_endstation_connections_networks( void )
 		int i = 0;
 		if( (!desc_in_out_put->endpoint_desc.is_output_stream_desc_exist) && (!desc_in_out_put->endpoint_desc.is_input_stream_desc_exist) )
 		{
+#ifdef __ACMP_MACHINE_DEBUG__
 			DEBUG_INFO( "system endstation has no output or input stream desc!you maybe send desc command to read output_stream or input_stream descriptor before completing read DESCRIPTOR_ENTITY" );
+#endif
 			continue;
 		}
 
@@ -167,7 +175,9 @@ void acmp_update_input_stream_descriptor( uint16_t desc_index, struct jdksavdecc
 	desc_pdblist input_desc = search_desc_dblist_node( uint64_listener_entity_id, acmp_desc_guard);
 	if( input_desc == NULL )
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "no such output stream tarker entity ID");
+#endif
 		return;
 	}
 
@@ -184,7 +194,9 @@ void acmp_update_output_stream_descriptor( uint16_t desc_index, struct jdksavdec
 	desc_pdblist input_desc = search_desc_dblist_node( uint64_tarker_entity_id, acmp_desc_guard);
 	if( input_desc == NULL )
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "no such output stream tarker entity ID");
+#endif
 		return;
 	}
 
@@ -215,8 +227,10 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
 			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
+#endif
 		return -1;
 	}
 
@@ -227,7 +241,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			inflight_station = create_inflight_dblist_new_node( &inflight_station );
 			if( NULL == inflight_station )
 			{
+#ifdef __ACMP_MACHINE_DEBUG__
 				DEBUG_INFO("inflight station node create failed!");
+#endif
 				return -1;
 			}
 			memset(inflight_station, 0, sizeof(inflight_list));
@@ -257,7 +273,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			}
 			else
 			{
+#ifdef __ACMP_MACHINE_DEBUG__
 				DEBUG_INFO("Err frame malloc !");
+#endif
 				assert( NULL != inflight_station->host_tx.inflight_frame.frame );
 				if( NULL == inflight_station->host_tx.inflight_frame.frame )
 					return -1;
@@ -265,7 +283,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 		}
 		else
 		{
+#ifdef __ACMP_MACHINE_DEBUG__
 			DEBUG_INFO( " acmp seq id = %d, subtype = %d", seq_id, sub_type );
+#endif
 			if( resend_node != NULL ) //already search it
 			{
 				resend_node->host_tx.flags.resend = true;
@@ -274,7 +294,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 			}
 			else
 			{
+#ifdef __ACMP_MACHINE_DEBUG__
 				DEBUG_INFO( "nothing to be resend!" );
+#endif
 				assert(resend_node != NULL);
 				if( resend_node == NULL )
 					return -1;
@@ -286,7 +308,9 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
 	if( send_len < 0 )
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "Err raw send data!");
+#endif
 		assert( send_len >= 0);
 		if( send_len < 0 )
 			return -1;
@@ -312,7 +336,9 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 	}
 	else 
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "noting to be proccessed by aecp timeout" );
+#endif
 		return;
 	}
 
@@ -324,12 +350,14 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
         	uint64_t end_station_entity_id = jdksavdecc_uint64_get( &_end_station_entity_id, 0 );
 		uint64_t tarker_id = jdksavdecc_uint64_get( &_end_station_tarker_id, 0 );
         	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
-		
+
+#ifdef __ACMP_MACHINE_DEBUG__	
 		DEBUG_INFO( " [ COMMAND TIMEOUT: 0x%016llx, %s, %s,%d ]", 
 					end_station_entity_id,
 					acmp_cmd_value_to_name(msg_type),
 					"NULL",
 					 acmp_pstation->host_tx.inflight_frame.seq_id);
+#endif
 
 		struct jdksavdecc_acmpdu node_acmpdu;
 		jdksavdecc_acmpdu_read( &node_acmpdu, frame, ZERO_OFFSET_IN_PAYLOAD, frame_len );
@@ -367,12 +395,16 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // ÉèÖÃ³¬Ê±
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
+#endif
 #endif	
 	}
 	else
 	{
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "acmp resended " );
+#endif
 		transmit_acmp_packet_network( frame, frame_len, acmp_pstation, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_ACMP, false, acmp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
@@ -424,7 +456,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_talker_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
-
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (talker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,
@@ -433,8 +465,10 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						0, 
 						acmp_cmd_status_value_to_name(status));
 		
+#endif
 		if(status != ACMP_STATUS_SUCCESS)
 		{
+#ifdef __ACMP_MACHINE_DEBUG__
 			DEBUG_INFO( "LOGGING_LEVEL_ERROR: RESPONSE_RECEIVED, 0x%016llx (talker), %s, %s, %s, %s, %d",
 						end_station_entity_id,
 						acmp_cmd_value_to_name(msg_type),
@@ -443,6 +477,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						acmp_cmd_status_value_to_name(status),
 						seq_id );
 			
+#endif
 			acmp_muticast_call.tarker_steam_id = 0;
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 			acmp_recv_resp_err = true;
@@ -484,7 +519,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			elem.ctrl_msg.msg_resp_status = status;
 			set_subject_data( elem, &gconnector_subjector );
 			notify_observer( &gconnector_subjector );
-			
+
+#ifdef __ACMP_MACHINE_DEBUG__			
 			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener)-0x%016llx(tarker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,
@@ -493,13 +529,15 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						0, 
 						0, 
 						acmp_cmd_status_value_to_name(status));
-			
+#endif
 			
 			if( msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE )
 			{// connect success
 				if( (connet_table_connect_call_info.p_cnnt_node != NULL) && (connet_table_connect_call_info.pc_callback != NULL ))
 				{
+#ifdef __ACMP_MACHINE_DEBUG__
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
+#endif
 					connet_table_connect_call_info.pc_callback( connet_table_connect_call_info.p_cnnt_node,\
 						connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.limit_speak_time?true:false,\
 						connet_table_connect_call_info.tarker_id );
@@ -540,7 +578,9 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			{// disconnect success
 				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
 				{
+#ifdef __ACMP_MACHINE_DEBUG__
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
+#endif
 					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node );
 					connet_table_disconnect_call_info.p_cnnt_node = NULL;
 					connet_table_disconnect_call_info.pdis_callback = NULL;
@@ -571,6 +611,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 		else if( (status == ACMP_STATUS_SUCCESS) && \
 			(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE))
 		{
+#ifdef __ACMP_MACHINE_DEBUG__
 			DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (listener), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
 						end_station_entity_id,
@@ -579,6 +620,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						0, 
 						acmp_cmd_status_value_to_name(status));
 
+#endif
 			elem.listener_id = end_station_entity_id;
 			elem.listener_index = node_acmpdu.listener_unique_id;
 			elem.tarker_id = tarker_id;
@@ -596,6 +638,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 		}
 		else if( status != ACMP_STATUS_SUCCESS )
 		{
+#ifdef __ACMP_MACHINE_DEBUG__
 			DEBUG_INFO("LOGGING_LEVEL_ERROR: RESPONSE_RECEIVED, 0x%016llx (listener), %s, %s, %s, %s, %d",
 							end_station_entity_id,
 							acmp_cmd_value_to_name(msg_type),
@@ -603,6 +646,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 							"NULL", 
 							acmp_cmd_status_value_to_name(status),
 							seq_id);
+#endif
 
 			elem.connect_flag = false;
 			elem.listener_id = end_station_entity_id;
@@ -620,11 +664,12 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			{
 				if( (connet_table_connect_call_info.p_cnnt_node != NULL) && (connet_table_connect_call_info.pc_callback != NULL ))
 				{
+#ifdef __ACMP_MACHINE_DEBUG__
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_connect_call_info.limit_speak_time, connet_table_connect_call_info.tarker_id );
+#endif
 					connet_table_connect_call_info.pc_callback( NULL, /* NULL mean connect err!*/connet_table_connect_call_info.limit_speak_time, \
 						connet_table_connect_call_info.limit_speak_time?true:false,\
 						connet_table_connect_call_info.tarker_id );
-
 					connet_table_connect_call_info.p_cnnt_node = NULL;
 					connet_table_connect_call_info.pc_callback = NULL;
 				}
@@ -656,7 +701,9 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			{
 				if( (connet_table_disconnect_call_info.p_cnnt_node != NULL) && (connet_table_disconnect_call_info.pdis_callback != NULL ))
 				{
+#ifdef __ACMP_MACHINE_DEBUG__
 					DEBUG_INFO( "timeout = %d, 0x%016llx", connet_table_disconnect_call_info.limit_speak_time, connet_table_disconnect_call_info.tarker_id );
+#endif
 					connet_table_disconnect_call_info.pdis_callback( connet_table_disconnect_call_info.p_cnnt_node ); /* NULL means disconnect err!*/
 
 					connet_table_disconnect_call_info.p_cnnt_node = NULL;
@@ -692,6 +739,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_talker_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_ONINFO("LOGGING_LEVEL_DEBUG: RESPONSE_RECEIVED, 0x%016llx (talker), %s, %s, %s, %s, %d",
 								end_station_entity_id,
 								acmp_cmd_value_to_name(msg_type),
@@ -699,11 +747,13 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 								"NULL",  
 								acmp_cmd_status_value_to_name(status),
 								seq_id);
+#endif
 	}
 	else
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_listener_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
+#ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_INFO( "LOGGING_LEVEL_DEBUG:COMMAND_SENT, 0x%016llx listener), %s, %s, %s, %s, %d",
 								end_station_entity_id,
 								acmp_cmd_value_to_name(msg_type),
@@ -711,6 +761,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 								"NULL",
 								acmp_cmd_status_value_to_name(status),
 								seq_id );
+#endif
 	}
 
 	return 0;

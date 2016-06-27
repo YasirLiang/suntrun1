@@ -28,7 +28,7 @@
 #define CCU_TR_MODEL_MAX_NUM central_control_unit_max_num // 中央控制单元接收发送模块的最大总数
 #define CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM 4 //中央控制单元每个接收发送模块的最大的通道数 
 #define CCU_TR_MODEL_CHANNEL_MAX_NUM (CCU_TR_MODEL_MAX_NUM*CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM)// 中央控制单元接收发送模块的通道总数
-#define PER_CCU_CONNECT_MAX_NUM 4 // 每个ccu接收模块最大连接数
+#define PER_CCU_CONNECT_MAX_NUM 2 // 每个ccu接收模块最大连接数
 
 //*****************************
 #define CCU_TR_MODEL_RECIEVE_ENABLE // 使能中央控制单元接收发送模块的接收功能

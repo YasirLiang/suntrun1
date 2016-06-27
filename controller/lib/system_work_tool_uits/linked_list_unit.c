@@ -654,7 +654,7 @@ desc_pdblist search_desc_dblist_node( uint64_t entity_id, desc_pdblist guard )
 	}
 	else
 	{
-		DEBUG_INFO( "no such desc 0x%016llx node",entity_id );
+		//DEBUG_INFO( "no such desc 0x%016llx node",entity_id );
 		return NULL;
 	}
 }

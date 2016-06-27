@@ -26,7 +26,7 @@
 // 非命令行菜单功能命令
 static int menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
-	uint8_t temp = (uint8_t)value;
+	uint8_t temp = (uint8_t)value + 1;// 实际的模式是value+1
 	DEBUG_INFO( "ModeSet flags  = %d", temp );
 
 	find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp, sizeof(uint8_t));
