@@ -363,9 +363,9 @@ int pthread_recv_data_fn( void *pgm )
 		avdecc_manage_discover_proccess();// 系统定时发现终端
 		send_common_check_squeue();// 检查发送队列发送数据
 		camera_pro();// 摄像头处理流程
+		terminal_over_time_speak_pro();
 
 		/*
-		  *
 		  *串口接收数据处理与菜单显示处理
 		  */
 		if( gcontrol_sur_msg_len > 0 )

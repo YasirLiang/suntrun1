@@ -30,7 +30,7 @@ typedef struct _confenrence_trans_model
 {
 	uint64_t tarker_id;
 	tmnl_pdblist confenrence_node;
-	host_timer model_speak_time;
+	host_timer model_speak_time;// 是会议终端已发言时间
 	TOutChannel out_ch; // 输出通道，表为空则无输出
 	struct list_head list; 
 }tconference_trans_model, *tconference_trans_pmodel;// 会议传输模块

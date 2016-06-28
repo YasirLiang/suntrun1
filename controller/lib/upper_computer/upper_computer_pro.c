@@ -117,6 +117,7 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			if( temp_status != set_sys.discuss_mode )
 			{
 				// 设置系统讨论模式
+				DEBUG_INFO("discuss mode = %d", temp_status);
 				find_func_command_link( MENUMENT_USE, MENU_DISC_MODE_SET_CMD, 0, &temp_status, 1 );
 			}
 			
@@ -139,11 +140,13 @@ int proccess_upper_cmpt_discussion_parameter( uint16_t protocol_type, void *data
 			
 			// 设置会议讨论状态
 			terminal_start_discuss( false );
-
+			
 			//更新数据库系统配置信息
 			system_db_update_configure_system_table( gset_sys );
 		}
 	}
+
+	terminal_main_state_send( 0, NULL, 0 );
 	
 	return 0;
 }

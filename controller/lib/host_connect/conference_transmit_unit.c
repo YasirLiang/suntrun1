@@ -186,7 +186,7 @@ int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_nod
 
 bool trans_model_unit_is_connected( uint64_t tarker_id )
 {
-	return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+	return ccu_recv_model_talker_connected( tarker_id, CONFERENCE_OUTPUT_INDEX );
 }
 
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
@@ -203,6 +203,38 @@ int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_n
 		return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
 
 	return -1;
+}
+
+/*¶Ï¿ªÁ¬½ÓÊ±¼ä×î³¤µÄ»áÒéÖÕ¶Ë,Ö»ÄÜÔÚÖ÷Ï¯vipÓëpptÄ£Ê½ÏÂÊ¹ÓÃ·µ»Ø0:Õý³£*/
+int trans_model_unit_disconnect_longest_connect( void )
+{
+	tconference_trans_pmodel p_temp_node = NULL, longest = NULL;
+	timetype curtime = get_current_time();
+	int ret = -1;
+	
+	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+	{
+		if( !p_temp_node->model_speak_time.running )
+			continue;
+
+		if (longest == NULL)
+		{
+			longest = p_temp_node;
+		}
+		else
+		{
+			if ( (curtime - longest->model_speak_time.start_time) < \
+				(curtime - p_temp_node->model_speak_time.start_time))
+			longest = p_temp_node;
+		}
+	}
+
+	if (NULL != longest)
+	{// found
+		ret = ccu_recv_model_untalk( longest->tarker_id, CONFERENCE_OUTPUT_INDEX );
+	}
+
+	return ret;
 }
 
 void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ¬½Ó×´Ì¬, ²¢·¢ËÍÍ¨Öª»áÒéÏµÍ³Ð­ÒéµÄÏûÏ¢
@@ -229,6 +261,11 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
 					{
+						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
+						{// Í£Ö¹·¢ÑÔ¼ÆÊ±
+							host_timer_stop(&p_temp_node->model_speak_time);
+						}
+						
 						Input_pChannel Input_pnode = NULL;
 						list_for_each_entry( Input_pnode, &p_Outnode->input_head.list, list )
 						{
@@ -264,6 +301,11 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
 					{
+						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
+						{// ¿ªÊ¼·¢ÑÔ¼ÆÊ±
+							host_timer_start( 1000,&p_temp_node->model_speak_time);
+						}
+						
 						Input_pChannel Input_pnode = NULL;
 						Input_pnode = input_connect_node_create();
 						if( Input_pnode == NULL )

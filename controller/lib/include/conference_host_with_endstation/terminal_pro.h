@@ -84,9 +84,16 @@ typedef enum _enum_apply_pro
 	APPROVE_APPLY
 }enum_apply_pro;
 
+typedef struct _type_over_time_speak_pro
+{
+	bool running;
+	tmnl_pdblist speak_node;
+}tover_time_speak_pro;
+
 typedef struct _tsystem_discuccess
 {
 	ttmnl_discuss_mode edis_mode;	// 讨论模式
+	tover_time_speak_pro over_speak;// 延时发言
 	uint8_t    limit_num;     			//受限的发言人上限
 	uint8_t    speak_limit_num;		//受限的发言人数
 	uint8_t    currect_first_index;		//申请中优先发言的索引
@@ -210,6 +217,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
 void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value );
 int terminal_speak_track( uint16_t addr, bool track_en );// 摄像跟踪接口
+void terminal_apply_list_first_speak( tmnl_pdblist const first_speak );
 
 void terminal_register_init();
 void system_register_terminal_pro( void );
