@@ -19,6 +19,17 @@
 #include "muticast_connect_manager.h"
 #include "time_handle.h"
 
+#ifdef __DEBUG__
+//#define __CCU_TRANSMIT_UNIT_DEBUG__
+#endif
+
+#ifdef __CCU_TRANSMIT_UNIT_DEBUG__
+#define ccu_transmit_unit_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define ccu_transmit_unit_debug(fmt, args...)
+#endif
+
 static observer_t gccu_transmit_observer;// 中央发送单元观察者
 LIST_HEAD(gccu_trans_model_guard);// 创建并初始化中央传输单元头节点
 
@@ -51,7 +62,7 @@ int central_control_transmist_model_create( T_pccuTModel *ptr_model )
 	*ptr_model = (T_pccuTModel)malloc( sizeof(TccuTModel) );
 	if( *ptr_model == NULL )
 	{
-		DEBUG_INFO( "Malloc Failed!" );
+		ccu_transmit_unit_debug( "Malloc Failed!" );
 		return -1;
 	}
 
@@ -150,7 +161,7 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 		{
 			output_channel_node_init_by_index( p_outch, stream_out_desc.descriptor_index );
 			output_channel_insert_node_to_list( &ptr_model->out_ch.list, p_outch );
-			DEBUG_INFO( "New Transmit  CCU (0x%016llx) Out Channel ( Index = %d)",
+			ccu_transmit_unit_debug( "New Transmit  CCU (0x%016llx) Out Channel ( Index = %d)",
 						endtity_id, stream_out_desc.descriptor_index );
 
 			if( p_outch->tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
@@ -320,7 +331,7 @@ void central_control_transmit_unit_update( subject_data_elem reflesh_data )// 更
 									repson_status );
 			break;
 		default:
-			DEBUG_INFO( "update cfc recv model msg type(0x%02x) info err!", msg_type );
+			ccu_transmit_unit_debug( "update cfc recv model msg type(0x%02x) info err!", msg_type );
 			break;
 	}
 }

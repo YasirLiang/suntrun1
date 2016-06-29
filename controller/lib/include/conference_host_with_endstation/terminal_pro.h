@@ -218,6 +218,8 @@ void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_
 void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value );
 int terminal_speak_track( uint16_t addr, bool track_en );// 摄像跟踪接口
 void terminal_apply_list_first_speak( tmnl_pdblist const first_speak );
+void terminal_over_time_speak_node_set( tmnl_pdblist speak_node );// 设置延时发言处理节点
+void terminal_over_time_speak_pro(void);// 延时发言处理
 
 void terminal_register_init();
 void system_register_terminal_pro( void );

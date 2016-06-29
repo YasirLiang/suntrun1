@@ -43,6 +43,8 @@ int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_n
 void trans_model_unit_update( subject_data_elem connect_info );// 更新传输模块的连接状态, 并发送通知会议系统协议的消息
 void conference_transmit_model_init( void );
 int conference_transmit_model_node_destroy( uint64_t tarker_id );
+int trans_model_unit_disconnect_longest_connect( void );
+bool trans_model_unit_is_connected( uint64_t tarker_id );
 
 // *************************************************//
 

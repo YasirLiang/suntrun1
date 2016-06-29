@@ -15,7 +15,14 @@
 #include "acmp_controller_machine.h"
 
 #ifdef __DEBUG__
-#define __CCU_RECV_DEBUG__
+//#define __CCU_RECV_DEBUG__
+#endif
+
+#ifdef __CCU_RECV_DEBUG__
+#define ccu_recv_unit_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define ccu_recv_unit_debug(fmt, args...)
 #endif
 
 tchannel_allot_pro gchannel_allot_pro;// 全局通道分配处理
@@ -88,14 +95,12 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 static bool central_control_found_available_channel( void )//(unfinish 2016-3-11)
 {
 	bool bret = false;
-	int i = 0;
-	T_pInChannel p_temp_chNode = NULL, p_next_node = NULL;
-	T_pInChannel p_longest_cnntNode = NULL;
+	//int i = 0;
+	//T_pInChannel p_temp_chNode = NULL, p_next_node = NULL;
+	//T_pInChannel p_longest_cnntNode = NULL;
 	
-#ifdef __CCU_RECV_DEBUG__
-	DEBUG_INFO( " -----elem num = %d, gchannel_allot_pro.cnnt_num = %d ------", \
+	ccu_recv_unit_debug( " -----elem num = %d, gchannel_allot_pro.cnnt_num = %d ------", \
 		gchannel_allot_pro.elem_num, gchannel_allot_pro.cnnt_num );
-#endif
 	if( gchannel_allot_pro.elem_num == 0 )
 	{
 		gchannel_allot_pro.p_current_input_channel = NULL;
@@ -114,10 +119,8 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 	{
 		for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 		{
-#ifdef __CCU_RECV_DEBUG__
-			DEBUG_INFO( " 0x%016llx chanel_connect_num is %d------", \
+			ccu_recv_unit_debug( " 0x%016llx chanel_connect_num is %d------", \
 				gccu_recieve_model_list[i].entity_id,gccu_recieve_model_list[i].chanel_connect_num );
-#endif
 			if( gccu_recieve_model_list[i].chanel_connect_num < PER_CCU_CONNECT_MAX_NUM )
 				continue;
 
@@ -219,17 +222,13 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_input_desc, frame, pos, frame_len );
         if (ret < 0)
         {
-#ifdef __CCU_RECV_DEBUG__
-        	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
-#endif
+        	ccu_recv_unit_debug( "avdecc_read_descriptor_error: stream_input_desc_read error" );
 		return -1;
         }
 
 	if( stream_input_desc.descriptor_index > 3 )
 	{
-#ifdef __CCU_RECV_DEBUG__
-        	DEBUG_INFO( "stream_input_desc.descriptor_index = %d out of range:  error",stream_input_desc.descriptor_index);
-#endif
+        	ccu_recv_unit_debug( "stream_input_desc.descriptor_index = %d out of range:  error",stream_input_desc.descriptor_index);
 		return -1;
 	}
 
@@ -250,18 +249,14 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 	}
 	else 
 	{
-#ifdef __CCU_RECV_DEBUG__
-		DEBUG_INFO( "not a right recieve model = %s:ringname is %s or %s", \
+		ccu_recv_unit_debug( "not a right recieve model = %s:ringname is %s or %s", \
 			(char*)entity_name.value, CCU_TR_MODEL_NAME, CCU_R_MODEL_NAME );
-#endif
 		return -1;
 	}
 #else 
 	if( strcmp( (char*)entity_name.value, CCU_R_MODEL_NAME) != 0 )
 	{
-#ifdef __CCU_RECV_DEBUG__
-		DEBUG_INFO( "not a right recieve model = %s:ringname is %s ", (char*)entity_name.value, CCU_R_MODEL_NAME );
-#endif
+		ccu_recv_unit_debug( "not a right recieve model = %s:ringname is %s ", (char*)entity_name.value, CCU_R_MODEL_NAME );
 		return -1;
 	}
 #endif
@@ -269,9 +264,7 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 	solid_node = search_endtity_node_endpoint_dblist( endpoint_list, endtity_id );
 	if( solid_node == NULL )
 	{
-#ifdef __CCU_RECV_DEBUG__
-		DEBUG_INFO( "central control not found solid endtity( id = 0x%016llx)", endtity_id );
-#endif
+		ccu_recv_unit_debug( "central control not found solid endtity( id = 0x%016llx)", endtity_id );
 		return -1;
 	}
 
@@ -313,9 +306,7 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 
 	if( !isfound && !init_found )
 	{
-#ifdef __CCU_RECV_DEBUG__
-		DEBUG_INFO( " not found model_list!!!" );
-#endif
+		ccu_recv_unit_debug( " not found model_list!!!" );
 		return -1;
 	}
 	
@@ -348,23 +339,17 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 				}
 
 				gchannel_allot_pro.elem_num++;
-#ifdef __CCU_RECV_DEBUG__
-				DEBUG_INFO( "One intput channel add Success....................( ID = 0x%016llx -- input index = %d )", endtity_id, stream_input_desc.descriptor_index );
-#endif
+				ccu_recv_unit_debug( "One intput channel add Success....................( ID = 0x%016llx -- input index = %d )", endtity_id, stream_input_desc.descriptor_index );
 			}
 			else
 			{
-#ifdef __CCU_RECV_DEBUG__
-				DEBUG_INFO( "Create new node failed: no space or other!!!" );
-#endif
+				ccu_recv_unit_debug( "Create new node failed: no space or other!!!" );
 				return -1;
 			}
 		}
 		else
 		{
-#ifdef __CCU_RECV_DEBUG__
-				DEBUG_INFO( " Model input change num is out of range!" );
-#endif
+				ccu_recv_unit_debug( " Model input change num is out of range!" );
 				return -1;
 		}	
 	}
@@ -379,7 +364,7 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 	T_pInChannel p_temp_chNode = NULL;
 	int i = 0;
 	
-	//DEBUG_INFO( "msg = %d, subtype = %d",  connect_info.ctrl_msg.msg_type, connect_info.ctrl_msg.data_type );
+	//ccu_recv_unit_debug( "msg = %d, subtype = %d",  connect_info.ctrl_msg.msg_type, connect_info.ctrl_msg.data_type );
 	if( (connect_info.ctrl_msg.data_type != JDKSAVDECC_SUBTYPE_ACMP) ||\
 		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE ||
 		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE )
@@ -408,15 +393,13 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					gchannel_allot_pro.cnnt_num++;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
 
-#ifdef __CCU_RECV_DEBUG__
-					DEBUG_INFO( "CCU CONNECT update Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
+					ccu_recv_unit_debug( "CCU CONNECT update Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
 						p_temp_chNode->tarker_id,
 						p_temp_chNode->tarker_index,
 						gccu_recieve_model_list[i].chanel_connect_num,
 						connect_info.listener_id, 
 						connect_info.listener_index,
 						gchannel_allot_pro.cnnt_num);
-#endif
 					return;
 				}
 			}
@@ -438,15 +421,13 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					gchannel_allot_pro.cnnt_num--;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
 
-#ifdef __CCU_RECV_DEBUG__
-					DEBUG_INFO( "CCU DISCONNECT Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
+					ccu_recv_unit_debug( "CCU DISCONNECT Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)", 
 						p_temp_chNode->tarker_id,
 						p_temp_chNode->tarker_index,
 						gccu_recieve_model_list[i].chanel_connect_num,
 						connect_info.listener_id, 
 						connect_info.listener_index,
 						gchannel_allot_pro.cnnt_num );
-#endif
 					return;
 				}
 			}
@@ -509,9 +490,7 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 	}
 	else 
 	{
-#ifdef __CCU_RECV_DEBUG__
-		DEBUG_INFO( " has not a valid input channel to talk to !" );
-#endif
+		ccu_recv_unit_debug( " has not a valid input channel to talk to !" );
 	}
 
 	return ret;

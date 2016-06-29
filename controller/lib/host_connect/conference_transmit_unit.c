@@ -18,7 +18,14 @@
 #include "acmp_controller_machine.h"
 
 #ifdef __DEBUG__
-#define __CONFERENCE_TRANSMIT_DEBUG__
+//#define __CONFERENCE_TRANSMIT_DEBUG__
+#endif
+
+#ifdef __CONFERENCE_TRANSMIT_DEBUG__
+#define conference_transmit_unit_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define conference_transmit_unit_debug(fmt, args...)
 #endif
 
 tconference_trans_model gconference_model_guard;// »áÒé´«Êäµ¥ÔªÁ´±íÈ«¾ÖÍ·½áµã
@@ -43,17 +50,13 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_output_desc, frame, pos, frame_len );
         if (ret < 0)
         {
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-        	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
-#endif
+        	conference_transmit_unit_debug( "avdecc_read_descriptor_error: stream_input_desc_read error" );
 		return -1;
         }
 
 	if( stream_output_desc.descriptor_index > CONFERENCE_OUTCHANNEL_MAX_NUM )
 	{
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-        	DEBUG_INFO( "stream_input_desc.descriptor_index = %d out of range:  error",stream_output_desc.descriptor_index);
-#endif
+        	conference_transmit_unit_debug( "stream_input_desc.descriptor_index = %d out of range:  error",stream_output_desc.descriptor_index);
 		return -1;
 	}
 
@@ -62,9 +65,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	if( (strcmp((char*) &entity_name, CCU_TR_MODEL_NAME) == 0) ||\
 		(strcmp( (char*)&entity_name, CCU_R_MODEL_NAME) == 0) )
 	{
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-		DEBUG_INFO( "entity not a conference uinit %s", (char*)&entity_name.value);
-#endif
+		conference_transmit_unit_debug( "entity not a conference uinit %s", (char*)&entity_name.value);
 		return -1;
 	}
 
@@ -94,7 +95,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 			output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
 			
 #ifdef __CONFERENCE_TRANSMIT_DEBUG__
-			DEBUG_INFO( "out Stream add ONE<<<<<<<<------------------" );
+			conference_transmit_unit_debug( "out Stream add ONE<<<<<<<<------------------" );
 
 			Input_pChannel Input_pnode = NULL;
 			T_pOutChannel p_Out = NULL;
@@ -109,7 +110,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 				out_num++;
 			}
 
-			DEBUG_INFO( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
+			conference_transmit_unit_debug( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
 #endif
 		}
 	}
@@ -131,7 +132,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 				output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
 
 #ifdef __CONFERENCE_TRANSMIT_DEBUG__
-				DEBUG_INFO( "out Stream add ONE1111111111<<<<<<<<------------------" );
+				conference_transmit_unit_debug( "out Stream add ONE1111111111<<<<<<<<------------------" );
 
 				Input_pChannel Input_pnode = NULL;
 				T_pOutChannel p_Out = NULL;
@@ -146,7 +147,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 					out_num++;
 				}
 
-				DEBUG_INFO( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
+				conference_transmit_unit_debug( "out Stream(NUM = %d) has input Stream Num = %d------------------", out_num,in_num );
 #endif
 			}
 			
@@ -278,10 +279,8 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 									free(Input_pnode);
 									Input_pnode = NULL;	
 								}
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-								DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
+								conference_transmit_unit_debug( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
 										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
-#endif
 								return;
 							}
 						}
@@ -310,9 +309,7 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 						Input_pnode = input_connect_node_create();
 						if( Input_pnode == NULL )
 						{
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-							DEBUG_INFO( "connect info not save Success!!!" );
-#endif
+							conference_transmit_unit_debug( "connect info not save Success!!!" );
 							return;
 						}
 
@@ -322,10 +319,8 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 						if( NULL != p_temp_node->confenrence_node)
 							terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
 						
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__	
-						DEBUG_INFO( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
+						conference_transmit_unit_debug( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
 							connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
-#endif
 						return;
 					}
 				}
@@ -345,9 +340,7 @@ int conference_transmit_model_node_destroy( uint64_t tarker_id )
 	{
 		if( p_temp_node->tarker_id == tarker_id )
 		{
-#ifdef __CONFERENCE_TRANSMIT_DEBUG__
-			DEBUG_INFO( "destroy ID = 0x%016llx", tarker_id );
-#endif
+			conference_transmit_unit_debug( "destroy ID = 0x%016llx", tarker_id );
 			if( p_temp_node->confenrence_node != NULL )
 				p_temp_node->confenrence_node = NULL;
 

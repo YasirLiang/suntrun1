@@ -24,6 +24,17 @@
 #include "acmp_controller_machine.h"
 #include "muticast_connect_manager.h"
 
+#ifdef __DEBUG__
+#define __MUTICASTOR_MANAGER_DEBUG__
+#endif
+
+#ifdef __MUTICASTOR_MANAGER_DEBUG__
+#define muticastor_manager_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define muticastor_manager_debug(fmt, args...)
+#endif
+
 static Tstr_MMPro gmuticast_manager_pro;
 static uint16_t gacmp_sequence_id = 0;
 
@@ -55,7 +66,7 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 
 	if( ptr_muti_inchn->pro_status != INCHANNEL_PRO_FINISH )
 	{
-		DEBUG_INFO( "Input Node does not proccess Finish......" );
+		muticastor_manager_debug( "Input Node does not proccess Finish......" );
 		return 0;
 	}
 
@@ -128,7 +139,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 
 	if( ptr_Inchn->pro_status != INCHANNEL_PRO_FINISH )
 	{
-		DEBUG_INFO( "0x%016llx - %d Input Node does not proccess Finish......", \
+		muticastor_manager_debug( "0x%016llx - %d Input Node does not proccess Finish......", \
 			local_listen_id, ptr_Inchn->listener_index );
 		
 		return 0;
@@ -182,27 +193,35 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 			}
 			else
 			{// 不是默认广播者
-				DEBUG_INFO( "listener id = 0x%016llx, current tarker id = 0x%016llx -%d,	default id =  0x%016llx-%d",
+				muticastor_manager_debug( "listener id = 0x%016llx, current tarker id = 0x%016llx -%d,	default id =  0x%016llx-%d",
 					local_listen_id, ptr_Inchn->tarker_id, ptr_Inchn->tarker_index,muticastor_id, muticast_output->tarker_index );
-				convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
-				convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
-				acmp_disconnect_avail( talker_entity_id.value, 
-					ptr_Inchn->tarker_index, 
-					listen_entity_id.value, 
-					ptr_Inchn->listener_index, 
-					1, 
-					gacmp_sequence_id++ );
-				
-				if( muticastor_exit )
+				if (0 != ptr_Inchn->tarker_id)
 				{
-					memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
-					convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
-					acmp_connect_avail( talker_entity_id.value,
-								muticast_output->tarker_index, 
-								listen_entity_id.value, 
-								ptr_Inchn->listener_index,
-								2, 
-								gacmp_sequence_id++ );
+					convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
+					convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
+					acmp_disconnect_avail( talker_entity_id.value, 
+						ptr_Inchn->tarker_index, 
+						listen_entity_id.value, 
+						ptr_Inchn->listener_index, 
+						1, 
+						gacmp_sequence_id++ );
+					
+					if( muticastor_exit )
+					{
+						memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
+						convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
+						acmp_connect_avail( talker_entity_id.value,
+									muticast_output->tarker_index, 
+									listen_entity_id.value, 
+									ptr_Inchn->listener_index,
+									2, 
+									gacmp_sequence_id++ );
+					}
+				}
+				else
+				{// update the right  listener's talker
+					muticastor_manager_debug(" update the right  listener's talker");
+					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
 				}
 
 				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
@@ -529,7 +548,7 @@ int muticast_connect_manger_database_update( void* p_muti_param_tmp )
 	if( p_mm_sys_flags->discut_self != p_muti_param->discut_self )
 	{
 		p_mm_sys_flags->discut_self = p_muti_param->discut_self?true:false;
-		DEBUG_INFO( "======>>>>discut flags = %d", p_muti_param->discut_self );
+		muticastor_manager_debug( "======>>>>discut flags = %d", p_muti_param->discut_self );
 	}
 
 	if( p_mm_sys_flags->log_err != p_muti_param->log_err )

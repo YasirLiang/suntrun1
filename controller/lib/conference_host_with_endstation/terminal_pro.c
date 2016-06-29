@@ -22,6 +22,18 @@
 #include "log_machine.h" // 系统日志头文件
 #include "conference_transmit_unit.h"
 
+#ifdef __DEBUG__
+//#define __TERMINAL_PRO_DEBUG__
+#endif
+
+#ifdef __TERMINAL_PRO_DEBUG__
+#define terminal_pro_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define terminal_pro_debug(fmt, args...)
+#endif
+
+
 FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
 terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
 terminal_address_list_pro allot_addr_pro;	
@@ -52,8 +64,7 @@ void init_terminal_proccess_fd( FILE ** fd )
 	*fd = Fopen( ADDRESS_FILE, "rb+" );
 	if( NULL == *fd )
 	{
-		DEBUG_ERR( "init terminal addr fd Err!" );
-		DEBUG_INFO( "open %s Err: not exit!Will create for the address file for the first time!", ADDRESS_FILE );
+		terminal_pro_debug( "open %s Err: not exit!Will create for the address file for the first time!", ADDRESS_FILE );
 		terminal_open_addr_file_wt_wb();
 	}
 }
@@ -78,7 +89,7 @@ int init_terminal_address_list_from_file( void )
 	ret = terminal_address_list_read_file( addr_file_fd, tmnl_addr_list );
 	if( ret == -1 )
 	{
-		DEBUG_INFO( "init tmnl_addr_list from address file!need to reallot terminal address\n\t\tPlease send reAllot command by command line!!!");
+		terminal_pro_debug( "init tmnl_addr_list from address file!need to reallot terminal address\n\t\tPlease send reAllot command by command line!!!");
 		reallot_flag = true;
 	}
 
@@ -207,7 +218,7 @@ void init_terminal_proccess_system( void )
 		tmnl_count = init_terminal_address_list_from_file();
 		if( tmnl_count != -1)
 		{
-			DEBUG_INFO( "terminal count num = %d", tmnl_count );
+			terminal_pro_debug( "terminal count num = %d", tmnl_count );
 
 			gregister_tmnl_pro.tmn_total = tmnl_count;// 保存到未注册列表
 			for( i = 0; i < tmnl_count; i++ )
@@ -217,7 +228,7 @@ void init_terminal_proccess_system( void )
 					terminal_register_pro_address_list_save( addr, false );
 			}
 
-#ifdef __DEBUG__
+#ifdef __TERMINAL_PRO_DEBUG__
 				int unregister_index = gregister_tmnl_pro.noregister_head;
 
 				printf( "No Register List : (head index = %d)---(trail index = %d)\n\t", unregister_index, gregister_tmnl_pro.noregister_trail );
@@ -228,10 +239,10 @@ void init_terminal_proccess_system( void )
 		}		
 	}
 
-#ifdef __DEBUG__ // 输出终端信息的数据
+#ifdef __TERMINAL_PRO_DEBUG__ // 输出终端信息的数据
 	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
 	if( tmnl_count != -1 )
-		DEBUG_INFO( "terminal count num = %d", tmnl_count );
+		terminal_pro_debug( "terminal count num = %d", tmnl_count );
 #endif
 
 	init_terminal_allot_address();
@@ -316,7 +327,7 @@ bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
-			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+			terminal_pro_debug( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			return false;
 		}
@@ -334,7 +345,7 @@ bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 		if( found_dl )
 		{
 			// 将其与未注册列表的头的数据交换
-			DEBUG_INFO( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+			terminal_pro_debug( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			if( *p_head > *p_trail )
 				return false;
@@ -380,7 +391,7 @@ bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) ||  ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
-			DEBUG_INFO( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+			terminal_pro_debug( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			return false;
 		}
@@ -404,7 +415,7 @@ bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 				**1: 直接把尾节点置为不可用地址0xffff,并将尾指针向前移一元素
 				*/
 				p_regist_pro->register_pro_addr_list[(*p_trail)--] = 0xffff;
-				DEBUG_INFO( "noregister list trail index = %d-trail  emlem value = %d", *p_trail, p_regist_pro->register_pro_addr_list[(*p_trail)] );
+				terminal_pro_debug( "noregister list trail index = %d-trail  emlem value = %d", *p_trail, p_regist_pro->register_pro_addr_list[(*p_trail)] );
 
 				return true;
 			}
@@ -429,7 +440,7 @@ bool terminal_delect_register_addr( uint16_t addr_delect )
 		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
 			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
 		{
-			DEBUG_INFO( "Err delect register address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
+			terminal_pro_debug( "Err delect register address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			return false;
 		}
@@ -490,7 +501,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 			{
 				if( (address & TMN_ADDR_MASK) == (tmnl_addr_list[i].addr))
 				{
-					DEBUG_INFO( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
+					terminal_pro_debug( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
 					p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
 					p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
 				        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
@@ -498,7 +509,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 
 					if( -1 == sort_terminal_dblist_node(dev_terminal_list_guard) )
 					{
-						DEBUG_INFO( "insert  register node is Err!................" );
+						terminal_pro_debug( "insert  register node is Err!................" );
 					}
 					show_terminal_dblist( dev_terminal_list_guard );
 					
@@ -552,7 +563,7 @@ void system_register_terminal_pro( void )
 		if( ((gregister_tmnl_pro.rgsted_trail - gregister_tmnl_pro.rgsted_head) >= tmn_total) ||\
 			(gregister_tmnl_pro.tmn_rgsted >= tmn_total) )
 		{
-			DEBUG_INFO( "terminal register complet!total = %d", tmn_total );
+			terminal_pro_debug( "terminal register complet!total = %d", tmn_total );
 			gregister_tmnl_pro.rgs_state = RGST_QUERY;
 			return;
 		}
@@ -566,13 +577,13 @@ void system_register_terminal_pro( void )
 				unregister_list_index <= gregister_tmnl_pro.noregister_trail;\
 				unregister_list_index++ )
 			{
-				DEBUG_INFO( "noregister list index = %d", unregister_list_index );
+				terminal_pro_debug( "noregister list index = %d", unregister_list_index );
 				if( unregister_list_index < SYSTEM_TMNL_MAX_NUM )
 				{	
 					addr = gregister_tmnl_pro.register_pro_addr_list[unregister_list_index];
-					DEBUG_INFO( "query address %04x----index = %d", addr, unregister_list_index );
+					terminal_pro_debug( "query address %04x----index = %d", addr, unregister_list_index );
 					
-					if( addr != 0xffff )
+					if( addr != 0xffff )
 					{
 						register_node = found_terminal_dblist_node_by_addr(addr);
 						if( NULL == register_node )
@@ -592,13 +603,13 @@ void system_register_terminal_pro( void )
 				}
 				else
 				{
-					DEBUG_INFO( " Inval unregister_list_index = %d ", unregister_list_index );
+					terminal_pro_debug( " Inval unregister_list_index = %d ", unregister_list_index );
 					break;
 				}
 			}
 		}
 
-		DEBUG_INFO( "handled_num = %d, tmn_total = %d", handled_num, tmn_total );
+		terminal_pro_debug( "handled_num = %d, tmn_total = %d", handled_num, tmn_total );
 		if( handled_num >= tmn_total )
 		{// 停止查询注册
 			gregister_tmnl_pro.rgs_query_state = QUERY_RGST_IDLE;
@@ -615,7 +626,7 @@ void system_register_terminal_pro( void )
 	{
 		if ( (gregister_tmnl_pro.tmn_rgsted == gregister_tmnl_pro.tmn_total) ||over_time_listen(TRGST_OTIME_HANDLE) )
 		{
-			DEBUG_INFO( "tmn_rgsted =%d, tmn_total = %d", gregister_tmnl_pro.tmn_rgsted, gregister_tmnl_pro.tmn_total );
+			terminal_pro_debug( "tmn_rgsted =%d, tmn_total = %d", gregister_tmnl_pro.tmn_rgsted, gregister_tmnl_pro.tmn_total );
 			gregister_tmnl_pro.rgs_state = RGST_IDLE;
 			over_time_stop( TRGST_OTIME_HANDLE );
 #ifdef __DEBUG__
@@ -676,7 +687,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
 	{
 		if( ( address != 0xffff) && (address == (tmnl_addr_list[i].addr)))
 		{
-			DEBUG_INFO( "terminal(--%04x--) save type = %d ", address, tmnl_type );
+			terminal_pro_debug( "terminal(--%04x--) save type = %d ", address, tmnl_type );
 
 			if( (is_chman && ((tmnl_type == TMNL_TYPE_CHM_COMMON) ||(tmnl_type == TMNL_TYPE_CHM_EXCUTE)))\
 				|| (!is_chman && ((tmnl_type == TMNL_TYPE_COMMON_RPRST) ||(tmnl_type == TMNL_TYPE_VIP))))
@@ -744,7 +755,7 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 		}
 	}
 
-	DEBUG_INFO( "new addr = %04x",  temp_addr );
+	terminal_pro_debug( "new addr = %04x",  temp_addr );
 	return temp_addr;
 }
 
@@ -783,16 +794,16 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 		{
 			p_allot->renew_flag = 1;
 
-			DEBUG_INFO( "man type = 0x%02x ", msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN );
+			terminal_pro_debug( "man type = 0x%02x ", msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN );
 			if( msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN )
 			{
 				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_CHM_EXCUTE;
-				DEBUG_INFO( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
+				terminal_pro_debug( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
 			}
 			else
 			{
 				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_COMMON_RPRST;
-				DEBUG_INFO( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
+				terminal_pro_debug( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
 			}
 
 			terminal_address_list tmp_addr;
@@ -807,7 +818,7 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 				}
 				else
 				{
-					DEBUG_INFO( "allot address register Not begin!new allot address = --0x%04x--", tmp_addr.addr );
+					terminal_pro_debug( "allot address register Not begin!new allot address = --0x%04x--", tmp_addr.addr );
 				}
 			}
 		}
@@ -857,11 +868,11 @@ int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
 	uint8_t key_value = KEY_ACTION_KEY_VALUE( msg.data );
 	uint8_t tmnl_state = KEY_ACTION_STATE_VALUE( msg.data );
 	uint8_t sys_state = get_sys_state();
-	DEBUG_INFO( "key_num = %d, key_value = %d, tmnl_state = %d, sys_state = %d", key_num, key_value, tmnl_state, sys_state );
+	terminal_pro_debug( "key_num = %d, key_value = %d, tmnl_state = %d, sys_state = %d", key_num, key_value, tmnl_state, sys_state );
 
 	if( (msg.cchdr.command_control & COMMAND_TMN_REPLY) == COMMAND_TMN_REPLY )
 	{
-		DEBUG_INFO( "key action command not valid!" );
+		terminal_pro_debug( "key action command not valid!" );
 		return -1;
 	}
 	
@@ -924,7 +935,7 @@ int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len 
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
-		DEBUG_INFO( "not found chairman conntrol address!" );
+		terminal_pro_debug( "not found chairman conntrol address!" );
 		return -1;
 	}
 
@@ -1158,7 +1169,7 @@ int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
 	host_main_state.limit = set_sys.speak_limit; 		// 讲话人数上限
 	host_main_state.apply_set = set_sys.apply_limit;	// 申请人数上限
 
-	DEBUG_INFO("conference_stype = %d", host_main_state.conference_stype);
+	terminal_pro_debug("conference_stype = %d", host_main_state.conference_stype);
 	assert( dev_terminal_list_guard );
 	if( dev_terminal_list_guard == NULL )
 		return -1;	
@@ -1294,7 +1305,7 @@ int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
 	tmnl_limit_spk_time spk_time;
 	thost_system_set set_sys; // 系统配置文件的格式
 
-	//DEBUG_INFO( "SIZE OF SYS SET = %d", sizeof(thost_system_set) );
+	//terminal_pro_debug( "SIZE OF SYS SET = %d", sizeof(thost_system_set) );
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 	spk_time.limit_time = set_sys.spk_limtime;
 	speak_limit_time = (uint8_t)spk_time.limit_time;
@@ -1486,11 +1497,11 @@ void terminal_remove_unregitster( void ) // 这里没有清除终端地址文件以及内存终端
 void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node )
 {
 	assert( tmnl_node );
-	DEBUG_INFO( "===========mic state = %d ============",  mic_status );
+	terminal_pro_debug( "===========mic state = %d ============",  mic_status );
 
 	if( (tmnl_node == NULL) && !(addr & BROADCAST_FLAG) )
 	{
-		DEBUG_INFO( "nothing to send to set mic status!");
+		terminal_pro_debug( "nothing to send to set mic status!");
 		return;
 	}
 
@@ -1700,7 +1711,7 @@ int terminal_start_discuss( bool mic_flag )
 		/*关闭所有麦克风*/
 		for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
 		{
-			//DEBUG_INFO( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
+			//terminal_pro_debug( "=======>>>mic node id = %016llx, mic state = %d<<<=========", tmnl_node->tmnl_dev.entity_id, tmnl_node->tmnl_dev.tmnl_status.mic_state );
 			if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && (tmnl_node->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) ) // 断开注册连接的终端
 			{
 #ifdef ENABLE_CONNECT_TABLE
@@ -1851,7 +1862,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 	if( dev_terminal_list_guard == NULL )
 		return -1;
 	
-	DEBUG_INFO( " speak addr = %04x, discuccess mode = %d", addr, dis_mode );
+	terminal_pro_debug( " speak addr = %04x, discuccess mode = %d", addr, dis_mode );
 	for( speak_node = dev_terminal_list_guard->next; speak_node != dev_terminal_list_guard; speak_node = speak_node->next )
 	{
 		if( speak_node->tmnl_dev.address.addr == addr && speak_node->tmnl_dev.tmnl_status.is_rgst )
@@ -1922,7 +1933,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 				}
 				default:
 				{
-					DEBUG_INFO( " out of discuss mode bound!" );
+					terminal_pro_debug( " out of discuss mode bound!" );
 					break;
 				}
 			}
@@ -1946,7 +1957,7 @@ bool terminal_read_profile_file( thost_system_set *set_sys )
 	fd = Fopen( STSTEM_SET_STUTUS_PROFILE, "rb" ); // 只读读出数据
 	if( NULL == fd )
 	{
-		DEBUG_INFO( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
+		terminal_pro_debug( "mian state send ->open files %s Err!",  STSTEM_SET_STUTUS_PROFILE );
 		return false;
 	}
 
@@ -1954,7 +1965,7 @@ bool terminal_read_profile_file( thost_system_set *set_sys )
 	memset( &tmp_set_sys, 0, sizeof( thost_system_set));
 	if( profile_system_file_read( fd, &tmp_set_sys ) == -1)
 	{
-		DEBUG_INFO( "Read profile system Err!" );
+		terminal_pro_debug( "Read profile system Err!" );
 		ret = false;
 	}
 
@@ -2108,7 +2119,7 @@ bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time
 					}
 					else
 					{
-						DEBUG_INFO( " no such tmnl dblist node!");
+						terminal_pro_debug( " no such tmnl dblist node!");
 					}
 				}
 				else
@@ -2131,7 +2142,7 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 	uint16_t addr = speak_node->tmnl_dev.address.addr;
 	if( speak_node == NULL )
 	{
-		DEBUG_INFO( " NULL speak node!" );
+		terminal_pro_debug( " NULL speak node!" );
 		return false;
 	}
 
@@ -2191,7 +2202,7 @@ bool terminal_fifo_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time,
 				}
 				else
 				{
-					DEBUG_INFO( "fifo not found tmnl list node!");
+					terminal_pro_debug( "fifo not found tmnl list node!");
 				}
 				
 				addr_queue_delete_by_index( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, 0 );// 首位发言删除
@@ -2442,7 +2453,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
-					//DEBUG_INFO( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
+					//terminal_pro_debug( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 					terminal_mic_state_set( MIC_COLSE_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 					if( gdisc_flags.apply_num > 0 )
 					{
@@ -2450,7 +2461,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 						apply_first = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
 						if( apply_first != NULL )
 						{
-							//DEBUG_INFO( "set FIRST apply addr = 0x%04x", apply_first->tmnl_dev.address.addr );
+							//terminal_pro_debug( "set FIRST apply addr = 0x%04x", apply_first->tmnl_dev.address.addr );
 							terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 						}
 					}
@@ -2465,7 +2476,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 			}
 			else
 			{
-				DEBUG_INFO( "delect apply add = 0x%04x failed: no such address", addr );
+				terminal_pro_debug( "delect apply add = 0x%04x failed: no such address", addr );
 			}
 			break;
 		case NEXT_APPLY: // be tested in 02-3-2016,passed
@@ -2475,7 +2486,7 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 				apply_first = found_terminal_dblist_node_by_addr( addr );
 				if( apply_first != NULL )
 				{
-					//DEBUG_INFO( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
+					//terminal_pro_debug( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 					terminal_mic_state_set( MIC_OTHER_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 
 					gdisc_flags.currect_first_index++;
@@ -2484,17 +2495,17 @@ bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-20
 					apply_first = found_terminal_dblist_node_by_addr( addr );
 					if( apply_first != NULL )
 					{
-						//DEBUG_INFO( "set FIRST apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
+						//terminal_pro_debug( "set FIRST apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
 						terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
 					}
 					else
 					{
-						DEBUG_INFO( "no found first apply node!" );
+						terminal_pro_debug( "no found first apply node!" );
 					}
 				}
 				else
 				{
-					DEBUG_INFO( "no found first apply node!" );
+					terminal_pro_debug( "no found first apply node!" );
 				}
 
 				//terminal_main_state_send( 0, NULL, 0 );
@@ -2544,11 +2555,11 @@ void terminal_type_set( tcmpt_data_meeting_authority tmnl_type )
 	uint16_t addr = ((uint16_t)tmnl_type.addr.high_addr << 8)|((uint16_t)tmnl_type.addr.low_addr << 0 );
 	tmnl_pdblist tmnl_node = NULL;
 	
-	DEBUG_INFO( "terminal type set addr = 0x%04x ", addr );
+	terminal_pro_debug( "terminal type set addr = 0x%04x ", addr );
 	tmnl_node = found_terminal_dblist_node_by_addr( addr );
 	if( tmnl_node == NULL )
 	{
-		DEBUG_INFO( "no such type addr found!");
+		terminal_pro_debug( "no such type addr found!");
 		return;
 	}
 	
@@ -2645,7 +2656,7 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 	memset( addr_list, 0xff, sizeof(terminal_address_list)*SYSTEM_TMNL_MAX_NUM );
 	if( terminal_address_list_read_file( fd, addr_list ) == -1 ) // 读取失败
 	{
-		DEBUG_INFO( "type save read file Err!");
+		terminal_pro_debug( "type save read file Err!");
 		return -1;
 	}
 
@@ -2662,7 +2673,7 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 
 	if( i >= SYSTEM_TMNL_MAX_NUM )
 	{
-		DEBUG_INFO( "not found addr in the address profile !" );
+		terminal_pro_debug( "not found addr in the address profile !" );
 		return -1;
 	}
 
@@ -2691,7 +2702,7 @@ int terminal_type_save_to_address_profile( uint16_t addr, uint16_t tmnl_type )
 
 	if( Fwrite( fd, &tmnl_type, sizeof( uint16_t), 1 ) != 1)
 	{
-		DEBUG_INFO( "write terminal type Err!" );
+		terminal_pro_debug( "write terminal type Err!" );
 		return -1;
 	}
 
@@ -2712,7 +2723,7 @@ void terminal_send_upper_message( uint8_t *data_msg, uint16_t addr, uint16_t msg
 		return;
 	}
 
-	//DEBUG_INFO( "=====>>>>>>>>>>>> messsag target addr = %04x<<<<<<<<<<<<<<==========", addr );
+	//terminal_pro_debug( "=====>>>>>>>>>>>> messsag target addr = %04x<<<<<<<<<<<<<<==========", addr );
 	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
 	if( tmp == NULL )
 	{
@@ -3065,7 +3076,7 @@ void terminal_vote_state_set( uint16_t addr )
 			fterminal_led_set_send( addr );
 			break;
 		default:
-			DEBUG_INFO( "out of bround : vote of type!");
+			terminal_pro_debug( "out of bround : vote of type!");
 			break;
 	}
 
@@ -3090,7 +3101,7 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签
 	// 设置投票使能
 	termianl_vote_enable_func_handle( sign_node );
 	// 上报签到情况
-	DEBUG_INFO( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
+	terminal_pro_debug( "sign state = %d", sign_node->tmnl_dev.tmnl_status.sign_state );
 	upper_cmpt_report_sign_in_state( sign_node->tmnl_dev.tmnl_status.sign_state, sign_node->tmnl_dev.address.addr );
 
 	assert( dev_terminal_list_guard );
@@ -3111,7 +3122,7 @@ void terminal_sign_in_special_event( tmnl_pdblist sign_node ) // 终端特殊事件-签
 		sign_num++;
 	}
 
-	DEBUG_INFO( "sign num = %d", sign_num );
+	terminal_pro_debug( "sign num = %d", sign_num );
 	if( sign_num >= SYSTEM_TMNL_MAX_NUM )// all sign in
 	{
 		gtmnl_signstate = SIGN_IN_OVER;
@@ -3200,14 +3211,14 @@ void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t t
 	tmnl_pdblist tmp_node = NULL, tmp_head = dev_terminal_list_guard;
 	if( gvote_flag == NO_VOTE || ( key_num > 5 ) ) // 见协议(2.	终端按键的编号：表决键1~5，发言键6，主席优先键7)
 	{
-		DEBUG_INFO( "system not ready to vote or key num out of vote key num!" );
+		terminal_pro_debug( "system not ready to vote or key num out of vote key num!" );
 		return;
 	}
 
 	tmp_node = found_terminal_dblist_node_by_addr( addr );
 	if( tmp_node == NULL )
 	{
-		DEBUG_INFO( "no such tmp_node: addr = %04x", addr );
+		terminal_pro_debug( "no such tmp_node: addr = %04x", addr );
 		return;
 	}
 
@@ -3238,7 +3249,7 @@ void terminal_vote( uint16_t addr, uint8_t key_num, uint8_t key_value, uint8_t t
 		vote_num++;
 	}
 
-	DEBUG_INFO( "vote num = %d", vote_num );
+	terminal_pro_debug( "vote num = %d", vote_num );
 	if( vote_num >= SYSTEM_TMNL_MAX_NUM )
 	{
 		terminal_option_endpoint( BRDCST_1722_ALL, BRDCST_EXE, OPT_TMNL_ALL_VOTE );
@@ -3380,7 +3391,7 @@ void terminal_key_speak( uint16_t addr, uint8_t key_num, uint8_t key_value, uint
 	tmp_node = found_terminal_dblist_node_by_addr( addr );
 	if( tmp_node == NULL )
 	{
-		DEBUG_INFO( "no such tmp_node: addr = %04x", addr );
+		terminal_pro_debug( "no such tmp_node: addr = %04x", addr );
 		return;
 	}
 
@@ -3417,14 +3428,14 @@ void terminal_key_action_chman_interpose( uint16_t addr, uint8_t key_num, uint8_
 {
 	if( key_num != KEY7_CHAIRMAN_FIRST )
 	{
-		DEBUG_INFO( "not valid chairman interpose value key " );
+		terminal_pro_debug( "not valid chairman interpose value key " );
 		return;
 	}
 
 	tmnl_pdblist tmp_node = found_terminal_dblist_node_by_addr( addr );
 	if( tmp_node == NULL )
 	{
-		DEBUG_INFO( "no such 0x%04x addr chairman!", addr );
+		terminal_pro_debug( "no such 0x%04x addr chairman!", addr );
 		return;
 	}
 
@@ -3458,13 +3469,13 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 		return;
 	}
 
-	DEBUG_INFO( "system mode = %d", get_sys_state());
+	terminal_pro_debug( "system mode = %d", get_sys_state());
 	if( (get_sys_state() != INTERPOSE_STATE) && key_down )
 	{
 		bool tmp_close = false; // temp close
 		
 		set_terminal_system_state( INTERPOSE_STATE, true );
-		DEBUG_INFO( "system mode = %d", get_sys_state());
+		terminal_pro_debug( "system mode = %d", get_sys_state());
 		gchm_int_ctl.is_int = true;
 		gchm_int_ctl.chmaddr = addr;
 		tmp_close = (set_sys.temp_close != 0)?true:false; 
@@ -3530,7 +3541,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 	else if( !key_down )
 	{
 		set_terminal_system_state( INTERPOSE_STATE, false );
-		DEBUG_INFO( "system mode = %d Mic state = %d", get_sys_state(), chman_node->tmnl_dev.tmnl_status.mic_state );
+		terminal_pro_debug( "system mode = %d Mic state = %d", get_sys_state(), chman_node->tmnl_dev.tmnl_status.mic_state );
 		terminal_key_action_host_special_num1_reply( recvdata, chman_node->tmnl_dev.tmnl_status.mic_state, chman_node );// 设置主席mic状态
 
 		/**
@@ -3602,7 +3613,7 @@ int terminal_key_discuccess( uint16_t addr, uint8_t key_num, uint8_t key_value, 
 	dis_node = found_terminal_dblist_node_by_addr( addr );
 	if( dis_node == NULL )
 	{
-		DEBUG_INFO( "not found discuccess termianl key!" );
+		terminal_pro_debug( "not found discuccess termianl key!" );
 		return -1;
 	}
 
@@ -3637,7 +3648,7 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 	if( !dis_node->tmnl_dev.tmnl_status.is_rgst )
 		return false;
 	
-	DEBUG_INFO( "dis mode = %d ", dis_mode );
+	terminal_pro_debug( "dis mode = %d ", dis_mode );
 	if( dis_mode == PPT_MODE ||\
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP) ||\
 			(dis_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
@@ -3659,7 +3670,7 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 				int ret = -1;
 				terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
 				ret = trans_model_unit_disconnect_longest_connect();
-				//DEBUG_INFO("ret = %d over_speak = %d (node avail = %s)", ret, gdisc_flags.over_speak.running, dis_node!=NULL?"true":"false");
+				//terminal_pro_debug("ret = %d over_speak = %d (node avail = %s)", ret, gdisc_flags.over_speak.running, dis_node!=NULL?"true":"false");
 				if (ret == 0)
 				{
 					terminal_over_time_speak_node_set(dis_node);
@@ -3703,7 +3714,7 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 			}
 			default:
 			{
-				DEBUG_INFO( " out of discuss mode bound!" );
+				terminal_pro_debug( " out of discuss mode bound!" );
 				break;
 			}
 		}
@@ -3805,7 +3816,7 @@ void terminal_apply_list_first_speak( tmnl_pdblist const first_speak )
 		}
 		else
 		{
-			DEBUG_INFO( " no such tmnl dblist node!");
+			terminal_pro_debug( " no such tmnl dblist node!");
 		}
 	}
 	else
@@ -3831,7 +3842,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	tmnl_pdblist first_apply = NULL; // 首位申请发言
 	int  dis_ret = -1;
 
-	DEBUG_INFO("speak_limit_num = %d limit_num = %d apply_num = %d apply_limit = %d", gdisc_flags.speak_limit_num,
+	terminal_pro_debug("speak_limit_num = %d limit_num = %d apply_num = %d apply_limit = %d", gdisc_flags.speak_limit_num,
 				gdisc_flags.limit_num, gdisc_flags.apply_num, gdisc_flags.apply_limit);
 	if( key_down ) // 打开麦克风
 	{
@@ -3872,7 +3883,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 			gdisc_flags.apply_addr_list[gdisc_flags.apply_num] = speak_node->tmnl_dev.address.addr;
 			gdisc_flags.apply_num++;
 
-			DEBUG_INFO("apply_num = %d", gdisc_flags.apply_num);
+			terminal_pro_debug("apply_num = %d", gdisc_flags.apply_num);
 			terminal_key_action_host_special_num1_reply( recv_msg, state, speak_node );
 			terminal_mic_state_set(state, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node);
 			terminal_main_state_send( 0, NULL, 0 );
@@ -3891,7 +3902,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		cc_state = speak_node->tmnl_dev.tmnl_status.mic_state;
 
-		DEBUG_INFO("cc_state(0x%04x) = %d", addr, cc_state);
+		terminal_pro_debug("cc_state(0x%04x) = %d", addr, cc_state);
 		if( cc_state == MIC_FIRST_APPLY_STATUS || cc_state == MIC_OTHER_APPLY_STATUS )
 		{// 取消申请发言
 			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr );
@@ -3938,7 +3949,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 					}
 					else
 					{
-						DEBUG_INFO( " no such tmnl dblist node!");
+						terminal_pro_debug( " no such tmnl dblist node!");
 					}
 				}
 				else
@@ -3966,12 +3977,12 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 	assert( speak_node );
 	if( speak_node == NULL )
 	{
-		DEBUG_INFO( " NULL speak node!" );
+		terminal_pro_debug( " NULL speak node!" );
 		return false;
 	}
 
 	uint8_t speak_limit_num = gdisc_flags.speak_limit_num;
-	DEBUG_INFO( " speak NUM = %d limit speak NUM = %d", speak_limit_num, gdisc_flags.limit_num );
+	terminal_pro_debug( " speak NUM = %d limit speak NUM = %d", speak_limit_num, gdisc_flags.limit_num );
 	if( key_down ) // 打开话筒
 	{
 		if( addr_queue_find_by_value( gdisc_flags.speak_addr_list, speak_limit_num, addr, NULL))
@@ -4034,7 +4045,7 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 				}
 				else
 				{
-					DEBUG_INFO( "fifo not found tmnl list node!");
+					terminal_pro_debug( "fifo not found tmnl list node!");
 				}			
 			}
 		}
@@ -4295,7 +4306,7 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 	tmnl_pdblist vote_node = found_terminal_dblist_node_by_addr( address );
 	if( NULL == vote_node )
 	{
-		DEBUG_INFO( "no such address 0x%04x node ", address );
+		terminal_pro_debug( "no such address 0x%04x node ", address );
 		return;
 	}
 
@@ -4329,7 +4340,7 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 #if 1
 			uint8_t key_num = 0;
 			terminal_vote_mode_max_key_num( &key_num, gvote_mode );
-			DEBUG_INFO( "max key num = %d-------vote num = %d", key_num, vote_num );
+			terminal_pro_debug( "max key num = %d-------vote num = %d", key_num, vote_num );
 			if ( vote_num >= key_num )
 			{// 投票完成，相应的终端停止查询投票结果
 				vote_node->tmnl_dev.tmnl_status.vote_state &= (~TWAIT_VOTE_FLAG);
@@ -4464,7 +4475,7 @@ void terminal_query_sign_vote_pro( void )
 	index = gquery_svote_pro.index;
 	if( (index > (SYSTEM_TMNL_MAX_NUM - 1)) && (index < 0 ))
 	{
-		DEBUG_INFO( "out of system terminal list bank!" );
+		terminal_pro_debug( "out of system terminal list bank!" );
 		return;
 	}
 	
@@ -4590,7 +4601,7 @@ void terminal_sign_in_pro( void )
 			sign_type = gset_sys.sign_type;
 			if( sign_type )
 			{
-				DEBUG_INFO( "over time sign in sign type is card sign in " );
+				terminal_pro_debug( "over time sign in sign type is card sign in " );
 				return;
 			}
 			
@@ -4661,7 +4672,7 @@ void terminal_system_dblist_destroy( void )
 	tmnl_pdblist p_node = destroy_terminal_dblist( dev_terminal_list_guard );
 	if( NULL != p_node )
 	{
-		DEBUG_INFO( "destroy terminal double list not success!" );
+		terminal_pro_debug( "destroy terminal double list not success!" );
 	}
 }
 	

@@ -6,6 +6,11 @@
 #include "jdksavdecc_aem_descriptor.h"
 #include "aecp_controller_machine.h"
 #include "terminal_common.h" // add date:2016/1/23 ;for register terminal;func interface:terminal_common_create_node_by_adp_discover_can_regist
+#include "log_machine.h"
+
+#ifdef __DEBUG__
+//#define __ADP_MACHINE_DEBUG__
+#endif
 
 void adp_entity_state_avail( solid_pdblist guard,  solid_pdblist exist_node, const struct jdksavdecc_adpdu_common_control_header *adp_hdr )
 {
@@ -15,7 +20,8 @@ void adp_entity_state_avail( solid_pdblist guard,  solid_pdblist exist_node, con
 inline void adp_entity_post_timeout_msr( solid_pdblist target )
 {
 	if( !target->solid.connect_flag && target->solid.time.elapsed )
-		DEBUG_ONINFO( "[ END_STATION DISCONNECT: 0x%llx ]", target->solid.entity_id );
+	if (NULL != gp_log_imp)
+		gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, " END_STATION DISCONNECT: 0x%llx ", target->solid.entity_id );
 }
 
 void adp_entity_time_tick( solid_pdblist guard )
@@ -106,9 +112,11 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 		(*success_node).solid.available_index = adp_du->available_index;
 		memcpy(&(*success_node).solid.entity_model_id, &adp_du->entity_model_id, sizeof(struct jdksavdecc_eui64));
 		insert_endpoint_dblist_trail(guard,success_node);
-	
+		
+#ifdef __ADP_MACHINE_DEBUG__
 		DEBUG_INFO( "list lenght = %d", list_len + 1 );// 新创建节点插入到链表前链表长度为原来的长度
 		endpoint_dblist_show( guard );
+#endif
 		aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, entity_entity_id );
 		terminal_common_create_node_by_adp_discover_can_regist(entity_entity_id); // 创建终端链表
 
@@ -116,7 +124,9 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 	}
 	else
 	{
+#ifdef __ADP_MACHINE_DEBUG__
 		DEBUG_INFO( "no place for new entity!" );
+#endif
 		return NULL;
 	}
 

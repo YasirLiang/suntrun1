@@ -11,6 +11,14 @@
 //#define __AECP_MACHINE_DEBUG__
 #endif
 
+#ifdef __AECP_MACHINE_DEBUG__
+#define aecp_machine_debug(fmt, args...) \
+	fprintf( stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n", __FILE__, __func__, __LINE__, ##args);
+#else
+#define aecp_machine_debug(fmt, args...)
+#endif
+
+
 static uint16_t aecp_seq_id = 0;
 static solid_pdblist aecp_solid_guard = NULL;
 static desc_pdblist aecp_desc_guard = NULL;
@@ -50,19 +58,17 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		conference_cmd &= 0x1f;
 		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		timeout = get_host_endstation_command_timeout( conference_cmd );
-		//DEBUG_INFO( "interval time = %d ", timeout );
+		//aecp_machine_debug( "interval time = %d ", timeout );
 	}
 
 	assert( interval_time );
 	*interval_time = timeout;
 
-	//DEBUG_INFO( "aecp packet size = %d", frame_len );
+	//aecp_machine_debug( "aecp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
+		aecp_machine_debug( "udp packet( size = %d )bigger than frame buf %d or little!",
 			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
-#endif
 		return -1;
 	}
 	
@@ -73,9 +79,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			inflight_station = create_inflight_dblist_new_node( &inflight_station );
 			if( NULL == inflight_station )
 			{
-#ifdef __AECP_MACHINE_DEBUG__
-				DEBUG_INFO("inflight station node create failed!");
-#endif
+				aecp_machine_debug("inflight station node create failed!");
 				return -1;
 			}
 			
@@ -110,9 +114,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 			}
 			else
 			{
-#ifdef __AECP_MACHINE_DEBUG__
-				DEBUG_INFO("Err frame malloc !");
-#endif
+				aecp_machine_debug("Err frame malloc !");
 				assert( NULL != inflight_station->host_tx.inflight_frame.frame );
 				if( NULL == inflight_station->host_tx.inflight_frame.frame )
 					return -1;
@@ -138,9 +140,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
 	if( send_len < 0 )
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "Err raw send data!");
-#endif
+		aecp_machine_debug( "Err raw send data!");
 		assert( send_len >= 0);
 		if( send_len < 0 )
 			return -1;
@@ -166,9 +166,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else 
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "noting to be proccessed by aecp timeout" );
-#endif
+		aecp_machine_debug( "noting to be proccessed by aecp timeout" );
 		return;
 	}
 
@@ -206,22 +204,18 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		}
 
 		//free inflight command node in the system
-		//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
+		//aecp_machine_debug( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
 		
 #ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // ÉèÖÃ³¬Ê±
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
-#endif
+		aecp_machine_debug( "is_inflight_timeout = %d", is_inflight_timeout );
 #endif
 	}
 	else
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "======= aecp resend ========" );
-#endif
+		aecp_machine_debug( "======= aecp resend ========" );
 		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_AECP, false, aecp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
@@ -252,9 +246,7 @@ int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, 
 	desc_pdblist desc_node = search_desc_dblist_node( entity_id, aecp_desc_guard );
 	if( desc_node == NULL && desc_type != JDKSAVDECC_DESCRIPTOR_ENTITY )
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "search descptor node 0x%016llx failed: no such node!", entity_id );
-#endif
+		aecp_machine_debug( "search descptor node 0x%016llx failed: no such node!", entity_id );
 		return -1;
 	}
 	
@@ -268,9 +260,7 @@ int aecp_send_read_desc_cmd_with_flag( uint16_t desc_type, uint16_t desc_index, 
         }
 	else
 	{
-#ifdef __AECP_MACHINE_DEBUG__
-		DEBUG_INFO( "form read descriptor failed!" );
-#endif
+		aecp_machine_debug( "form read descriptor failed!" );
 		return -1;
 	}
 
@@ -291,9 +281,7 @@ int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uin
 			aecp_state_rcvd_resp( &jdk_frame);
 		break;
 		default:
-#ifdef __AECP_MACHINE_DEBUG__
-			DEBUG_INFO( "LOGGING_LEVEL_ERROR: Invalid message type");
-#endif
+			aecp_machine_debug( "LOGGING_LEVEL_ERROR: Invalid message type");
 			return -1;
 	}
 
@@ -319,9 +307,7 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 		}
 		break;
 		default:
-#ifdef __AECP_MACHINE_DEBUG__
-			DEBUG_INFO( "LOGGING_LEVEL_ERROR: Invalid message type");
-#endif
+			aecp_machine_debug( "LOGGING_LEVEL_ERROR: Invalid message type");
 			return -1;
 	}
 
@@ -374,18 +360,14 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			}
 			else
 			{
-#ifdef __AECP_MACHINE_DEBUG__
-				DEBUG_INFO( " no such right address inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
+				aecp_machine_debug( " no such right address inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
 					subtype, conference_cmd, terminal_address, inflight_aecp->host_tx.inflight_frame.data_type,\
 					inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.conference_command, inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address );
-#endif
 			}
 		}
 		else
 		{
-#ifdef __AECP_MACHINE_DEBUG__
-			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x", subtype, conference_cmd, terminal_address );
-#endif
+			aecp_machine_debug( " no such inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x", subtype, conference_cmd, terminal_address );
 			return -1;
 		}
 	}
@@ -399,13 +381,13 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 		{
 			notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 			aecp_callback( notification_flag, cmd_frame->payload );
-			//DEBUG_INFO( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
+			//aecp_machine_debug( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
 			release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
 			delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
 		}
 	        else
 		{
-			DEBUG_INFO( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
+			aecp_machine_debug( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
 			return -1;
 		}
 #ifdef UNIQUE_CMD_FUN
@@ -517,9 +499,7 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 		            break;
 
 		        default:
-#ifdef __AECP_MACHINE_DEBUG__
-			    DEBUG_INFO("LOGGING_LEVEL_DEBUG:NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
-#endif
+			    aecp_machine_debug("LOGGING_LEVEL_DEBUG:NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
 		            break;
 	        }
 	}

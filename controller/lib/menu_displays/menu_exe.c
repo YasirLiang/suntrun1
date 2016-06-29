@@ -7,7 +7,7 @@
 #include "host_time.h"
 
 #ifdef __DEBUG__
-#define __MENU_EXE_DEBUG__
+//#define __MENU_EXE_DEBUG__
 #endif
 
 #ifdef __MENU_EXE_DEBUG__
