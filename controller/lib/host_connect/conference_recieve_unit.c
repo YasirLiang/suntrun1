@@ -219,14 +219,22 @@ int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_l
 
 	// 检查是否是会议接收模块
 	memcpy( &entity_name, &desc_node->endpoint_desc.entity_name, sizeof(struct jdksavdecc_string));
-	if( (strcmp( (char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME) != 0) \
-		|| (strcmp((char*)entity_name.value, CCU_R_MODEL_NAME) == 0) ||\
+#if 0
+	if (strcmp( (char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME) != 0)
+	{
+		conference_recv_unit_debug( "not a right conference recieve model = %s:ring name is %s", \
+			(char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME );
+		return -1;
+	}
+#else
+	if ((strcmp((char*)entity_name.value, CCU_R_MODEL_NAME) == 0) ||\
 		(strcmp((char*)entity_name.value, CCU_TR_MODEL_NAME) == 0))
 	{
 		conference_recv_unit_debug( "not a right conference recieve model = %s:ring name is %s", \
 			(char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME );
 		return -1;
 	}
+#endif
 
 	solid_node = search_endtity_node_endpoint_dblist( endpoint_list, endtity_id );
 	if( solid_node == NULL )
