@@ -57,6 +57,7 @@ typedef struct _type_input_channel// 连接输入的通道
 	uint16_t tarker_index;
 	uint16_t listener_index; 		// 通道ID索引
 	timetype timetimp;// 连接时时间戳
+	uint16_t channel_connected_count; // 通道被连接次数
 	enum input_channel_status status;// 通道的连接状态
 	enum input_channel_pro_status pro_status; // 通道节点处理的状态
 	struct list_head list;			// 用于已连接连接表的链表管理，

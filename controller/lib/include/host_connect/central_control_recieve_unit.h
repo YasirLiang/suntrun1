@@ -88,6 +88,7 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index );
 int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_index );
 void central_control_recieve_uinit_init_list( void );
 bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index );
+bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uint16_t talker_index, uint64_t *out_listen, uint16_t* listen_index );
 
 // *****************************************//
 

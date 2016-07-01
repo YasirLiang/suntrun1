@@ -341,7 +341,7 @@ int tx_packet_event( uint8_t type,
 		}
 		else if( type == TRANSMIT_TYPE_MATRIX_UART_CTRL )
 		{
-#if 1
+#ifdef __DEBUG__
 			int i = 0;
 			fprintf( stdout, "Matrix command string => " );
 			for( i = 0; i < frame_len; i++ )	

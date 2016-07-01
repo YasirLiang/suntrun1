@@ -94,27 +94,31 @@ void CameraLR(unsigned int value)
 void CameraUD(unsigned int value)
 {
 	printf_MENU_EXE("CameraUD(%d)\n",value);
-	menu_cmd_run( MENU_UI_CAMERACTLUPDOWN, value,NULL );
+	// 注:传入的value的值的含义0 ->向上; 1->向下;故取反传入
+	menu_cmd_run( MENU_UI_CAMERACTLUPDOWN, !value,NULL );
 }
 
 
 void CameraFouce(unsigned int value)
 {
 	printf_MENU_EXE("CameraFouce(%d)\n",value);
-	menu_cmd_run( MENU_UI_CAMERACTLFOUCE, value,NULL );
+	// 注:传入的value的值的含义0 ->向上; 1->向下;故取反传入
+	menu_cmd_run( MENU_UI_CAMERACTLFOUCE, !value,NULL );
 }
 
 void CameraZoom(unsigned int value)
 {
 	printf_MENU_EXE("CameraZoom(%d)\n",value);
-	menu_cmd_run( MENU_UI_CAMERACTLZOOM, value,NULL );
+	// 注:传入的value的值的含义0 ->向上; 1->向下;故取反传入
+	menu_cmd_run( MENU_UI_CAMERACTLZOOM, !value,NULL );
 }
 
 
 void CameraAperture(unsigned int value)
 {
 	printf_MENU_EXE("CameraAperture(%d)\n",value);
-	menu_cmd_run( MENU_UI_CAMERACTLIRIS, value,NULL );
+	// 注:传入的value的值的含义0 ->向上; 1->向下;故取反传入
+	menu_cmd_run( MENU_UI_CAMERACTLIRIS, !value,NULL );
 }
 
 extern uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );

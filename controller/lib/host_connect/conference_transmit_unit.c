@@ -190,6 +190,39 @@ bool trans_model_unit_is_connected( uint64_t tarker_id )
 	return ccu_recv_model_talker_connected( tarker_id, CONFERENCE_OUTPUT_INDEX );
 }
 
+// connect_or_disconnect_flag 0:断开已连接终端；1:重连已连接终端
+bool trans_model_unit_reconnect_disconnect_tarker( uint64_t tarker_id, bool connect_or_disconnect_flag )
+{
+	uint64_t input_channel_id = 0;
+	uint16_t input_channel_index = 0;
+	struct jdksavdecc_eui64 talker_entity_id;
+	struct jdksavdecc_eui64 listener_entity_id;
+	bool bret = false;
+	
+	if (ccu_recv_model_talker_connected_listener_id_index(tarker_id, CONFERENCE_OUTPUT_INDEX, \
+		&input_channel_id, &input_channel_index))
+	{
+		convert_uint64_to_eui64( talker_entity_id.value, tarker_id );
+		convert_uint64_to_eui64( listener_entity_id.value, input_channel_id );
+
+		if (connect_or_disconnect_flag)
+			acmp_connect_avail( talker_entity_id.value, 
+							CONFERENCE_OUTPUT_INDEX, 
+							listener_entity_id.value, 
+							input_channel_index, 
+							1, ++gconference_tramsmit_acmp_sequeue_id );
+		else
+			acmp_disconnect_avail( talker_entity_id.value, 
+							CONFERENCE_OUTPUT_INDEX, 
+							listener_entity_id.value, 
+							input_channel_index, 
+							1, ++gconference_tramsmit_acmp_sequeue_id );
+		bret = true;
+	}
+
+	return bret;
+}
+
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
 {
 	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )

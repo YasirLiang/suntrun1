@@ -45,6 +45,8 @@ void conference_transmit_model_init( void );
 int conference_transmit_model_node_destroy( uint64_t tarker_id );
 int trans_model_unit_disconnect_longest_connect( void );
 bool trans_model_unit_is_connected( uint64_t tarker_id );
+bool trans_model_unit_reconnect_disconnect_tarker( uint64_t tarker_id, bool connect_or_disconnect_flag );
+
 
 // *************************************************//
 

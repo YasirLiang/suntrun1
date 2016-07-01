@@ -242,7 +242,7 @@ int main( int argc, char *argv[] )
 	if( argc >= 3 )
 	{
 		glog_file_name = argv[2];
-		glog_file_fd = Fopen( glog_file_name, "a+" );
+		glog_file_fd = Fopen( glog_file_name, "w+" );
 		if( glog_file_fd != NULL )
 		{
 			fprintf( stdout, "your log message file Name is %s, Open Success!\n", glog_file_name );

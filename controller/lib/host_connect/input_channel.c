@@ -41,6 +41,10 @@ bool input_channel_list_node_init( T_pInChannel p_Inputnode, uint64_t channel_id
 	p_Inputnode->listener_index = channel_index;
 	p_Inputnode->status = INCHANNEL_FREE;
 	p_Inputnode->timetimp = 0;// 表示未连接
+	p_Inputnode->tarker_id = 0;
+	p_Inputnode->tarker_index = 0xffff;
+	p_Inputnode->channel_connected_count = 0;
+	p_Inputnode->pro_status = INCHANNEL_PRO_FINISH;
 
 	return true;
 }

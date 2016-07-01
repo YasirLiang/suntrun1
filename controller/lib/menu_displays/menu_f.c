@@ -6,6 +6,7 @@
 #include "ico_data.h"
 #include "menu_exe.h"
 #include "menu_f.h"
+#include "host_controller_debug.h"
 
 extern Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir liang add 20160603
 extern Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir liang add 20160603
@@ -327,7 +328,7 @@ void ChangeMenu(int Mode)
 {
   unsigned char   MenuLang;
   ByteDataGet(VAL_MENU_LANG,&MenuLang);
-	printf("Mode=%d\n",Mode);
+	DEBUG_INFO("Mode=%d\n",Mode);
   switch(Mode)
   {
     case PPT_MODE:
@@ -564,7 +565,8 @@ void DisplayMItem(TMGrpData *pMGrp,int nLine,int nSeq,int nMode)
 		memset(caItem,' ',31);	//先填空格
     if(nMode != MD_NULL)	//正常菜单项显示
     {
-			printf("nSeq=%d\n",nSeq);
+			//DEBUG_INFO("nSeq=%d\n",nSeq); // yasirLiang change in time 20160630
+			DEBUG_INFO("nSeq=%d\n",nSeq); // yasirLiang change in time 20160630
 			if(pMGrp->FirstItem!=NULL)
 			{
 				
@@ -871,7 +873,7 @@ void ShowMode(unsigned char Mode)
   unsigned char ModeInfoBuf[12];
   unsigned char Len;
   unsigned char MenuLang;
-	printf("ShowMode(%d)\n",Mode);
+	DEBUG_INFO("ShowMode(%d)\n",Mode);
   ByteDataGet(VAL_MENU_LANG,&MenuLang);
   memset(ModeInfoBuf,0,12);
   Len=GetDiscussModeText(Mode,ModeInfoBuf,MenuLang);
@@ -1427,7 +1429,7 @@ void ItemSelected(short snMGSeq)
             UseDisSet(CPT_USE,BOOL_TRUE);
           }
           gsnCurMGrp = pMenu->Link;
-					//printf("gsnCurMGrp=%d,gMG[gsnCurMGrp].Position=%d\n",gsnCurMGrp,gMG[gsnCurMGrp].Position);
+					//DEBUG_INFO("gsnCurMGrp=%d,gMG[gsnCurMGrp].Position=%d\n",gsnCurMGrp,gMG[gsnCurMGrp].Position);
           DisplayMItem(gMG+gsnCurMGrp,-1,gMG[gsnCurMGrp].Position,MD_NORMAL);
           if(ENGLISH==MenuLang)
           {
@@ -1448,7 +1450,7 @@ void ItemSelected(short snMGSeq)
     else
     {
       usNew = gMG[snMGSeq].Count;
-			//printf("snMGSeq=%d,usNew=%d\n",snMGSeq,usNew);
+			//DEBUG_INFO("snMGSeq=%d,usNew=%d\n",snMGSeq,usNew);
       if(gMG[snMGSeq].Type==ST_VALUE)
       {
         SendMainState(0,NULL,0);

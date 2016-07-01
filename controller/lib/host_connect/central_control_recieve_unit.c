@@ -40,6 +40,7 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 {
 	int i = 0;
 	bool bret = false;
+	T_pInChannel p_lestest_cnnt_inchannel = NULL, p_temp_inchannel = NULL;
 	
 	if( pp_InChannel == NULL )
 	{
@@ -72,9 +73,26 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 				if( (gccu_recieve_model_list[i].chanel_connect_num < PER_CCU_CONNECT_MAX_NUM) &&\
 					(gccu_recieve_model_list[i].unconnect_channel_head.list.next != gccu_recieve_model_list[i].unconnect_channel_head.list.prev))
 				{// 从头结点开始赋值，因为当无可用通道是未连接通道表是没有值的
-					*pp_InChannel = list_entry( gccu_recieve_model_list[i].unconnect_channel_head.list.next, TInChannel, list );
-					bret = true;
-					break;
+					/*
+					  *寻找空闲，且连接次数最少的
+					  */
+					p_temp_inchannel  = list_entry( gccu_recieve_model_list[i].unconnect_channel_head.list.next, TInChannel, list );
+					if ((NULL != p_temp_inchannel) && (NULL == p_lestest_cnnt_inchannel))
+					{
+						p_lestest_cnnt_inchannel = p_temp_inchannel;
+					}
+					else if (NULL != p_temp_inchannel)
+					{
+						if (p_temp_inchannel->channel_connected_count < p_lestest_cnnt_inchannel->channel_connected_count)
+						{
+							p_lestest_cnnt_inchannel = p_temp_inchannel;
+							p_temp_inchannel = NULL;
+						}
+					}
+					
+					//*pp_InChannel = list_entry( gccu_recieve_model_list[i].unconnect_channel_head.list.next, TInChannel, list );
+					//bret = true;
+					//break;
 				}
 				else if( (gccu_recieve_model_list[i].chanel_connect_num >= PER_CCU_CONNECT_MAX_NUM ))
 				{
@@ -88,6 +106,12 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 		}
 	}
 
+	if (NULL != p_lestest_cnnt_inchannel)
+	{
+		*pp_InChannel = p_lestest_cnnt_inchannel;
+		bret = true;
+	}
+
 	return bret;
 }
 
@@ -95,9 +119,6 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 static bool central_control_found_available_channel( void )//(unfinish 2016-3-11)
 {
 	bool bret = false;
-	//int i = 0;
-	//T_pInChannel p_temp_chNode = NULL, p_next_node = NULL;
-	//T_pInChannel p_longest_cnntNode = NULL;
 	
 	ccu_recv_unit_debug( " -----elem num = %d, gchannel_allot_pro.cnnt_num = %d ------", \
 		gchannel_allot_pro.elem_num, gchannel_allot_pro.cnnt_num );
@@ -114,100 +135,7 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 	{// 若超出了系统的连接数，则断开其中一个连接,连接时间最长的
 		bret = false;
 	}
-#if 0
-	if( !bret && gchannel_allot_pro.elem_num != 0 )
-	{
-		for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
-		{
-			ccu_recv_unit_debug( " 0x%016llx chanel_connect_num is %d------", \
-				gccu_recieve_model_list[i].entity_id,gccu_recieve_model_list[i].chanel_connect_num );
-			if( gccu_recieve_model_list[i].chanel_connect_num < PER_CCU_CONNECT_MAX_NUM )
-				continue;
-
-			if( gccu_recieve_model_list[i].solid_pnode != NULL )
-			{
-				if( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT )
-				{// solid out off line
-					continue;
-				}
-			}
-			else
-			{
-				continue;
-			}
-			
-			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
-			{
-				timetype current_time = get_current_time();
-				assert( p_temp_chNode );
-				p_next_node = list_entry(p_temp_chNode->list.next, TInChannel, list );
-				if( p_next_node != &gccu_recieve_model_list[i].connect_channel_head )
-				{
-					if( p_next_node->pro_status != INCHANNEL_PRO_FINISH )// 节点未处理完?
-					{
-						continue;
-					}
-					
-					if( (p_longest_cnntNode == NULL ) )
-					{
-						if( (current_time-p_next_node->timetimp) > (current_time-p_temp_chNode->timetimp) )
-						{
-							p_longest_cnntNode = p_next_node;
-						}
-						else
-							p_longest_cnntNode = p_temp_chNode;
-					}
-					else 
-					{
-						if((current_time-p_temp_chNode->timetimp) > (current_time-p_longest_cnntNode->timetimp))
-						{
-							p_longest_cnntNode = p_temp_chNode;
-						}
-
-						if((current_time-p_next_node->timetimp) > (current_time-p_longest_cnntNode->timetimp))
-						{
-							p_longest_cnntNode = p_next_node;
-						}
-					}
-				}
-				else
-				{// seach next model connect channel
-					if( p_longest_cnntNode == NULL )
-					{
-						p_longest_cnntNode = p_temp_chNode;
-					}
-					else 
-					{
-						if((current_time-p_temp_chNode->timetimp) > (current_time-p_longest_cnntNode->timetimp))
-						{
-							p_longest_cnntNode = p_temp_chNode;
-						}
-					}
-					
-					break;
-				}
-			}
-		}
-
-		if( p_longest_cnntNode != NULL )
-		{// send a disconnect cmd
-			gchannel_allot_pro.p_current_input_channel = p_longest_cnntNode;
-
-			struct jdksavdecc_eui64 talker_entity_id;
-			struct jdksavdecc_eui64 listener_entity_id;
-			convert_uint64_to_eui64( talker_entity_id.value, p_longest_cnntNode->tarker_id );
-			convert_uint64_to_eui64( listener_entity_id.value, p_longest_cnntNode->listener_id );
-
-			gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
-			gchannel_allot_pro.pro_eflags = CH_ALLOT_PRIMED;
-			acmp_disconnect_avail( talker_entity_id.value, p_longest_cnntNode->tarker_index, listener_entity_id.value, p_longest_cnntNode->listener_index, 1, ++gccu_acmp_sequeue_id );
-			gchannel_allot_pro.pro_eflags = CH_ALLOT_HANDLING;
-			gchannel_allot_pro.pro_stype = CH_DISCONNECT;
-			bret = true;
-		}
-	}
-#endif
-	// has searched woring :1\disconnect. 2\delect from connect list 3\add to unconnect list
+	
 	return bret;
 }
 
@@ -383,12 +311,13 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
 					__list_del_entry(&p_temp_chNode->list);
-					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list );
 					p_temp_chNode->tarker_id = connect_info.tarker_id;
 					p_temp_chNode->tarker_index = connect_info.tarker_index;
 					p_temp_chNode->status = INCHANNEL_BUSY;
 					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 					p_temp_chNode->timetimp = get_current_time();
+					p_temp_chNode->channel_connected_count++;
+					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list );
 					gccu_recieve_model_list[i].chanel_connect_num++;
 					gchannel_allot_pro.cnnt_num++;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
@@ -459,6 +388,37 @@ bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index
 
 	return bret;
 }
+
+bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uint16_t talker_index, uint64_t *out_listen, uint16_t* listen_index )
+{
+	T_pInChannel p_temp_chNode = NULL;
+	int i = 0;
+	bool bret = false;
+
+	if ( out_listen == NULL || listen_index == NULL )
+		return false;
+	
+	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
+	{
+		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
+		{
+			if( (p_temp_chNode->tarker_id == talker_id) &&\
+				(p_temp_chNode->tarker_index == talker_index) )
+			{
+				*out_listen = p_temp_chNode->listener_id;
+				*listen_index = p_temp_chNode->listener_index;
+				bret = true;
+				break;
+			}
+		}
+
+		if( bret )
+			break;
+	}
+
+	return bret;
+}
+
 
 int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 {
