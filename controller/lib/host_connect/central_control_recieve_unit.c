@@ -442,7 +442,7 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 								talker_index, 
 								listener_entity_id.value, 
 								gchannel_allot_pro.p_current_input_channel->listener_index, 
-								1, ++gccu_acmp_sequeue_id );
+								3, ++gccu_acmp_sequeue_id );
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
 				ret = 0;
 			}
@@ -479,7 +479,7 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 							talker_index, 
 							listener_entity_id.value, 
 							p_temp_chNode->listener_index, 
-							1, ++gccu_acmp_sequeue_id );
+							3, ++gccu_acmp_sequeue_id );
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
 
 				return 0;
