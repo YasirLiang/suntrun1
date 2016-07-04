@@ -551,7 +551,7 @@ void system_register_terminal_pro( void )
 			(gregister_tmnl_pro.tmn_rgsted < gregister_tmnl_pro.tmn_total) )
 		{// ²éÑ¯×¢²áÎ´Í£Ö¹£¬¼ÌÐø×¢²áÖÕ¶Ë
 			gregister_tmnl_pro.rgs_state = RGST_WAIT;
-			over_time_set( WAIT_TMN_RESTART, 1000 );
+			over_time_set( WAIT_TMN_RESTART, 100 );
 		}
 	}
 	else if( ((reg_state == RGST_WAIT) && over_time_listen(WAIT_TMN_RESTART)) )
@@ -572,30 +572,30 @@ void system_register_terminal_pro( void )
 		{
 			uint16_t addr = 0, unregister_list_index = 0xffff;
 			tmnl_pdblist register_node = NULL;
+			//unregister_list_index = gregister_tmnl_pro.noregister_head;
 			for( unregister_list_index = gregister_tmnl_pro.noregister_head; \
 				unregister_list_index <= gregister_tmnl_pro.noregister_trail;\
 				unregister_list_index++ )
-			{
+			{ 
 				terminal_pro_debug( "noregister list index = %d", unregister_list_index );
 				if( unregister_list_index < SYSTEM_TMNL_MAX_NUM )
 				{	
 					addr = gregister_tmnl_pro.register_pro_addr_list[unregister_list_index];
 					terminal_pro_debug( "query address %04x----index = %d", addr, unregister_list_index );
-					
 					if( addr != 0xffff )
 					{
 						register_node = found_terminal_dblist_node_by_addr(addr);
 						if( NULL == register_node )
 						{
 							find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
-							over_time_set( QUERY_TMN_GAP, 500 ); // ×¢²á³ÖÐø500ms
+							over_time_set( QUERY_TMN_GAP, 100 ); // ×¢²á³ÖÐø500ms
 						}
 						else
 						{
 							if( !register_node->tmnl_dev.tmnl_status.is_rgst )
 							{
 								find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
-								over_time_set( QUERY_TMN_GAP, 500 ); // ×¢²á³ÖÐø500ms
+								over_time_set( QUERY_TMN_GAP, 100 ); // ×¢²á³ÖÐø500ms
 							}
 						}
 					}
@@ -619,7 +619,7 @@ void system_register_terminal_pro( void )
 		}
 		
 		gregister_tmnl_pro.rgs_state = RGST_QUERY;
-		over_time_set( TRGST_OTIME_HANDLE, 3000 );
+		over_time_set( TRGST_OTIME_HANDLE, 100 );// 100ms
 	}
 	else if ( reg_state == RGST_QUERY )
 	{
