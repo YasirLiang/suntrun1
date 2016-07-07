@@ -59,19 +59,10 @@ uint16_t read_pipe_tx( void *buf, uint16_t read_len )
 
 int write_pipe_tx(const void *buf, uint16_t buf_len )
 {
-	int pipe_len = 0;
+	int pipe_len = -1;
 	
 	pipe_len = write( fd[WRITE_PIPE_FD], buf,  buf_len );
-	if( pipe_len != -1 )
-		return pipe_len;
-	else
-	{
-#ifndef __DEBUG__
-		DEBUG_ERR("pipe write ERR:");
-		assert( pipe_len != -1 );
-#else
-		return -1;
-#endif
-	}
+
+	return pipe_len;
 }
 

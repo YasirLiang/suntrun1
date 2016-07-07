@@ -10,6 +10,8 @@
 #include "control_surface.h" // 界面控制显示
 #include <signal.h>
 #include <ucontext.h>
+#include "controller_machine.h"
+#include "raw_network.h"
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
 struct raw_context net;				// 原始套接字
@@ -256,7 +258,44 @@ int main( int argc, char *argv[] )
 
 	if( NULL == log_machine_create( log_callback_func, log_level, NULL ) )
 	{
-		fprintf( stdout, "your system cant log massge, log machine class create is failed\n" );
+		fprintf( stdout, "your system can't log massge, log machine class create is failed\n" );
+	}
+
+	if ((gp_controller_machine = controller_machine_create()) != NULL)
+	{
+		controller_machine_init(gp_controller_machine,
+							raw_network_init,
+							raw_network_send,
+							raw_network_recv,
+							raw_network_cleanup);
+
+		if (gp_controller_machine->unit_1722_net->network_1722_user_obj != NULL)
+		{// 设置用户信息
+			// 获取接口信息
+			raw_net_1722_user_info* raw_user_obj = (raw_net_1722_user_info*)gp_controller_machine->unit_1722_net->network_1722_user_obj;
+			int i = 0;
+			net.m_interface_id = raw_user_obj->ifindex;// 拷贝index id	
+			for ( i = 0; i < 6; ++i )// 拷贝mac地址
+			{
+				net.m_my_mac[i] = (uint8_t)((raw_user_obj->mac >> ((5-i)*8)) & 0x00000000000000ff);
+			}
+			
+			net.m_ethertype = raw_user_obj->ethertype;// 设置协议类型
+			net.m_fd = raw_user_obj->rawsock;// 设置fd
+			net_fd.raw_fd = raw_user_obj->rawsock;// 设置fd
+			// 设置广播地址
+			memcpy( net.m_default_dest_mac,jdksavdecc_multicast_adp_acmp.value, 6);
+		}
+		else
+		{
+			printf("1722_user_obj Info Error,Exit!\n");
+			exit(-1);
+		}
+	}
+	else
+	{
+		printf("create_controller machine Error,Exit!\n");
+		exit(-1);
 	}
 
 	catch_sigin();

@@ -25,26 +25,21 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 #include "raw.h"
-
-#if defined( __APPLE__ ) || defined( _WIN32 )
-static pcap_if_t *raw_alldevs = 0;
-static void raw_cleanup( void );
-
-static void raw_cleanup( void )
-{
-    if ( raw_alldevs )
-    {
-        pcap_freealldevs( raw_alldevs );
-    }
-}
-#endif
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <linux/if_packet.h>
+#include <linux/if_ether.h>
+#include <linux/filter.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <ifaddrs.h>
 
 int raw_socket( struct raw_context *self, uint16_t ethertype, const char *interface_name, const uint8_t join_multicast[6])
 {
 #if defined( __linux__ )
 
-    int fd = socket( AF_PACKET, SOCK_RAW, htons( ethertype ) );
-
+    //int fd = socket( AF_PACKET, SOCK_RAW, htons( ethertype ) );
+    int fd = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if ( join_multicast )
     {
         memcpy( self->m_default_dest_mac, join_multicast, 6 );
@@ -416,7 +411,7 @@ int raw_join_multicast( struct raw_context *self, const uint8_t multicast_mac[6]
         saddr.sll_protocol = htons( self->m_ethertype );
         if ( bind( self->m_fd, (struct sockaddr *)&saddr, sizeof( saddr ) ) >= 0 )
         {
-            memset( &mreq, 0, sizeof( mreq ) );
+ 	    memset( &mreq, 0, sizeof( mreq ) );
             mreq.mr_ifindex = self->m_interface_id;
             mreq.mr_type = PACKET_MR_MULTICAST;
             mreq.mr_alen = 6;
@@ -430,18 +425,19 @@ int raw_join_multicast( struct raw_context *self, const uint8_t multicast_mac[6]
             {
                 r = 1;
             }
-            else
+	    else
             {
                 fprintf( stderr,
                          "us_rawnet_join_multicast setsockopt[SOL_SOCKET,PACKET_ADD_MEMBERSHIP] error %s",
                          strerror( errno ) );
             }
-        }
+	}
         else
         {
             fprintf( stderr, "us_rawnet_join_multicast bind error: %s", strerror( errno ) );
         }
     }
+
     return r;
 #elif defined( __APPLE__ ) || defined( _WIN32 )
     int r = 0;

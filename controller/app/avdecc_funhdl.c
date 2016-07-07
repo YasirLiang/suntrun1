@@ -10,6 +10,7 @@
 #include "matrix_output_input.h"
 #include "control_matrix_common.h"
 #include "muticast_connect_manager.h"
+#include "controller_machine.h"
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE // 没有定义
 volatile bool is_inflight_timeout = false;
@@ -78,47 +79,46 @@ int fn_timer_cb( struct epoll_priv*priv )
 
 int fn_netif_cb( struct epoll_priv *priv )
 {
-	int fd = priv->fd;
 	ssize_t status = -1;
 	uint64_t dest_addr = 0;
 	uint64_t default_native_dest = 0;
+	uint8_t recv_buf[JDKSAVDECC_FRAME_MAX_PAYLOAD_SIZE] = {0};
 	struct jdksavdecc_frame frame;
-	
-	status = (ssize_t)conference_host_raw_receive( fd, &frame.ethertype, frame.src_address.value, \
-									frame.dest_address.value, frame.payload, sizeof(frame.payload) );
-	uint16_t frame_len = ( uint16_t )status;
-	frame.length = frame_len;
-	
-	convert_eui48_to_uint64( frame.dest_address.value, &dest_addr );
-	convert_eui48_to_uint64( jdksavdecc_multicast_adp_acmp.value, &default_native_dest );
-	if( (status > 0) && ( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE ) )
-	{	
-#if 0
-		if( (frame.payload[0] != 0xfe) && (frame.payload[0] != 0xfa) && (frame.payload[0] != 0xfc))
-		{
-			DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data" );
-		}
-#endif
-		solid_pdblist list_head = endpoint_list;
-	       	int rx_status = -1;
-	       	bool is_notification_id_valid = false;
-	        uint16_t operation_id = 0;
-	       	bool is_operation_id_valid = false;
 
-		pthread_mutex_lock(&ginflight_pro.mutex);
-		rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame_len, &rx_status, operation_id, is_operation_id_valid );
-		pthread_mutex_unlock(&ginflight_pro.mutex);
-		
-#ifndef SEND_DOUBLE_QUEUE_EABLE
-		if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
-		{
-			int msr_status = 0;
-			msr_status = set_wait_message_status( rx_status );
-			assert( msr_status == 0 );
-			sem_post( &sem_waiting ); 
-			acmp_recv_resp_err = false;
-		}
+	status = (ssize_t)controller_machine_1722_network_recv(gp_controller_machine, recv_buf, sizeof(recv_buf));
+	if (jdksavdecc_frame_read(&frame, recv_buf, 0, (size_t)status) >= 0)
+	{
+		convert_eui48_to_uint64( frame.dest_address.value, &dest_addr );
+		convert_eui48_to_uint64( jdksavdecc_multicast_adp_acmp.value, &default_native_dest );
+		if( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE )
+		{	
+#if 0
+			if( (frame.payload[0] != 0xfe) && (frame.payload[0] != 0xfa) && (frame.payload[0] != 0xfc))
+			{
+				DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data" );
+			}
 #endif
+			solid_pdblist list_head = endpoint_list;
+		       	int rx_status = -1;
+		       	bool is_notification_id_valid = false;
+		        uint16_t operation_id = 0;
+		       	bool is_operation_id_valid = false;
+
+			pthread_mutex_lock(&ginflight_pro.mutex);
+			rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame.length, &rx_status, operation_id, is_operation_id_valid );
+			pthread_mutex_unlock(&ginflight_pro.mutex);
+			
+#ifndef SEND_DOUBLE_QUEUE_EABLE
+			if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
+			{
+				int msr_status = 0;
+				msr_status = set_wait_message_status( rx_status );
+				assert( msr_status == 0 );
+				sem_post( &sem_waiting ); 
+				acmp_recv_resp_err = false;
+			}
+#endif
+		}
 	}
 	
 	return 0;

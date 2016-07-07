@@ -130,7 +130,7 @@ int udp_socket( struct udp_context *self, const int port, bool isserver, const c
 
 void build_socket( struct fds *all_fds, struct raw_context *self, const char *network_port, struct udp_context *both )
 {
-	all_fds->raw_fd = raw_socket( self, JDKSAVDECC_AVTP_ETHERTYPE, network_port, jdksavdecc_multicast_adp_acmp.value );
+	//all_fds->raw_fd = raw_socket( self, JDKSAVDECC_AVTP_ETHERTYPE, network_port, jdksavdecc_multicast_adp_acmp.value );
 	all_fds->udp_server_fd = udp_socket( both, SRV_PORT, true,  network_port );
 	all_fds->udp_client_fd = udp_socket( both, CLT_PORT, false, network_port );
 		
