@@ -21,8 +21,8 @@ int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const
         memcpy( tx_frame + ETHER_HDR_SIZE, frame, frame_len );
         jdksavdecc_common_control_header_set_control_data( JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_RESPONSE, tx_frame, pos + ETHER_HDR_SIZE );
 
-        send_frame_returned = raw_send(&net, dst_mac, tx_frame, frame_len + ETHER_HDR_SIZE );  
-        if(send_frame_returned < 0)
+        send_frame_returned = controller_machine_1722_network_send(gp_controller_machine, tx_frame, (int)(frame_len + ETHER_HDR_SIZE));
+	if(send_frame_returned < 0)
         {
             DEBUG_INFO("LOGGING_LEVEL_ERROR: netif_send_frame error");
             assert(send_frame_returned >= 0);

@@ -57,7 +57,7 @@ uint32_t get_host_endstation_command_timeout( uint32_t cmd_value );
 uint32_t get_send_respons_interval_timeout( uint8_t data_type, uint32_t command );
 bool swap_valtile_uint16( volatile uint16_t *p_sw1, volatile uint16_t *p_sw2 );// 交换两个的数值
 const char* logging_level_string_get( int32_t level_value );
-
+void convert_uint64_to_eui48(const uint64_t value, uint8_t new_value[6]);
 uint64_t convert_stream_id_to_tarker_id( const uint64_t listern_stream_id );
 
 

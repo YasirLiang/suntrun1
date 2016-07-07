@@ -626,6 +626,15 @@ void convert_eui48_to_uint64( const uint8_t value[6], uint64_t *new_value )
 	}
 }
 
+void convert_uint64_to_eui48(const uint64_t value, uint8_t new_value[6])
+{
+	uint32_t i = 0;
+	for (i = 0; i < 6; i++)
+	{
+		new_value[i] = (uint8_t) (value >> ((5 - i) * 8));
+	}
+}
+
 void convert_eui64_to_uint64( const uint8_t value[8], uint64_t * new_value )
 {
 	*new_value = 0;

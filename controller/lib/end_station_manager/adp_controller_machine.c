@@ -138,16 +138,33 @@ ssize_t transmit_adp_packet_to_net( uint8_t* frame,  uint32_t frame_len, infligh
 {
 	assert( interval_time );
 	*interval_time = 0;
-	
+
 	// ready to send
-	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
-	if( send_len < 0 )
+	uint8_t tx_frame[2048] = {0};
+	uint8_t ethertype[2] = {0x22, 0xf0};
+	int send_len = frame_len + ETHER_HDR_SIZE;
+
+	if (send_len <= 2048)
 	{
-		DEBUG_INFO( "Err raw send data!");
-		assert( send_len >= 0);
+		if (dest_mac)
+		{
+			memcpy(tx_frame+0, dest_mac, 6);
+		}
+		else
+		{
+			memcpy(tx_frame+0, net.m_default_dest_mac, 6);
+		}
+
+		memcpy(tx_frame+6, net.m_my_mac, 6);
+		memcpy(tx_frame+12, ethertype, 2);
+		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
+
+		controller_machine_1722_network_send(gp_controller_machine, frame, send_len);
 	}
+	else
+		send_len = -1;
 	
-	return send_len;
+	return (ssize_t)send_len;
 }
 
 void adp_entity_avail( struct jdksavdecc_eui64 discover_entity_id, uint16_t msg_type )

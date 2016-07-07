@@ -137,16 +137,32 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		}
 	}
 	
-	ssize_t send_len = raw_send( &net, dest_mac, frame, frame_len );
-	if( send_len < 0 )
+	// ready to send
+	uint8_t tx_frame[2048] = {0};
+	uint8_t ethertype[2] = {0x22, 0xf0};
+	int send_len = frame_len + ETHER_HDR_SIZE;
+
+	if (send_len <= 2048)
 	{
-		aecp_machine_debug( "Err raw send data!");
-		assert( send_len >= 0);
-		if( send_len < 0 )
-			return -1;
+		if (dest_mac)
+		{
+			memcpy(tx_frame+0, dest_mac, 6);
+		}
+		else
+		{
+			memcpy(tx_frame+0, net.m_default_dest_mac, 6);
+		}
+
+		memcpy(tx_frame+6, net.m_my_mac, 6);
+		memcpy(tx_frame+12, ethertype, 2);
+		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
+
+		controller_machine_1722_network_send(gp_controller_machine, frame, send_len);
 	}
+	else
+		send_len = -1;
 	
-	return send_len;
+	return (ssize_t)send_len;
 }
 
 void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr )
