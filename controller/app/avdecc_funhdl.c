@@ -11,6 +11,7 @@
 #include "control_matrix_common.h"
 #include "muticast_connect_manager.h"
 #include "controller_machine.h"
+#include "raw_network.h"
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE // 没有定义
 volatile bool is_inflight_timeout = false;
@@ -77,6 +78,7 @@ int fn_timer_cb( struct epoll_priv*priv )
     	return read_len;
 }
 
+#define RAW_MUTICAST_ADDR_FLAGS ((uint64_t)0x010000000000)
 int fn_netif_cb( struct epoll_priv *priv )
 {
 	ssize_t status = -1;
@@ -88,25 +90,29 @@ int fn_netif_cb( struct epoll_priv *priv )
 	status = (ssize_t)controller_machine_1722_network_recv(gp_controller_machine, recv_buf, sizeof(recv_buf));
 	if (jdksavdecc_frame_read(&frame, recv_buf, 0, (size_t)status) >= 0)
 	{
+		raw_net_1722_user_info *raw_usr_obj = (raw_net_1722_user_info *)gp_controller_machine->unit_1722_net->network_1722_user_obj;
 		convert_eui48_to_uint64( frame.dest_address.value, &dest_addr );
 		convert_eui48_to_uint64( jdksavdecc_multicast_adp_acmp.value, &default_native_dest );
-		if( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE )
+		if( frame.ethertype == JDKSAVDECC_AVTP_ETHERTYPE && \
+			((((uint8_t)(dest_addr >> 40)) & 0x01) ||(dest_addr == raw_usr_obj->mac)))
 		{	
-#if 0
-			if( (frame.payload[0] != 0xfe) && (frame.payload[0] != 0xfa) && (frame.payload[0] != 0xfc))
-			{
-				DEBUG_RECV( frame.payload, frame_len, "Begin Raw Recv Data" );
-			}
-#endif
-			solid_pdblist list_head = endpoint_list;
 		       	int rx_status = -1;
 		       	bool is_notification_id_valid = false;
 		        uint16_t operation_id = 0;
 		       	bool is_operation_id_valid = false;
+			uint8_t subtype = jdksavdecc_common_control_header_get_subtype( frame.payload, ZERO_OFFSET_IN_PAYLOAD );
 
-			pthread_mutex_lock(&ginflight_pro.mutex);
-			rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, list_head, frame.payload, frame.length, &rx_status, operation_id, is_operation_id_valid );
-			pthread_mutex_unlock(&ginflight_pro.mutex);
+			if (subtype == JDKSAVDECC_SUBTYPE_61883_IIDC)
+			{// proccessing audio in this case, because of not use lock of "ginflight_pro.mutex"
+				
+			}
+			else
+			{
+				pthread_mutex_lock(&ginflight_pro.mutex);
+				rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, endpoint_list, frame.payload, frame.length, &rx_status, operation_id, is_operation_id_valid );
+				pthread_mutex_unlock(&ginflight_pro.mutex);
+
+			}
 			
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 			if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )

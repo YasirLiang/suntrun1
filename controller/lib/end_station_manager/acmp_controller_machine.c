@@ -5,6 +5,7 @@
 #include "connector_subject.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 #include "log_machine.h"
+#include "controller_machine.h"
 
 #ifdef __DEBUG__
 //#define __ACMP_MACHINE_DEBUG__
@@ -313,8 +314,8 @@ ssize_t transmit_acmp_packet_network( uint8_t* frame, uint16_t frame_len, inflig
 		memcpy(tx_frame+6, net.m_my_mac, 6);
 		memcpy(tx_frame+12, ethertype, 2);
 		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
-
-		controller_machine_1722_network_send(gp_controller_machine, frame, send_len);
+		
+		controller_machine_1722_network_send(gp_controller_machine, tx_frame, send_len);
 	}
 	else
 		send_len = -1;

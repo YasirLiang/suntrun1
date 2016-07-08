@@ -2,6 +2,7 @@
 #include "util.h"
 #include "adp_controller_machine.h"
 #include "end_station_prcs.h"
+#include "controller_machine.h"
 
 int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const uint8_t dst_mac[6], const uint8_t src_mac[6] )
 {
@@ -37,7 +38,6 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 {
 	uint8_t subtype = jdksavdecc_common_control_header_get_subtype( frame, ZERO_OFFSET_IN_PAYLOAD );
 	solid_pdblist guard = list_hdr;
-	int i = 0;
 
 	switch( subtype )
 	{
@@ -263,13 +263,6 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			}
 		}
 		break;
-
-		case JDKSAVDECC_SUBTYPE_61883_IIDC:
-		{// proccessing audio in this case
-			
-		}
-		break;
-
 		default:
 		break;
 	}

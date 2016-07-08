@@ -6,6 +6,7 @@
 #include "conference_host_to_end.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 #include "log_machine.h"
+#include "controller_machine.h"
 
 #ifdef __DEBUG__
 //#define __AECP_MACHINE_DEBUG__
@@ -157,7 +158,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		memcpy(tx_frame+12, ethertype, 2);
 		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
 
-		controller_machine_1722_network_send(gp_controller_machine, frame, send_len);
+		controller_machine_1722_network_send(gp_controller_machine, tx_frame, send_len);
 	}
 	else
 		send_len = -1;

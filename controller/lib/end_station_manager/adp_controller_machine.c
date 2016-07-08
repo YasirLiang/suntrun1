@@ -7,6 +7,7 @@
 #include "aecp_controller_machine.h"
 #include "terminal_common.h" // add date:2016/1/23 ;for register terminal;func interface:terminal_common_create_node_by_adp_discover_can_regist
 #include "log_machine.h"
+#include "controller_machine.h"
 
 #ifdef __DEBUG__
 //#define __ADP_MACHINE_DEBUG__
@@ -158,8 +159,8 @@ ssize_t transmit_adp_packet_to_net( uint8_t* frame,  uint32_t frame_len, infligh
 		memcpy(tx_frame+6, net.m_my_mac, 6);
 		memcpy(tx_frame+12, ethertype, 2);
 		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
-
-		controller_machine_1722_network_send(gp_controller_machine, frame, send_len);
+		
+		controller_machine_1722_network_send(gp_controller_machine, tx_frame, send_len);
 	}
 	else
 		send_len = -1;
