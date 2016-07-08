@@ -55,6 +55,7 @@ tcpdump -d  ether proto 0x22f0 or vlan 2
 tcpdump -dd  ether proto 0x22f0 or vlan 2
 */
 struct sock_filter BPF_code[] = {
+#if 0
 { 0x28, 0, 0, 0x0000000c },
 { 0x15, 4, 0, 0x000022f0 },
 { 0x15, 0, 4, 0x00008100 },
@@ -63,6 +64,12 @@ struct sock_filter BPF_code[] = {
 { 0x15, 0, 1, 0x00000002 },
 { 0x6, 0, 0, 0x0000ffff },
 { 0x6, 0, 0, 0x00000000 },
+#else
+{ 0x28, 0, 0, 0x0000000c },
+{ 0x15, 0, 1, 0x000022f0 },
+{ 0x6, 0, 0, 0x0000ffff },
+{ 0x6, 0, 0, 0x00000000 },
+#endif
 };
 
 static void convert_eui48_to_uint64_raw(const uint8_t value[6], uint64_t *new_value)
@@ -225,12 +232,53 @@ static int select_interface_by_num(uint32_t interface_num, raw_net_1722_user_inf
         uint16_t etypes[1] = {0x22f0};
         set_capture_ether_type(etypes, 1, user_info->rawsock);
 	user_info->ethertype = etypes[0];
-		
-	if_mac.ifr_flags |= IFF_PROMISC;
-	ioctl(user_info->rawsock, SIOCGIFFLAGS, &if_mac);
 
+#if 0// 改变套接字的缓冲区大小		
+	int snd_size = 0;
+	int rcv_size = 0;
+	socklen_t optlen;
+	int err = -1;
+
+	optlen = sizeof(snd_size); 
+	err = getsockopt(user_info->rawsock, SOL_SOCKET, SO_SNDBUF,&snd_size, &optlen); 
+	if(err<0){ 
+	}
+
+	optlen = sizeof(rcv_size); 
+	err = getsockopt(user_info->rawsock, SOL_SOCKET, SO_RCVBUF, &rcv_size, &optlen); 
+	if(err<0){ 
+	} 
+
+	printf("before send size = %d\n",snd_size); 
+	printf("before recv size %d\n",rcv_size); 
+
+	snd_size = 10*1024;    /* 发送缓冲区大小为8K */ 
+	optlen = sizeof(snd_size); 
+	err = setsockopt(user_info->rawsock, SOL_SOCKET, SO_SNDBUF, &snd_size, optlen); 
+	if(err<0){ 
+	} 
+
+	rcv_size = 200*1024;    /* 接收缓冲区大小为8K */ 
+	optlen = sizeof(rcv_size); 
+	err = setsockopt(user_info->rawsock,SOL_SOCKET,SO_RCVBUF, (char *)&rcv_size, optlen); 
+	if(err<0){ 
+	} 
+
+	optlen = sizeof(snd_size); 
+	err = getsockopt(user_info->rawsock, SOL_SOCKET, SO_SNDBUF,&snd_size, &optlen); 
+	if(err<0){ 
+	}   
+
+	optlen = sizeof(rcv_size); 
+	err = getsockopt(user_info->rawsock, SOL_SOCKET, SO_RCVBUF,(char *)&rcv_size, &optlen); 
+	if(err<0){ 
+	} 
+
+	printf("after send size = %d\n",snd_size); 
+	printf("after recv size = %d\n",rcv_size); 
+#endif
         return 0;
-    }
+}
 
 
 static int print_interfaces_and_select(char *interface, raw_net_1722_user_info* user_info)

@@ -12,6 +12,7 @@
 #include "muticast_connect_manager.h"
 #include "controller_machine.h"
 #include "raw_network.h"
+#include "system_1722_recv_handle.h"
 
 #ifndef SEND_DOUBLE_QUEUE_EABLE // 没有定义
 volatile bool is_inflight_timeout = false;
@@ -78,7 +79,6 @@ int fn_timer_cb( struct epoll_priv*priv )
     	return read_len;
 }
 
-#define RAW_MUTICAST_ADDR_FLAGS ((uint64_t)0x010000000000)
 int fn_netif_cb( struct epoll_priv *priv )
 {
 	ssize_t status = -1;
@@ -90,6 +90,12 @@ int fn_netif_cb( struct epoll_priv *priv )
 	status = (ssize_t)controller_machine_1722_network_recv(gp_controller_machine, recv_buf, sizeof(recv_buf));
 	if (jdksavdecc_frame_read(&frame, recv_buf, 0, (size_t)status) >= 0)
 	{
+#ifdef RECV_DOUBLE_LINK_QUEUE_EN
+		uint8_t subtype = jdksavdecc_common_control_header_get_subtype( frame.payload, ZERO_OFFSET_IN_PAYLOAD );
+		if (0 != subtype)// not Audio Data?
+			// 保存到接收队列中，是按帧处理，而不是按数据包处理
+			system_1722_recv_handle_save_queue_node(&frame);
+#else		
 		raw_net_1722_user_info *raw_usr_obj = (raw_net_1722_user_info *)gp_controller_machine->unit_1722_net->network_1722_user_obj;
 		convert_eui48_to_uint64( frame.dest_address.value, &dest_addr );
 		convert_eui48_to_uint64( jdksavdecc_multicast_adp_acmp.value, &default_native_dest );
@@ -104,16 +110,15 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 			if (subtype == JDKSAVDECC_SUBTYPE_61883_IIDC)
 			{// proccessing audio in this case, because of not use lock of "ginflight_pro.mutex"
-				
+				 //printf("-->\n");
 			}
 			else
 			{
 				pthread_mutex_lock(&ginflight_pro.mutex);
 				rx_raw_packet_event( frame.dest_address.value, frame.src_address.value, &is_notification_id_valid, endpoint_list, frame.payload, frame.length, &rx_status, operation_id, is_operation_id_valid );
 				pthread_mutex_unlock(&ginflight_pro.mutex);
-
 			}
-			
+
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 			if( ((rx_status == 0) && is_wait_messsage_active_state()) || (acmp_recv_resp_err && is_wait_messsage_active_state()) )
 			{
@@ -125,8 +130,9 @@ int fn_netif_cb( struct epoll_priv *priv )
 			}
 #endif
 		}
+#endif	
 	}
-	
+
 	return 0;
 }
 
@@ -264,7 +270,7 @@ int thread_fn(void *pgm)
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );
-
+	
 	do
 	{
 		int i, res;

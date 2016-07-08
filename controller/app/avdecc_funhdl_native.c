@@ -8,6 +8,7 @@
 #include "avdecc_manage.h"// 发现终端，读描述符，移除终端
 #include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 #include "camera_pro.h"
+#include "system_1722_recv_handle.h"
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -331,12 +332,14 @@ extern volatile unsigned char gcontrol_sur_msg_len;
 int pthread_recv_data_fn( void *pgm )
 {
 	static int static_buf_num = 0;
+
 	while( 1 )
 	{
 		unsigned long us_per_ms = 1000;
         	unsigned long interval_ms = 0/*TIME_PERIOD_1_MILLISECONDS*/;
 		struct timeval tempval;
-	        tempval.tv_sec = interval_ms/1000;  
+
+		tempval.tv_sec = interval_ms/1000;  
 	        tempval.tv_usec = (interval_ms%1000)*us_per_ms;
 	        select( 0, NULL, NULL, NULL, &tempval );
 
@@ -356,6 +359,10 @@ int pthread_recv_data_fn( void *pgm )
 				break;
 		}
 
+#ifdef RECV_DOUBLE_LINK_QUEUE_EN
+		system_1722_recv_handle_raw_data();// 按帧处理1722数据报文
+#else
+#endif
 		system_register_terminal_pro();
 		terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
 		terminal_vote_proccess();// 终端投票处理

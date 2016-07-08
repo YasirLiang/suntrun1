@@ -30,6 +30,8 @@
 #include "menu_f.h"
 
 #include "central_control_transmit_unit.h"
+#include "system_1722_recv_handle.h"
+#include "controller_machine.h"
 
 extern void muticast_muticast_connect_manger_init( void );
 extern int gcontrol_sur_fd;
@@ -76,6 +78,7 @@ void init_system( void )
 	init_sem_tx_can();
 	init_sem_wait_can();
 	init_network_send_queue();
+	system_1722_recv_handle_init();// 初始化接收处理
 	send_interval_init();// 发送间隔
 
 	inflight_proccess_init();// 初始化inflight 处理参数
@@ -217,6 +220,8 @@ void system_close( struct threads_info *p_threads )
 
 	en485_send_mod_cleanup();// 释放使能发送485端数据文件
 	lcd192x64_close();// yasirLiang add in 2016/05/16
+	controller_machine_destroy(&gp_controller_machine);// 摧毁控制器
+	system_1722_recv_handle_destroy();
 
 	// 退出线程
 #ifndef SEND_DOUBLE_QUEUE_EABLE
