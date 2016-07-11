@@ -240,7 +240,7 @@ int main( int argc, char *argv[] )
 		log_level = atoi(argv[1]);
 	if( log_level >= TOTAL_NUM_OF_LOGGING_LEVELS )
 		log_level = LOGGING_LEVEL_ERROR;
-	fprintf( stdout, "Will Usage: %s message can be logged, and only log to screen\n", logging_level_string_get(log_level) );
+	
 	if( argc >= 3 )
 	{
 		glog_file_name = argv[2];
@@ -255,6 +255,9 @@ int main( int argc, char *argv[] )
 			glog_file_fd = NULL;
 		}
 	}
+
+	fprintf( stdout, "Will Usage: %s message can be logged, and only log to screen? %s\n\r\n", 
+		logging_level_string_get(log_level), (glog_file_name == NULL)?"YES":"NO" );
 
 	if( NULL == log_machine_create( log_callback_func, log_level, NULL ) )
 	{
