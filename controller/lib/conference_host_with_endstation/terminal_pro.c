@@ -4032,6 +4032,7 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 				dis_ret = trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
 				terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 				ret = (dis_ret == 0)? true:false;
+				//terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 				terminal_key_action_host_special_num1_reply( recv_msg, ret?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
 			}
 		}
@@ -4048,6 +4049,7 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 					ret = true;
 				}
 
+				//terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 				terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
 			}
 			else

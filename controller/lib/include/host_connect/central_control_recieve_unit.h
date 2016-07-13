@@ -54,6 +54,7 @@ typedef struct _type_central_control_recieve_model// 接收模块
 	enum recieve_model_state model_state;
 	uint8_t channel_num;// 通道数
 	uint8_t chanel_connect_num;// 通道已连接数
+	uint32_t model_last_time;// 最后连接时间 
 	pthread_mutex_t RModel_mutex;// 节点锁
 }TccuRModel;
 

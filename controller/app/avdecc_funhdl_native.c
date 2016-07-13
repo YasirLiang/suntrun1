@@ -371,6 +371,7 @@ int pthread_recv_data_fn( void *pgm )
 		send_common_check_squeue();// 检查发送队列发送数据
 		camera_pro();// 摄像头处理流程
 		terminal_over_time_speak_pro();
+		central_control_recieve_unit_event_pro();// 中央接收单元事件处理
 
 		/*
 		  *串口接收数据处理与菜单显示处理
