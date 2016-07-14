@@ -32,6 +32,7 @@ bool output_channel_node_init_by_index( T_pOutChannel p_node, uint16_t tarker_in
 	
 	memset( p_node, 0, sizeof(TOutChannel));
 	p_node->tarker_index = tarker_index;
+	p_node->operate_timetimp = 0;
 	INIT_LIST_HEAD( &p_node->input_head.list );// 初始化outstream对应的inputstream链表
 
 	return true;

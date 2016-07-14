@@ -16,6 +16,8 @@
 #include "jdksavdecc_world.h"
 #include "list.h"
 
+#define OUTPUT_CHANNEL_OPT_PROTECT_TIME (1000) // 输出通道操作保护时间
+
 typedef struct _type_input_connect_node// 输出连接的输入节点
 {
 	uint64_t listener_id;
@@ -26,6 +28,7 @@ typedef struct _type_input_connect_node// 输出连接的输入节点
 typedef struct _type_output_channel// 连接输入的通道
 {
 	uint16_t tarker_index;
+	uint32_t operate_timetimp;// 通道操作时间戳
 	Input_Channel input_head; // 输入, 为空则无连接
 	struct list_head list;
 }TOutChannel, *T_pOutChannel;

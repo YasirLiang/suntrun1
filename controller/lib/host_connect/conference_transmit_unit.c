@@ -70,7 +70,7 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	}
 
 	/*¸üÐÂÁ¬½Ó×´Ì¬add in 2016-5-17*/
-	acmp_tx_state_avail( endtity_id, stream_output_desc.descriptor_index );
+	//acmp_tx_state_avail( endtity_id, stream_output_desc.descriptor_index );
 
 	//********* 
 	//ËÑË÷ÊÇ·ñ´æÔÚendtity_id µÄÁ´±í½Úµã
@@ -158,8 +158,51 @@ int conference_transmit_unit_init( const uint8_t *frame, int pos, size_t frame_l
 	return 0;
 }
 
-// ³õÊ¼»¯»áÒé´«Êäµ¥ÔªµÄ»áÒéµ¥Ôª½Úµã
-int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_node, const uint64_t tarker_id )
+static bool conference_transmit_unit_found_output_channel_by_index(const uint16_t tarker_index, tconference_trans_pmodel p_transmit_model, T_pOutChannel *pp_Outnode)
+{
+	T_pOutChannel p_Outnode = NULL;
+	bool bret = false;
+	
+	assert(NULL != p_transmit_model && NULL != pp_Outnode);
+	if (NULL == p_transmit_model || NULL == pp_Outnode)
+		return bret;
+	
+	list_for_each_entry(p_Outnode, &p_transmit_model->out_ch.list, list)
+	{
+		if( p_Outnode->tarker_index == tarker_index )
+		{
+			*pp_Outnode = p_Outnode;
+			bret = true;
+			break;
+		}
+	}
+
+	return bret;
+}
+
+/*Ñ°ÕÒ´«Êäµ¥Ôª½Úµã*/
+static bool conference_transmit_unit_found_trams_model_by_entity_id(const uint64_t tarker_id, tconference_trans_pmodel* pp_output)
+{
+	tconference_trans_pmodel p_temp_node = NULL;
+
+	assert(NULL != pp_output);
+	if (NULL == pp_output)
+		return false;
+	
+	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+	{
+		if( p_temp_node->tarker_id == tarker_id )
+		{
+			*pp_output = p_temp_node;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// ³õÊ¼»¯»áÒé´«Êäµ¥ÔªµÄ»áÒéµ¥Ôª½Úµã,²¢·µ»ØÕÒµ½µÄconference transmit node.
+static int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_node, const uint64_t tarker_id )
 {
 	tconference_trans_pmodel p_temp_node = NULL;
 	bool found = false;
@@ -170,18 +213,14 @@ int conference_transmit_unit_init_conference_node( const tmnl_pdblist p_tmnl_nod
 		return -1;
 	}
 
-	list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
+	if (conference_transmit_unit_found_trams_model_by_entity_id(tarker_id, &p_temp_node))
 	{
-		if( p_temp_node->tarker_id == tarker_id )
-		{
-			if( p_temp_node->confenrence_node == NULL )
-				p_temp_node->confenrence_node = p_tmnl_node;
-			
-			found = true;
-			break;
-		}
-	}
+		if( p_temp_node->confenrence_node == NULL )
+			p_temp_node->confenrence_node = p_tmnl_node;
 
+		found = true;
+	}
+	
 	return (found?0:-1);
 }
 
@@ -223,18 +262,58 @@ bool trans_model_unit_reconnect_disconnect_tarker( uint64_t tarker_id, bool conn
 	return bret;
 }
 
+/*Èô½ÚµãÊä³öÍ¨µÀ³¬Ê±·µ»ØÕæ£¬·ñÔò·µ»Ø¼Ù*/
+static bool trans_model_unit_isopt_timeout_by_output_channel_index(const tconference_trans_pmodel p_trans_model, const uint16_t talker_index)
+{
+	T_pOutChannel p_Outnode = NULL;
+	bool bret = false;
+	
+	if (conference_transmit_unit_found_output_channel_by_index(talker_index, p_trans_model, &p_Outnode))
+	{
+		assert(p_Outnode);
+		if ( (get_current_time() - p_Outnode->operate_timetimp) > OUTPUT_CHANNEL_OPT_PROTECT_TIME)
+			bret = true;
+	}
+	
+	return bret;
+}
+
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
 {
-	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )
-		return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+	tconference_trans_pmodel p_trans_model = NULL;
+	if (conference_transmit_unit_found_trams_model_by_entity_id(tarker_id, &p_trans_model))
+	{
+		if (NULL != p_trans_model)
+		{
+			// set conference node
+			if( p_trans_model->confenrence_node == NULL )
+				p_trans_model->confenrence_node = p_tmnl_node;
+
+			// found and operate timeout?
+			if (trans_model_unit_isopt_timeout_by_output_channel_index(p_trans_model, CONFERENCE_OUTPUT_INDEX))
+				return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+		}
+	}
 
 	return -1;
 }
 
 int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node ) // return -1 means talker not connect
 {
-	if( 0 == conference_transmit_unit_init_conference_node( p_tmnl_node, tarker_id ) )
-		return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+	tconference_trans_pmodel p_trans_model = NULL;
+	if (conference_transmit_unit_found_trams_model_by_entity_id(tarker_id, &p_trans_model))
+	{
+		if (NULL != p_trans_model)
+		{
+			// set conference node
+			if( p_trans_model->confenrence_node == NULL )
+				p_trans_model->confenrence_node = p_tmnl_node;
+
+			// found and operate timeout?
+			if (trans_model_unit_isopt_timeout_by_output_channel_index(p_trans_model, CONFERENCE_OUTPUT_INDEX))
+				return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+		}
+	}
 
 	return -1;
 }
@@ -287,10 +366,7 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 			if( p_temp_node->tarker_id == connect_info.tarker_id )
 			{
 				T_pOutChannel p_Outnode = NULL;
-				
-				if( NULL != p_temp_node->confenrence_node)
-					terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
-				
+								
 				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
@@ -298,7 +374,12 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
 						{// Í£Ö¹·¢ÑÔ¼ÆÊ±
 							host_timer_stop(&p_temp_node->model_speak_time);
+							if( NULL != p_temp_node->confenrence_node)
+								terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
 						}
+
+						// ¸üÐÂÊä³öÍ¨µÀ±£»¤Ê±¼ä´Á
+						p_Outnode->operate_timetimp = get_current_time();
 						
 						Input_pChannel Input_pnode = NULL;
 						list_for_each_entry( Input_pnode, &p_Outnode->input_head.list, list )
@@ -333,10 +414,16 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 				{
 					if( p_Outnode->tarker_index == connect_info.tarker_index )
 					{
+					
 						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
 						{// ¿ªÊ¼·¢ÑÔ¼ÆÊ±
 							host_timer_start( 1000,&p_temp_node->model_speak_time);
+							if( NULL != p_temp_node->confenrence_node)
+								terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
 						}
+
+						// ¸üÐÂÊä³öÍ¨µÀ±£»¤Ê±¼ä´Á
+						p_Outnode->operate_timetimp = get_current_time();
 						
 						Input_pChannel Input_pnode = NULL;
 						Input_pnode = input_connect_node_create();
@@ -348,9 +435,6 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üÐÂ´«ÊäÄ£¿éµÄÁ
 
 						input_connect_node_init_by_index( Input_pnode, connect_info.listener_id, connect_info.listener_index );
 						input_connect_node_insert_node_to_list( &p_Outnode->input_head.list, Input_pnode );
-
-						if( NULL != p_temp_node->confenrence_node)
-							terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
 						
 						conference_transmit_unit_debug( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
 							connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );

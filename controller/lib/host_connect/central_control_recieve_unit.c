@@ -14,7 +14,10 @@
 #include "util.h"
 #include "acmp_controller_machine.h"
 
+#ifndef EN_CCU_RECV_PROTECT_MODEL_PROTECT
+//#define CCU_RECV_PROTECT_MODEL_PROTECT
 #define CCU_RECV_PROTECT_TIMEOUT (2*1000)
+#endif
 
 #ifdef __DEBUG__
 //#define __CCU_RECV_DEBUG__
@@ -35,7 +38,6 @@ observer_t gccu_recv_observer;// 用于更新ucc 接收模块的连接状态
 
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 extern desc_pdblist descptor_guard;	// 系统中描述符链表哨兵节点
-
 
 // 通过优先算法查找连接节点
 static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InChannel )//(unfinish 2016-3-11)
@@ -70,11 +72,12 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 				continue;
 			}
 
+#ifdef EN_CCU_RECV_PROTECT_MODEL_PROTECT
 			if ((cur_time - gccu_recieve_model_list[i].model_last_time) < CCU_RECV_PROTECT_TIMEOUT)
 			{
 				continue;
 			}
-			
+#endif		
 			if( (gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_OK) ||\
 				(gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_ALL_CHANNEL_INIT))
 			{
@@ -82,10 +85,15 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 					(gccu_recieve_model_list[i].unconnect_channel_head.list.next != gccu_recieve_model_list[i].unconnect_channel_head.list.prev))
 				{// 从头结点开始赋值，因为当无可用通道是未连接通道表是没有值的
 					/*
-					  *寻找空闲超时的，且连接次数最少的
+					  *寻找通道空闲超时的，且连接次数最少的
 					  */
-					gccu_recieve_model_list[i].model_last_time = cur_time;
 					p_temp_inchannel  = list_entry( gccu_recieve_model_list[i].unconnect_channel_head.list.next, TInChannel, list );
+					if ((cur_time - p_temp_inchannel->operate_timp) < INPUT_STREAME_OPT_PROTECT_TIME)
+					{// 通道操作保护时间未到
+						continue;
+					}
+
+					gccu_recieve_model_list[i].model_last_time = cur_time;
 					if ((NULL != p_temp_inchannel) && (NULL == p_lestest_cnnt_inchannel))
 					{
 						p_lestest_cnnt_inchannel = p_temp_inchannel;
@@ -326,10 +334,11 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					p_temp_chNode->status = INCHANNEL_BUSY;
 					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 					p_temp_chNode->timetimp = get_current_time();
+					p_temp_chNode->operate_timp = p_temp_chNode->timetimp;
 					p_temp_chNode->channel_connected_count++;
 					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list );
 					gccu_recieve_model_list[i].chanel_connect_num++;
-					gccu_recieve_model_list[i].model_last_time = get_current_time();
+					gccu_recieve_model_list[i].model_last_time = p_temp_chNode->timetimp;// current time
 					gchannel_allot_pro.cnnt_num++;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
 
@@ -359,6 +368,7 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					p_temp_chNode->status = INCHANNEL_FREE;
 					gccu_recieve_model_list[i].chanel_connect_num--;
 					gccu_recieve_model_list[i].model_last_time = get_current_time();
+					p_temp_chNode->operate_timp =gccu_recieve_model_list[i].model_last_time;
 					gchannel_allot_pro.cnnt_num--;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
 
@@ -533,10 +543,14 @@ void central_control_recieve_unit_event_pro(void)
 			}
 			else
 			{
+#ifdef EN_CCU_RECV_PROTECT_MODEL_PROTECT
 				if (cur_time - gccu_recieve_model_list[j].model_last_time > CCU_RECV_PROTECT_TIMEOUT)
 				{
 					time_out = true;
 				}
+#else
+				time_out = true;	
+#endif
 			}
 
 			if (!no_pro)
