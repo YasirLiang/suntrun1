@@ -36,6 +36,8 @@ typedef struct _elem_data
 	uint16_t tarker_index;
 	bool connect_flag;// true :cnnt success :false disconnect success! 前面的结构定义
 	tsubject_control_command ctrl_msg;// 控制命令后面的结构定义
+	uint8_t *data_frame; // 接收数据的数据帧，使用堆空间，但是得通知方法调用完成才能释放；可以不分配，但需在观察者方法中作出判断是否能使用；不能使用栈空间，因为这样不适用于多线程操作
+	uint16_t data_frame_len;// 接收数据的数据帧长度
 }subject_data_elem;
 
 typedef struct 

@@ -60,6 +60,6 @@ void time_tick_event( solid_pdblist guard, inflight_plist inflight_guard )
 	inflight_time_tick( inflight_guard );
 	pthread_mutex_unlock(&ginflight_pro.mutex);
 
-	//acmp_binflight_cmd_time_tick();
+	acmp_binflight_cmd_time_tick();
 }
 

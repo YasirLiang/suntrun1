@@ -328,14 +328,14 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 	T_Ptrconference_recieve_model p_cfc_recv_model = NULL;
 	T_pInChannel_universe p_Inchannel = NULL;
 
-	tarker_id = convert_stream_id_to_tarker_id( listern_stream_id );
-	if( tarker_id == listern_stream_id && listern_stream_id != 0 )
+	/*if status is timeout, listern_stream_id = tarker id*/
+	if (resp_status != -1)// NOT timeout status?
 	{
-		conference_recv_unit_debug( "listern_stream_id( 0x%016llx ) is Stream ID", listern_stream_id );
+		tarker_id = convert_stream_id_to_tarker_id(listern_stream_id);
 	}
 	else
 	{
-		conference_recv_unit_debug( "listern_stream_id( 0x%016llx ) is  Stream's Tarker ID(Not zero)", listern_stream_id );
+		tarker_id = listern_stream_id;
 	}
 
 	list_for_each( p_list, &gconferenc_recv_model_list )
@@ -495,6 +495,7 @@ void conference_recieve_model_unit_update_by_connect_rx_state(const uint64_t tar
 			p_Inchannel->connect_failed_count++;
 		}
 		
+		p_Inchannel->operate_timp = get_current_time();
 		p_Inchannel->status = INCHANNEL_BUSY;
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
 	}
@@ -573,7 +574,8 @@ void conference_recieve_model_unit_update( subject_data_elem reflesh_data )// ¸ü
 	int repson_status = reflesh_data.ctrl_msg.msg_resp_status;
 
 	if( data_type != JDKSAVDECC_SUBTYPE_ACMP || 
-		(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) )
+		(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||
+		(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_COMMAND))
 	{// not acmp msg or recieve model do nothing with tx state response,in the meantime, transmit model do nothing with rx state response.
 	 // Because stream Id is tarker id , transmit model also do nothing with TX state response.
 		return;

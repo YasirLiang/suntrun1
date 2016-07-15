@@ -86,12 +86,18 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 			ptr_recv_model->query_stop = true;
 			break;
 		case INCHANNEL_BUSY:// 被占用了
-			// 检查广播者是否在线
-			solid = search_endtity_node_endpoint_dblist( endpoint_list, ptr_muti_inchn->tarker_id );
-			if( solid != NULL && (solid != NULL) &&\
-				(solid->solid.connect_flag == DISCONNECT))
-			{// 不检查更新
+			if ((get_current_time() - muticast_output->operate_timetimp) < OUTPUT_CHANNEL_OPT_PROTECT_TIME)
 				disconnect_flags = false;
+			
+			// 检查广播者是否在线
+			if (disconnect_flags)
+			{
+				solid = search_endtity_node_endpoint_dblist( endpoint_list, ptr_muti_inchn->tarker_id );
+				if( solid != NULL && (solid != NULL) &&\
+					(solid->solid.connect_flag == DISCONNECT))
+				{// 不检查更新
+					disconnect_flags = false;
+				}	
 			}
 
 			if( disconnect_flags )
@@ -155,8 +161,11 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 			convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
 			convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );
 
-			if( (model_tark_discut && !reconnect_self)\
-				||(!offline_connect && (ptr_Inchn->connect_failed_count > failed_count)))
+			if ((get_current_time() - muticast_output->operate_timetimp) < OUTPUT_CHANNEL_OPT_PROTECT_TIME)
+				connect_flags = false;
+			
+			if( connect_flags && ((model_tark_discut && !reconnect_self)\
+				||(!offline_connect && (ptr_Inchn->connect_failed_count > failed_count))))
 			{// 本机断开不重连或掉线不重连
 				connect_flags = false;
 			}
@@ -197,15 +206,18 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 					local_listen_id, ptr_Inchn->tarker_id, ptr_Inchn->tarker_index,muticastor_id, muticast_output->tarker_index );
 				if (0 != ptr_Inchn->tarker_id)
 				{
-					convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
-					convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
-					acmp_disconnect_avail( talker_entity_id.value, 
-						ptr_Inchn->tarker_index, 
-						listen_entity_id.value, 
-						ptr_Inchn->listener_index, 
-						1, 
-						gacmp_sequence_id++ );
-					
+					if ((get_current_time() - muticast_output->operate_timetimp) > OUTPUT_CHANNEL_OPT_PROTECT_TIME)
+					{
+						convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
+						convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
+						acmp_disconnect_avail( talker_entity_id.value, 
+							ptr_Inchn->tarker_index, 
+							listen_entity_id.value, 
+							ptr_Inchn->listener_index, 
+							1, 
+							gacmp_sequence_id++ );
+					}
+#if 0
 					if( muticastor_exit )
 					{
 						memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
@@ -217,6 +229,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 									2, 
 									gacmp_sequence_id++ );
 					}
+#endif
 				}
 				else
 				{// update the right  listener's talker

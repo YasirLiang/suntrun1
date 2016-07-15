@@ -38,13 +38,14 @@ enum universe_recieve_model_state// ÊäÈëÄ£¿éÍ¨µÀµÄ×´Ì¬--ÒÑ³õÊ¼»¯Î´Á¬½Ó-ÒÑ³õÊ¼»¯Á
 	RECIEVE_MODEL_ALL_CHANNEL_INIT
 };
 
-#define INPUT_STREAME_OPT_PROTECT_TIME (200) // Í¨µÀ²Ù×÷±£»¤Ê±¼ä
+#define INPUT_STREAME_OPT_PROTECT_TIME (0) // Í¨µÀ²Ù×÷±£»¤Ê±¼ä
 
 typedef struct _type_input_channel_universe// Á¬½ÓÊäÈëµÄÍ¨µÀ
 {
 	uint64_t tarker_id;
 	uint16_t tarker_index;
 	uint16_t listener_index; 		// Í¨µÀIDË÷Òı
+	timetype operate_timp;// Í¨µÀ²Ù×÷Ê±¼ä´Á
 	timetype timetimp;// Á¬½ÓÊ±Ê±¼ä´Á
 	enum input_channel_status status;// Í¨µÀµÄÁ¬½Ó×´Ì¬
 	enum input_channel_pro_status pro_status; // Í¨µÀ½Úµã´¦ÀíµÄ×´Ì¬

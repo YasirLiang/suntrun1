@@ -2406,6 +2406,22 @@ bool addr_queue_find_by_value( uint16_t *addr_queue, uint8_t queue_len, uint16_t
 	return false;
 }
 
+tmnl_pdblist found_terminal_dblist_node_by_endtity_id(const uint64_t tarker_id)
+{
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return NULL;
+	
+	tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
+	for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
+	{
+		if (tmp_node->tmnl_dev.entity_id == tarker_id)
+			return tmp_node;
+	}
+
+	return NULL;
+}
+
 tmnl_pdblist found_terminal_dblist_node_by_addr( uint16_t addr )
 {
 	assert( dev_terminal_list_guard );

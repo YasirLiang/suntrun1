@@ -227,6 +227,8 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 			input_connect_node_init_by_index( p_intput, listern_id, listern_id_index );
 			input_connect_node_insert_node_to_list( &p_outch->list, p_intput );
 		}
+
+		p_outch->operate_timetimp = get_current_time();
 	}
 }
 
@@ -291,6 +293,8 @@ void central_control_transmit_unit_update_by_disconnect_rx_state( const uint64_t
 				break;
 			}
 		}
+
+		p_outch->operate_timetimp = get_current_time();
 	}
 }
 

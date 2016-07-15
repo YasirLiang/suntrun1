@@ -83,6 +83,8 @@ int set_subject_data( subject_data_elem data, subject_t *subject )
 	subject->sub_data.ctrl_msg.desc_index = data.ctrl_msg.desc_index;
 	subject->sub_data.ctrl_msg.msg_resp_status = data.ctrl_msg.msg_resp_status;
 	subject->sub_data.ctrl_msg.msg_type = data.ctrl_msg.msg_type;
+	subject->sub_data.data_frame = data.data_frame;
+	subject->sub_data.data_frame_len = data.data_frame_len;
 
 	return 0;
 }

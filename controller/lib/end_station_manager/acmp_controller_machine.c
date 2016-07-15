@@ -212,7 +212,7 @@ void acmp_binflight_cmd_time_tick( void )
 	if( background_inflight_timeout( &acmp_connect_state_update) )
 	{
 		background_read_descriptor_input_output_stream();
-		background_inflight_timer_start( (uint32_t)2*2000, &acmp_connect_state_update);// 1s to update after system start
+		background_inflight_timer_start( (uint32_t)15*100, &acmp_connect_state_update);// 1s to update after system start
 	}
 }
 
@@ -372,6 +372,8 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
 		elem.ctrl_msg.msg_type = msg_type;
 		elem.ctrl_msg.msg_resp_status = -1;// -1 means timeout status.
+		elem.data_frame = NULL;// set data frame
+		elem.data_frame_len = 0;
 		set_subject_data( elem, &gconnector_subjector );
 		notify_observer( &gconnector_subjector );
 		
@@ -452,7 +454,10 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 	(msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_CONNECTION_RESPONSE)))
 	{
 		struct jdksavdecc_eui64 _end_station_entity_id = jdksavdecc_acmpdu_get_talker_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
+		struct jdksavdecc_eui64 listener_entity = jdksavdecc_acmpdu_get_listener_entity_id(frame, ZERO_OFFSET_IN_PAYLOAD);
 		end_station_entity_id = jdksavdecc_uint64_get(&_end_station_entity_id, 0);
+		uint64_t listener_id = jdksavdecc_uint64_get(&listener_entity, 0);
+		
 #ifdef __ACMP_MACHINE_DEBUG__
 		DEBUG_ONINFO( " [ RESPONSE_RECEIVED: %d 0x%016llx (talker), %d, %d, %d, %s ]",
 						RESPONSE_RECEIVED,
@@ -463,6 +468,23 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						acmp_cmd_status_value_to_name(status));
 		
 #endif
+		// add notification of get_tx_state command to obserber
+		if (msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE)
+		{
+			subject_data_elem elem;
+			elem.listener_id = listener_id;
+			elem.listener_index = node_acmpdu.listener_unique_id;
+			elem.tarker_id = end_stream_id;
+			elem.tarker_index = node_acmpdu.talker_unique_id;
+			elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
+			elem.ctrl_msg.msg_type = msg_type;
+			elem.ctrl_msg.msg_resp_status = status;// -1 means timeout status.
+			elem.data_frame = NULL;// set data frame
+			elem.data_frame_len = 0;
+			set_subject_data( elem, &gconnector_subjector );
+			notify_observer( &gconnector_subjector );
+		}
+		
 		if(status != ACMP_STATUS_SUCCESS)
 		{
 			if (NULL != gp_log_imp)
@@ -513,6 +535,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
 			elem.ctrl_msg.msg_type = msg_type;
 			elem.ctrl_msg.msg_resp_status = status;
+			elem.data_frame = NULL;// set data frame
+			elem.data_frame_len = 0;
 			set_subject_data( elem, &gconnector_subjector );
 			notify_observer( &gconnector_subjector );
 
@@ -619,6 +643,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
 			elem.ctrl_msg.msg_type = msg_type;
 			elem.ctrl_msg.msg_resp_status = status;
+			elem.data_frame = NULL;// set data frame
+			elem.data_frame_len = 0;
 			set_subject_data( elem, &gconnector_subjector );
 			notify_observer( &gconnector_subjector );
 		
@@ -646,6 +672,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			elem.ctrl_msg.data_type = JDKSAVDECC_SUBTYPE_ACMP;
 			elem.ctrl_msg.msg_type = msg_type;
 			elem.ctrl_msg.msg_resp_status = status;
+			elem.data_frame = NULL;// set data frame
+			elem.data_frame_len = 0;
 			set_subject_data( elem, &gconnector_subjector );
 			notify_observer( &gconnector_subjector );
 			
