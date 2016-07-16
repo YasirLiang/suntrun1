@@ -9,7 +9,7 @@
 #include "time_handle.h"
 #include "send_common.h"
 
-#define SEND_INTERVAL_TIMEOUT 2 // 发送间隔ms 注:1ms会导致会议终端查询超时,改为2ms(2016-05-06)
+#define SEND_INTERVAL_TIMEOUT 2 // 发送间隔ms 注:1ms会导致会议终端查询超时,改为2ms(2016-05-06) 5-10ms发送太慢
 
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 本地发送缓冲区
 

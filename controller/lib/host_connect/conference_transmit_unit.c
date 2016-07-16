@@ -826,6 +826,19 @@ int conference_transmit_model_node_destroy( uint64_t tarker_id )
 	return -1;
 }
 
+void conference_transmit_unit_cleanup_conference_node(void)
+{
+	tconference_trans_pmodel p_temp_node = NULL;
+
+	list_for_each_entry(p_temp_node, &gconference_model_guard.list, list)
+	{
+		if (p_temp_node->confenrence_node != NULL)
+		{
+			p_temp_node->confenrence_node = NULL;
+		}
+	}
+}
+
 void conference_transmit_model_init( void )
 {
 	INIT_LIST_HEAD( &gconference_model_guard.list );

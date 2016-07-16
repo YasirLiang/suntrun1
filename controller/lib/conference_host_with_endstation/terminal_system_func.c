@@ -14,7 +14,11 @@
 **Garam:
 **		none
 **Func: system reallot all terminal address  
+**注意:若应用于多线程环境，必须为地址内存列表,
+**		终端链表\进行互斥锁操作，(2016-07-16注)
 *****************************************/
+
+extern void conference_transmit_unit_cleanup_conference_node(void);
 void terminal_system_reallot_addr( void )
 {
 	/* 初始化系统分配地址标志 */
@@ -22,6 +26,9 @@ void terminal_system_reallot_addr( void )
 
 	/*初始化地址内存列表*/
 	init_terminal_address_list();
+
+	/*必须置所有被引用终端节点指针为空，在 清除终端链表之前*/
+	conference_transmit_unit_cleanup_conference_node();
 
 	/* 清除终端链表 ,除了头结点*/
 	terminal_system_dblist_except_free();

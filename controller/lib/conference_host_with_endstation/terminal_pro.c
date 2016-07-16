@@ -787,7 +787,6 @@ int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
 	// 保存地址数据
 	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
 	{
-		DEBUG_LINE();
 		send_data_lng = 0;
 		if( p_addr_list[p_allot->index].addr != 0xffff)
 		{
@@ -4111,10 +4110,10 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 	}
 	else
 	{
+		terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 		if (0 == trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id, speak_node ))
 		{
 			addr_queue_delect_by_value(gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, speak_node->tmnl_dev.address.addr);
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 			terminal_speak_track(speak_node->tmnl_dev.address.addr, false );
 			ret = true;
 		}
@@ -4166,7 +4165,6 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr ))
 		{// terminal apply
-			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );// 取消当前的申请发言
 			terminal_mic_state_set( MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );// 上报mic状态
 			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
 			{
