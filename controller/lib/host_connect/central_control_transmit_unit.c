@@ -20,7 +20,7 @@
 #include "time_handle.h"
 
 #ifdef __DEBUG__
-//#define __CCU_TRANSMIT_UNIT_DEBUG__
+#define __CCU_TRANSMIT_UNIT_DEBUG__
 #endif
 
 #ifdef __CCU_TRANSMIT_UNIT_DEBUG__
@@ -188,14 +188,14 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 
 	if( (resp_status != 0) ||(tarker_id == 0) ||(listern_id == 0))// response not right?
 		return;
-	
+
 	list_for_each( p_list, &gccu_trans_model_guard )
 	{
 		T_pccuTModel ptr_tmp_model = NULL;
 		ptr_tmp_model = list_entry( p_list, TccuTModel, list );
 		if( ptr_tmp_model != NULL )
 		{
-			if( ptr_tmp_model->tarker_id == listern_id )
+			if( ptr_tmp_model->tarker_id == tarker_id )
 			{// search model
 				ptr_model = ptr_tmp_model;
 				found_model = true;
@@ -206,16 +206,19 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 
 	if( found_model )
 	{// ÕÒoutput
+		p_list = NULL;
 		list_for_each( p_list, &ptr_model->out_ch.list )
 		{
 			T_pOutChannel p_tmp_outch = NULL;
 			p_tmp_outch = list_entry( p_list, TOutChannel, list );
-			if( (p_tmp_outch != NULL) && (p_tmp_outch->tarker_index == tarker_index) )
-			{// found output
-				found_output = true;
-				p_outch = p_tmp_outch;
-				break;
-			}
+			if( (p_tmp_outch != NULL) )
+				if(p_tmp_outch->tarker_index == tarker_index)
+				{// found output
+					found_output = true;
+					p_outch = p_tmp_outch;
+					p_outch->operate_timetimp = get_current_time();
+					break;
+				}
 		}
 	}
 
@@ -227,8 +230,6 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 			input_connect_node_init_by_index( p_intput, listern_id, listern_id_index );
 			input_connect_node_insert_node_to_list( &p_outch->list, p_intput );
 		}
-
-		p_outch->operate_timetimp = get_current_time();
 	}
 }
 

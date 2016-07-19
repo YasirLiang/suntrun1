@@ -578,7 +578,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 					{
 						gdisc_flags.speak_limit_num++;
 					}
-
+					
 					connect_mic_main_call.connect_node = NULL;
 					connect_mic_main_call.p_mian_state_send = NULL;
 					connect_mic_main_call.p_mic_set_callback = NULL;

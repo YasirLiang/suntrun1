@@ -441,180 +441,8 @@ bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uin
 	return bret;
 }
 
-#define CCU_RECV_M_EV_MAX 20
-enum ccu_recv_model_enum_event
-{
-	TALKER_CONNECT = 1,
-	TALKER_DISCONNECT = 2,
-};
-
-enum ccu_recv_model_event_elemt_status
-{
-	elemt_sink_free,
-	elemt_sink_busy
-};
-
-struct ccu_recv_model_event_elemt
-{
-	uint64_t talker_id;
-	TInChannel *p_input_channel;
-	uint16_t pro_times;// 事件处理次数
-	uint16_t talker_index;
-	enum ccu_recv_model_enum_event event_type;// 事件类型
-	enum ccu_recv_model_event_elemt_status elem_status;
-};
-
-struct ccu_recv_model_event
-{
-	struct ccu_recv_model_event_elemt event_elemts[CCU_RECV_M_EV_MAX];
-	uint8_t event_counts;
-	uint8_t event_cur_index;
-};
-
-struct ccu_recv_model_event gccu_recv_model_event_pro;// 中央接收模块事件处理
-
-int ccu_recv_model_event_add( struct ccu_recv_model_event_elemt event )
-{
-	if (gccu_recv_model_event_pro.event_counts < CCU_RECV_M_EV_MAX)
-	{
-		int i = 0, ins_index = -1;
-		for (i = 0; i < CCU_RECV_M_EV_MAX;++i)
-		{
-			if (gccu_recv_model_event_pro.event_elemts[i].elem_status == elemt_sink_free)
-			{
-				ins_index = i;
-				break;
-			}
-		}
-
-		if (ins_index != -1)
-		{
-			gccu_recv_model_event_pro.event_elemts[ins_index].event_type = event.event_type;
-			gccu_recv_model_event_pro.event_elemts[ins_index].elem_status = event.elem_status;
-			gccu_recv_model_event_pro.event_elemts[ins_index].pro_times = event.pro_times;
-			gccu_recv_model_event_pro.event_elemts[ins_index].p_input_channel = event.p_input_channel;
-			gccu_recv_model_event_pro.event_elemts[ins_index].talker_id = event.talker_id;
-			gccu_recv_model_event_pro.event_elemts[ins_index].talker_index = event.talker_index;
-			++gccu_recv_model_event_pro.event_counts;
-			return 0;
-		}
-		
-		return -1;
-	}
-
-	return -1;
-}
-
-void central_control_recieve_unit_event_pro(void)
-{
-	if (gccu_recv_model_event_pro.event_counts > 0)
-	{
-		int i = 0, j = 0;
-		bool found_entity = false;
-		uint32_t cur_time = get_current_time();
-		bool time_out = false;
-		
-		for (i = 0; i < CCU_RECV_M_EV_MAX;++i)
-		{
-			bool no_pro = true;
-			if (gccu_recv_model_event_pro.event_elemts[i].p_input_channel != NULL &&
-				(gccu_recv_model_event_pro.event_elemts[i].elem_status == elemt_sink_busy))
-				no_pro = false;
-
-			if (!no_pro)
-			{
-				for( j = 0; j < CCU_TR_MODEL_MAX_NUM; j++ )
-				{
-					if (gccu_recieve_model_list[j].entity_id ==\
-						gccu_recv_model_event_pro.event_elemts[i].p_input_channel->listener_id)
-					{
-						found_entity = true;
-						no_pro = false;
-						break;
-					}
-				}
-			}
-
-			if (!found_entity)
-			{
-				gccu_recv_model_event_pro.event_elemts[i].p_input_channel = NULL;
-				gccu_recv_model_event_pro.event_elemts[i].event_type = 0;
-				gccu_recv_model_event_pro.event_elemts[i].elem_status = elemt_sink_free;
-			}
-			else
-			{
-#ifdef EN_CCU_RECV_PROTECT_MODEL_PROTECT
-				if (cur_time - gccu_recieve_model_list[j].model_last_time > CCU_RECV_PROTECT_TIMEOUT)
-				{
-					time_out = true;
-				}
-#else
-				time_out = true;	
-#endif
-			}
-
-			if (!no_pro)
-			{
-				if (gccu_recv_model_event_pro.event_elemts[i].pro_times <= 0 ||\
-					(gccu_recv_model_event_pro.event_elemts[i].elem_status != elemt_sink_busy))
-				{
-					no_pro = true;
-				}
-			}
-
-			if (!no_pro && time_out)
-			{
-				struct jdksavdecc_eui64 talker_entity_id;
-				struct jdksavdecc_eui64 listener_entity_id;
-				uint64_t taker_id = gccu_recv_model_event_pro.event_elemts[i].talker_id;
-				uint16_t taker_index = gccu_recv_model_event_pro.event_elemts[i].talker_index;
-				uint64_t listen_id = gccu_recv_model_event_pro.event_elemts[i].p_input_channel->listener_id;
-				uint16_t listen_index = gccu_recv_model_event_pro.event_elemts[i].p_input_channel->listener_index;
-				convert_uint64_to_eui64( talker_entity_id.value, taker_id);
-				convert_uint64_to_eui64( listener_entity_id.value, listen_id );
-
-				if (gccu_recv_model_event_pro.event_elemts[i].event_type == TALKER_CONNECT)
-				{
-					gccu_recv_model_event_pro.event_elemts[i].p_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
-					acmp_connect_avail( talker_entity_id.value, 
-						taker_index, 
-						listener_entity_id.value, 
-						listen_index, 
-						1, ++gccu_acmp_sequeue_id );
-					gccu_recv_model_event_pro.event_elemts[i].p_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
-				}
-				else if ((gccu_recv_model_event_pro.event_elemts[i].event_type == TALKER_DISCONNECT))
-				{
-					conference_recieve_model_connect_self( taker_id );// 重连本机
-				
-					gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
-					acmp_disconnect_avail( talker_entity_id.value, 
-								taker_index, 
-								listener_entity_id.value, 
-								listen_index, 
-								1, ++gccu_acmp_sequeue_id );
-					gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
-				}
-
-				gccu_recieve_model_list[j].model_last_time = cur_time;
-				gccu_recv_model_event_pro.event_elemts[i].pro_times--;
-				gccu_recv_model_event_pro.event_counts = (gccu_recv_model_event_pro.event_counts-1)%CCU_RECV_M_EV_MAX;
-				gccu_recv_model_event_pro.event_elemts[i].p_input_channel = NULL;
-				gccu_recv_model_event_pro.event_elemts[i].event_type = 0;
-				gccu_recv_model_event_pro.event_elemts[i].elem_status = elemt_sink_free;
-
-				if (gccu_recv_model_event_pro.event_counts ==0 )
-				{
-					break;
-				}
-			}
-		}
-	}
-}
-
 int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 {
-#if 1
 	struct jdksavdecc_eui64 talker_entity_id;
 	struct jdksavdecc_eui64 listener_entity_id;
 	int ret = -1;
@@ -647,41 +475,10 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 	}
 
 	return ret;
-#else
-	int ret = -1;
-	
-	if( central_control_found_available_channel() )
-	{
-		assert( gchannel_allot_pro.p_current_input_channel != NULL );
-		if( gchannel_allot_pro.p_current_input_channel != NULL )
-		{
-			if( gchannel_allot_pro.p_current_input_channel->status == INCHANNEL_FREE )
-			{
-				struct ccu_recv_model_event_elemt event;
-				event.event_type = TALKER_CONNECT;
-				event.elem_status = elemt_sink_busy;
-				event.pro_times = 1;
-				event.p_input_channel = gchannel_allot_pro.p_current_input_channel;
-				event.talker_id = talker_id;
-				event.talker_index = talker_index;
-				ccu_recv_model_event_add(event);
-				if ( 0 == ccu_recv_model_event_add(event))
-					ret = 0;
-			}
-		}
-	}
-	else 
-	{
-		ccu_recv_unit_debug( " has not a valid input channel to talk to !" );
-	}
-
-	return ret;
-#endif
 }
 
 int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_index )
 {
-#if 1
 	struct jdksavdecc_eui64 talker_entity_id;
 	struct jdksavdecc_eui64 listener_entity_id;
 	T_pInChannel p_temp_chNode = NULL;
@@ -712,35 +509,6 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 	}
 
 	return -1;
-#else
-	T_pInChannel p_temp_chNode = NULL;
-	int i = 0;
-
-	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
-	{
-		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
-		{
-			if( (p_temp_chNode->tarker_id == talker_id) &&\
-				(p_temp_chNode->tarker_index == talker_index) )
-			{
-				struct ccu_recv_model_event_elemt event;
-				event.event_type = TALKER_DISCONNECT;
-				event.elem_status = elemt_sink_busy;
-				event.pro_times = 1;
-				event.p_input_channel = p_temp_chNode;
-				event.talker_id = talker_id;
-				event.talker_index = talker_index;
-				//ccu_recv_model_event_add(event);
-				if ( 0 == ccu_recv_model_event_add(event))
-					return 0;
-
-				return -1;
-			}
-		}
-	}
-
-	return -1;
-#endif
 }
 
 void central_control_recieve_uinit_init_list( void )
@@ -749,24 +517,11 @@ void central_control_recieve_uinit_init_list( void )
 	
 	INIT_ZERO( &gchannel_allot_pro, sizeof(gchannel_allot_pro));
 	INIT_ZERO( gccu_recieve_model_list, sizeof(gccu_recieve_model_list));
-	INIT_ZERO(&gccu_recv_model_event_pro, sizeof(gccu_recv_model_event_pro));
 
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
 		INIT_LIST_HEAD( &gccu_recieve_model_list[i].connect_channel_head.list );
 		INIT_LIST_HEAD( &gccu_recieve_model_list[i].unconnect_channel_head.list );
-	}
-
-	gccu_recv_model_event_pro.event_cur_index = 0;
-	gccu_recv_model_event_pro.event_counts = 0;
-	for ( i = 0; i < CCU_RECV_M_EV_MAX; i++)
-	{
-		gccu_recv_model_event_pro.event_elemts[i].p_input_channel = NULL;
-		gccu_recv_model_event_pro.event_elemts[i].event_type = 0;
-		gccu_recv_model_event_pro.event_elemts[i].elem_status = elemt_sink_free;
-		gccu_recv_model_event_pro.event_elemts[i].pro_times = 0;
-		gccu_recv_model_event_pro.event_elemts[i].talker_id = 0;
-		gccu_recv_model_event_pro.event_elemts[i].talker_index = 0xffff;
 	}
 
 	// 初始化观察者

@@ -18,7 +18,7 @@
 #include "acmp_controller_machine.h"
 
 #ifdef __DEBUG__
-//#define __CONFERENCE_TRANSMIT_DEBUG__
+#define __CONFERENCE_TRANSMIT_DEBUG__
 #endif
 
 #ifdef __CONFERENCE_TRANSMIT_DEBUG__
@@ -102,7 +102,8 @@ int conference_transmit_unit_init(const uint8_t *frame, int pos, size_t frame_le
 		p_temp_node = (tconference_trans_pmodel)malloc( sizeof(tconference_trans_model) );
 		if( p_temp_node != NULL )
 		{
-			p_temp_node->confenrence_node = found_terminal_dblist_node_by_endtity_id(endtity_id);
+			//p_temp_node->confenrence_node = found_terminal_dblist_node_by_endtity_id(endtity_id);
+			p_temp_node->confenrence_node = NULL;
 			p_temp_node->tarker_id = endtity_id;
 			p_temp_node->model_speak_time.elapsed = false;
 			p_temp_node->model_speak_time.running = false;
@@ -405,8 +406,8 @@ static void trans_model_unit_update_by_get_tx_state(const uint64_t tarker_stream
 													p_Outnode,
 													tarker_index,
 													tarker_id,
-													listern_id,
 													listern_id_index,
+													listern_id,
 													frame_len,
 													frame);// the function proccess timeout status
 	}
@@ -499,8 +500,8 @@ static void trans_model_unit_update_by_connect_rx_state(const uint64_t tarker_id
 														p_Outnode,
 														tarker_index,
 														tarker_id,
-														listern_id,
-														listern_id_index);
+														listern_id_index,
+														listern_id);
 	}
 }
 
@@ -611,8 +612,8 @@ static void trans_model_unit_update_by_disconnect_rx_state(const uint64_t tarker
 														p_Outnode,
 														tarker_index,
 														tarker_id,
-														listern_id,
-														listern_id_index);
+														listern_id_index,
+														listern_id);
 	}
 }
 

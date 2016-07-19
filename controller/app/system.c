@@ -66,15 +66,6 @@ void init_system( void )
 	connect_table_info_init();/*初始化连接表*/
 #endif
 
-#if 0
-	if( -1 == muticast_connector_init())// 初始广播表
-	{
-		DEBUG_INFO( "init mitucast conventionr list failed" );
-		exit( -1 );
-	}
-#else
-#endif
-
 	init_sem_tx_can();
 	init_sem_wait_can();
 	init_network_send_queue();
@@ -192,21 +183,11 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	connect_table_get_information( descptor_guard );
 #endif
 
-#if 0
-	background_read_descriptor_input_output_stream();
-	sleep(2);
-#endif
-
 #ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
 	/* 设置连接表*/
 	connect_table_info_set( descptor_guard, true );
-	sleep(1);
 #endif
 
-#if 0
-	// 设置广播连接表的信息
-	muticast_connector_connect_table_set( descptor_guard );
-#endif
 	// 开始注册会议终端
 	terminal_begin_register();
 }
@@ -222,7 +203,6 @@ void system_close( struct threads_info *p_threads )
 	lcd192x64_close();// yasirLiang add in 2016/05/16
 	controller_machine_destroy(&gp_controller_machine);// 摧毁控制器
 	system_1722_recv_handle_destroy();
-
 	// 退出线程
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 	sem_post( &sem_waiting );
@@ -251,19 +231,21 @@ void system_close( struct threads_info *p_threads )
 		free( endpoint_list );
 		endpoint_list = NULL;
 	}
+
 	destroy_inflight_dblist( command_send_guard );
 	if( command_send_guard != NULL )
 	{
 		free( command_send_guard );
 		command_send_guard = NULL;
 	}
+
 	destroy_descptor_dblist( descptor_guard );
 	if( descptor_guard != NULL )
 	{
 		free( descptor_guard );
 		descptor_guard = NULL;
 	}
-	
+
 	terminal_system_dblist_destroy();
 	
 	// 释放系统队列资源
@@ -278,20 +260,15 @@ void system_close( struct threads_info *p_threads )
 	muticast_connector_destroy();// 释放广播表资源
 #else
 #endif
-
 	profile_system_close();// 保存配置文件的信息
 	camera_pro_system_close();// 摄像头相关的资源释放
 	camera_common_control_destroy(); // 串口资源释放
 	matrix_control_destroy();
-
 	// 关闭数据库
 	system_database_destroy();
-
 	// 释放系统相关的资源
 	terminal_proccess_system_close();
-
 	log_machine_destroy();
-
 	// 释放所有文件描述符
 	if( NULL != glog_file_fd)
 		Fclose( glog_file_fd );
