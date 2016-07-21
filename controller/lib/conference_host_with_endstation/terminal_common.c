@@ -405,6 +405,6 @@ void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  tar
 		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
 	}
 
-	terminal_begin_register();
+	//terminal_begin_register();
 }
 

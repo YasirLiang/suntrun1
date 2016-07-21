@@ -45,6 +45,7 @@ enum enum_menu_cmd
 	MENU_UI_CHM_FIRST,// 主席优先
 	MENU_UI_SAVE_WIRE_ADDR,// 保存无线遥控地址 value = 保存地址的长度 p_GetSaveParam 为地址的保存的地址指针
 	MENU_UI_GET_WIRE_ADDR,// 获取无线遥控地址 value = 0；p_GetSaveParam 为地址的保存的地址指针
+	MENU_UI_CHN_PRIOR,// 主席优先
 	MENU_UI_MENU_CMD_ERR = 0xffff
 };
 

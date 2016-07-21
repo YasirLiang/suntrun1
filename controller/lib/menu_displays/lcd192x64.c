@@ -586,6 +586,7 @@ int lcd192x64_init(void)
 
 int lcd192x64_close( void )// yasirLiang add in 2016/05/16
 {
+	lcd_clr(2);
 	if( g_lcd_gpio_fd > 0 )
 		close( g_lcd_gpio_fd );
 

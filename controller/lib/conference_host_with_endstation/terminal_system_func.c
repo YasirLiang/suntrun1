@@ -40,7 +40,7 @@ void terminal_system_reallot_addr( void )
 	terminal_open_addr_file_wt_wb();
 
 	/*Çå³ı×¢²á´¦Àí*/
-	terminal_register_init();
+	//terminal_register_init();
 
 	terminal_reallot_address();
 }

@@ -60,10 +60,10 @@ const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS] =
 	{ 0xffffffff, termianal_chairman_prior_set, FUNC_MENU_PRIOR_EN_SET },
 	{ 0Xffffffff, terminal_system_register, FUNC_MENU_TERMINAL_SYS_REGISTER},// 48 // 2016/1/23 add
 	{ 0Xffffffff, termianal_temp_close_set, FUNC_MENU_TEMP_CLOSE_SET },
-	{ 0Xffffffff, termianal_camera_track_set, FUNC_MENU_CMR_TRACK },
+	{ 0Xffffffff, termianal_camera_track_set, FUNC_MENU_CMR_TRACK },// 50
 	
 	{ 0xffffffff, camera_preset_addr_select, FUNC_SYS_PRESET_ADDR },
-	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }// INDEX 53
+	{ 0xffffffff, camera_get_preset, FUNC_SYS_GET_PRESET }// INDEX 52
 };
 
 const func_link_items func_link_tables[MAX_FUNC_LINK_ITEMS] =

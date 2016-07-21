@@ -23,6 +23,8 @@
 
 #include "menu_exe.h"// 来自菜单命令
 
+extern int lcd192x64_close( void );
+
 // 非命令行菜单功能命令
 static int menuModeSetPro( uint16_t value, uint8_t  *p_GetParam )
 {
@@ -69,7 +71,7 @@ static int menuAutoClosePro( uint16_t value, uint8_t  *p_GetParam )
 	uint8_t temp = (uint8_t)value;
 	DEBUG_INFO( "AutoClose flags  = %d", temp );
 
-	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint16_t));
+	find_func_command_link( MENUMENT_USE, MENU_AUTO_CLOSE_CMD, 0, &temp, sizeof(uint8_t));
 
 	return 0;
 }
@@ -116,7 +118,11 @@ static int menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the
 
 	//sync();// 同步所有文件
 	DEBUG_INFO( "System Close......" );
-	//system_close( &threads );
+#if 0
+	system_close( &threads );
+#else
+	lcd192x64_close();// yasirLiang add in 2016/05/16
+#endif
 	DEBUG_INFO( "System Close Success!" );
 	system("reboot");
 	//exit(0);
@@ -353,6 +359,15 @@ static int menuGetWireAddrPro( uint16_t get_value_size, uint8_t  *p_GetParam )
 	return ret;
 }
 
+static int menuChnPriorPro(uint16_t value, uint8_t  *p_GetParam)
+{// 临时关闭菜单键
+	uint8_t temp = (uint8_t)value;
+
+	find_func_command_link( MENUMENT_USE, MENU_PRIOR_EN_SET, 0, (uint8_t*)&temp, sizeof(uint8_t) );
+
+	return 0;
+}
+
 struct _type_menu_command_command
 {
 	enum enum_menu_cmd menu_cmd;
@@ -387,6 +402,7 @@ static struct _type_menu_command_command gtable_menu_command[] =
 	{ MENU_UI_SEND_MAIN_STATE, menuSendMainStatePro },
 	{ MENU_UI_SAVE_WIRE_ADDR, menuSaveWireAddrPro },
 	{ MENU_UI_GET_WIRE_ADDR, menuGetWireAddrPro },
+	{ MENU_UI_CHN_PRIOR, menuChnPriorPro},
 	{ MENU_UI_MENU_CMD_ERR, NULL }
 };
 

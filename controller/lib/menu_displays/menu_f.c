@@ -1509,15 +1509,26 @@ void MenuInit(void)
 	gPresetTmnSelPro.Addr = FULL_VIEW_ADDR;
 	gsnCurMGrp=0;
 	ByteDataInit();
+#if 0
 	sleep(1);
 	clear_block(0,0,192,64);
-  update_disp_data(0,0,192,64);
+  	update_disp_data(0,0,192,64);
 	DisplayGroup(gsnCurMGrp);
 #if 0 // yasir change in 2016-4-7
   DisplayOneState(0,PPT_MODE);
 #else
   DisplayOneState(0,gByteData[VAL_DSCS_MODE]);
 #endif
+
 	sleep(1);
+#endif
+}
+
+void menu_first_display(void)// 必须在MenuInit函数之后调用
+{
+	clear_block(0,0,192,64);
+	update_disp_data(0,0,192,64);
+	DisplayGroup(gsnCurMGrp);
+	DisplayOneState(0,gByteData[VAL_DSCS_MODE]);
 }
 // ============================================================================

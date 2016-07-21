@@ -2,6 +2,33 @@
 #include "aecp_controller_machine.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
+bool inflight_conference_command_exist(void)
+{
+	inflight_plist guard = command_send_guard;
+	inflight_plist inflight_station = NULL;
+	bool found = false;
+	
+	for (inflight_station = guard->next; inflight_station != guard; inflight_station = inflight_station->next)
+	{
+		uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
+		if (data_type == JDKSAVDECC_SUBTYPE_AECP)
+		{
+			if (inflight_station->host_tx.inflight_frame.frame != NULL)
+			{
+				uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(inflight_station->host_tx.inflight_frame.frame, ZERO_OFFSET_IN_PAYLOAD);
+				if (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND||
+					(msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_RESPONSE))
+				{
+					found = true;
+					break;
+				}
+			}
+		}		
+	}
+
+	return found;
+}
+
 void inflight_time_tick( inflight_plist guard )
 {
 	inflight_plist inflight_station = NULL;

@@ -123,6 +123,8 @@ typedef struct type_query_sign_vote // 2016/1/27
 	host_timer query_timer;// 查询定时器
 }tquery_svote;
 
+extern volatile ttmnl_register_proccess gregister_tmnl_pro; 			// 终端报到处理
+
 int init_terminal_discuss_param( void );
 int init_terminal_address_list_from_file( void );
 void init_terminal_address_list( void );

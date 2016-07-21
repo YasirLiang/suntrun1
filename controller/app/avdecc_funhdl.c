@@ -147,18 +147,21 @@ int udp_server_fn(struct epoll_priv *priv )
 	memset( &sin_in, 0, sin_len );
 	
 	recv_len = recv_udp_packet( priv->fd, recv_frame.payload, sizeof( recv_frame.payload ), &sin_in, &sin_len );
-	if( recv_len > 0)
+	if (gregister_tmnl_pro.rgs_state == RGST_IDLE)
 	{
-		// 保存接收数据到缓冲区
-		upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
+		if( recv_len > 0)
+		{
+			// 保存接收数据到缓冲区
+			upper_computer_common_recv_messsage_save( priv->fd, &sin_in, true, sin_len, recv_frame.payload, recv_len );
+		}
+		else
+		{
+			DEBUG_INFO("recv UDP packet len is zero or recv error!");
+			is_upper_udp_client_connect = false;
+			assert( recv_len >= 0);
+		}
 	}
-	else
-	{
-		DEBUG_INFO("recv UDP packet len is zero or recv error!");
-		is_upper_udp_client_connect = false;
-		assert( recv_len >= 0);
-	}
-
+	
 	return 0;
 }
 
@@ -192,29 +195,15 @@ extern int gcontrol_sur_fd;
 //extern sem_t gsem_surface;
 int control_surface_recv_fn( struct epoll_priv *priv )
 {
-	memset( gcontrol_sur_recv_buf, 0, INPUT_MSG_LEN );
-	gcontrol_sur_msg_len = read( priv->fd, gcontrol_sur_recv_buf, INPUT_MSG_LEN );
-	if( gcontrol_sur_msg_len  > 0 )
+	memset(gcontrol_sur_recv_buf, 0, INPUT_MSG_LEN);
+	gcontrol_sur_msg_len = read(priv->fd, gcontrol_sur_recv_buf, INPUT_MSG_LEN);
+
+	if (gregister_tmnl_pro.rgs_state != RGST_IDLE)
 	{
-#ifdef __DEBUG__
-		printf("uart recv: ");
-		int i;
-		for(i=0; i<gcontrol_sur_msg_len; i++)
-		{
-			printf("0x%x ",gcontrol_sur_recv_buf[i]);
-		}
-		printf("\n");
-#endif
-		//sem_post( &gsem_surface );
+		memset(gcontrol_sur_recv_buf, 0, INPUT_MSG_LEN);
+		gcontrol_sur_msg_len = 0;
 	}
-	else
-	{
-#ifdef __DEBUG__
-		perror("uart recv failed:" );
-		printf("\n");
-#endif
-	}
-	
+
 	return 0;
 }
 

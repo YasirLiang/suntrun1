@@ -19,30 +19,33 @@
 
 unsigned char  gUseDis;
 unsigned char gByteData[PAR_NUM];
+TPresetTmnSelPro gPresetTmnSelPro;
 
-Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir add in 2016-3-29
-Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir add in 2016-3-29
-Bool UseDisSet(unsigned char Use,Bool Set);// yasir add in 2016-3-29
+extern Bool ByteDataGet(unsigned char Index, unsigned char *pValue);// yasir add in 2016-3-29
+extern Bool ByteDataSave(unsigned char Index, unsigned char Value);// yasir add in 2016-3-29
+extern Bool UseDisSet(unsigned char Use,Bool Set);// yasir add in 2016-3-29
+extern uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
+
 void EnterCmrPreset(unsigned int value)
 {
 	printf_MENU_EXE("EnterCmrPreset(%d)\n",value); 
 	menu_cmd_run( MENU_UI_ENTERESCPRESET, 1,NULL );
 }
+
 void EscCmrPreset(unsigned int value)
 {
 	printf_MENU_EXE("EscCmrPreset(%d)\n",value); 
 	menu_cmd_run( MENU_UI_ENTERESCPRESET, 0,NULL );
 }
-  //遥控器对码
 
-void RCtrlAlign(unsigned int value)
+void RCtrlAlign(unsigned int value) //遥控器对码
 {
 	int Temp;
 	Temp = (value?1:0);
 	RCtrlAlignEn(Temp);
 
 	printf_MENU_EXE("RCtrlAlign(%d)\n",value); 
-	menu_cmd_run( MENU_UI_DISTANCECTL, value, NULL );
+	menu_cmd_run( MENU_UI_DISTANCECTL, (uint16_t)value, NULL );
 }
 
 void SpkLmtSet(unsigned int value)
@@ -51,7 +54,7 @@ void SpkLmtSet(unsigned int value)
 	DisplayOneState(2,value);
 
 	printf_MENU_EXE("SpkLmtSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_MODESET, value,NULL );
+	menu_cmd_run( MENU_UI_SPEAKLIMIT, (uint16_t)value,NULL );
 }
 
 void ApplyLmtSet(unsigned int value)
@@ -60,7 +63,7 @@ void ApplyLmtSet(unsigned int value)
 	DisplayOneState(3,value);
 
 	printf_MENU_EXE("ApplyLmtSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_MODESET, value,NULL );
+	menu_cmd_run( MENU_UI_APPLYNUMSET, (uint16_t)value,NULL );
 }
 void SwitchCamera(unsigned int value)
 {
@@ -121,7 +124,6 @@ void CameraAperture(unsigned int value)
 	menu_cmd_run( MENU_UI_CAMERACTLIRIS, !value,NULL );
 }
 
-extern uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
 unsigned short FindTmnAddr(unsigned short Addr, Bool NextFlag)
 {
 	unsigned short addr = 0xffff;
@@ -139,114 +141,103 @@ unsigned short FindTmnAddr(unsigned short Addr, Bool NextFlag)
 	return addr;
 }
 
-TPresetTmnSelPro gPresetTmnSelPro;
 void PresetTmnSel(unsigned int value)
 {
-  unsigned short Addr;
-  printf_MENU_EXE(" gPresetTmnSelPro.Addr = 0x%04x\n", gPresetTmnSelPro.Addr);
-  if(gPresetTmnSelPro.Addr>FULL_VIEW_ADDR)
-  {
-    Addr=FULL_VIEW_ADDR;
-  }
-  else if(!value)
-  {
-    Addr = gPresetTmnSelPro.Addr;
-  }
-  else if(1==value)
-  {
+	unsigned short Addr;
+	printf_MENU_EXE(" gPresetTmnSelPro.Addr = 0x%04x\n", gPresetTmnSelPro.Addr);
+	
+	if(gPresetTmnSelPro.Addr>FULL_VIEW_ADDR)
+	{
+		Addr=FULL_VIEW_ADDR;
+	}
+	else if(!value)
+	{
+		Addr = gPresetTmnSelPro.Addr;
+	}
+	else if(1==value)
+	{
 		if(gPresetTmnSelPro.Addr<BACKUP_FULL_VIEW_ADDR)
 		{
-	    Addr = FindTmnAddr(gPresetTmnSelPro.Addr,BOOL_TRUE);
-	    if(0xFFFF==Addr)
-	    {
-	      Addr=BACKUP_FULL_VIEW_ADDR;
-	    }
+			Addr = FindTmnAddr(gPresetTmnSelPro.Addr,BOOL_TRUE);
+			if(0xFFFF==Addr)
+			{
+				Addr=BACKUP_FULL_VIEW_ADDR;
+			}
 		}
 		else
 		{
 			Addr=FULL_VIEW_ADDR;
 		}
-  }
-  else if(-1==value)
-  {
+	}
+	else if(-1==value)
+	{
 		if(gPresetTmnSelPro.Addr==FULL_VIEW_ADDR)
 		{
 			Addr=BACKUP_FULL_VIEW_ADDR;
 		}
 		else
 		{
-    	Addr = FindTmnAddr(gPresetTmnSelPro.Addr,BOOL_FALSE);
+			Addr = FindTmnAddr(gPresetTmnSelPro.Addr,BOOL_FALSE);
 		}
-  }
-  ShowSelTmn(Addr);
+	}
+	
+	ShowSelTmn(Addr);
 	gPresetTmnSelPro.Addr = Addr;
 	gPresetTmnSelPro.Time= get_current_time();
 	gPresetTmnSelPro.RunFlag = BOOL_TRUE;
 	printf_MENU_EXE("PresetTmnSel(value=%d,Addr=0x%04x)\n",value,Addr);
-	menu_cmd_run( MENU_UI_SELECTPRESETADDR, gPresetTmnSelPro.Addr,NULL );
+	menu_cmd_run( MENU_UI_SELECTPRESETADDR, (uint16_t)gPresetTmnSelPro.Addr,NULL );
 }
 
-#if 0
-void PresetTmnSelPro(void)// 处理预置位选择
-{
-	if(gPresetTmnSelPro.RunFlag)
-	{
-		if((get_current_time()-gPresetTmnSelPro.Time)>500)
-		{
-			menu_cmd_run( MENU_UI_SELECTPRESETADDR, gPresetTmnSelPro.Addr,NULL );
-			gPresetTmnSelPro.RunFlag = BOOL_FALSE;
-		}
-	}
-}
-#endif
-
-/*
-#define PPT_MODE		0
-#define	LIMIT_MODE	1
-#define	FIFO_MODE 	2
-#define	APPLY_MODE	3
-*/
-void ModeSet(unsigned int value)
-{
+void ModeSet(unsigned int value) 
+{// value 0:PPT_MODE;value 1:LIMIT_MODE;value 2:FIFO_MODE;value 3:APPLY_MODE;
 	unsigned Mode;
 	printf_MENU_EXE("ModeSet(%d)\n",value);
 	Mode = value;
 	SaveMenuValue(13,0,value);
-	menu_cmd_run( MENU_UI_MODESET, value,NULL );
+	menu_cmd_run( MENU_UI_MODESET, (uint16_t)value,NULL );
 }
 
 void ChmPriorEnSet(unsigned int value)
-{
+{// 这是临时关闭的菜单调用函数，而不是主席优先
 	unsigned PriorEn;
 	PriorEn = value?1:0;
 	SaveMenuValue(1,1,value);
+	
 	printf_MENU_EXE("ChmPriorEnSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_TEMPCLOSE, value,NULL );
+	menu_cmd_run( MENU_UI_TEMPCLOSE, (uint16_t)value,NULL );
 }
+
 void ChmMusicEnSet(unsigned int value)
 {
 	unsigned MusicEn;
 	MusicEn = value?1:0;
 	SaveMenuValue(1,2,value);
+	
 	printf_MENU_EXE("ChmMusicEnSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_CHAIRMANHINT, value,NULL );
+	menu_cmd_run( MENU_UI_CHAIRMANHINT, (uint16_t)value,NULL );
 }
+
 void AutoOffEnSet(unsigned int value)
 {
 	unsigned AutoOffEn;
 	AutoOffEn = value?1:0;
 	SaveMenuValue(1,4,value);
+	
 	printf_MENU_EXE("AutoOffEnSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_AUTOCLOSE, value,NULL );
+	menu_cmd_run( MENU_UI_AUTOCLOSE, (uint16_t)value,NULL );
 }
+
 void CmrTrackSet(unsigned int value)
 {
 	unsigned int CmrNum;
   	SaveMenuValue(1,3,value);
 	GetMenuValue(5,0,&CmrNum);
+	
 	printf_MENU_EXE("CmrTrackSet(%d)\n",value);
-	menu_cmd_run( MENU_UI_CAMERATRACK, value,NULL );
+	menu_cmd_run( MENU_UI_CAMERATRACK, (uint16_t)value,NULL );
 }
+
 int GetCmrTrack(void)
 {
 	unsigned int value;
@@ -258,17 +249,19 @@ int GetCmrTrack(void)
 void TerminalReAllotAddr(unsigned int value)
 {
 	printf_MENU_EXE("TerminalReAllotAddr(%d)\n",value);
-	menu_cmd_run( MENU_UI_REALLOT, value,NULL );
+	menu_cmd_run( MENU_UI_REALLOT, (uint16_t)value,NULL );
 }
+
 void TerminalAddAllotAddr(unsigned int value)
 {
 	printf_MENU_EXE("TerminalAddAllotAddr(%d)\n",value);
-	menu_cmd_run( MENU_UI_NEWALLOT, value, NULL );
+	menu_cmd_run( MENU_UI_NEWALLOT, (uint16_t)value, NULL );
 }
+
 void TerminalAllotAddrOver(unsigned int value)
 {
 	printf_MENU_EXE("TerminalAllotAddrOver(%d)\n",value);
-	menu_cmd_run( MENU_UI_SETFINISH, value, NULL );
+	menu_cmd_run( MENU_UI_SETFINISH, (uint16_t)value, NULL );
 }
 
 void ByteDataInit(void)
@@ -284,12 +277,13 @@ void ByteDataInit(void)
 	ByteDataGet( VAL_DSCS_MODE, &get_byte );
 	ByteDataGet( VAL_MENU_LANG, &get_byte );
 }
+
 Bool ByteDataGet(unsigned char Index, unsigned char *pValue)
 {
 	printf_MENU_EXE("ByteDataGet(Index=%d)",Index);
 	if(Index<PAR_NUM)
 	{
-		menu_cmd_run( MENU_UI_GET_PARAM, Index, &gByteData[Index] );
+		menu_cmd_run( MENU_UI_GET_PARAM, (uint16_t)Index, &gByteData[Index] );
 		*pValue=gByteData[Index];
 		printf_MENU_EXE("value = %d\n", *pValue );
 		return BOOL_TRUE;
@@ -304,7 +298,7 @@ Bool ByteDataSave(unsigned char Index, unsigned char Value)
 	if(Index<PAR_NUM)
 	{
 		gByteData[Index]=Value;
-		menu_cmd_run( MENU_UI_SAVE_PARAM, Index, &gByteData[Index] );
+		menu_cmd_run( MENU_UI_SAVE_PARAM, (uint16_t)Index, &gByteData[Index] );
 		return BOOL_TRUE;
 	}
 	
@@ -315,7 +309,7 @@ Bool ByteDataSave(unsigned char Index, unsigned char Value)
 extern bool use_dis_set( uint8_t  user, bool set );// yasir add in 2016-4-8
 Bool UseDisSet(unsigned char Use,Bool Set)
 {
-	printf_MENU_EXE("UseDisSet(Use=%d,Set=%d)\n",Use,Set);
+	printf_MENU_EXE("UseDisSet(Use=%d,Set=%d)\n", Use, Set);
 	if(!(Use&(TMN_USE|MENU_USE|SYS_USE|CPT_USE)))
 	{
 		return BOOL_FALSE;
@@ -352,7 +346,7 @@ void SaveWirelessAddr(unsigned char *pAddr, unsigned AddrSize)
 
 	unsigned char addrlist[3]={0};
 	memcpy( addrlist, pAddr, AddrSize );
-	menu_cmd_run( MENU_UI_SAVE_WIRE_ADDR, AddrSize, addrlist );
+	menu_cmd_run( MENU_UI_SAVE_WIRE_ADDR, (uint16_t)AddrSize, addrlist );
 }
 
 void GetWirelessAddr(unsigned char *pAddr, unsigned AddrSize)
@@ -432,7 +426,7 @@ void CameraSelect( unsigned char cmd ,unsigned char *data, unsigned short data_l
 
 	camera_num = *data;
 	printf_MENU_EXE( "CameraSelect(%d)\n", camera_num );
-	menu_cmd_run( MENU_UI_SWITCHCMR, camera_num,NULL );
+	menu_cmd_run( MENU_UI_SWITCHCMR, (uint16_t)camera_num,NULL );
 }
 
 

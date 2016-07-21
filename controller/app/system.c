@@ -62,10 +62,6 @@ void init_system( void )
 	conference_recieve_uinit_proccess_init();// 初始化会议接收模块
 	central_control_transmit_unit_model_pro_init();// 初始化中央传输单元模块处理
 	
-#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
-	connect_table_info_init();/*初始化连接表*/
-#endif
-
 	init_sem_tx_can();
 	init_sem_wait_can();
 	init_network_send_queue();
@@ -173,23 +169,13 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	bzero( &zero, sizeof(struct jdksavdecc_eui64));
 
 	init_udp_client_controller_endstation( net_fd.udp_server_fd,  &p_udp_net->udp_srv.sock_addr );
+
+	sleep(2);
 	
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
-	//sleep(2);
-	
-#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
-	/*获取系统的终端连接信息*/ 
-	connect_table_get_information( descptor_guard );
-#endif
 
-#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
-	/* 设置连接表*/
-	connect_table_info_set( descptor_guard, true );
-#endif
-
-	// 开始注册会议终端
-	terminal_begin_register();
+	terminal_query_endstation(0x8000, 0);// 广播查询
 }
 
 extern FILE *glog_file_fd;
@@ -251,15 +237,7 @@ void system_close( struct threads_info *p_threads )
 	// 释放系统队列资源
 	destroy_func_command_work_queue();
 	destroy_network_send_work_queue();
-	
-#ifdef ENABLE_CONNECT_TABLE// endstation_connection.h
-	connect_table_destroy();// 释放连接表资源
-#endif
 
-#if 0
-	muticast_connector_destroy();// 释放广播表资源
-#else
-#endif
 	profile_system_close();// 保存配置文件的信息
 	camera_pro_system_close();// 摄像头相关的资源释放
 	camera_common_control_destroy(); // 串口资源释放

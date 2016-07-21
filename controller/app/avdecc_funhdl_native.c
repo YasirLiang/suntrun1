@@ -9,6 +9,7 @@
 #include "send_common.h" // 包含SEND_DOUBLE_QUEUE_EABLE
 #include "camera_pro.h"
 #include "system_1722_recv_handle.h"
+#include "terminal_pro.h"
 
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
@@ -348,9 +349,12 @@ int pthread_recv_data_fn( void *pgm )
 		switch( (static_buf_num++) % SYS_BUF_RECV_COUNT )
 		{
 			case 0:// buffer 1
-				pthread_mutex_lock(&ginflight_pro.mutex);
-				upper_computer_recv_message_get_pro();
-				pthread_mutex_unlock(&ginflight_pro.mutex);
+				if (gregister_tmnl_pro.rgs_state == RGST_IDLE)
+				{
+					pthread_mutex_lock(&ginflight_pro.mutex);
+					upper_computer_recv_message_get_pro();
+					pthread_mutex_unlock(&ginflight_pro.mutex);
+				}
 			break;
 			case 1:// buffer 2
 				control_matrix_common_recv_message_pro();
@@ -364,22 +368,25 @@ int pthread_recv_data_fn( void *pgm )
 #else
 #endif
 		system_register_terminal_pro();
-		terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
-		terminal_vote_proccess();// 终端投票处理
-		terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
+		if (gregister_tmnl_pro.rgs_state == RGST_IDLE)
+		{
+			terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
+			terminal_vote_proccess();// 终端投票处理
+			terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
+			/*
+			  *串口接收数据处理与菜单显示处理
+			  */
+			if( gcontrol_sur_msg_len > 0 )
+			{
+				input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
+				gcontrol_sur_msg_len = 0;
+			}
+		}
+		
 		avdecc_manage_discover_proccess();// 系统定时发现终端
 		send_common_check_squeue();// 检查发送队列发送数据
 		camera_pro();// 摄像头处理流程
 		terminal_over_time_speak_pro();
-		
-		/*
-		  *串口接收数据处理与菜单显示处理
-		  */
-		if( gcontrol_sur_msg_len > 0 )
-		{
-			input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
-			gcontrol_sur_msg_len = 0;
-		}
 	}
 	
 	return 0;

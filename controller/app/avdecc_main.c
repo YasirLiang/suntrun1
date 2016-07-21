@@ -319,13 +319,6 @@ int main( int argc, char *argv[] )
 	pthread_proccess_recv_data_create( &proccess_thread, NULL );
 	threads.tid[threads.pthread_nums++] = proccess_thread;
 	pthread_detach( proccess_thread );
-	
-#if 0
-	pthread_t p_thread;
-	pthread_handle_pipe( &p_thread, &net_fd ); // 创建读管道与发送网络数据线程
-	threads.tid[threads.pthread_nums++] = p_thread;
-	pthread_detach( p_thread );
-#endif
 
 	pthread_t f_thread;	// 接收命令处理函数
 	pthread_handle_cmd_func( &f_thread, proccess_func_link_tables );
@@ -353,25 +346,6 @@ int main( int argc, char *argv[] )
 	pthread_detach( test_cm_thread );
 #endif
 
-#if 0
-	pthread_t timer_pthread;
-	check_timer_create( &timer_pthread );
-#endif
-
-#if 0
-	/**
-	*创建界面处理线程
-	*/
-	pthread_t th;  
-	int ret;  
-	ret = pthread_create( &th, NULL, thread_control_surface, NULL);  
-	if( ret != 0 ){  
-		printf( "Create thread_control_surface error!\n");  
-		exit(1); 
-	}
-	threads.tid[threads.pthread_nums++] = th;
-	pthread_detach( th );// 与主线程分离
-#endif
 	DEBUG_ONINFO("waiting for endpoint for connect!");
 	set_system_information( net_fd, &udp_net );
 

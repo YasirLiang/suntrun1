@@ -202,7 +202,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
            		uint16_t desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
             		uint16_t desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
 	        	if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[ COMMAND TIMEOUT: 0x%llx, %s, %s, %d ]", 
+				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[COMMAND TIMEOUT: 0x%llx, %s, %s, %d]", 
 											dest_id, 
 											get_aem_command_string(cmd_type),
 											get_aem_desc_command_string( desc_type ), 
@@ -211,13 +211,15 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		else
 		{
 			uint8_t cfc_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
+			uint16_t cfc_addr = conferenc_terminal_read_address_data(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
 			cfc_cmd &= 0x1f;// ÃüÁîÔÚµÍÎåÎ»
 	        	if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[ UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx, %s(0x%02x) ( data len = %d ) ]", 
+				gp_log_imp->log.post_log_msg(&gp_log_imp->log, LOGGING_LEVEL_ERROR, "[UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx-%02x, %s(0x%02x) ( data len = %d )]", 
 											dest_id,
+											cfc_addr,
 											get_host_and_end_conference_string_value(cfc_cmd), 
 											cfc_cmd,
-											cmd_type );
+											cmd_type);
 		}
 
 		//free inflight command node in the system
