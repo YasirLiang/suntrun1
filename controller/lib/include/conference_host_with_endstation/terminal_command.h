@@ -8,7 +8,7 @@
 
 extern terminal_address_list_pro allot_addr_pro;
 
-void terminal_query_endstation( uint16_t addr, uint64_t entity_id );
+void terminal_query_endstation( uint16_t addr, const uint64_t entity_id );
 void terminal_allot_address( void );
 void terminal_reallot_address( void );
 void terminal_state_set( tmnl_state_set tmnlstate, uint16_t addr,  uint64_t  target_id );

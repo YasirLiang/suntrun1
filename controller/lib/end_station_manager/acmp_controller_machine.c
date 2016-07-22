@@ -31,9 +31,7 @@ tdisconnect_connect_mic_main_set connect_mic_main_call; // Á¬½ÓÂó¿Ë·ç×´Ì¬ÉèÖÃ£¬Ö
 tdisconnect_connect_mic_main_set disconnect_mic_main_call; // ¶Ï¿ªÂó¿Ë·ç×´Ì¬ÉèÖÃ£¬Ö÷»ú·¢ËÍ×´Ì¬»Øµ÷¡£
 muticast_conventioner_callback acmp_muticast_call;// ÓÃÓÚacmp·¢ËÍÊı¾İµÄÏµÍ³¹ã²¥±íµÄ»Øµ÷´¦Àí
 
-#ifndef SEND_DOUBLE_QUEUE_EABLE
 bool acmp_recv_resp_err = false; // acmp ½ÓÊÕµ½ÃüÁîµ«ÏìÓ¦´íÎó²ÎÊı
-#endif
 
 extern tsys_discuss_pro gdisc_flags; // »áÌÖ²ÎÊı
 
@@ -396,10 +394,8 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		release_heap_space( &acmp_pstation->host_tx.inflight_frame.frame);
 		delect_inflight_dblist_node( &acmp_pstation );
 
-#ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // ÉèÖÃ³¬Ê±
 		acmp_machine_debug( "is_inflight_timeout = %d", is_inflight_timeout );
-#endif	
 	}
 	else
 	{
@@ -497,9 +493,7 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 						seq_id );
 			
 			acmp_muticast_call.tarker_steam_id = 0;
-#ifndef SEND_DOUBLE_QUEUE_EABLE
 			acmp_recv_resp_err = true;
-#endif
 		}
 
 		// ¹ã²¥±í¸üĞÂ»Øµ÷£¬ÕâÀïtxÃüÁîÊÇ¸üĞÂÃüÁîrx tx ÖĞ×îºó·¢ËÍµÄÃüÁî£¬ËùÒÔÔÚÕâÀï×ö³É¹¦µÄ»Øµ÷
@@ -743,9 +737,8 @@ int acmp_callback(  uint32_t notification_flag, uint8_t *frame, uint16_t frame_l
 			{
 				acmp_muticast_call.listener_stream_id = 0;// ¹ã²¥Á¬½Ó±í»Øµ÷²ÎÊı
 			}
-#ifndef SEND_DOUBLE_QUEUE_EABLE			
+			
 			acmp_recv_resp_err = true;
-#endif
 		}
 	}
 	else if((msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE) ||

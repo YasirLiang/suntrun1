@@ -11,6 +11,7 @@
 
 #define SEND_INTERVAL_TIMEOUT 2 // ·¢ËÍ¼ä¸ôms ×¢:1ms»áµ¼ÖÂ»áÒéÖÕ¶Ë²éÑ¯³¬Ê±,¸ÄÎª2ms(2016-05-06) 5-10ms·¢ËÍÌ«Âı
 
+volatile bool gsend_pro_idle = true; // ·¢ËÍÍ£Ö¹±êÖ¾
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// ±¾µØ·¢ËÍ»º³åÇø
 
 int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ¹ÓÃÍ¬²½»úÖÆ2015-12-1).(¾­ÑéÖ¤201512-6´ËÏß³ÌÔİÎŞÎÊÌâ)
@@ -128,9 +129,29 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 					    is_resp_data, 
 					    &resp_interval_time );
 		pthread_mutex_unlock(&ginflight_pro.mutex);
-
-		/*¼ì²é·¢ËÍ×´Ì¬*/
-		over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
+#if 1
+		if (is_resp_data)
+			/*¼ì²é·¢ËÍ×´Ì¬*/
+			over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
+		else
+		{
+			int status = 0;
+			status = set_wait_message_primed_state();
+			assert( status == 0 );
+			status = set_wait_message_active_state();
+			assert( status == 0 );
+			gsend_pro_idle = false;
+			
+			while ((data_type != TRANSMIT_TYPE_CAMERA_UART_CTRL) &&
+					(data_type != TRANSMIT_TYPE_MATRIX_UART_CTRL) && !gsend_pro_idle)
+			{
+				if (!inflight_list_has_command())
+					break;
+				
+				continue;
+			}
+		}
+#endif
 #else
 		/**
 		  *µ¥¶ÓÁĞ·¢ËÍÏß³Ìº¯Êı´¦ÀíÁ÷³Ì

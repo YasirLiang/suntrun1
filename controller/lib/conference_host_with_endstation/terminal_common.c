@@ -263,7 +263,6 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 		assert( send_len >= 0 );
 	}
 
-	//DEBUG_SEND( send_frame.payload, send_len, "Terminal Send Data:" );
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	
 	return (uint16_t)send_len;
@@ -324,7 +323,6 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		ssize_t ret = 0;
 
 		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
-		//DEBUG_ONINFO( "=========>>>>target id = 0x%016llx", target_id  );
 		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
 		if( ret < 0 )
 		{
@@ -332,7 +330,6 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 			assert( ret >=0 );
 		}
 
-		//DEBUG_INFO( "data length = %d ",  recv_data.data_len );
 		if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
 		{
 			return; 

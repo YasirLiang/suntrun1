@@ -437,11 +437,12 @@ void trans_model_unit_update_connect_rx_state_pro_by_status(const int resp_statu
 		if (taker_index == CONFERENCE_OUTPUT_INDEX)
 		{
 			if( NULL != p_temp_node->confenrence_node)
+			{
 				terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
+			}
 
 			host_timer_start( 1000,&p_temp_node->model_speak_time);
 		}
-
 		// 更新输出通道保护时间戳
 		p_Outnode->operate_timetimp = get_current_time();
 

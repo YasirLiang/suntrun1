@@ -2,6 +2,17 @@
 #include "aecp_controller_machine.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
+bool inflight_list_has_command(void)
+{
+	bool found = true;
+	inflight_plist guard = command_send_guard;
+	
+	if (guard->next == guard)
+		found = false;
+
+	return found;
+}
+
 bool inflight_conference_command_exist(void)
 {
 	inflight_plist guard = command_send_guard;

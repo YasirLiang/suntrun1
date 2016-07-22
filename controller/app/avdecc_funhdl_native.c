@@ -381,6 +381,8 @@ int pthread_recv_data_fn( void *pgm )
 				input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
 				gcontrol_sur_msg_len = 0;
 			}
+
+			//acmp_binflight_cmd_time_tick();
 		}
 		
 		avdecc_manage_discover_proccess();// 系统定时发现终端

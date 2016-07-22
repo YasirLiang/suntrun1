@@ -157,7 +157,6 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		memcpy(tx_frame+6, net.m_my_mac, 6);
 		memcpy(tx_frame+12, ethertype, 2);
 		memcpy(tx_frame + ETHER_HDR_SIZE, frame, frame_len);
-
 		controller_machine_1722_network_send(gp_controller_machine, tx_frame, send_len);
 	}
 	else
@@ -173,11 +172,41 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	uint8_t *frame = NULL;
 	uint16_t frame_len = 0;
 	uint32_t interval_time = 0;
+	uint64_t dest_id = 0;
+        struct jdksavdecc_eui64 id;
+	uint8_t msg_type = 0xff;
+	uint16_t cmd_type = 0xff;
+
+	if (frame != NULL)
+	{
+		id = jdksavdecc_common_control_header_get_stream_id(frame, 0);
+		convert_eui64_to_uint64( id.value, &dest_id);
+		msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
+		cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, 0 );
+		cmd_type &= 0x7FFF;
+	}
+	else
+		return;
          
 	if( aecp_sta != NULL )
 	{
 		aecp_pstation = aecp_sta;
-		is_retried = is_inflight_cmds_retried( aecp_pstation );
+		if( msg_type != JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// host and end deal identify
+		{
+			is_retried = is_inflight_cmds_retried( aecp_pstation );
+		}
+		else
+		{
+			uint8_t cfc_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
+			cfc_cmd &= 0x1f;// 命令在低五位
+			if (aecp_pstation->host_tx.flags.retried >= get_conference_command_resend_count(cfc_cmd))
+				is_retried = true;
+			else
+			{				
+				is_retried = false;
+			}
+		}
+		
 		frame = aecp_pstation->host_tx.inflight_frame.frame;
 		frame_len = aecp_pstation->host_tx.inflight_frame.inflight_frame_len;
 	}
@@ -189,14 +218,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 
 	assert( frame );
 	if( is_retried )
-	{
-		uint64_t dest_id = 0;
-            	struct jdksavdecc_eui64 id = jdksavdecc_common_control_header_get_stream_id(frame, 0);
-		convert_eui64_to_uint64( id.value, &dest_id);
-		uint8_t msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
-		uint16_t cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, 0 );
-           	cmd_type &= 0x7FFF;
-		
+	{		
 		if( msg_type != JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND )// host and end deal identify
 		{
            		uint16_t desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
@@ -227,10 +249,8 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
 		
-#ifndef SEND_DOUBLE_QUEUE_EABLE		
 		is_inflight_timeout = true; // 设置超时
 		aecp_machine_debug( "is_inflight_timeout = %d", is_inflight_timeout );
-#endif
 	}
 	else
 	{

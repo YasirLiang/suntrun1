@@ -164,10 +164,8 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		// free inflight command node in the system
 		release_heap_space( &inflight_station->host_tx.inflight_frame.frame );
 		delect_inflight_dblist_node( &inflight_station );
-#ifndef SEND_DOUBLE_QUEUE_EABLE
 		is_inflight_timeout = true; // …Ë÷√≥¨ ±	
 		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
-#endif
 	}
 	else
 	{

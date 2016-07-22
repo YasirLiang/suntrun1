@@ -48,9 +48,9 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
-#@$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.txt
-#@$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.txt
-#@$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
+	$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.ald
+	$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.d
+	$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)
@@ -62,4 +62,4 @@ clean:
 cleanall:
 	make -C lib clean
 	make -C controller clean
-	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.txt avdecc_ctlDump preset_plist.dat
+	@$(RM) avdecc_ctl system.dat address.dat avdecc_ctl.ald avdecc_ctl.d avdecc_ctlDump preset_plist.dat

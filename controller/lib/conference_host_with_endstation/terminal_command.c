@@ -8,7 +8,7 @@
 #include "terminal_common.h"
 
 // 查询终端, addr是未注册的但是终端已分配了的地址(0x1),可以全广播
-void terminal_query_endstation( uint16_t addr, uint64_t entity_id )
+void terminal_query_endstation( uint16_t addr, const uint64_t entity_id )
 {
 	struct host_to_endstation askbuf;
 	uint16_t asklen = 0;

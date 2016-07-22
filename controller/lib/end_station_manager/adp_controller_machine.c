@@ -15,7 +15,7 @@
 
 void adp_entity_state_avail( solid_pdblist guard,  solid_pdblist exist_node, const struct jdksavdecc_adpdu_common_control_header *adp_hdr )
 {
-	adp_entity_time_update(  (timetype)(adp_hdr->valid_time *2 *1000 * 2) , exist_node );// 2s到61s之间(2016-07-08-add double time because of proccessing audio data)
+	adp_entity_time_update(  (timetype)(adp_hdr->valid_time *2 *1000 ) , exist_node );// 2s到61s之间(2016-07-08-add double time because of proccessing audio data)
 }
 
 inline void adp_entity_post_timeout_msr( solid_pdblist target )
@@ -107,7 +107,7 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 		solid_pdblist success_node = *new_entity;
 		memset(success_node, 0, sizeof(solid_dblist));
 		(*success_node).solid.entity_id = entity_entity_id;
-		adp_entity_time_start( (timetype)adp_du->header.valid_time * 2 * 1000 * 2, success_node);// 2s到61s之间(2016-07-08-add double time because of proccessing audio data)
+		adp_entity_time_start( (timetype)adp_du->header.valid_time * 2 * 1000, success_node);// 2s到61s之间(2016-07-08-add double time because of proccessing audio data)
 		(*success_node).solid.connect_flag = CONNECT;
 		(*success_node).solid.entity_index = list_len; 		//索引从零开始 
 		(*success_node).solid.available_index = adp_du->available_index;

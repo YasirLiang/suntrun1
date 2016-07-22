@@ -893,3 +893,52 @@ uint64_t convert_stream_id_to_tarker_id( const uint64_t listern_stream_id )
 	return id;
 }
 
+struct conference_command_resend_count
+{
+	uint8_t cmd;
+	uint8_t resend_cnt;
+};
+
+struct conference_command_resend_count conference_command_resend_count_tables[] = 
+{
+	{ QUERY_END, 5 },
+	{ ALLOCATION, 2 },
+	{ SET_END_STATUS, 5 },
+	{ REALLOCATION, 3 },
+	{ KEYPAD_ACTION, 3 },
+	{ SET_ENDLIGHT, 3 },
+	{ NEW_ALLOCATION, 2 },
+	{ END_ASSIGN, 3 },
+	{ SET_END_LCD, 3 },
+	{ COMMON_SEND_END_LCD, 3 },
+	{ SET_END_LED, 3 },
+	{ COMMON_SEND_END_LED, 3 },
+	{ PRESIDENT_CONTROL, 3 },
+	{ SEND_VOTE_RESULT, 3 },
+	{ TALKTIME_LEN, 3 },
+	{ HOST_SEND_STATUS, 5 },
+	{ SEND_END_LCD_DISPLAY, 3 },
+	{ OPTITION_END, 3 },
+	{ SET_MIS_STATUS, 5 },
+	{ END_SPETHING, 3 },
+	{ CHECK_END_RESULT, 3 },
+	{ TRANSIT_HOST_MSG, 3 },
+	{ TRANSIT_END_MSG, 3 },
+	{ 0xff, 2 }
+};
+
+uint8_t get_conference_command_resend_count(const uint8_t cmd)
+{
+	struct conference_command_resend_count * p = &conference_command_resend_count_tables[0];
+
+	while ( p != NULL && p->cmd != 0xff)
+	{
+		if (p->cmd == cmd)
+			break;
+
+		p++;
+	}
+
+	return p->resend_cnt;
+}
+
