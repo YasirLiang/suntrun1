@@ -39,6 +39,7 @@ typedef struct _type_muticast_manager
 {
 	enum _enum_change_muticast_state mm_cha_state;
 	enum _enum_muticast_pro_state mm_pro_state;
+	bool running;
 	bool muticast_exist;
 	Tstr_sysmuti_param mm_sys_flags;
 	host_timer mm_errlog_timer;
@@ -51,6 +52,6 @@ extern int muticast_connect_manger_timeout_event_image( void );
 extern int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_muti, struct list_head *p_muit_out );
 extern int muticast_connect_manger_database_update( void* p_muti_param );
 extern bool muticast_muticast_connect_manger_get_discut_self_flag( void );
-extern bool muticast_muticast_connect_manger_get_discut_self_flag( void );
+extern void muticast_muticast_connect_manger_pro_stop(void);
 
 #endif

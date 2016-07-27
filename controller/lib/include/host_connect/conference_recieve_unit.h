@@ -46,6 +46,6 @@ extern void conference_recieve_uinit_proccess_init( void );
 int conference_recieve_model_connect_self( uint64_t listern_id );
 int conference_recieve_model_discut_self( uint64_t listern_id );
 int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_len, const desc_pdblist desc_node, const uint64_t endtity_id );
-
+void conference_recieve_unit_destroy(void);
 
 #endif

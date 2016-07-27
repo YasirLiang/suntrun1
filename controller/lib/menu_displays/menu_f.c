@@ -1399,7 +1399,8 @@ void ItemSelected(short snMGSeq)
 
           }
           if(pMenu->fpMenuDo != NULL)
-              pMenu->fpMenuDo(NULL);
+              pMenu->fpMenuDo(0);
+	      //pMenu->fpMenuDo(NULL);
         }
         else if(pMenu->Type == MT_SWITCH)	//”Ô—‘«–ªª
         {

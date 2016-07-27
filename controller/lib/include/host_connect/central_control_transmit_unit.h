@@ -50,7 +50,7 @@ extern int central_control_transmit_unit_init( const uint8_t *frame, int pos, si
 extern void central_control_transmit_unit_update( subject_data_elem reflesh_data );// 更新会议接收单元模块的连接状态
 extern void central_control_transmit_unit_model_pro_init( void );
 extern bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output );
-
+extern void central_control_transmit_unit_model_destroy(void);
 
 //************************************//
 

@@ -491,23 +491,27 @@ static int muticast_connect_manger_muticast_pro( void )
 int muticast_connect_manger_timeout_event_image( void )
 {
 	int ret = 0;
-	struct list_head *tmp_recv_model = gmuticast_manager_pro.ptr_curcfc_recv_model;
 
-	if( conference_recieve_model_is_right(tmp_recv_model) )
-	{// 有用的节点
-		if( gmuticast_manager_pro.mm_sys_flags.muti_flag )
-		{
-			ret = muticast_connect_manger_muticast_pro();
+	if (gmuticast_manager_pro.running)
+	{
+		struct list_head *tmp_recv_model = gmuticast_manager_pro.ptr_curcfc_recv_model;
+
+		if( conference_recieve_model_is_right(tmp_recv_model) )
+		{// 有用的节点
+			if( gmuticast_manager_pro.mm_sys_flags.muti_flag )
+			{
+				ret = muticast_connect_manger_muticast_pro();
+			}
+			else
+			{
+				ret = muticast_connect_manger_not_muticast_pro();
+			}
 		}
-		else
-		{
-			ret = muticast_connect_manger_not_muticast_pro();
-		}
+
+		// 移动被广播者的指针,指向下一个
+		conference_recieve_model_found_next( tmp_recv_model,  &gmuticast_manager_pro.ptr_curcfc_recv_model );
 	}
-
-	// 移动被广播者的指针,指向下一个
-	conference_recieve_model_found_next( tmp_recv_model,  &gmuticast_manager_pro.ptr_curcfc_recv_model );
-
+	
 	return ret;
 }
 
@@ -589,9 +593,15 @@ bool muticast_muticast_connect_manger_get_discut_self_flag( void )
 
 void muticast_muticast_connect_manger_init( void )
 {
+	gmuticast_manager_pro.running = true;
 	host_timer_start( (uint32_t)gmuticast_manager_pro.mm_sys_flags.log_timeout*1000,\
 					&gmuticast_manager_pro.mm_errlog_timer );
 
+}
+
+void muticast_muticast_connect_manger_pro_stop(void)
+{
+	gmuticast_manager_pro.running = false;
 }
 
 

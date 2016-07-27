@@ -525,11 +525,7 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 			{
                         	store_stream_input_desc( frame, read_desc_offset, frame_len, descptor_info );
 				init_central_control_recieve_unit_by_entity_id( frame, read_desc_offset, frame_len, descptor_info, target_entity_id );
-#if 0
-				muticast_connector_connect_table_init_node( true, frame, read_desc_offset, frame_len, target_entity_id, descptor_info );
-#else
 				conference_recieve_model_init( frame, read_desc_offset, frame_len, descptor_info, target_entity_id );
-#endif
 			}
                         break;
 
@@ -538,11 +534,7 @@ int proc_read_desc_resp( const uint8_t *frame, size_t frame_len, int *status)
 			{
                         	store_stream_output_desc( frame, read_desc_offset, frame_len, descptor_info );
 				conference_transmit_unit_init( frame, read_desc_offset, frame_len, target_entity_id, descptor_info );
-#if 0
-				muticast_connector_connect_table_init_node( false, frame, read_desc_offset, frame_len, target_entity_id, descptor_info );
-#else
 				central_control_transmit_unit_init( frame, read_desc_offset, frame_len, descptor_info, target_entity_id );
-#endif
 			}
                         break;
 

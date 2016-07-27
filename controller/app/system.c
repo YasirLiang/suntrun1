@@ -12,10 +12,10 @@
 #include "stream_descriptor.h"
 #include "terminal_system.h"
 #include "profile_system.h"
-#include "camera_pro.h"
-#include "camera_common.h"
 //#include "muticast_connector.h"
 #include "check_timer.h"
+#include "camera_pro.h"
+#include "camera_common.h"
 #include "matrix_output_input.h"// 矩阵输出
 #include "control_matrix_common.h"
 #include "system_database.h"
@@ -185,10 +185,16 @@ void system_close( struct threads_info *p_threads )
 	int can_num = p_threads->pthread_nums;
 	int i = 0, ret;
 
+	muticast_muticast_connect_manger_pro_stop();// 退出广播管理，之后不再对连接状态进行管理，无论其状态如何
 	en485_send_mod_cleanup();// 释放使能发送485端数据文件
 	lcd192x64_close();// yasirLiang add in 2016/05/16
 	controller_machine_destroy(&gp_controller_machine);// 摧毁控制器
 	system_1722_recv_handle_destroy();
+	central_control_recieve_uinit_destroy();// 摧毁中央接收单元
+	central_control_transmit_unit_model_destroy();// 摧毁中央传输单元
+	conference_transmit_unit_destroy();
+	conference_recieve_unit_destroy();
+	
 	// 退出线程
 #ifndef SEND_DOUBLE_QUEUE_EABLE
 	sem_post( &sem_waiting );
@@ -250,9 +256,9 @@ void system_close( struct threads_info *p_threads )
 	// 释放所有文件描述符
 	if( NULL != glog_file_fd)
 		Fclose( glog_file_fd );
-	close( net_fd.raw_fd );
-	close( net_fd.tx_pipe[PIPE_RD] );
-	close( net_fd.tx_pipe[PIPE_WR]);
+	//close( net_fd.raw_fd );
+	//close( net_fd.tx_pipe[PIPE_RD] );
+	//close( net_fd.tx_pipe[PIPE_WR]);
 	close( net_fd.udp_client_fd );
 	close( net_fd.udp_server_fd );
 }

@@ -163,7 +163,6 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 			output_channel_insert_node_to_list( &ptr_model->out_ch.list, p_outch );
 			ccu_transmit_unit_debug( "New Transmit  CCU (0x%016llx) Out Channel ( Index = %d)",
 						endtity_id, stream_out_desc.descriptor_index );
-
 			if( p_outch->tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
 			{
 				muticast_connect_manger_chdefault_outmuticastor( &ptr_model->list, &p_outch->list );
@@ -228,7 +227,7 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 		if( p_intput != NULL )
 		{// create success
 			input_connect_node_init_by_index( p_intput, listern_id, listern_id_index );
-			input_connect_node_insert_node_to_list( &p_outch->list, p_intput );
+			input_connect_node_insert_node_to_list( &p_outch->input_head.list, p_intput );
 		}
 	}
 }
@@ -280,17 +279,17 @@ void central_control_transmit_unit_update_by_disconnect_rx_state( const uint64_t
 		}
 	}
 
-	if( found_output  )// found ?
+	if (found_output )// found ?
 	{
 		p_list = NULL;
-		list_for_each( p_list, &p_outch->list )
+		list_for_each(p_list, &p_outch->input_head.list)// 原来是list_for_each( p_list, &p_outch->list )，这是错的
 		{
 			Input_pChannel p_tmp_inputch = NULL;
 			p_tmp_inputch = list_entry( p_list, Input_Channel, list );
-			if( (p_tmp_inputch != NULL) && (p_tmp_inputch->listener_id == listern_id)
-				&& ((p_tmp_inputch->listen_index == listern_id_index)))
+			if ((p_tmp_inputch != NULL) && (p_tmp_inputch->listener_id == listern_id)
+				&& (p_tmp_inputch->listen_index == listern_id_index))// found input ?
 			{// found output
-				input_connect_node_delect_node_from_list( &p_outch->list, &p_tmp_inputch );
+				input_connect_node_delect_node_from_list( &p_outch->input_head.list, &p_tmp_inputch );
 				break;
 			}
 		}
@@ -347,6 +346,31 @@ void central_control_transmit_unit_model_pro_init( void )
 	init_observer( &gccu_transmit_observer, central_control_transmit_unit_update );
 	// 加入观察者到被观察者
 	attach_observer( &gconnector_subjector, &gccu_transmit_observer );
+}
+
+void central_control_transmit_unit_model_destroy(void)
+{
+	T_pccuTModel pos = NULL, n = NULL;
+	T_pOutChannel pos2 = NULL, n2 = NULL;
+	Input_pChannel pos3 = NULL, n3 = NULL;
+	
+	list_for_each_entry_safe(pos, n, &gccu_trans_model_guard, list)
+	{
+		list_for_each_entry_safe(pos2, n2, &pos->out_ch.list, list)
+		{
+			list_for_each_entry_safe(pos3, n3, &pos2->input_head.list, list)
+			{// release input connect
+				__list_del_entry(&pos3->list);
+				free(pos3);
+			}
+
+			__list_del_entry(&pos2->list);
+			free(pos2);// release ouput channel
+		}
+
+		__list_del_entry(&pos->list);// delect node for ouput
+		free(pos);
+	}
 }
 
 bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output )

@@ -75,6 +75,7 @@ typedef struct _type_channel_alloction_proccess// 通道分配处理结构
 {
 	TInChannel *p_current_input_channel;// 指向通道表中当前可以被分配的模块,若为NULL，则表示无可用通道
 	uint8_t elem_num;// 通道的个数
+	uint8_t elem_can_use_num;// 能够使用的通道的总数
 	uint8_t cnnt_num;// 已连接个数
 	enum channel_list_pro_flags pro_eflags;// 处理过程参数
 	enum channel_pro_stype pro_stype;
@@ -90,6 +91,8 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 void central_control_recieve_uinit_init_list( void );
 bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index );
 bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uint16_t talker_index, uint64_t *out_listen, uint16_t* listen_index );
+extern void central_control_recieve_uinit_destroy(void);
+extern uint8_t central_control_recieve_get_input_num(void);
 
 // *****************************************//
 

@@ -6,8 +6,9 @@ export CC AR LD
 
 ROOTPATH = $(shell pwd)
 CONTROLINCPATH = $(ROOTPATH)/controller/lib/include
-#CFGS = -Wall -g
-CFGS = -Wall
+CFGS = -Wall -g
+#CFGS = -Wall -rdynamic -ldl
+#CFGS = -Wall
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \
@@ -48,9 +49,9 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
-	$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.ald
-	$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.d
-	$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
+#	$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.ald
+#	$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.d
+#	$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)

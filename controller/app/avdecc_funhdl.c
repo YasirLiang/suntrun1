@@ -107,7 +107,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 				pthread_mutex_unlock(&ginflight_pro.mutex);
 			}
 
-			if ((rx_status == 0 && is_wait_messsage_active_state()) ||(acmp_recv_resp_err && is_wait_messsage_active_state()))
+			if ( ((0 == rx_status) && is_wait_messsage_active_state()) ||(acmp_recv_resp_err && is_wait_messsage_active_state()))
 			{
 				int msr_status = 0;
 				msr_status = set_wait_message_status( rx_status );

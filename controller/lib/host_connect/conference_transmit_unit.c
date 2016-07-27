@@ -242,6 +242,8 @@ static bool trans_model_unit_isopt_timeout_by_output_channel_index(const tconfer
 	return bret;
 }
 
+
+/*return value: 0:nomal; -1:error,but not timeout; -2:err for timeout*/
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
 {
 	tconference_trans_pmodel p_trans_model = NULL;
@@ -256,12 +258,15 @@ int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node
 			// found and operate timeout?
 			if (trans_model_unit_isopt_timeout_by_output_channel_index(p_trans_model, CONFERENCE_OUTPUT_INDEX))
 				return ccu_recv_model_talk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+			else
+				return -2;	
 		}
 	}
 
 	return -1;
 }
 
+/*return value: 0:nomal; -1:error,but not timeout; -2:err for timeout*/
 int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node ) // return -1 means talker not connect
 {
 	tconference_trans_pmodel p_trans_model = NULL;
@@ -276,6 +281,8 @@ int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_n
 			// found and operate timeout?
 			if (trans_model_unit_isopt_timeout_by_output_channel_index(p_trans_model, CONFERENCE_OUTPUT_INDEX))
 				return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
+			else
+				return -2;
 		}
 	}
 
@@ -312,6 +319,56 @@ int trans_model_unit_disconnect_longest_connect( void )
 	}
 
 	return ret;
+}
+
+int trans_model_unit_disconnect_longest_connect_re_id_cfcnode(uint64_t *id, tmnl_pdblist* pp_confenrence_node)
+{
+	tconference_trans_pmodel p_temp_node = NULL, longest = NULL;
+	timetype curtime = get_current_time();
+	int ret = -1;
+
+	if (id == NULL || pp_confenrence_node == NULL)
+		return -1;
+
+	list_for_each_entry(p_temp_node, &gconference_model_guard.list, list)
+	{
+		if (!p_temp_node->model_speak_time.running)
+			continue;
+
+		if (longest == NULL)
+		{
+			longest = p_temp_node;
+		}
+		else
+		{
+			if ((curtime - longest->model_speak_time.start_time) < \
+				(curtime - p_temp_node->model_speak_time.start_time))
+			longest = p_temp_node;
+		}
+	}
+
+	if (NULL != longest)
+	{// found
+		ret = ccu_recv_model_untalk( longest->tarker_id, CONFERENCE_OUTPUT_INDEX );
+		if ( ret == 0)
+		{
+			*id = longest->tarker_id;
+			if (longest->confenrence_node != NULL) 
+				*pp_confenrence_node = longest->confenrence_node;
+		}
+		else
+		{
+			*id = 0;
+			*pp_confenrence_node = NULL;
+		}
+	}
+
+	return ret;
+}
+
+uint8_t trans_model_unit_get_system_input_num(void)
+{
+	return central_control_recieve_get_input_num();
 }
 
 bool trans_model_unit_talker_connect_by_listen_id_index(const T_pOutChannel p_Outnode,
@@ -826,6 +883,32 @@ int conference_transmit_model_node_destroy( uint64_t tarker_id )
 	}
 
 	return -1;
+}
+
+void conference_transmit_unit_destroy(void)
+{
+	tconference_trans_pmodel pos = NULL, n = NULL;
+	T_pOutChannel pos1 = NULL, n1 = NULL;
+	Input_pChannel pos2 = NULL, n2 = NULL;
+	
+	list_for_each_entry_safe(pos, n,&gconference_model_guard.list, list)
+	{
+		list_for_each_entry_safe(pos1, n1,&pos->out_ch.list, list)
+		{
+			list_for_each_entry_safe(pos2, n2,&pos1->input_head.list, list)
+			{
+				__list_del_entry(&pos2->list);// delect connect input node
+				free(pos2);
+			}
+
+			__list_del_entry(&pos1->list);
+			free(pos1);
+		}
+
+		pos->confenrence_node = NULL;
+		__list_del_entry(&pos->list);
+		free(pos);
+	}
 }
 
 void conference_transmit_unit_cleanup_conference_node(void)

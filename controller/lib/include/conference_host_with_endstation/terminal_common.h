@@ -315,10 +315,13 @@ typedef  struct _tterminal_state	// 终端的状态，一个终端对应一个状态
 	uint8_t vote_state;			// 投票状态
 }terminal_state; 
 
+#define SPK_KEY_OPT_TIME 500
+
 typedef  struct _tterminal
 {
 	uint64_t entity_id;			// 实体ID
 	host_timer spk_timeout;		// 发言超时时间 add in 26-4-2016
+	uint32_t spk_operate_timp; // 按键发言时间戳
 	terminal_address_list address; // 终端地址
 	terminal_state tmnl_status;	 // 终端的状态 
 }conference_terminal_device; 

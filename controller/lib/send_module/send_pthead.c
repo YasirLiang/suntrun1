@@ -82,6 +82,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		uint8_t data_type = p_send_wnode->job_data.data_type;
 		bool notification_flag = p_send_wnode->job_data.notification_flag;
 		bool is_resp_data = p_send_wnode->job_data.resp;
+		uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(p_send_wnode->job_data.frame, ZERO_OFFSET_IN_PAYLOAD);
 		if( send_frame_len > TRANSMIT_DATA_BUFFER_SIZE )
 		{
 			if( p_send_wnode->job_data.frame != NULL )
@@ -130,27 +131,42 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃÐÅºÅÁ¿.(ÐÞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 					    &resp_interval_time );
 		pthread_mutex_unlock(&ginflight_pro.mutex);
 #if 1
-		if (is_resp_data)
+		if (is_resp_data && (msg_type != JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
 			/*¼ì²é·¢ËÍ×´Ì¬*/
 			over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
 		else
 		{
-			int status = 0;
-			status = set_wait_message_primed_state();
-			assert( status == 0 );
-			status = set_wait_message_active_state();
-			assert( status == 0 );
-			gsend_pro_idle = false;
-			
-			while ((data_type != TRANSMIT_TYPE_CAMERA_UART_CTRL) &&
-					(data_type != TRANSMIT_TYPE_MATRIX_UART_CTRL) && !gsend_pro_idle)
+			if ((data_type == TRANSMIT_TYPE_AECP) && \
+				(msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
 			{
-				if (!inflight_list_has_command())
-					break;
-				
-				continue;
+				int status = 0;
+				status = set_wait_message_primed_state();
+				assert( status == 0 );
+				status = set_wait_message_active_state();
+				assert( status == 0 );
+				gsend_pro_idle = false;
+
+				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 1000);
+				while (!gsend_pro_idle && !is_resp_data)
+				{
+					if (!inflight_list_has_command())
+						break;
+
+					if (over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL))
+						break;
+					
+					continue;
+				}
+
+				status = set_wait_message_idle_state();
+				assert( status == 0 );
+				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 10);
 			}
+			else
+				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT);
 		}
+#else
+		over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT);
 #endif
 #else
 		/**

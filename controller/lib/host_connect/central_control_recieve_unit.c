@@ -284,6 +284,9 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 					gccu_recieve_model_list[insert_index].model_state = CCU_RECIEVE_MODEL_ALL_CHANNEL_INIT;
 				}
 
+				if (gccu_recieve_model_list[insert_index].channel_num <= PER_CCU_CONNECT_MAX_NUM)
+					gchannel_allot_pro.elem_can_use_num++;
+
 				gchannel_allot_pro.elem_num++;
 				ccu_recv_unit_debug( "One intput channel add Success....................( ID = 0x%016llx -- input index = %d )", endtity_id, stream_input_desc.descriptor_index );
 			}
@@ -365,6 +368,8 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					__list_del_entry(&p_temp_chNode->list);
 					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list );
 					p_temp_chNode->status = INCHANNEL_FREE;
+					p_temp_chNode->tarker_id = 0;
+					p_temp_chNode->tarker_index = 0xffff;
 					gccu_recieve_model_list[i].chanel_connect_num--;
 					gccu_recieve_model_list[i].model_last_time = get_current_time();
 					p_temp_chNode->operate_timp =gccu_recieve_model_list[i].model_last_time;
@@ -510,11 +515,17 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 	return -1;
 }
 
+uint8_t central_control_recieve_get_input_num(void)
+{
+	return gchannel_allot_pro.elem_can_use_num;
+}
+
 void central_control_recieve_uinit_init_list( void )
 {
 	int i = 0;
 	
 	INIT_ZERO( &gchannel_allot_pro, sizeof(gchannel_allot_pro));
+	gchannel_allot_pro.elem_can_use_num = 0;
 	INIT_ZERO( gccu_recieve_model_list, sizeof(gccu_recieve_model_list));
 
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
@@ -528,4 +539,29 @@ void central_control_recieve_uinit_init_list( void )
 	// 加入观察者到被观察者
 	attach_observer( &gconnector_subjector, &gccu_recv_observer );
 }
+
+void central_control_recieve_uinit_destroy(void)
+{
+	T_pInChannel pos = NULL, n = NULL;
+	int i = 0;
+	
+	for (i = 0; i < CCU_TR_MODEL_MAX_NUM; i++)
+	{	
+		list_for_each_entry_safe(pos, n, &gccu_recieve_model_list[i].unconnect_channel_head.list, list)
+		{
+			__list_del_entry(&pos->list);
+			free(pos);
+		}
+
+		list_for_each_entry_safe(pos, n, &gccu_recieve_model_list[i].unconnect_channel_head.list, list)
+		{
+			__list_del_entry(&pos->list);
+			free(pos);
+		}
+
+		gccu_recieve_model_list[i].desc_pnode = NULL;
+		gccu_recieve_model_list[i].solid_pnode = NULL;
+	}
+}
+
 

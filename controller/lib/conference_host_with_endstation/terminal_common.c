@@ -12,6 +12,7 @@
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
+volatile bool gvregister_recved = false;// 单个终端注册完成的标志
 
 /*****************************************************************
 *Writer:YasirLiang
@@ -340,6 +341,8 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 			if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== QUERY_END)
 			{
 				terminal_register( recv_data.cchdr.address & TMN_ADDR_MASK, recv_data.data[0], tmnl_list_station );
+				// 注册完成
+				gvregister_recved = true;
 			}
 			else if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== SET_END_STATUS )
 			{

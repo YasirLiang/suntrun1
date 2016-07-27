@@ -131,12 +131,7 @@ int camera_preset_save( uint16_t cmd, void *data, uint32_t data_len )
 	if((gcurpresetcmr.tmnl_addr != FULL_VIEW_ADDR) && (gcurpresetcmr.tmnl_addr != BACKUP_FULL_VIEW_ADDR))
 	{//非全景定位保存预置后需要熄灭相应终端的指示灯
 		tmnl_pdblist close_node = found_terminal_dblist_node_by_addr( gcurpresetcmr.tmnl_addr ); // 注: ====>>>这里也操作了终端链表<<<<<<<<=====
-#ifdef ENABLE_CONNECT_TABLE
-		connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, \
-			close_node, true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
-#else
 		trans_model_unit_disconnect( close_node->tmnl_dev.entity_id, close_node );
-#endif
 	}
 
 	return 0;
@@ -166,15 +161,9 @@ int camera_preset_addr_select( uint16_t cmd, void *data, uint32_t data_len )
 			tmnl_pdblist close_node = found_terminal_dblist_node_by_addr( gcurpresetcmr.tmnl_addr ); // 注: ====>>>这里也操作了终端链表<<<<<<<<=====
 			if( close_node != NULL )
 			{
-#ifdef ENABLE_CONNECT_TABLE
-				connect_table_tarker_disconnect( close_node->tmnl_dev.entity_id, close_node,\
-					true, MIC_COLSE_STATUS, terminal_mic_state_set, terminal_main_state_send );
-#else
 				trans_model_unit_disconnect( close_node->tmnl_dev.entity_id, close_node );
-
 				terminal_mic_state_set( MIC_COLSE_STATUS, gcurpresetcmr.tmnl_addr, 
 							close_node->tmnl_dev.entity_id, false, close_node );
-#endif
 			}
 		}
 	}

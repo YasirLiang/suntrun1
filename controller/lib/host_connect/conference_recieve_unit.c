@@ -621,3 +621,24 @@ void conference_recieve_uinit_proccess_init( void )
 	attach_observer( &gconnector_subjector, &gconference_recieve_observer );
 }
 
+void conference_recieve_unit_destroy(void)
+{
+	T_Ptrconference_recieve_model pos = NULL, n = NULL;
+	T_pInChannel_universe pos1 = NULL, n1 = NULL;
+
+	list_for_each_entry_safe(pos, n, &gconferenc_recv_model_list, list)
+	{
+		list_for_each_entry_safe(pos1, n1, &pos->channel_list, list)
+		{
+			__list_del_entry(&pos1->list);
+			free(pos1);
+		}
+
+		pos->solid_pnode = NULL;
+		pos->desc_pnode = NULL;
+		pos->p_ccu_muticast_channel = NULL;
+		__list_del_entry(&pos->list);
+		free(pos);
+	}
+}
+
