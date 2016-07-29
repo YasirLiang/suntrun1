@@ -223,6 +223,8 @@ void terminal_apply_list_first_speak( tmnl_pdblist const first_speak );
 void terminal_over_time_speak_node_set( tmnl_pdblist speak_node );// 设置延时发言处理节点
 void terminal_over_time_speak_pro(void);// 延时发言处理
 tmnl_pdblist found_terminal_dblist_node_by_endtity_id(const uint64_t tarker_id);
+uint16_t terminal_speak_num_count(void);
+void terminal_chman_vip_control_common_mic(void);
 
 void terminal_register_init();
 void system_register_terminal_pro( void );
