@@ -166,7 +166,6 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 			if( p_outch->tarker_index == CCU_CONTROL_TRANSMIT_UINT_OUTPUT )
 			{
 				muticast_connect_manger_chdefault_outmuticastor( &ptr_model->list, &p_outch->list );
-				over_time_set( CHANGE_MUTICASTOR_INTERVAL, 15*1000 );// 15s timeout 
 			}
 		}
 	}

@@ -1030,9 +1030,11 @@ void terminal_cmd_query_vote_sign_proccess(const char *opt)
 
 void cmd_terminal_proccess( const char *opt )
 {
+	MSGINFO( "Please enter \"help\" to testing terminal protocol command!(quit to return main loop)");
+
 	while(1)
 	{
-		 char* cmd_buf = readline( ">:" );
+		 char* cmd_buf = readline( ">: " );
 		 if ( !cmd_buf )
 	            break;
 		 
@@ -1241,9 +1243,11 @@ void cmd_udp_client_command_avail( const char *opt ) // 4 paramt
 
 void cmd_udp_client( void )
 {
+	MSGINFO( "Please enter \"help\" to testing upper protocol command!(quit to return main loop)");
+
 	while(1)
 	{
-		char* cmd_buf = readline( ">:" );
+		char* cmd_buf = readline( ">: " );
 		 if ( !cmd_buf )
 	            break;
 	         if ( strlen(cmd_buf) == 0 )
@@ -1283,9 +1287,11 @@ void cmd_host_func_command_reallot( const char *opt ) // no paramt
 
 void cmd_host_func_proccess( void )
 {
+	MSGINFO( "Please enter \"help\" to see host functions command Usage!(quit to return main loop)");
+
 	while(1)
 	{
-		char* cmd_buf = readline( ">:" );
+		char* cmd_buf = readline( ">: " );
 		if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
@@ -1325,18 +1331,18 @@ void cmd_matrix_control_proccess( void )
 	int int_output[MATRIX_OUTPUT_NUM]={0};
 	uint8_t uoutput[MATRIX_OUTPUT_NUM]={0};
 	char sw_string_buf[256] = {0};
-	
+
+	MSGINFO( "\nEnter follow num to control matrix (0 to exit control)\n" );
+	MSGINFO( "\t1:av矩阵切换  2:视频矩阵切换:  3:音频矩阵切换\n" );
+	MSGINFO( "\t3:锁定键盘  5:解开键盘的锁定  6:关闭蜂鸣器\n" );
+	MSGINFO( "\t7:打开蜂鸣器  8:查询软件版本  9:设置兼容指令系统\n" );
+	MSGINFO( "\t10:设置creator2.0指令系统  11:关闭串口  12:打开串口\n" );
+	MSGINFO( "\t13:设置lcd背光时间  14:查询矩阵型号  15:修改矩阵的密码\n" );
+	MSGINFO( "\t16:关闭所有输出通道  17:设置通道对应输出 18:查询输出的输入状态\n" );
+	MSGINFO( "\t0:退去矩阵控制,返回主菜单\n" );
+
 	while( 1 )
 	{
-		MSGINFO( "\nEnter follow num to control matrix (0 to exit control)\n" );
-		MSGINFO( "\t1:av矩阵切换  2:视频矩阵切换:  3:音频矩阵切换\n" );
-		MSGINFO( "\t3:锁定键盘  5:解开键盘的锁定  6:关闭蜂鸣器\n" );
-		MSGINFO( "\t7:打开蜂鸣器  8:查询软件版本  9:设置兼容指令系统\n" );
-		MSGINFO( "\t10:设置creator2.0指令系统  11:关闭串口  12:打开串口\n" );
-		MSGINFO( "\t13:设置lcd背光时间  14:查询矩阵型号  15:修改矩阵的密码\n" );
-		MSGINFO( "\t16:关闭所有输出通道  17:设置通道对应输出 18:查询输出的输入状态\n" );
-		MSGINFO( "\t0:退去矩阵控制,返回主菜单\n" );
-
 		MSGINFO( ">>" );
 		if( scanf( "%d", &cmd ) != 1 )
 		{
@@ -1505,10 +1511,10 @@ void cmd_menu_control_proccess( void )
 {
 	char treated_cmd[CMD_OPTION_MAX_NUM][CMD_OPTION_STRING_LEN] = {{0}};
 
-	MSGINFO( "Welcome to test menu func, Please enter \"help\" to see menu command Usage!(quit to exit)" );
+	MSGINFO( "Please enter \"help\" to see menu command Usage!(quit to return main loop)");
 	while( 1 )
 	{
-		char* cmd_buf = readline( ">:" );
+		char* cmd_buf = readline( ">: " );
 	        if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
@@ -1562,7 +1568,7 @@ void controller_proccess( void )
 	
 	while( 1 )
 	{
-	        char* cmd_buf = readline( ">:" );
+	        char* cmd_buf = readline( ">: " );
 	        if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )

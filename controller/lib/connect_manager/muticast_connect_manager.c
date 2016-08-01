@@ -522,13 +522,15 @@ int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_muti, s
 	if( p_muti == NULL || p_muit_out == NULL )
 		return -1;
 
-	if( (gmuticast_manager_pro.muticast_exist && over_time_listen(CHANGE_MUTICASTOR_INTERVAL))
-		||(!gmuticast_manager_pro.muticast_exist))
+	if (((gmuticast_manager_pro.muticast_exist && over_time_listen(CHANGE_MUTICASTOR_INTERVAL))
+		||(!gmuticast_manager_pro.muticast_exist)) 
+		&& (gmuticast_manager_pro.mm_cha_state == MUTICAST_CHANGE_FINISH))
 	{
 		gpdefault_muticastor = p_muti;
 		gpdefault_muticastor_output = p_muit_out;
 		gmuticast_manager_pro.mm_cha_state = MUTICAST_CHANGE_BEGIN;
 		over_time_set( CHANGE_MUTICASTOR_TIMEOUT_INDEX, 500 );// 500ms timeout
+		over_time_set( CHANGE_MUTICASTOR_INTERVAL, 15*1000 );// 15s timeout 
 	}
 
 	return 0;
@@ -594,6 +596,7 @@ bool muticast_muticast_connect_manger_get_discut_self_flag( void )
 void muticast_muticast_connect_manger_init( void )
 {
 	gmuticast_manager_pro.running = true;
+	gmuticast_manager_pro.mm_cha_state = MUTICAST_CHANGE_FINISH;
 	host_timer_start( (uint32_t)gmuticast_manager_pro.mm_sys_flags.log_timeout*1000,\
 					&gmuticast_manager_pro.mm_errlog_timer );
 
