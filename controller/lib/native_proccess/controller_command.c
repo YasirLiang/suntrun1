@@ -1032,7 +1032,7 @@ void cmd_terminal_proccess( const char *opt )
 {
 	while(1)
 	{
-		 char* cmd_buf = readline( "$ " );
+		 char* cmd_buf = readline( ">:" );
 		 if ( !cmd_buf )
 	            break;
 		 
@@ -1243,7 +1243,7 @@ void cmd_udp_client( void )
 {
 	while(1)
 	{
-		char* cmd_buf = readline( "@ " );
+		char* cmd_buf = readline( ">:" );
 		 if ( !cmd_buf )
 	            break;
 	         if ( strlen(cmd_buf) == 0 )
@@ -1285,7 +1285,7 @@ void cmd_host_func_proccess( void )
 {
 	while(1)
 	{
-		char* cmd_buf = readline( "F " );
+		char* cmd_buf = readline( ">:" );
 		if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
@@ -1508,7 +1508,7 @@ void cmd_menu_control_proccess( void )
 	MSGINFO( "Welcome to test menu func, Please enter \"help\" to see menu command Usage!(quit to exit)" );
 	while( 1 )
 	{
-		char* cmd_buf = readline( ">>  " );
+		char* cmd_buf = readline( ">:" );
 	        if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
@@ -1562,7 +1562,7 @@ void controller_proccess( void )
 	
 	while( 1 )
 	{
-	        char* cmd_buf = readline( "# " );
+	        char* cmd_buf = readline( ">:" );
 	        if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
