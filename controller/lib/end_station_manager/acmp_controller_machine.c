@@ -19,7 +19,6 @@
 #endif
 
 static struct jdksavdecc_frame acmp_frame;
-static struct jdksavdecc_acmpdu acmpdu;
 static uint32_t acmp_sequence_id = 0;
 static inflight_plist acmp_inflight_guard = NULL;
 static solid_pdblist acmp_solid_guard = NULL;
@@ -69,14 +68,18 @@ void acmp_disconnect_avail( uint8_t output_id[8], uint16_t talker_unique_id, uin
 	struct jdksavdecc_eui64 talker_entity_id;
 	struct jdksavdecc_eui64 listener_entity_id;
 	struct jdksavdecc_frame *frame = &acmp_frame;
+	struct jdksavdecc_acmpdu acmpdu_e;
 	
 	acmp_frame_init();
 	memcpy( talker_entity_id.value, output_id, 8 );
 	memcpy( listener_entity_id.value, input_id, 8 );
-	
-	acmp_form_msg( &acmp_frame, &acmpdu,  JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND, \
+
+	memset(&acmpdu_e, 0, sizeof(acmpdu_e));
+	acmpdu_e.flags = 0;
+	acmpdu_e.stream_vlan_id = 0;
+	acmp_form_msg( &acmp_frame, &acmpdu_e,  JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND, \
 		sequence_id,  talker_entity_id, talker_unique_id, listener_entity_id, listener_unique_id,\
-		connection_count );
+		0 );
 
 	system_raw_packet_tx( frame->dest_address.value, frame->payload, frame->length, RUNINFLIGHT, TRANSMIT_TYPE_ACMP, false);
 }
@@ -86,14 +89,19 @@ void acmp_connect_avail(  uint8_t output_id[8], uint16_t talker_unique_id, uint8
 	struct jdksavdecc_eui64 talker_entity_id;
 	struct jdksavdecc_eui64 listener_entity_id;
 	struct jdksavdecc_frame *frame = &acmp_frame;
+	struct jdksavdecc_acmpdu acmpdu_e;
 	
 	acmp_frame_init();
 	memcpy( talker_entity_id.value, output_id, 8 );
 	memcpy( listener_entity_id.value, input_id, 8 );
-	
-	acmp_form_msg( &acmp_frame, &acmpdu,  JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_COMMAND, \
+
+	memset(&acmpdu_e, 0, sizeof(acmpdu_e));
+	acmpdu_e.flags = 0;
+    	acmpdu_e.flags |= (uint16_t)0x2;// fast connect flags
+    	acmpdu_e.stream_vlan_id = 0;
+	acmp_form_msg( &acmp_frame, &acmpdu_e,  JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_COMMAND, \
 		sequence_id,  talker_entity_id, talker_unique_id, listener_entity_id, listener_unique_id,\
-		connection_count );
+		0);
 
 	system_raw_packet_tx( frame->dest_address.value, frame->payload, frame->length, RUNINFLIGHT, TRANSMIT_TYPE_ACMP, false);
 }

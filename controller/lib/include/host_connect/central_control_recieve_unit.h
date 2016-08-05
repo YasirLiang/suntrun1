@@ -21,7 +21,7 @@
 
 //************************************
 
-#define CCU_TR_MODEL_NAME central_control_unit_name// 中央控制接收发送模块名字
+#define CCU_TR_MODEL_NAME central_control_unit_transmit_name// 中央控制接收发送模块名字
 #define CCU_R_MODEL_NAME central_control_unit_name // 中央控制接收模块的名字
 
 #define CHANNEL_MUX_NUM 6 // 最大的通道数

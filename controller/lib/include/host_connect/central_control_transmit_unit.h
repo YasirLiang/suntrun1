@@ -20,7 +20,7 @@
 
 //************************************
 
-#define CCU_CONTROL_TRANSMIT_UNIT_NAME central_control_unit_name
+#define CCU_CONTROL_TRANSMIT_UNIT_NAME central_control_unit_transmit_name
 #define CCU_CONTROL_TRANSMIT_UNIT_MAX_NUM central_control_unit_max_num
 #define CCU_CONTROL_TRANSMIT_UINT_OUTPUT central_control_transmit_uint_output
 #define CCU_CONTROL_TRANSMIT_UINT_MAX_OUTPUT_NUM 4
