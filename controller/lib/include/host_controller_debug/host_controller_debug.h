@@ -7,7 +7,7 @@
 #include "jdksavdecc_world.h"
 
 #ifndef __DEBUG__
-//#define __DEBUG__		// 调试宏开关
+#define __DEBUG__		// 调试宏开关
 #ifdef __DEBUG__		// 调试信息打印 
 #include <assert.h>		// 加入断言测试程序
 #define DEBUG_LINE() fprintf( stdout,"\033[32m[%s:%s] line = %d\033[0m\r\n", __FILE__, __func__, __LINE__ )

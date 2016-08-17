@@ -911,6 +911,37 @@ void conference_transmit_unit_destroy(void)
 	}
 }
 
+void conference_transmit_unit_destroy_node(uint64_t id)
+{
+	tconference_trans_pmodel pos = NULL, n = NULL;
+	T_pOutChannel pos1 = NULL, n1 = NULL;
+	Input_pChannel pos2 = NULL, n2 = NULL;
+	
+	list_for_each_entry_safe(pos, n,&gconference_model_guard.list, list)
+	{
+		if (id == pos->tarker_id)
+		{
+			list_for_each_entry_safe(pos1, n1,&pos->out_ch.list, list)
+			{
+				list_for_each_entry_safe(pos2, n2,&pos1->input_head.list, list)
+				{
+					__list_del_entry(&pos2->list);// delect connect input node
+					free(pos2);
+				}
+
+				__list_del_entry(&pos1->list);
+				free(pos1);
+			}
+
+			pos->confenrence_node = NULL;
+			__list_del_entry(&pos->list);
+			free(pos);
+			
+			break;
+		}
+	}
+}
+
 void conference_transmit_unit_cleanup_conference_node(void)
 {
 	tconference_trans_pmodel p_temp_node = NULL;

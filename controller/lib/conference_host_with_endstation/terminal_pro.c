@@ -575,10 +575,12 @@ void system_register_terminal_pro( void )
 			while(count_num < SYSTEM_TMNL_MAX_NUM)
 			{
 				uint16_t addr = tmnl_addr_list[static_norgst_index].addr;
-				tmnl_pdblist register_node = NULL;
 				if (addr != 0xffff)
 				{
-					register_node = found_terminal_dblist_node_by_addr(addr);
+#if 0
+					terminal_query_endstation(addr, (uint64_t)0);
+#else
+					tmnl_pdblist register_node = found_terminal_dblist_node_by_addr(addr);
 					if( NULL == register_node )
 					{// 未与1722 id绑定，发送0地址
 						terminal_query_endstation(addr, (uint64_t)0);			
@@ -590,6 +592,7 @@ void system_register_terminal_pro( void )
 							terminal_query_endstation(addr, register_node->tmnl_dev.entity_id);
 						}
 					}
+#endif
 
 					static_norgst_index++;
 					static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
@@ -624,6 +627,49 @@ void system_register_terminal_pro( void )
 			terminal_start_discuss(false);
 			terminal_main_state_send( 0, NULL, 0 );
 			register_idle = true;
+		}
+	}
+	else if (RGST_IDLE == reg_state && (over_time_listen(QUEUE_REGISTER_TIMEOUT)))
+	{
+		uint16_t count_num = 0;
+		static uint16_t static_query_index =  0;
+
+		while(count_num < SYSTEM_TMNL_MAX_NUM)
+		{
+			uint16_t addr = tmnl_addr_list[static_query_index].addr;
+			tmnl_pdblist register_node = NULL;
+			if (addr != 0xffff)
+			{
+				register_node = found_terminal_dblist_node_by_addr(addr);
+				if( NULL != register_node )
+				{
+					solid_pdblist endpoint_node = search_endtity_node_endpoint_dblist(endpoint_list, register_node->tmnl_dev.entity_id);
+					if (endpoint_node != NULL)
+					{
+						if ((!endpoint_node->solid.connect_flag ||!register_node->tmnl_dev.tmnl_status.is_rgst)\
+							&& (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER)))
+						{
+							register_node->tmnl_dev.tmnl_status.is_rgst = false;
+							terminal_query_endstation(addr, (uint64_t)0);
+							gvregister_recved = false;
+							over_time_set(SIG_TMNL_REGISTER, 50);
+
+							static_query_index++;
+							static_query_index %= SYSTEM_TMNL_MAX_NUM;
+							break;
+						}
+					}
+				}
+			}
+
+			static_query_index++;
+			static_query_index %= SYSTEM_TMNL_MAX_NUM;
+			count_num++;
+		}
+
+		if (count_num >= SYSTEM_TMNL_MAX_NUM)
+		{
+			over_time_set(QUEUE_REGISTER_TIMEOUT, 10*1000);// 10S
 		}
 	}
 #else
@@ -757,6 +803,7 @@ void terminal_register_init( void )
 	gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT; // 等待查询注册
 	gvregister_recved = true;// 程序开始允许第一个终端注册
 	over_time_set(SIG_TMNL_REGISTER, 50);
+	over_time_set(QUEUE_REGISTER_TIMEOUT, 10*1000);// 10S
 }
 /*********************************************
 =注册处理相关函数结束
@@ -1373,7 +1420,6 @@ int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_le
 int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )// 处理函数有待完善(11/4)
 {
 	thost_system_set set_sys;
-	tmnl_pdblist tmnl_node = NULL;
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	while (set_sys.speak_limit > gdisc_flags.limit_num && \

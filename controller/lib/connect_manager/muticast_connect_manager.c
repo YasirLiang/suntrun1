@@ -607,4 +607,8 @@ void muticast_muticast_connect_manger_pro_stop(void)
 	gmuticast_manager_pro.running = false;
 }
 
+void muticast_muticast_connect_manger_pro_start(void)
+{
+	gmuticast_manager_pro.running = true;
+}
 

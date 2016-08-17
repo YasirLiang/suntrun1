@@ -373,6 +373,12 @@ int pthread_recv_data_fn( void *pgm )
 			}
 
 			//acmp_binflight_cmd_time_tick();
+#if 0
+			if (adp_1722_unit_reboot_pro() == 0)
+				muticast_connect_manger_timeout_event_image();
+#else
+			muticast_connect_manger_timeout_event_image();
+#endif
 		}
 		
 		avdecc_manage_discover_proccess();// 系统定时发现终端

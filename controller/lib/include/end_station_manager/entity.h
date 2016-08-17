@@ -28,6 +28,7 @@ struct entity
 	uint32_t entity_index;			// 实体索引(这里由系统分配, 且从 0 开始)
 	uint32_t available_index;
 	uint64_t entity_id;				// 实体ID
+	uint16_t reboot_times;
 	//struct jdksavdecc_adpdu adpdu;
 };
 

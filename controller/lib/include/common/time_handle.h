@@ -41,7 +41,7 @@ typedef enum enum_overtime_handle
 	STOP_CAMERA_INTERVAL,// Í£Ö¹ÉãÏñÍ·
 	DISCUSS_MODE_SPEAK_AFTER,// ·¢ÑÔ
 	SIG_TMNL_REGISTER,
-	
+	QUEUE_REGISTER_TIMEOUT,// ÂÖÑ¯×¢²á
 	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;
 

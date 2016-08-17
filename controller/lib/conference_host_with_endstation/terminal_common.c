@@ -277,7 +277,6 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 	uint8_t *p_right_data = NULL;
 	uint8_t data_buf[MAX_FUNC_MSG_LEN] = { 0 };
 	tmnl_pdblist tmnl_list_station = NULL;
-	//bool is_new_tmnl_list_station = false;
 	
 	// check the crc of the both data backups,if crc is wrong,return directory
 	if( check_conferece_deal_data_crc( frame_len, conference_frame->payload, ZERO_OFFSET_IN_PAYLOAD))
@@ -291,6 +290,23 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		else	
 			return;
 	}
+
+	memcpy( data_buf, p_right_data, frame_len );
+	ttmnl_recv_msg recv_data;
+	ssize_t ret = 0;
+
+	DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
+	ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
+	if( ret < 0 )
+	{
+		DEBUG_INFO( "Err recv conference data read" );
+		assert( ret >=0 );
+	}
+
+	if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
+	{
+		return; 
+	}
 	
 	// 查看系统是否存在此实体，若存在继续处理;不存在新建节点后插入链表
 	uint64_t target_id = convert_eui64_to_uint64_return(conference_frame->aecpdu_aem_header.aecpdu_header.header.target_entity_id.value);
@@ -300,42 +316,37 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 		return;
 	}
 
-	tmnl_list_station = search_terminal_dblist_entity_id_node( target_id, dev_terminal_list_guard );
+	tmnl_list_station = search_terminal_dblist_entity_id_node(target_id, dev_terminal_list_guard);
 	if( NULL == tmnl_list_station )
 	{
-		//is_new_tmnl_list_station = true;
-		DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id );
-		tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
-		if( NULL == tmnl_list_station )
+		bool foud_by_addr = false;
+		tmnl_list_station = search_terminal_dblist_address_id_node(recv_data.cchdr.address & TMN_ADDR_MASK, dev_terminal_list_guard);
+		if (tmnl_list_station != NULL)
 		{
-			DEBUG_INFO( "create new terminal dblist node failed!" );
-			return;
+			tmnl_list_station->tmnl_dev.entity_id = target_id;
+			foud_by_addr = true;
 		}
+		else
+			DEBUG_INFO("No found addr terminal addr = %04x", recv_data.cchdr.address & TMN_ADDR_MASK);
 
-		init_terminal_dblist_node_info( tmnl_list_station );
-		tmnl_list_station->tmnl_dev.entity_id = target_id; 
-		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
+		if (!foud_by_addr)
+		{
+			DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id );
+			tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
+			if (tmnl_list_station == NULL)
+			{
+				DEBUG_INFO( "create new terminal dblist node failed!" );
+				return;
+			}
+
+			init_terminal_dblist_node_info( tmnl_list_station );
+			tmnl_list_station->tmnl_dev.entity_id = target_id; 
+			insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
+		}
 	}
 	
 	if( NULL != tmnl_list_station )
 	{
-		memcpy( data_buf, p_right_data, frame_len );
-		ttmnl_recv_msg recv_data;
-		ssize_t ret = 0;
-
-		DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
-		ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
-		if( ret < 0 )
-		{
-			DEBUG_INFO( "Err recv conference data read" );
-			assert( ret >=0 );
-		}
-
-		if( !(recv_data.cchdr.command_control & COMMAND_FROM_TMN) ) // is not terminal command
-		{
-			return; 
-		}
-		
 		if( recv_data.cchdr.command_control & COMMAND_TMN_REPLY ) // proccess response data
 		{
 			if((recv_data.cchdr.command_control & COMMAND_TMN_MASK)== QUERY_END)

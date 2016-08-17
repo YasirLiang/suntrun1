@@ -54,7 +54,7 @@ int fn_timer_cb( struct epoll_priv*priv )
 	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
-	muticast_connect_manger_timeout_event_image();
+	//muticast_connect_manger_timeout_event_image();
 	
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{

@@ -94,10 +94,71 @@ void  adp_entity_timeout( solid_pdblist adp_node )
 	}
 }
 
+int default_send_reboot_cmd(uint64_t entity_entity_id, uint16_t desc_type, uint16_t desc_index)
+{
+	struct jdksavdecc_frame cmd_frame;
+        struct jdksavdecc_aem_command_reboot aem_cmd_reboot;
+	struct jdksavdecc_eui48 destination_mac;
+	struct jdksavdecc_eui64 target_entity_id;
+	
+	memset(&aem_cmd_reboot, 0, sizeof( aem_cmd_reboot ));
+	memcpy( cmd_frame.src_address.value, net.m_my_mac, 6 );
+	convert_entity_id_to_eui48_mac_address( entity_entity_id, destination_mac.value );
+	convert_uint64_to_eui64( target_entity_id.value, entity_entity_id);
+	
+	aem_cmd_reboot.aem_header.command_type = JDKSAVDECC_AEM_COMMAND_REBOOT;
+	aem_cmd_reboot.descriptor_type = desc_type;
+	aem_cmd_reboot.descriptor_index = desc_index;
+	int r = aecp_aem_form_msg(&cmd_frame,
+			                       &aem_cmd_reboot,
+			                       JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND,
+			                       JDKSAVDECC_AEM_COMMAND_REBOOT,
+			                       0,
+			                       destination_mac,
+			                       target_entity_id,
+			                       (uint8_t*)&aem_cmd_reboot.descriptor_type,
+			                       (size_t)4);
+	if (r >= 0)
+		system_raw_packet_tx( cmd_frame.dest_address.value, cmd_frame.payload, cmd_frame.length, RUNINFLIGHT, TRANSMIT_TYPE_AECP, false);
+
+	return r;
+}
+
+static solid_pdblist gstatic_node = NULL;
+int adp_1722_unit_reboot_pro(void)
+{
+	static uint32_t  last_time = 0;
+	uint32_t current_time = get_current_time();
+	static solid_pdblist static_node = NULL;
+	solid_pdblist tmp_node = endpoint_list->next;
+
+	if (static_node == NULL && gstatic_node != NULL)
+		static_node = gstatic_node->next;
+	
+	if (static_node != endpoint_list && static_node->solid.reboot_times == 0)
+	{
+		if ((current_time - last_time) > (uint32_t)3000)
+		{
+			default_send_reboot_cmd(static_node->solid.entity_id, JDKSAVDECC_DESCRIPTOR_ENTITY, 0);
+			static_node->solid.reboot_times = 1;
+			static_node = static_node->next;
+			last_time = current_time;
+		}
+
+		if (static_node == gstatic_node)
+			return 0;
+	}
+
+	return -1;
+}
+
 solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_entity, const struct jdksavdecc_adpdu *src_du, const int list_len )
 {
 	const struct jdksavdecc_adpdu *adp_du = src_du;
 	uint64_t entity_entity_id = 0; 
+
+	if (gstatic_node == NULL)
+		gstatic_node = guard;
 	
 	convert_eui64_to_uint64( adp_du->header.entity_id.value, &entity_entity_id );
 		
@@ -106,6 +167,7 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 	{
 		solid_pdblist success_node = *new_entity;
 		memset(success_node, 0, sizeof(solid_dblist));
+		(*success_node).solid.reboot_times = 0;
 		(*success_node).solid.entity_id = entity_entity_id;
 		adp_entity_time_start( (timetype)adp_du->header.valid_time * 2 * 1000, success_node);// 2s到61s之间(2016-07-08-add double time because of proccessing audio data)
 		(*success_node).solid.connect_flag = CONNECT;
@@ -118,9 +180,13 @@ solid_pdblist adp_proccess_new_entity( solid_pdblist guard, solid_pdblist* new_e
 		DEBUG_INFO( "list lenght = %d", list_len + 1 );// 新创建节点插入到链表前链表长度为原来的长度
 		endpoint_dblist_show( guard );
 #endif
-		aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, entity_entity_id );
-		terminal_common_create_node_by_adp_discover_can_regist(entity_entity_id); // 创建终端链表
 
+#ifdef __ADP_NOT_REBOOT_ENTITY__
+		// 重启终端
+		default_send_reboot_cmd(entity_entity_id, JDKSAVDECC_DESCRIPTOR_ENTITY, 0);
+#else
+		aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, entity_entity_id );
+#endif
 		return success_node;
 	}
 	else

@@ -16,6 +16,7 @@
 #include "conference_transmit_unit.h"
 //#include "muticast_connector.h"
 #include "conference_recieve_unit.h"
+#include "log_machine.h"
 #include "central_control_transmit_unit.h"
 
 void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len, int *status )
@@ -102,6 +103,37 @@ int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, i
 		DEBUG_INFO("NO_MATCH_FOUND:%d, %d, %d, %d, %d,%d ", 0, msg, 0, 0, 0, 0);
 		break;
 	}
+
+	return 0;
+}
+
+
+int proc_reboot_resp( const uint8_t *frame, size_t frame_len, int *status )
+{
+        struct jdksavdecc_frame cmd_frame;
+        uint32_t msg_type = 0;
+        bool u_field = false;
+	struct jdksavdecc_aem_command_reboot_response aem_cmd_reboot_resp;
+
+        memcpy(cmd_frame.payload, frame, frame_len);
+
+        ssize_t aem_cmd_reboot_resp_returned = jdksavdecc_aem_command_reboot_response_read(&aem_cmd_reboot_resp,
+                                                                                             frame,
+                                                                                             0,
+                                                                                             frame_len);
+
+        if(aem_cmd_reboot_resp_returned < 0)
+        {
+		if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log,LOGGING_LEVEL_ERROR, "aem_cmd_reboot_resp_read error\n");
+		return -1;
+        }
+
+        msg_type = aem_cmd_reboot_resp.aem_header.aecpdu_header.header.message_type;
+        *status = aem_cmd_reboot_resp.aem_header.aecpdu_header.header.status;
+        u_field = aem_cmd_reboot_resp.aem_header.command_type >> 15 & 0x01; // u_field = the msb of the uint16_t command_type
+
+       aecp_update_inflight_for_rcvd_resp( msg_type, u_field, &cmd_frame );
 
 	return 0;
 }
@@ -355,7 +387,7 @@ void proc_rcvd_aem_resp( const uint8_t *frame, size_t frame_len, int *status )
 
                     if(desc_type == JDKSAVDECC_DESCRIPTOR_ENTITY)
                     {
-                       //proc_reboot_resp(notification_id, frame, frame_len, status); 
+                       proc_reboot_resp(frame, frame_len, status); 
                     }
                     else
                     {
@@ -653,6 +685,8 @@ void background_read_deduce_next( desc_pdblist cd, uint16_t desc_type, void *fra
 				if( target_id != 0)
 					queue_background_read_request( target_id, cd->endpoint_desc.conf_desc.desc_type[j], 0, cd->endpoint_desc.conf_desc.desc_count[j]);
 			}
+			
+			muticast_muticast_connect_manger_pro_start();
 			break;
 
 		// 注:可以在后面继续添加其它的DESCRIPTOR type

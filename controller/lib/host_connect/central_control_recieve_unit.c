@@ -564,4 +564,40 @@ void central_control_recieve_uinit_destroy(void)
 	}
 }
 
+void central_control_recieve_uinit_destroy_node(uint64_t id)
+{
+	T_pInChannel pos = NULL, n = NULL;
+	int i = 0;
+	
+	for (i = 0; i < CCU_TR_MODEL_MAX_NUM; i++)
+	{	
+		if (id == gccu_recieve_model_list[i].entity_id)
+		{
+			int can_use = 0;
+			list_for_each_entry_safe(pos, n, &gccu_recieve_model_list[i].unconnect_channel_head.list, list)
+			{
+				__list_del_entry(&pos->list);
+				free(pos);
+				gchannel_allot_pro.elem_num--;
+				can_use++;
+			}
+
+			list_for_each_entry_safe(pos, n, &gccu_recieve_model_list[i].unconnect_channel_head.list, list)
+			{
+				__list_del_entry(&pos->list);
+				free(pos);
+				gchannel_allot_pro.elem_num--;
+				can_use++;
+			}
+
+			gchannel_allot_pro.elem_can_use_num -= (can_use - PER_CCU_CONNECT_MAX_NUM);
+			gccu_recieve_model_list[i].desc_pnode = NULL;
+			gccu_recieve_model_list[i].solid_pnode = NULL;
+
+			break;
+		}
+	}
+}
+
+
 

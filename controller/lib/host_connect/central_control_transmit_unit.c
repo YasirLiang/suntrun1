@@ -372,6 +372,37 @@ void central_control_transmit_unit_model_destroy(void)
 	}
 }
 
+void central_control_transmit_unit_model_destroy_node(uint64_t id)
+{
+	T_pccuTModel pos = NULL, n = NULL;
+	T_pOutChannel pos2 = NULL, n2 = NULL;
+	Input_pChannel pos3 = NULL, n3 = NULL;
+	
+	list_for_each_entry_safe(pos, n, &gccu_trans_model_guard, list)
+	{
+		if (id == pos->tarker_id)
+		{
+			list_for_each_entry_safe(pos2, n2, &pos->out_ch.list, list)
+			{
+				list_for_each_entry_safe(pos3, n3, &pos2->input_head.list, list)
+				{// release input connect
+					__list_del_entry(&pos3->list);
+					free(pos3);
+				}
+
+				__list_del_entry(&pos2->list);
+				free(pos2);// release ouput channel
+			}
+
+			__list_del_entry(&pos->list);// delect node for ouput
+			free(pos);
+
+			break;
+		}
+	}
+}
+
+
 bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output )
 {
 	bool bret = true;

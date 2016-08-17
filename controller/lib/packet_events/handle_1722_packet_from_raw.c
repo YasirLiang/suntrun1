@@ -100,8 +100,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 					{
 						DEBUG_INFO("LOGGING_LEVEL_DEBUG:Re-enumerating end station with entity_id %llx", end_entity_id);
 						// 重新枚举
-
-						//terminal_begin_register();// 开始注册
+						aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, end_station->solid.entity_id);
+printf("++++++++++++++++++++++++++++\n");
 					}
 
 					// 更新adp数据包为最新的内容

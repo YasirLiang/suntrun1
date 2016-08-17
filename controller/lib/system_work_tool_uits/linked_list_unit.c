@@ -818,6 +818,23 @@ tmnl_pdblist search_terminal_dblist_entity_id_node( uint64_t entity_id, tmnl_pdb
 	}
 }
 
+// 寻找ID为entity_id 的描述符信息节点
+tmnl_pdblist search_terminal_dblist_address_id_node( const uint16_t addr, tmnl_pdblist guard )
+{
+	tmnl_pdblist pnode = NULL;
+
+	assert (NULL != guard);
+	if (guard == NULL ||addr == 0xffff)
+		return NULL;
+	
+	for (pnode = guard->next; pnode != guard; pnode = pnode->next)
+		if (pnode->tmnl_dev.address.addr == addr)
+			return pnode;
+
+	return NULL;
+}
+
+
 // 寻找地址为address 的描述符信息节点
 tmnl_pdblist search_terminal_dblist_address_node( uint16_t  address, tmnl_pdblist guard )
 {

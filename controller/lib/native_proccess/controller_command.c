@@ -34,6 +34,7 @@ static const char *commands_list[COMMANDS_MAX_NUM] =
 	"q",
 	"quit",
 	"show",
+	"reboot",
 	// ø™ º-≤‚ ‘÷’∂À√¸¡Óµƒ√¸¡Ó
 	"terminal",
 	"query",
@@ -277,6 +278,35 @@ void cmd_connect_and_disconnect_proccess( const char *opt, bool isconnect )
 			acmp_disconnect_avail( talker_entity_id.value, output_index, listerner_entity_id.value, input_index, connect_cnt, sequence_id);
 		}
 	}
+}
+
+void cmd_reboot_proccess(const char *opt)
+{
+	char output_id[32] = {0};
+	const char *p = opt;
+	const char *first = p;
+	struct jdksavdecc_eui64 talker_entity_id;
+	
+	int input_flag = 0;
+	while( *p != '\0' )
+	{
+		int copy_num = 0;
+		first = p;
+		for( ; (!isspace(*p)) &&  (*p != 0); p++ )
+			copy_num++;
+		
+		if( input_flag == 0 )
+		{
+			memcpy( output_id, first, copy_num );
+			convert_str_to_eui64( output_id, talker_entity_id.value );
+			p++;
+			input_flag++;
+			break;
+		}
+	}
+	uint64_t current_endpoint_id = 0;
+	convert_eui64_to_uint64( talker_entity_id.value, &current_endpoint_id );
+	default_send_reboot_cmd(current_endpoint_id, JDKSAVDECC_DESCRIPTOR_ENTITY, 0);
 }
 
 void cmd_list_proccess( void )
@@ -1635,6 +1665,10 @@ void controller_proccess( void )
 		else if( strncmp( cmd_buf, "MenuTest", 8 ) == 0 )
 		{
 			cmd_menu_control_proccess();
+		}
+		else if( strncmp( cmd_buf, "reboot", 6 ) == 0 )
+		{
+			cmd_reboot_proccess(cmd_buf+7);
 		}
 		else if( ((strncmp(cmd_buf, "query", 5 ) != 0)&&(strncmp(cmd_buf, "queryVoteSign", 13) != 0))&&((strncmp(cmd_buf, "q", 1) == 0 ) || (strncmp( cmd_buf, "quit", 4) == 0)) )
 		{
