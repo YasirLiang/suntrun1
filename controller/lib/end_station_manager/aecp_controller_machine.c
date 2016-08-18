@@ -59,7 +59,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 		conference_cmd &= 0x1f;
 		terminal_address = conferenc_terminal_read_address_data( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
 		timeout = get_host_endstation_command_timeout( conference_cmd );
-		//aecp_machine_debug( "interval time = %d ", timeout );
+		aecp_machine_debug( "interval time = %d conference_cmd = %d resp = %d", timeout, conference_cmd, resp);
 	}
 
 	assert( interval_time );
@@ -176,17 +176,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
         struct jdksavdecc_eui64 id;
 	uint8_t msg_type = 0xff;
 	uint16_t cmd_type = 0xff;
-
-	if (frame != NULL)
-	{
-		id = jdksavdecc_common_control_header_get_stream_id(frame, 0);
-		convert_eui64_to_uint64( id.value, &dest_id);
-		msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
-		cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, 0 );
-		cmd_type &= 0x7FFF;
-	}
-	else
-		return;
          
 	if( aecp_sta != NULL )
 	{
@@ -205,10 +194,22 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 			{				
 				is_retried = false;
 			}
+            
+            		aecp_machine_debug( "is_retried = %d cfc_cmd = %d ", is_retried, cfc_cmd);
 		}
-		
+
+                frame_len = aecp_pstation->host_tx.inflight_frame.inflight_frame_len;
 		frame = aecp_pstation->host_tx.inflight_frame.frame;
-		frame_len = aecp_pstation->host_tx.inflight_frame.inflight_frame_len;
+                if (frame != NULL)
+        	{
+        		id = jdksavdecc_common_control_header_get_stream_id(frame, 0);
+        		convert_eui64_to_uint64( id.value, &dest_id);
+        		msg_type = jdksavdecc_common_control_header_get_control_data( frame, 0 );
+        		cmd_type = jdksavdecc_aecpdu_aem_get_command_type(frame, 0 );
+        		cmd_type &= 0x7FFF;
+        	}
+        	else
+        		return;
 	}
 	else 
 	{
@@ -236,7 +237,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 			uint16_t cfc_addr = conferenc_terminal_read_address_data(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
 			cfc_cmd &= 0x1f;// ÃüÁîÔÚµÍÎåÎ»
 	        	if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg(&gp_log_imp->log, LOGGING_LEVEL_ERROR, "[UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx-%02x, %s(0x%02x) ( data len = %d )]", 
+				gp_log_imp->log.post_log_msg(&gp_log_imp->log, LOGGING_LEVEL_ERROR, "UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx-%02x, %s(0x%02x) ( data len = %d )", 
 											dest_id,
 											cfc_addr,
 											get_host_and_end_conference_string_value(cfc_cmd), 
@@ -245,7 +246,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		}
 
 		//free inflight command node in the system
-		//aecp_machine_debug( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
+		aecp_machine_debug( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", aecp_pstation->host_tx.inflight_frame.data_type, aecp_pstation->host_tx.inflight_frame.seq_id);
 		release_heap_space( &aecp_pstation->host_tx.inflight_frame.frame );// must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &aecp_pstation );
 		
@@ -256,7 +257,6 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	{
 		aecp_machine_debug( "======= aecp resend ========" );
 		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
-		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_AECP, false, aecp_pstation->host_tx.inflight_frame.raw_dest.value, NULL );
 	}
 }
 

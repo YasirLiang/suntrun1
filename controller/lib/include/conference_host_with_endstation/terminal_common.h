@@ -324,6 +324,7 @@ typedef  struct _tterminal
 	uint32_t spk_operate_timp; // 按键发言时间戳
 	terminal_address_list address; // 终端地址
 	terminal_state tmnl_status;	 // 终端的状态 
+	uint16_t regist_count;// 注册的次数
 }conference_terminal_device; 
 
 typedef  struct tmnl_list_node		// 终端链表节点 

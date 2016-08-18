@@ -31,7 +31,10 @@ void terminal_system_reallot_addr( void )
 	conference_transmit_unit_cleanup_conference_node();
 
 	/* 清除终端链表 ,除了头结点*/
-	terminal_system_dblist_except_free();
+	//terminal_system_dblist_except_free();
+
+        /* 清除除了target_id的终端链表 节点信息*/
+        terminal_system_clear_node_info_expect_target_id();
 
 	/*重新初始化当前终端节点*/
 	terminal_pro_init_cur_terminal_node();

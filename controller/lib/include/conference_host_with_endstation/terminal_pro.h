@@ -252,12 +252,14 @@ void terminal_sign_in_pro( void );
 tmnl_pdblist terminal_system_dblist_except_free( void );
 void terminal_open_addr_file_wt_wb( void );
 void terminal_system_dblist_destroy( void );
+void terminal_system_clear_node_info_expect_target_id( void );
 
 /*@}*/
 
 void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_node );
 uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
 void terminal_pro_init_cur_terminal_node( void );
+void terminal_after_time_mic_state_pro(void);
 
 #endif
 

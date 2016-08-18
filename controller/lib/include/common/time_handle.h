@@ -40,6 +40,7 @@ typedef enum enum_overtime_handle
 	CHANGE_MUTICASTOR_INTERVAL,// 改变广播者的间隔时间
 	STOP_CAMERA_INTERVAL,// 停止摄像头
 	DISCUSS_MODE_SPEAK_AFTER,// 发言
+	MIC_SET_AFTER,// 延时设置mic
 	SIG_TMNL_REGISTER,
 	QUEUE_REGISTER_TIMEOUT,// 轮询注册
 	OVER_TIME_ITEMS_NUM

@@ -740,6 +740,7 @@ void init_terminal_dblist_node_info( tmnl_pdblist node )
 	node->tmnl_dev.tmnl_status.is_rgst = false;
 	node->tmnl_dev.address.addr = 0xffff;
 	node->tmnl_dev.spk_operate_timp = 0;
+        node->tmnl_dev.regist_count = 0;
 }
 
 // 摧毁指定节点

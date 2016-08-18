@@ -21,7 +21,5 @@ int aecp_send_read_desc_cmd( uint16_t desc_type, uint16_t desc_index, uint64_t t
 int aecp_read_desc_init(uint16_t desc_type, uint16_t desc_index, uint64_t target_entity_id);
 int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uint8_t *frame, size_t frame_len, int *status );
 
-
-
 #endif
 

@@ -352,11 +352,7 @@ int pthread_recv_data_fn( void *pgm )
 			default:
 				break;
 		}
-
-#ifdef RECV_DOUBLE_LINK_QUEUE_EN
-		system_1722_recv_handle_raw_data();// 按帧处理1722数据报文
-#else
-#endif
+        
 		system_register_terminal_pro();
 		if (gregister_tmnl_pro.rgs_state == RGST_IDLE)
 		{
@@ -384,7 +380,8 @@ int pthread_recv_data_fn( void *pgm )
 		avdecc_manage_discover_proccess();// 系统定时发现终端
 		send_common_check_squeue();// 检查发送队列发送数据
 		camera_pro();// 摄像头处理流程
-		terminal_over_time_speak_pro();
+		terminal_over_time_speak_pro();//
+		terminal_after_time_mic_state_pro();
 	}
 	
 	return 0;

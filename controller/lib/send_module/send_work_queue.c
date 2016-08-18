@@ -31,7 +31,7 @@ int send_work_queue_message_save( tx_data queue_msg, sdpwqueue *sd_work_quue )//
 		return -1;
 	}
 #endif
-	//DEBUG_INFO( "send queue frame len = %d ", queue_msg->frame_len );
+
 	frame_len = queue_msg.frame_len;
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0))
 	{
@@ -39,9 +39,6 @@ int send_work_queue_message_save( tx_data queue_msg, sdpwqueue *sd_work_quue )//
 		return -1;
 	}
 	
-	//DEBUG_INFO(" sizeof struct sockaddr_in = %d", sizeof(struct sockaddr_in) );
-	//DEBUG_INFO(" sizeof tsend_data = %d", sizeof(tsend_data) );
-	//DEBUG_INFO(" sizeof sdpqueue_wnode = %d", sizeof(sdpqueue_wnode) );
 	save_queue_node = (p_sdpqueue_wnode)malloc( sizeof(sdpqueue_wnode) ); // free by send thread!
 	if( NULL == save_queue_node )
 	{

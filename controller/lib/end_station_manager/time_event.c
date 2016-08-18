@@ -75,14 +75,8 @@ void inflight_time_tick( inflight_plist guard )
 #endif
 			}
 
-			//break;// if timerout ; return.
+			break;// if timerout ; return.
 		}
-#if 0
-		else
-		{
-			break; // only check the head
-		}
-#endif
 	}
 }
 

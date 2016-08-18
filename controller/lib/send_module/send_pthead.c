@@ -146,7 +146,7 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 				assert( status == 0 );
 				gsend_pro_idle = false;
 
-				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 1000);
+				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 200);
 				while (!gsend_pro_idle && !is_resp_data)
 				{
 					if (!inflight_list_has_command())

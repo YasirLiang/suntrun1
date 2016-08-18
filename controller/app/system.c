@@ -175,7 +175,7 @@ void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
 	// found all endpoints
 	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
 
-	terminal_query_endstation(0x8000, (uint64_t)0);// 广播查询
+	//terminal_query_endstation(0x8000, (uint64_t)0);// 广播查询
 }
 
 extern FILE *glog_file_fd;
