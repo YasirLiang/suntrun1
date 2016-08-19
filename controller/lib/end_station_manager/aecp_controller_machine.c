@@ -65,7 +65,6 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	assert( interval_time );
 	*interval_time = timeout;
 
-	//aecp_machine_debug( "aecp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
 		aecp_machine_debug( "udp packet( size = %d )bigger than frame buf %d or little!",
@@ -225,11 +224,12 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
            		uint16_t desc_type = jdksavdecc_aem_command_read_descriptor_get_descriptor_type(frame, ZERO_OFFSET_IN_PAYLOAD);
             		uint16_t desc_index = jdksavdecc_aem_command_read_descriptor_get_descriptor_index(frame, ZERO_OFFSET_IN_PAYLOAD);
 	        	if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[COMMAND TIMEOUT: 0x%llx, %s, %s, %d]", 
-											dest_id, 
-											get_aem_command_string(cmd_type),
-											get_aem_desc_command_string( desc_type ), 
-											desc_index);
+				gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				        LOGGING_LEVEL_ERROR, "[COMMAND TIMEOUT: 0x%llx, %s, %s, %d]", 
+					dest_id, 
+					get_aem_command_string(cmd_type),
+					get_aem_desc_command_string( desc_type ), 
+					desc_index);
 		}
 		else
 		{
@@ -237,12 +237,14 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 			uint16_t cfc_addr = conferenc_terminal_read_address_data(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
 			cfc_cmd &= 0x1f;// 命令在低五位
 	        	if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg(&gp_log_imp->log, LOGGING_LEVEL_ERROR, "UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx-%02x, %s(0x%02x) ( data len = %d )", 
-											dest_id,
-											cfc_addr,
-											get_host_and_end_conference_string_value(cfc_cmd), 
-											cfc_cmd,
-											cmd_type);
+				gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_ERROR, 
+        		                "[UNIQUE CONFERENCE COMMAND TIMEOUT: 0x%llx-%02x, %s(0x%02x) ( data len = %d )]", 
+        				dest_id,
+        				cfc_addr,
+        				get_host_and_end_conference_string_value(cfc_cmd), 
+        				cfc_cmd,
+        				cmd_type);
 		}
 
 		//free inflight command node in the system
@@ -255,7 +257,11 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 	}
 	else
 	{
-		aecp_machine_debug( "======= aecp resend ========" );
+		if (NULL != gp_log_imp)
+	                gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			        LOGGING_LEVEL_DEBUG, 
+			        "======= aecp resend ========");
+        
 		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 	}
 }
@@ -320,7 +326,10 @@ int  aecp_update_inflight_for_vendor_unique_message(uint32_t msg_type, const uin
 			aecp_state_rcvd_resp( &jdk_frame);
 		break;
 		default:
-			aecp_machine_debug( "LOGGING_LEVEL_ERROR: Invalid message type");
+			if (NULL != gp_log_imp)
+			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                    LOGGING_LEVEL_ERROR,
+			                    "Invalid message type");
 			return -1;
 	}
 
@@ -346,7 +355,10 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 		}
 		break;
 		default:
-			aecp_machine_debug( "LOGGING_LEVEL_ERROR: Invalid message type");
+			if (NULL != gp_log_imp)
+			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                    LOGGING_LEVEL_ERROR,
+			                    "Invalid message type");
 			return -1;
 	}
 
@@ -359,24 +371,20 @@ int aecp_state_rcvd_resp( struct jdksavdecc_frame *cmd_frame)
 	return aecp_proc_resp( cmd_frame);
 }
 
-#define UNIQUE_CMD_FUN
 int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 {
 	assert(cmd_frame);
 	uint8_t subtype = jdksavdecc_common_control_header_get_subtype( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint16_t seq_id = jdksavdecc_aecpdu_common_get_sequence_id(cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
-	uint32_t notification_flag = 0;
-	inflight_plist inflight_aecp = NULL;
-#ifdef UNIQUE_CMD_FUN
 	uint32_t msg_type = jdksavdecc_common_control_header_get_control_data( cmd_frame->payload, ZERO_OFFSET_IN_PAYLOAD );
 	uint8_t conference_cmd = 0;
 	uint16_t terminal_address = 0;
-#endif
+    	uint32_t notification_flag = 0;
+	inflight_plist inflight_aecp = NULL;
 
 	if( aecp_inflight_guard == NULL )
 		return -1;
 	
-#ifdef UNIQUE_CMD_FUN
 	if( msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND)
 	{
 		conference_cmd = conference_command_type_read( cmd_frame->payload, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET );
@@ -399,9 +407,16 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			}
 			else
 			{
-				aecp_machine_debug( " no such right address inflight cmd aecp node:subtype = %02x, conference_cmd = %d terminal_address = %04x[inflight node info: %02x %d %04x]", \
-					subtype, conference_cmd, terminal_address, inflight_aecp->host_tx.inflight_frame.data_type,\
-					inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.conference_command, inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address );
+				if (NULL != gp_log_imp)
+			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                    LOGGING_LEVEL_ERROR,
+			                    "[ no such right address inflight cmd aecp node:subtype(%02x) conference_cmd(%d) terminal_address(%04x)[inflight node info: %02x %d %04x]]", \
+					    subtype, 
+					    conference_cmd, 
+					    terminal_address, 
+					    inflight_aecp->host_tx.inflight_frame.data_type,
+					    inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.conference_command,
+					    inflight_aecp->host_tx.inflight_frame.conference_data_recgnize.address );
 			}
 		}
 		else
@@ -410,28 +425,22 @@ int aecp_proc_resp( struct jdksavdecc_frame *cmd_frame)
 			return -1;
 		}
 	}
-#endif
-#ifdef UNIQUE_CMD_FUN
 	else
 	{
-#endif
 		inflight_aecp = search_node_inflight_from_dblist( aecp_inflight_guard, seq_id, subtype );	// found?
 		if( NULL != inflight_aecp )
 		{
 			notification_flag = inflight_aecp->host_tx.inflight_frame.notification_flag;
 			aecp_callback( notification_flag, cmd_frame->payload );
-			//aecp_machine_debug( "aecp inflight delect: msg_tyep = %02x, seq_id = %d", inflight_aecp->host_tx.inflight_frame.data_type, inflight_aecp->host_tx.inflight_frame.seq_id);
 			release_heap_space( &inflight_aecp->host_tx.inflight_frame.frame);// must release frame space first while need to free inflight node
 			delect_inflight_dblist_node( &inflight_aecp );	// delect aecp inflight node
 		}
 	        else
 		{
-			aecp_machine_debug( " no such inflight cmd aecp node:subtype = %02x, seq_id = %d", subtype,seq_id);
 			return -1;
 		}
-#ifdef UNIQUE_CMD_FUN
 	}
-#endif
+    
 	return -1;
 }
 
@@ -538,7 +547,10 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 		            break;
 
 		        default:
-			    aecp_machine_debug("LOGGING_LEVEL_DEBUG:NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
+                            if (NULL != gp_log_imp)
+			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                    LOGGING_LEVEL_DEBUG,
+                                            "NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
 		            break;
 	        }
 	}
@@ -549,7 +561,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
             (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_ADDRESS_ACCESS_RESPONSE)))
         {
 		if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_INFO, "[ RESPONSE_RECEIVED, 0x%016llx, %d, %d, %d, %d ]",
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                        LOGGING_LEVEL_DEBUG, 
+			                        "[ RESPONSE_RECEIVED, 0x%016llx, %d, %d, %d, %d ]",
 						jdksavdecc_uint64_get(&id, 0),
 						cmd_type,
 						desc_type,
@@ -559,7 +573,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
             if(status != AEM_STATUS_SUCCESS)
             {
             	if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[LOGGING_LEVEL_ERROR, RESPONSE_RECEIVED, 0x%016llx, %s, %s, %d, %d, %s]", 
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                  LOGGING_LEVEL_ERROR, 
+			                  "[ RESPONSE_RECEIVED, 0x%016llx, %s, %s, %d, %d, %s]", 
                                           jdksavdecc_uint64_get(&id, 0),
                                           aem_cmd_value_to_name(cmd_type),
                                           aem_desc_value_to_name(desc_type),
@@ -572,7 +588,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
                 ((msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND) || (msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_ADDRESS_ACCESS_COMMAND)))
         {
         	if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[ LOGGING_LEVEL_DEBUG:COMMAND_SENT, 0x%016llx, %s, %s, %d, %d ]", 
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log,
+			              LOGGING_LEVEL_ERROR,
+			              "[ COMMAND_SENT, 0x%016llx, %s, %s, %d, %d ]", 
                                       jdksavdecc_uint64_get(&id, 0),
                                       aem_cmd_value_to_name(cmd_type),
                                       aem_desc_value_to_name(desc_type),
@@ -592,7 +610,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
 		conference_cmd &= 0x1f;// 低五位
 
 		if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_INFO, "[ UNIQUE CONFENENCE COMMAND, 0x%016llx, %s( %02x ), 0x%02x%02x, %d(data_len), %d(all len), (status = %s) ]",
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log,
+			                        LOGGING_LEVEL_DEBUG,
+			                        "[ UNIQUE CONFENENCE COMMAND, 0x%016llx, %s( %02x ), 0x%02x%02x, %d(data_len), %d(all len), (status = %s) ]",
 						jdksavdecc_uint64_get(&id, 0),
 						get_host_and_end_conference_string_value(conference_cmd),
 						conference_cmd,
@@ -605,7 +625,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
            	if( status != JDKSAVDECC_AECP_VENDOR_STATUS_SUCCESS )
             	{
 			if (NULL != gp_log_imp)
-				gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[ UNIQUE CONFENENCE COMMAND ERR, 0x%016llx, %s( %02x ), 0x%02x%02x, %d, %d, (status = %s) ]", 
+				gp_log_imp->log.post_log_msg( &gp_log_imp->log,
+				                LOGGING_LEVEL_ERROR,
+				                "[ UNIQUE CONFENENCE COMMAND, 0x%016llx, %s( %02x ), 0x%02x%02x, %d, %d, (status = %s) ]", 
 						jdksavdecc_uint64_get(&id, 0),
 						get_host_and_end_conference_string_value(conference_cmd),
 						conference_cmd ,
@@ -623,7 +645,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
             if(status == AEM_STATUS_SUCCESS)
             {
             	if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_DEBUG, "[ LOGGING_LEVEL_DEBUG: RESPONSE_RECEIVED, 0x%llx, %s, %s, %d, %d, %s ]", 
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                  LOGGING_LEVEL_DEBUG,
+			                  "[ RESPONSE_RECEIVED, 0x%llx, %s, %s, %d, %d, %s ]", 
                                           jdksavdecc_uint64_get(&id, 0),
                                           aem_cmd_value_to_name(cmd_type),
                                           aem_desc_value_to_name(desc_type),
@@ -634,7 +658,9 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
             else
             {
             	if (NULL != gp_log_imp)
-			gp_log_imp->log.post_log_msg( &gp_log_imp->log, LOGGING_LEVEL_ERROR, "[ LOGGING_LEVEL_ERROR:RESPONSE_RECEIVED, 0x%llx, %s, %s, %d, %d, %s ]", 
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+			                  LOGGING_LEVEL_ERROR,
+			                  "[ RESPONSE_RECEIVED, 0x%llx, %s, %s, %d, %d, %s ]", 
                                           jdksavdecc_uint64_get(&id, 0),
                                           aem_cmd_value_to_name(cmd_type),
                                           aem_desc_value_to_name(desc_type),

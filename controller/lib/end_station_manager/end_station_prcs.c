@@ -686,7 +686,6 @@ void background_read_deduce_next( desc_pdblist cd, uint16_t desc_type, void *fra
 					queue_background_read_request( target_id, cd->endpoint_desc.conf_desc.desc_type[j], 0, cd->endpoint_desc.conf_desc.desc_count[j]);
 			}
 			
-			muticast_muticast_connect_manger_pro_start();
 			break;
 
 		// 注:可以在后面继续添加其它的DESCRIPTOR type

@@ -3,6 +3,7 @@
 #include "adp_controller_machine.h"
 #include "end_station_prcs.h"
 #include "controller_machine.h"
+#include "log_machine.h"
 
 int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const uint8_t dst_mac[6], const uint8_t src_mac[6] )
 {
@@ -13,9 +14,13 @@ int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const
         uint8_t * tx_frame = (uint8_t*)malloc( frame_len + ETHER_HDR_SIZE );
         if ( tx_frame == NULL )
         {
-            	DEBUG_INFO("LOGGING_LEVEL_ERROR: unable to allocate response frame");
+            	if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				    LOGGING_LEVEL_ERROR,
+				    "unable to allocate response frame");
             	return -1;
         }
+        
         memcpy( tx_frame, dst_mac, DEST_MAC_SIZE );
 	memcpy( tx_frame + DEST_MAC_SIZE, src_mac, SRC_MAC_SIZE);
 	memcpy( tx_frame + DEST_MAC_SIZE + SRC_MAC_SIZE, ether_type, ETHER_PROTOCOL_SIZE);
@@ -25,7 +30,10 @@ int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const
         send_frame_returned = controller_machine_1722_network_send(gp_controller_machine, tx_frame, (int)(frame_len + ETHER_HDR_SIZE));
 	if(send_frame_returned < 0)
         {
-            DEBUG_INFO("LOGGING_LEVEL_ERROR: netif_send_frame error");
+            if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				    LOGGING_LEVEL_ERROR,
+				    "LOGGING_LEVEL_ERROR: netif_send_frame error");
             assert(send_frame_returned >= 0);
         }
         
@@ -45,7 +53,7 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 		{
 			solid_pdblist end_station = NULL;
 			uint64_t current_endpoint_id = 0;	// 当前接收数据包的终端ID
-			uint64_t end_entity_id = 0; 			// 存在于链表中的终端ID
+			uint64_t end_entity_id = 0; 	        // 存在于链表中的终端ID
 			bool found_adp_in_end_station = false;
 
 			struct jdksavdecc_adpdu adpdu;
@@ -62,10 +70,9 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 
 			if( NULL != guard )
 			{
-				// 查看系统是否存在此adp
 				int i = 0;
 				for( i = 0; i < list_len; i++)
-				{
+				{// 查看系统是否存在此adp
 					if(get_entity_id_endpoint_dblist( guard, i, &end_entity_id ) == 1 )
 					{
 						if( end_entity_id == current_endpoint_id )	// 终端已存在于系统
@@ -100,8 +107,20 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 					{
 						DEBUG_INFO("LOGGING_LEVEL_DEBUG:Re-enumerating end station with entity_id %llx", end_entity_id);
 						// 重新枚举
+						/*找到id 并清除其内容而不free其节点*/
+                                                desc_pdblist  descptor_info = NULL;	
+                                        	bool found_descptor_endstation = false;
+                                        	descptor_info = search_desc_dblist_node(end_entity_id, descptor_guard );
+                                        	if( NULL != descptor_info )
+                                        	{
+                                        	        memset(&descptor_info->endpoint_desc, 0, sizeof(desc_dblist));
+                                                        descptor_info->endpoint_desc.entity_id = end_entity_id;
+                                                        central_control_recieve_uinit_destroy_node(end_entity_id);
+                                                        central_control_transmit_unit_model_destroy_node(end_entity_id);
+                                        		found_descptor_endstation = true;
+                                        	}
+                                            
 						aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, end_station->solid.entity_id);
-printf("++++++++++++++++++++++++++++\n");
 					}
 
 					// 更新adp数据包为最新的内容
@@ -114,11 +133,8 @@ printf("++++++++++++++++++++++++++++\n");
 						end_station->solid.connect_flag = CONNECT;
 						adp_entity_state_avail( guard, end_station, &adpdu.header );
 						DEBUG_ONINFO("[ END_STATION AFLESH CONNECT: 0x%llx ] ", end_station->solid.entity_id );
-
-						//terminal_begin_register();// 开始注册
 					}
-					// 更新终端的可用时间，即超时时间。因为终端存在系统的时间永远是最新的
-					else
+					else// 更新终端的可用时间，即超时时间。因为终端存在系统的时间永远是最新的
 					{
 						adp_entity_state_avail( guard, end_station, &adpdu.header );
 					}
@@ -126,7 +142,10 @@ printf("++++++++++++++++++++++++++++\n");
 			}
 			else if (adpdu.header.message_type != JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER)
 			{
-				DEBUG_INFO("LOGGING_LEVEL_ERROR:Invalid ADP packet with an entity ID of 0.");
+				if (NULL != gp_log_imp)
+			                gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				            LOGGING_LEVEL_ERROR,
+				            "Invalid ADP packet with an entity ID of 0.");
 			}
 
 			//*status = 0;
@@ -181,7 +200,11 @@ printf("++++++++++++++++++++++++++++\n");
 			}
 			else
 			{
-				//DEBUG_INFO("LOGGING_LEVEL_DEBUG:Wait for correct ACMP response packet.");
+				if (NULL != gp_log_imp)
+			             gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				            LOGGING_LEVEL_DEBUG,
+				            "LOGGING_LEVEL_DEBUG:Wait for correct ACMP response packet.");
+                
 				*status = AVDECC_LIB_STATUS_INVALID;
 			}
 		}
@@ -239,7 +262,6 @@ printf("++++++++++++++++++++++++++++\n");
 						{
 						    switch(msg_type)
 						    {
-						        
 						        case JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_RESPONSE:// 控制命令是AEM_RESPONSE
 						        {
 						        	proc_rcvd_aem_resp( frame, frame_len, status );

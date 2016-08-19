@@ -20,6 +20,8 @@
 #include "muticast_connect_manager.h"
 #include "acmp_controller_machine.h"
 
+#define INTERVAL_SEND_CONNECT_COUNT 2
+
 #ifdef __DEBUG__
 //#define __CONFERENCE_RECV_UNIT_DEBUG__
 #endif
@@ -377,44 +379,6 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 
 		if( p_Inchannel->status == INCHANNEL_FREE )
 		{
-#if 0			
-			// look for tarker index 
-			desc_pdblist out_desc = descptor_guard->next;
-			int out_stream_index = 0;
-			bool found = false;
-			for( ; out_desc != descptor_guard; out_desc = out_desc->next )
-			{
-				// 与一个实体中的所有输出流比较
-				uint8_t stream_output_desc_count = out_desc->endpoint_desc.output_stream.num;
-				for( out_stream_index = 0; out_stream_index < stream_output_desc_count; out_stream_index++)
-				{
-					if( (out_desc->endpoint_desc.output_stream.desc[out_stream_index].connect_num > 0)\
-						&& (out_desc->endpoint_desc.output_stream.desc[out_stream_index].stream_id \
-						== listern_stream_id ) )
-					{
-						found = true;
-#ifdef __DEBUG__
-						MSGINFO( "[ 0x%016llx(%d) -> 0x%016llx(%d) Stream ID = 0x%016llx ]",\
-							out_desc->endpoint_desc.entity_id,\
-							out_desc->endpoint_desc.output_stream.desc[out_stream_index].descriptor_index,\
-							listern_id,\
-							listern_id_index,\
-							listern_stream_id );
-#endif
-						break;
-					}
-				}
-
-				if( found )
-					break;
-			}
-
-			if( listern_stream_id != 0 && (resp_status == 0))
-				if( found && p_Inchannel->tarker_index != out_stream_index )// tarker must recv tx state right resonpse first?
-					p_Inchannel->tarker_index = out_stream_index;
-#else
-			
-#endif
 		}
 
 		if( listern_stream_id != 0 && (resp_status == 0))
@@ -426,6 +390,8 @@ void conference_recieve_model_unit_update_by_get_rx_state( const uint64_t lister
 				p_Inchannel->tarker_index = tarker_index;
 
 			p_Inchannel->status = INCHANNEL_BUSY;
+                        ++p_Inchannel->connect_count_interval;
+                        p_Inchannel->connect_count_interval %= INTERVAL_SEND_CONNECT_COUNT;
 		}
 
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
@@ -488,15 +454,19 @@ void conference_recieve_model_unit_update_by_connect_rx_state(const uint64_t tar
 			if( p_Inchannel->tarker_index != tarker_index )
 				p_Inchannel->tarker_index = tarker_index;
 
+                        p_Inchannel->operate_timp = get_current_time();
+		        p_Inchannel->status = INCHANNEL_BUSY;
+
+
 			p_Inchannel->connect_failed_count = 0;// 成功连接后清零
+			++p_Inchannel->connect_count_interval;
+			p_Inchannel->connect_count_interval %= INTERVAL_SEND_CONNECT_COUNT;
 		}
 		else
 		{// 连接失败次数+1
 			p_Inchannel->connect_failed_count++;
 		}
 		
-		p_Inchannel->operate_timp = get_current_time();
-		p_Inchannel->status = INCHANNEL_BUSY;
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
 	}
 }
@@ -562,7 +532,14 @@ void conference_recieve_model_unit_update_by_disconnect_rx_state( const uint64_t
 
 			p_Inchannel->status = INCHANNEL_FREE;
 		}
-
+                else if (resp_status == ACMP_STATUS_NOT_CONNECTED)
+                {// conference not not connect
+                        p_Inchannel->tarker_id = 0;
+                        p_Inchannel->tarker_index = 0xffff;// not valid output
+                        p_Inchannel->status = INCHANNEL_FREE;
+                        host_timer_update(500, &p_cfc_recv_model->muticast_query_timer);
+                }
+                    
 		p_Inchannel->pro_status = INCHANNEL_PRO_FINISH;
 	}
 }

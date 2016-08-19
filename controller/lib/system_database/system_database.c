@@ -963,63 +963,39 @@ void system_database_init( void )
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_SYSTEM_SET_TABLE, SYSTEM_CONFIG_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_SYSTEM_SET_TABLE, SYSTEM_CONFIG_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_SYSTEM_SET_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_CONTROL_TABLE, MATRIX_CONTROL_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_CONTROL_TABLE, MATRIX_CONTROL_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_CONTROL_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_AVSW_TABLE, MATRIX_AVSW_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_AVSW_TABLE, MATRIX_AVSW_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_AVSW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_VSW_TABLE, MATRIX_VSW_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_VSW_TABLE, MATRIX_VSW_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_VSW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_MATRIX_ASW_TABLE, MATRIX_ASW_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_MATRIX_ASW_TABLE, MATRIX_ASW_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_MATRIX_ASW_TABLE );
 	
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_USER_TABLE, TERMINA_USER_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_USER_TABLE, TERMINA_USER_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_USER_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_CAMERA_PRE_TABLE, CAMERA_PRESET_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_CAMERA_PRE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_VOTE_TABLE, TERMINA_KEY_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_VOTE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_SELECT_TABLE, TERMINA_KEY_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_SELECT_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_TMNL_KEY_GRADE_TABLE, TERMINA_KEY_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_TMNL_KEY_GRADE_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_AVDECC_SET_TABLE, SYSTEM_AVDECC_SET_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_AVDECC_SET_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_WIREADDR_TABLE, SYSTEM_WIREADDR_COLUMN, gsystem_db );
-	//CREATE_TATBLE_SQL_FORM( gsql, SYS_DB_WIREADDR_TABLE, SYSTEM_WIREADDR_COLUMN );
-	//create_database_table( gsystem_db, gsql, strlen( gsql ), SYS_DB_WIREADDR_TABLE );
 
 	INIT_ZERO( gsql, SQL_STRING_LEN );
 	SQL3_TABLE_CREATE( gsql, SYS_DB_MUTICAST_TABLE, SYSTEM_MUTICAST_COLUMN, gsystem_db );

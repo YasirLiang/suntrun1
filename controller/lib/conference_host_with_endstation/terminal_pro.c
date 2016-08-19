@@ -551,7 +551,7 @@ void system_register_terminal_pro( void )
 	{// reallot time, can't register
 		return;
 	}
-#if 1
+
 	if (static_reset_flags)
 	{
 		static_reset_flags = false;
@@ -728,109 +728,6 @@ void system_register_terminal_pro( void )
                 else
                         over_time_set(QUEUE_REGISTER_TIMEOUT, 500);
 	}
-#else
-	if( reg_state == RGST_IDLE )
-	{// ÂÖÑ¯Î´×¢²áµÄÁÐ±í ¼ä¸ô
-		if( (gregister_tmnl_pro.rgs_query_state != QUERY_RGST_IDLE) && \
-			(gregister_tmnl_pro.tmn_rgsted < gregister_tmnl_pro.tmn_total) )
-		{// ²éÑ¯×¢²áÎ´Í£Ö¹£¬¼ÌÐø×¢²áÖÕ¶Ë
-			gregister_tmnl_pro.rgs_state = RGST_WAIT;
-			over_time_set( WAIT_TMN_RESTART, 100 );
-		}
-	}
-	else if( ((reg_state == RGST_WAIT) && over_time_listen(WAIT_TMN_RESTART)) )
-	{
-		over_time_stop(WAIT_TMN_RESTART);
-		uint16_t tmn_total = gregister_tmnl_pro.tmn_total;
-		uint16_t handled_num = gregister_tmnl_pro.tmn_rgsted;
-		if( ((gregister_tmnl_pro.rgsted_trail - gregister_tmnl_pro.rgsted_head) >= tmn_total) ||\
-			(gregister_tmnl_pro.tmn_rgsted >= tmn_total) )
-		{
-			terminal_pro_debug( "terminal register complet!total = %d", tmn_total );
-			gregister_tmnl_pro.rgs_state = RGST_QUERY;
-			return;
-		}
-	
-		// ±éÀúÎ´×¢²áÁÐ±í×¢²á
-		if( tmn_total < SYSTEM_TMNL_MAX_NUM )
-		{
-			uint16_t addr = 0, unregister_list_index = 0xffff;
-			tmnl_pdblist register_node = NULL;
-			for( unregister_list_index = gregister_tmnl_pro.noregister_head; \
-				unregister_list_index <= gregister_tmnl_pro.noregister_trail;\
-				unregister_list_index++ )
-			{ 
-				terminal_pro_debug( "noregister list index = %d", unregister_list_index );
-				if( unregister_list_index < SYSTEM_TMNL_MAX_NUM )
-				{	
-					addr = gregister_tmnl_pro.register_pro_addr_list[unregister_list_index];
-					terminal_pro_debug( "query address %04x----index = %d", addr, unregister_list_index );
-					if( addr != 0xffff )
-					{
-						register_node = found_terminal_dblist_node_by_addr(addr);
-						if( NULL == register_node )
-						{
-							find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
-							over_time_set( QUERY_TMN_GAP, 100 ); // ×¢²á³ÖÐø500ms
-						}
-						else
-						{
-							if( !register_node->tmnl_dev.tmnl_status.is_rgst )
-							{
-								find_func_command_link( MENUMENT_USE, MENU_TERMINAL_SYS_REGISTER, 0, (uint8_t*)&addr, sizeof(uint16_t) );
-								over_time_set( QUERY_TMN_GAP, 100 ); // ×¢²á³ÖÐø500ms
-							}
-						}
-					}
-				}
-				else
-				{
-					terminal_pro_debug( " Inval unregister_list_index = %d ", unregister_list_index );
-					break;
-				}
-			}
-		}
-
-		terminal_pro_debug( "handled_num = %d, tmn_total = %d", handled_num, tmn_total );
-		if( handled_num >= tmn_total )
-		{// Í£Ö¹²éÑ¯×¢²á
-			gregister_tmnl_pro.rgs_query_state = QUERY_RGST_IDLE;
-		}
-		else 
-		{
-			gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT;
-		}
-		
-		gregister_tmnl_pro.rgs_state = RGST_QUERY;
-		over_time_set( TRGST_OTIME_HANDLE, 100 );// 100ms
-	}
-	else if ( reg_state == RGST_QUERY )
-	{
-		if ( (gregister_tmnl_pro.tmn_rgsted == gregister_tmnl_pro.tmn_total) ||over_time_listen(TRGST_OTIME_HANDLE) )
-		{
-			terminal_pro_debug( "tmn_rgsted =%d, tmn_total = %d", gregister_tmnl_pro.tmn_rgsted, gregister_tmnl_pro.tmn_total );
-			gregister_tmnl_pro.rgs_state = RGST_IDLE;
-			over_time_stop( TRGST_OTIME_HANDLE );
-#ifdef __DEBUG__
-			int unregister_index = gregister_tmnl_pro.noregister_head;
-
-			printf( "No Register List : (head index = %d)---(trail index = %d)\n\t", unregister_index, gregister_tmnl_pro.noregister_trail );
-			for( ; unregister_index <= gregister_tmnl_pro.noregister_trail; unregister_index++ )
-				fprintf( stdout, "%04x  ", gregister_tmnl_pro.register_pro_addr_list[unregister_index] );
-			fprintf( stdout,"\n" );
-
-			int register_index = gregister_tmnl_pro.rgsted_head;
-
-			printf( "Register List : (head index = %d)---(trail index = %d)\n\t", register_index, gregister_tmnl_pro.rgsted_trail );
-			for( ; register_index <= gregister_tmnl_pro.rgsted_trail; register_index++ )
-			{
-				fprintf( stdout, "%04x  ", gregister_tmnl_pro.register_pro_addr_list[register_index] );
-			}
-			fprintf( stdout,"\n" );
-#endif
-		}
-	}
-#endif
 }
 
 // ¿ªÊ¼×¢²áº¯Êý

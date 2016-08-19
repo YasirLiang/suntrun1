@@ -22,6 +22,6 @@ extern void host_timer_start( timetype timeout, host_timer* target );
 extern void host_timer_stop( host_timer* target );
 extern void host_timer_update( timetype timeout, host_timer* target );
 extern bool host_timer_timeout( host_timer* target );
-
+extern bool host_timer_is_stop( host_timer* target );
 
 #endif

@@ -102,14 +102,15 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 
 			if( disconnect_flags )
 			{
+                                ptr_muti_inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
+
 				convert_uint64_to_eui64( talker_entity_id.value, ptr_muti_inchn->tarker_id );
 				convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
-
 				acmp_disconnect_avail( talker_entity_id.value, 
 									ptr_muti_inchn->tarker_index, 
 									listen_entity_id.value, 
 									ptr_muti_inchn->listener_index, 
-									2, 
+									0, 
 									gacmp_sequence_id++ );
 			}
 			break;
@@ -158,8 +159,6 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 			break;
 		case INCHANNEL_FREE:// 未连接上
 			model_tark_discut = ptr_recv_model->tark_discut;
-			convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
-			convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );
 
 			if ((get_current_time() - muticast_output->operate_timetimp) < OUTPUT_CHANNEL_OPT_PROTECT_TIME)
 				connect_flags = false;
@@ -172,14 +171,15 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 
 			if( connect_flags && muticastor_exit )
 			{
+			        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
+			        convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
+			        convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );
 				acmp_connect_avail( talker_entity_id.value,
 							muticast_output->tarker_index, 
 							listen_entity_id.value, 
 							ptr_Inchn->listener_index,
-							1, 
+							0, 
 							gacmp_sequence_id++ );
-
-				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
 			}
 			break;
 		case INCHANNEL_BUSY:// 被占用了
@@ -196,8 +196,31 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 
 				if( update_flags )
 				{
-					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
-					ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
+				        /*特别注意此语句必须在acmp_rx_state_avail 或acmp_connect_avail之前执行
+                                          *因为调用系统的发送函数会导致此运行的线程被抢占，
+                                          *若数据处理函数的线程与此函数被调用的线程不同，则该线程被抢占后可能会导致其
+                                          *ptr_Inchn->pro_status状态的设置推后,其他关于此状态INCHANNEL_PRO_PRIMED的设置的同理
+                                          */
+				        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
+
+				        if (ptr_Inchn->connect_count_interval)
+                                        {
+
+        					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
+                                        }
+                                        else
+                                        {
+
+                                                convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
+                			        convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );
+                				acmp_connect_avail( talker_entity_id.value,
+                        							muticast_output->tarker_index, 
+                        							listen_entity_id.value, 
+                        							ptr_Inchn->listener_index,
+                        							0, 
+                        							gacmp_sequence_id++ );
+
+                                        }
 				}
 			}
 			else
@@ -208,36 +231,24 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 				{
 					if ((get_current_time() - muticast_output->operate_timetimp) > OUTPUT_CHANNEL_OPT_PROTECT_TIME)
 					{
+					        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
+
 						convert_uint64_to_eui64( talker_entity_id.value, ptr_Inchn->tarker_id );
 						convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
 						acmp_disconnect_avail( talker_entity_id.value, 
 							ptr_Inchn->tarker_index, 
 							listen_entity_id.value, 
 							ptr_Inchn->listener_index, 
-							1, 
+							0, 
 							gacmp_sequence_id++ );
 					}
-#if 0
-					if( muticastor_exit )
-					{
-						memset( talker_entity_id.value, 0, sizeof(struct jdksavdecc_eui64));
-						convert_uint64_to_eui64( talker_entity_id.value, muticastor_id );
-						acmp_connect_avail( talker_entity_id.value,
-									muticast_output->tarker_index, 
-									listen_entity_id.value, 
-									ptr_Inchn->listener_index,
-									2, 
-									gacmp_sequence_id++ );
-					}
-#endif
 				}
 				else
 				{// update the right  listener's talker
 					muticastor_manager_debug(" update the right  listener's talker");
+                                        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
 					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
 				}
-
-				ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
 			}
 			break;
 		default:
@@ -292,6 +303,15 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
 		}
 		else if( !host_timer_timeout( &ptr_recv_model->muticast_query_timer ) )
 		{
+		        if (host_timer_is_stop(&ptr_recv_model->muticast_query_timer))
+                        {
+                                if (ptr_recv_model->solid_pnode != NULL && \
+                                            ptr_recv_model->solid_pnode->solid.connect_flag == CONNECT)// reconnect?
+                                {
+                                        host_timer_start( query_timeout, &ptr_recv_model->muticast_query_timer );
+                                }
+                        }
+                
 			ret = -1;
 		}
 		else// not end query update and timeout?
@@ -445,14 +465,15 @@ static int muticast_connect_manger_error_log( void )
 			(gp_log_imp != NULL) )
 		{
     				gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
-								LOGGING_LEVEL_NOTICE, 
-								"Terminal (0x%016llx) - %d(Failed cont(Max-already): %d-%d) Out of Line:Please Check!", 
+								LOGGING_LEVEL_ERROR, 
+								"[ Terminal (0x%016llx) - %d(Failed cont(Max-already): %d-%d) Out of Line:Please Check!]", 
 								ptr_curcfc_recv_model->listener_id,
 								ptr_Inchn->listener_index,
 								failed_connect_count,
 								ptr_Inchn->connect_failed_count );
 
 			host_timer_update( log_timeout, &ptr_curcfc_recv_model->errlog_timer );
+                        host_timer_stop( &ptr_curcfc_recv_model->muticast_query_timer );
 		}
 	}
 

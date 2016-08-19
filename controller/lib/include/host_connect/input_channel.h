@@ -50,6 +50,7 @@ typedef struct _type_input_channel_universe// 连接输入的通道
 	enum input_channel_status status;// 通道的连接状态
 	enum input_channel_pro_status pro_status; // 通道节点处理的状态
 	uint16_t connect_failed_count;// 连接失败次数
+	uint16_t connect_count_interval;// 连接失败次数
 	struct list_head list;			// list用于已连接连接表的链表管理，
 }TInChannel_universe,*T_pInChannel_universe;
 

@@ -276,7 +276,7 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
 					gccu_recieve_model_list[i].desc_pnode = desc_node;
 					gccu_recieve_model_list[i].model_state = CCU_RECIEVE_MODEL_OK;
 					gccu_recieve_model_list[i].model_last_time = 0;
-					pthread_mutex_init( &gccu_recieve_model_list[insert_index].RModel_mutex, NULL );
+					//pthread_mutex_init( &gccu_recieve_model_list[insert_index].RModel_mutex, NULL );
 				}
 				
 				if( (++gccu_recieve_model_list[insert_index].channel_num) >= CCU_APIECE_TR_MODEL_CHANNEL_MAX_NUM )// number of channel in model 1
@@ -398,6 +398,10 @@ bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index
 	
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
+	        if (gccu_recieve_model_list[i].solid_pnode != NULL &&
+                    ( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT))
+                        continue;
+            
 		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 		{
 			if( (p_temp_chNode->tarker_id == talker_id) &&\
@@ -426,6 +430,10 @@ bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uin
 	
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
+	        if (gccu_recieve_model_list[i].solid_pnode != NULL &&
+                    ( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT))
+                        continue;
+            
 		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 		{
 			if( (p_temp_chNode->tarker_id == talker_id) &&\
@@ -490,6 +498,10 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
+	        if (gccu_recieve_model_list[i].solid_pnode != NULL &&
+                    ( gccu_recieve_model_list[i].solid_pnode->solid.connect_flag == DISCONNECT))
+                        continue;
+                    
 		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 		{
 			if( (p_temp_chNode->tarker_id == talker_id) &&\
@@ -593,7 +605,8 @@ void central_control_recieve_uinit_destroy_node(uint64_t id)
 			gchannel_allot_pro.elem_can_use_num -= (can_use - PER_CCU_CONNECT_MAX_NUM);
 			gccu_recieve_model_list[i].desc_pnode = NULL;
 			gccu_recieve_model_list[i].solid_pnode = NULL;
-
+                        gccu_recieve_model_list[i].entity_id = 0;
+                        
 			break;
 		}
 	}

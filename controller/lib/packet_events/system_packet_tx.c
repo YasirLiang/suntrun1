@@ -47,6 +47,7 @@ int system_raw_queue_tx( void *frame, uint16_t frame_len, uint8_t data_type, con
 	{
 		DEBUG_INFO( "ERR transmit data type" );
 	}
+	
 
 	return ret;
 }
@@ -69,6 +70,7 @@ int system_raw_packet_tx( const uint8_t dest_mac[6], void *frame, uint16_t frame
 	
 	if( !notification )
 		return -1;
+	
 
 	return system_raw_queue_tx( frame, frame_len, data_type, dest_mac, isresp );
 }

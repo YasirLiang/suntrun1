@@ -37,6 +37,12 @@ void host_timer_update( timetype timeout, host_timer* target )
 	target->start_time = get_current_time();
 }
 
+bool host_timer_is_stop( host_timer* target )
+{
+        assert( target );
+        return ((target->elapsed == false) && (target->running == false));
+}
+
 bool host_timer_timeout( host_timer* target )
 {
 	assert( target );

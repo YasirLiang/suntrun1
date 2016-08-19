@@ -211,14 +211,14 @@ void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32
 {
 	if( glog_file_fd == NULL )
 	{// printf to screen
-		printf( "[LOG] %s (%s)\n", logging_level_string_get(log_level), msg );
+		printf( "[LOG] %s %s\n", logging_level_string_get(log_level), msg );
 	}
 	else
 	{// log to file
 		time_t tem = time( NULL );
 		struct tm *t = (struct tm*)localtime( &tem );
 		memset( gmain_buf, 0, sizeof(gmain_buf) );
-		sprintf( gmain_buf, "[%d-%d-%d %d:%d:%d LOG] %s  (%s)\n", t->tm_year+1900,\
+		sprintf( gmain_buf, "[%d-%d-%d %d:%d:%d LOG] %s  %s\n", t->tm_year+1900,\
 				t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min,\
 				t->tm_sec,
 				logging_level_string_get(log_level),
