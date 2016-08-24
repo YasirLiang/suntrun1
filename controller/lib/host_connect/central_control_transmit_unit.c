@@ -18,6 +18,7 @@
 #include "host_controller_debug.h"
 #include "muticast_connect_manager.h"
 #include "time_handle.h"
+#include "log_machine.h"
 
 #ifdef __DEBUG__
 #define __CCU_TRANSMIT_UNIT_DEBUG__
@@ -169,6 +170,15 @@ int central_control_transmit_unit_init( const uint8_t *frame, int pos, size_t fr
 			}
 		}
 	}
+        else if (found_output) /*found ouput*/
+        {
+                if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
+				        LOGGING_LEVEL_DEBUG,
+				        "Transmit  CCU (0x%016llx) Out Channel ( Index = %d) update",
+						endtity_id, 
+						stream_out_desc.descriptor_index );
+        }
 	
 	return 0;
 }
@@ -245,9 +255,10 @@ void central_control_transmit_unit_update_by_disconnect_rx_state( const uint64_t
 	if( (resp_status != 0) ||(tarker_id == 0) ||(listern_id == 0))// response not right?
 		return;
 
-	// 1、search output model
-	// 2\search ouput model
-	// 3\search output model's connect input channel
+	/* 1、search output model
+          * 2\search ouput model
+	  * 3\search output model's connect input channel 
+	  */
 	list_for_each( p_list, &gccu_trans_model_guard )
 	{
 		T_pccuTModel ptr_tmp_model = NULL;
@@ -402,6 +413,30 @@ void central_control_transmit_unit_model_destroy_node(uint64_t id)
 	}
 }
 
+/*释放output channel 连接的input channel*/
+void central_control_transmit_unit_model_destroy_output(uint64_t id)
+{
+	T_pccuTModel pos = NULL, n = NULL;
+	T_pOutChannel pos2 = NULL, n2 = NULL;
+	Input_pChannel pos3 = NULL, n3 = NULL;
+	
+	list_for_each_entry_safe(pos, n, &gccu_trans_model_guard, list)
+	{
+		if (id == pos->tarker_id)
+		{
+			list_for_each_entry_safe(pos2, n2, &pos->out_ch.list, list)
+			{
+				list_for_each_entry_safe(pos3, n3, &pos2->input_head.list, list)
+				{// release input connect
+					__list_del_entry(&pos3->list);
+					free(pos3);
+				}
+			}
+
+                        break;
+		}
+	}
+}
 
 bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output )
 {

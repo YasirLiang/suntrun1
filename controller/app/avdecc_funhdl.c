@@ -6,10 +6,8 @@
 #include "send_work_queue.h"
 #include "func_proccess.h"
 #include "profile_system.h"
-//#include "muticast_connector.h" // 注释为了使用muticast_connect_manager.h
 #include "matrix_output_input.h"
 #include "control_matrix_common.h"
-#include "muticast_connect_manager.h"
 #include "controller_machine.h"
 #include "raw_network.h"
 #include "system_1722_recv_handle.h"
@@ -30,7 +28,6 @@ int timer_start_interval(int timerfd)
 {
 	struct itimerspec itimer_new;
         struct itimerspec itimer_old;
-        //unsigned long ns_per_ms = 1000000;
         unsigned long ns_per_us = 1000;
         unsigned long interval_ms = TIME_PERIOD_1_MILLISECONDS;
 
@@ -51,10 +48,8 @@ int fn_timer_cb( struct epoll_priv*priv )
 	uint64_t timer_exp_count;
 	read_len = read( priv->fd, &timer_exp_count, sizeof(timer_exp_count));
 
-	//terminal_mic_speak_limit_time_manager_event();
     	time_tick_event( endpoint_list, command_send_guard );
 	profile_system_file_write_timeouts();
-	//muticast_connect_manger_timeout_event_image();
 	
 	if( is_inflight_timeout && is_wait_messsage_active_state() )
 	{
@@ -98,7 +93,7 @@ int fn_netif_cb( struct epoll_priv *priv )
 
 			if (subtype == JDKSAVDECC_SUBTYPE_61883_IIDC)
 			{// proccessing audio in this case, because of not use lock of "ginflight_pro.mutex"
-				 //printf("-->\n");
+				
 			}
 			else
 			{

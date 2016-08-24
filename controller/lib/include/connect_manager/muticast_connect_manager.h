@@ -53,5 +53,6 @@ extern int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_
 extern int muticast_connect_manger_database_update( void* p_muti_param );
 extern bool muticast_muticast_connect_manger_get_discut_self_flag( void );
 extern void muticast_muticast_connect_manger_pro_stop(void);
+extern void muticast_muticast_connect_manger_init( void );
 
 #endif

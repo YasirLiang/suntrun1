@@ -113,9 +113,6 @@ static int menuNewAllotPro( uint16_t value, uint8_t  *p_GetParam )
 extern struct threads_info threads;
 static int menuSetFinishPro( uint16_t value, uint8_t  *p_GetParam )// reboot the program
 {
-	uint16_t temp = value;
-	DEBUG_INFO( "SetFinish flags  = %d", temp );
-
 	//sync();// 同步所有文件
 	DEBUG_INFO( "System Close......" );
 #if 0

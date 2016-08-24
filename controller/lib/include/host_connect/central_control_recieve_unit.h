@@ -55,7 +55,6 @@ typedef struct _type_central_control_recieve_model// 接收模块
 	uint8_t channel_num;// 通道数
 	uint8_t chanel_connect_num;// 通道已连接数
 	uint32_t model_last_time;// 最后连接时间 
-	pthread_mutex_t RModel_mutex;// 节点锁
 }TccuRModel;
 
 enum channel_list_pro_flags
@@ -93,6 +92,7 @@ bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index
 bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uint16_t talker_index, uint64_t *out_listen, uint16_t* listen_index );
 extern void central_control_recieve_uinit_destroy(void);
 extern uint8_t central_control_recieve_get_input_num(void);
+extern void central_control_recieve_uinit_free_connect_node(uint64_t id);
 
 // *****************************************//
 

@@ -3,6 +3,7 @@
 #include "wait_message.h"
 #include "send_pthread.h"
 #include "send_common.h"
+#include "log_machine.h"
 
 static struct socket_info_s server_fd; // host udp as udp server information
 static inflight_plist udp_client_inflight = NULL;
@@ -38,11 +39,14 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 	struct sockaddr_in sin_event;
 	memcpy(&sin_event, sin, sizeof(struct sockaddr_in));
 
-	//DEBUG_INFO( "udp packet size = %d", frame_len );
 	if( (frame_len > TRANSMIT_DATA_BUFFER_SIZE) || (frame_len <= 0) )
 	{
-		DEBUG_INFO( "udp packet( size = %d )bigger than frame buf %d or little!",
+		if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_ERROR, 
+        		                "[udp packet( size = %d )bigger than frame buf %d or little!]",
 			frame_len,TRANSMIT_DATA_BUFFER_SIZE );
+        
 		return -1;
 	}
 			
@@ -53,14 +57,16 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 				inflight_station = create_inflight_dblist_new_node( &inflight_station );
 				if( NULL == inflight_station )
 				{
-					DEBUG_INFO("inflight station node create failed!");
+					if (NULL != gp_log_imp)
+				                gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                                        LOGGING_LEVEL_ERROR,
+        		                                        "inflight station node create failed!");
 					return -1;
 				}
 				memset(inflight_station, 0, sizeof(inflight_list));
 				inflight_station->host_tx.inflight_frame.frame = allot_heap_space( frame_len, &inflight_station->host_tx.inflight_frame.frame );
 				if( NULL != inflight_station->host_tx.inflight_frame.frame )
 				{
-					//DEBUG_INFO( "udp cmd =%02x type = %02x ", cfc_cmd, cfc_type );
 					memset(inflight_station->host_tx.inflight_frame.frame, 0, frame_len );
 					inflight_station->host_tx.inflight_frame.inflight_frame_len = frame_len;
 					memcpy( inflight_station->host_tx.inflight_frame.frame, frame, frame_len );
@@ -92,12 +98,10 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 			{
 				resend_node->host_tx.flags.resend = true;
 				resend_node->host_tx.flags.retried++ ;
-				DEBUG_INFO( "timeout = %d, retried = %d", timeout, resend_node->host_tx.flags.retried );
 				inflight_timer_state_avail( timeout, resend_node );
 			}
 			else
 			{
-				DEBUG_INFO( "udp server nothing to be resend!" );
 				assert(resend_node != NULL);
 				if( resend_node == NULL )
 					return -1;
@@ -105,11 +109,14 @@ int transmit_udp_client_packet( int fd, uint8_t* frame, uint32_t frame_len, infl
 		}
 	}
 
-	//DEBUG_SEND( frame, frame_len, "Udp Client Send Data");
 	int send_len = send_udp_frame( fd, frame, frame_len, &sin_event );
 	if( send_len < 0)
 	{
-		DEBUG_ERR("send udp frame Err!");
+		if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_ERROR, 
+        		                "send udp frame Err!");
+        
 		assert( send_len >= 0 );
 		if( send_len < 0 )
 			return -1;
@@ -135,13 +142,11 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 	if( inflight_station != NULL )
 	{
 		is_retried = is_inflight_cmds_retried( inflight_station );
-		DEBUG_INFO( "======================is retried = %d retried NUM = %d=======================", is_retried, inflight_station->host_tx.flags.retried );
 		frame = inflight_station->host_tx.inflight_frame.frame;
 		frame_len = inflight_station->host_tx.inflight_frame.inflight_frame_len;
 	}
 	else 
 	{
-		DEBUG_INFO( "noting to be proccessed by udp client timeout" );
 		return;
 	}
 	
@@ -154,29 +159,29 @@ void 	udp_client_inflight_station_timeouts( inflight_plist inflight_station, inf
 		uint8_t upper_cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
         	uint8_t upper_cmpt_deal_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 		uint16_t data_len = get_host_upper_cmpt_data_len( frame, ZERO_OFFSET_IN_PAYLOAD );
-			
-		MSGINFO( "[ UPPER COMMAND TIMEOUT: %s, %s, %s, %d (data len = %d )]", 
+
+            if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_ERROR,
+        		                "[ UPPER COMMAND TIMEOUT: %s, %s, %s, %d (data len = %d )]", 
 					upper_cmpt_cmd_value_to_string_name( upper_cmpt_cmd ),
 					upper_cmpt_cmd_value_to_string_name( inflight_station->host_tx.inflight_frame.seq_id ),
 					"NULL",
 					upper_cmpt_deal_type, data_len );
 
-		// free inflight command node in the system
+		/* free inflight command node in the system */
 		release_heap_space( &inflight_station->host_tx.inflight_frame.frame );
 		delect_inflight_dblist_node( &inflight_station );
-		is_inflight_timeout = true; // 设置超时	
-		DEBUG_INFO( "is_inflight_timeout = %d", is_inflight_timeout );
+		is_inflight_timeout = true; /* 设置超时*/	
 	}
 	else
 	{
-		DEBUG_INFO( " udp client information resended " );
-		// udp data sending is not response
+		if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_DEBUG,
+        		                " udp client information resended " );
+        
 		transmit_udp_client_packet( server_fd.sock_fd, frame, frame_len, inflight_station, true, &inflight_station->host_tx.inflight_frame.sin_in, false, &interval_time );
-		//system_tx( frame,  frame_len, true, TRANSMIT_TYPE_UDP_CLT, false, NULL, &inflight_station->host_tx.inflight_frame.sin_in );
-#if 0
-		int inflight_len = get_inflight_dblist_length( guard );
-		DEBUG_INFO( " inflight_len = %d", inflight_len );
-#endif
 	}
 }
 
@@ -213,13 +218,9 @@ int udp_client_proc_resp( uint8_t *frame, int frame_len  )
 		udp_client_callback( CMD_WITH_NOTIFICATION, frame );
 		release_heap_space( &inflight_udp_client->host_tx.inflight_frame.frame ); // must release frame space first while need to free inflight node
 		delect_inflight_dblist_node( &inflight_udp_client );	// delect aecp inflight node
-#if 0
-		DEBUG_INFO( " after inflight length = %d", get_inflight_dblist_length(udp_client_inflight));
-#endif
 	}
 	else
 	{
-		DEBUG_INFO( " no such inflight cmd udp client node:subtype = %02x, seq_id = %d", subtype, upper_cmpt_cmd );
 		return -1;
 	}
 
@@ -229,13 +230,23 @@ int udp_client_proc_resp( uint8_t *frame, int frame_len  )
 void udp_client_callback( uint32_t notification_flag, uint8_t *frame )
 {
 	assert( frame );
+        if (frame == NULL)
+            return;
+        
 	uint8_t upper_cmpt_cmd = get_host_upper_cmpt_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
         uint8_t upper_cmpt_deal_type = get_host_upper_cmpt_deal_type( frame, ZERO_OFFSET_IN_PAYLOAD );
 	uint16_t data_len = get_host_upper_cmpt_data_len( frame, ZERO_OFFSET_IN_PAYLOAD ); 
 	
 	if( notification_flag == CMD_WITH_NOTIFICATION )
         {
-        	DEBUG_ONINFO( "[ UDP CLIENT RESPONSE: %s, %d, %02x(type) ( data len = %d )]",  upper_cmpt_cmd_value_to_string_name( upper_cmpt_cmd ), 0, upper_cmpt_deal_type, data_len );
+        	if (NULL != gp_log_imp)
+			gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+        		                LOGGING_LEVEL_DEBUG,
+        		                "[ UDP CLIENT RESPONSE: %s, %d, %02x(type) ( data len = %d )]",  
+        		                upper_cmpt_cmd_value_to_string_name( upper_cmpt_cmd ),
+        		                0, 
+        		                upper_cmpt_deal_type, 
+        		                data_len );
         }
 }
 

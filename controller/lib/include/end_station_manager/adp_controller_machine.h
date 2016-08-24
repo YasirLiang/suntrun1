@@ -16,6 +16,7 @@ void adp_entity_time_stop(solid_pdblist new_adp_node);
 void adp_entity_time_update(timetype timeout, solid_pdblist new_adp_node);
 void adp_entity_timeout( solid_pdblist adp_node );
 void adp_entity_avail( struct jdksavdecc_eui64 discover_entity_id, uint16_t msg_type );
+extern int default_send_reboot_cmd(uint64_t entity_entity_id, uint16_t desc_type, uint16_t desc_index);
 
 #endif
 

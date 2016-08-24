@@ -12,7 +12,7 @@
 #include "stream_descriptor.h"
 #include "terminal_system.h"
 #include "profile_system.h"
-//#include "muticast_connector.h"
+#include "muticast_connect_manager.h"
 #include "check_timer.h"
 #include "camera_pro.h"
 #include "camera_common.h"
@@ -25,7 +25,7 @@
 #include "avdecc_manage.h"
 #include "log_machine.h"
 #include "en485_send.h"
-
+#include "global.h"
 #include "lcd192x64.h"// lcd 界面显示
 #include "menu_f.h"
 
@@ -33,7 +33,6 @@
 #include "system_1722_recv_handle.h"
 #include "controller_machine.h"
 
-extern void muticast_muticast_connect_manger_init( void );
 extern int gcontrol_sur_fd;
 extern sem_t gsem_surface;
 
@@ -79,8 +78,10 @@ void init_system( void )
 
 	avdecc_manage_init();// 初始化avdecc 管理 
 
-	en485_send_init(); // 使能发送485端数据
 	muticast_muticast_connect_manger_init();
+    
+#ifdef __ARM_BACK_TRACE__
+	en485_send_init(); // 使能发送485端数据
 
 	/*
 	  * 初始化化界面控制数据串口传输
@@ -112,6 +113,7 @@ void init_system( void )
 	}
 
 	MenuInit();
+#endif
 
 	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
 	DEBUG_INFO( "quue size = %d ", sizeof(queue) );

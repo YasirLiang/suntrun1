@@ -10,7 +10,10 @@
 #include "camera_pro.h"
 #include "system_1722_recv_handle.h"
 #include "terminal_pro.h"
+#include "muticast_connect_manager.h"
+#include "global.h"
 
+#if 0
 #ifdef __NOT_USE_SEND_QUEUE_PTHREAD__ // 在send_pthead.h中定义
 
 /* 这是网络原来的发送函数，只是简单的发送数据，没有考虑终端的处理数据需要过程。
@@ -213,6 +216,22 @@ int thread_pipe_fn( void *pgm )
 }
 #endif
 
+int pthread_handle_pipe( pthread_t *p_trd, struct fds *kfds )
+{
+	int rc = 0;
+	
+	rc = pthread_create( p_trd, NULL, ( void* )&thread_pipe_fn, kfds );
+	if ( rc )
+	{
+		DEBUG_INFO(" Pthread_Handle_Pipe ERROR; return code from pthread_create() is %d\n", rc);
+		assert( rc == 0 );
+	}
+
+	return 0;
+}
+
+#endif
+
 int thread_func_fn( void * pgm )
 {
 	fcwqueue*  p_func_wq = &fcwork_queue;
@@ -286,20 +305,6 @@ int thread_func_fn( void * pgm )
 	return 0;
 }
 
-int pthread_handle_pipe( pthread_t *p_trd, struct fds *kfds )
-{
-	int rc = 0;
-	
-	rc = pthread_create( p_trd, NULL, ( void* )&thread_pipe_fn, kfds );
-	if ( rc )
-	{
-		DEBUG_INFO(" Pthread_Handle_Pipe ERROR; return code from pthread_create() is %d\n", rc);
-		assert( rc == 0 );
-	}
-
-	return 0;
-}
-
 int pthread_handle_cmd_func( pthread_t *pid, const proccess_func_items *p_items )
 {
 	assert( pid );
@@ -359,7 +364,9 @@ int pthread_recv_data_fn( void *pgm )
 			terminal_sign_in_pro();// 注册终端,在获取系统信息成功后，每隔一定的时间注册一个
 			terminal_vote_proccess();// 终端投票处理
 			terminal_query_sign_vote_pro();// 查询终端的签到与投票结果
-			/*
+
+#ifdef __ARM_BACK_TRACE__
+                        /*
 			  *串口接收数据处理与菜单显示处理
 			  */
 			if( gcontrol_sur_msg_len > 0 )
@@ -367,8 +374,8 @@ int pthread_recv_data_fn( void *pgm )
 				input_recv_pro( gcontrol_sur_recv_buf, gcontrol_sur_msg_len );
 				gcontrol_sur_msg_len = 0;
 			}
+#endif
 
-			//acmp_binflight_cmd_time_tick();
 #if 0
 			if (adp_1722_unit_reboot_pro() == 0)
 				muticast_connect_manger_timeout_event_image();

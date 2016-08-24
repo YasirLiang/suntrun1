@@ -71,9 +71,6 @@ int conference_transmit_unit_init(const uint8_t *frame, int pos, size_t frame_le
 		return -1;
 	}
 
-	/*更新连接状态add in 2016-5-17*/
-	//acmp_tx_state_avail( endtity_id, stream_output_desc.descriptor_index );
-
 	//********* 
 	//搜索是否存在endtity_id 的链表节点
 	tconference_trans_pmodel p_temp_node = NULL;
@@ -87,15 +84,29 @@ int conference_transmit_unit_init(const uint8_t *frame, int pos, size_t frame_le
 		}
 	}
 
-	if( cfc_node_found )
+	if( cfc_node_found && p_temp_node != NULL)
 	{
-		T_pOutChannel p_node = out_channel_node_create_can_init();
-		if( p_node != NULL )
-		{
-			output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
-			INIT_LIST_HEAD( &p_node->input_head.list );// 初始化outstream对应的inputstream链表
-			output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
-		}
+	        bool found_out = false;
+        	T_pOutChannel p_Outnode = NULL;
+                list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
+        	{
+        		if( p_Outnode->tarker_index == stream_output_desc.descriptor_index )
+        		{
+        			found_out = true;
+        			break;
+        		}
+        	}
+
+                if (!found_out)
+                {
+        		T_pOutChannel p_node = out_channel_node_create_can_init();
+        		if( p_node != NULL )
+        		{
+        			output_channel_node_init_by_index( p_node, stream_output_desc.descriptor_index );
+        			INIT_LIST_HEAD( &p_node->input_head.list );// 初始化outstream对应的inputstream链表
+        			output_channel_insert_node_to_list( &p_temp_node->out_ch.list, p_node );
+        		}
+                }
 	}
 	else
 	{

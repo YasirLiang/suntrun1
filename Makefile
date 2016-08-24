@@ -2,13 +2,17 @@ CC = arm-linux-gcc
 AR = arm-linux-ar
 LD = arm-linux-ld
 OBJDUMP = arm-linux-objdump
+#CC = gcc
+#AR = ar
+#LD = ld
+#OBJDUMP = objdump
 export CC AR LD
 
 ROOTPATH = $(shell pwd)
 CONTROLINCPATH = $(ROOTPATH)/controller/lib/include
-#CFGS = -Wall -g
+CFGS = -Wall -g
 #CFGS = -Wall -rdynamic -ldl
-CFGS = -Wall
+#CFGS = -Wall
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib
 CFG_INC += -I$(ROOTPATH)/controller/app/include \
 		   -I$(ROOTPATH)/lib/include/jdksavdecc \

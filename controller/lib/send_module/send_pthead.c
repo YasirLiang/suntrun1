@@ -14,6 +14,8 @@
 volatile bool gsend_pro_idle = true; // 发送停止标志
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 本地发送缓冲区
 
+extern bool inflight_list_has_command(void);
+
 int thread_send_func( void *pgm ) // 加入同步机制，采用信号量.(修改后不在此线程使用同步机制2015-12-1).(经验证201512-6此线程暂无问题)
 {
 	sdpwqueue*  p_send_wq = &net_send_queue;

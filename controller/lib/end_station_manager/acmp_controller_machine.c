@@ -387,7 +387,7 @@ void acmp_inflight_station_timeouts( inflight_plist  acmp_sta, inflight_plist hd
 		if (NULL != gp_log_imp)
 			gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 			                        LOGGING_LEVEL_DEBUG,  
-			                        "acmp Date resend" );
+			                        "[ acmp Date resend ]" );
 		transmit_acmp_packet_network( frame, frame_len, acmp_pstation, true, acmp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 	}
 }

@@ -555,8 +555,26 @@ void init_descptor_dblist( desc_pdblist *guard )
 // 初始化文件描述符的信息链表节点
 void init_descptor_dblist_node_info( desc_pdblist node )
 {
+        int i = 0;
 	assert( node );
+    
 	memset(node, 0, sizeof(desc_dblist));
+        node->endpoint_desc.input_stream.num = 0;
+        node->endpoint_desc.output_stream.num = 0;
+        for (i = 0; i < MAX_STREAM_NUM; i++)
+        {
+                node->endpoint_desc.input_stream.desc[i].descriptor_index = 0xffff;
+                node->endpoint_desc.input_stream.desc[i].descriptor_type = 0xffff;
+                node->endpoint_desc.input_stream.desc[i].connect_num = 0;
+                node->endpoint_desc.input_stream.desc[i].stream_id = 0;
+                memset(node->endpoint_desc.input_stream.desc[i].current_format.value, 0, sizeof(struct jdksavdecc_eui64));
+
+                node->endpoint_desc.output_stream.desc[i].descriptor_index = 0xffff;
+                node->endpoint_desc.output_stream.desc[i].descriptor_type = 0xffff;
+                node->endpoint_desc.output_stream.desc[i].connect_num = 0;
+                node->endpoint_desc.output_stream.desc[i].stream_id = 0;
+                memset(node->endpoint_desc.output_stream.desc[i].current_format.value, 0, sizeof(struct jdksavdecc_eui64));
+        }
 }
 
 // 摧毁指定节点
@@ -735,7 +753,7 @@ void init_terminal_dblist( tmnl_pdblist *guard )
 void init_terminal_dblist_node_info( tmnl_pdblist node )
 {
 	assert( node );
-	memset(node, 0, sizeof(tmnl_pdblist));
+	memset(node, 0, sizeof(tmnl_dblist));
 	node->tmnl_dev.tmnl_status.mic_state = 0;
 	node->tmnl_dev.tmnl_status.is_rgst = false;
 	node->tmnl_dev.address.addr = 0xffff;

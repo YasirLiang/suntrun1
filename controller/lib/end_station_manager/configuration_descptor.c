@@ -5,12 +5,25 @@
 void desc_type_list_node_init( desc_pdblist  desc_node, const uint8_t *frame, size_t pos, uint16_t descriptor_counts_count, uint16_t descriptor_counts_offset )
 {
 	uint16_t offset = 0;
-	uint32_t i = 0;
+	uint32_t i = 0, j = 0;
+        bool found = false;
 
 	for( i = 0; i < descriptor_counts_count; i++)
 	{
 		uint16_t desc_type = jdksavdecc_uint16_get(frame, descriptor_counts_offset + pos + offset);
-		desc_node->endpoint_desc.conf_desc.desc_type[i] = desc_type;
+                for (j = 0; j < descriptor_counts_count; j++)
+                {
+		        if (desc_node->endpoint_desc.conf_desc.desc_type[j] == desc_type)
+                        {      
+                                desc_node->endpoint_desc.conf_desc.desc_type[j] = desc_type;
+                                found = true;
+                                break;
+                        }
+                }
+
+                if (!found)
+                    desc_node->endpoint_desc.conf_desc.desc_type[i] = desc_type;
+                
 		offset += 0x4;
 	}
 }
@@ -18,12 +31,28 @@ void desc_type_list_node_init( desc_pdblist  desc_node, const uint8_t *frame, si
 void desc_count_list_node_init( desc_pdblist  desc_node, const uint8_t *frame, size_t pos, uint16_t descriptor_counts_count, uint16_t descriptor_counts_offset )
 {
 	uint16_t offset = 0x2;
-	uint32_t i = 0;
+	uint32_t i = 0, j = 0;
+        bool found = false;
 
 	for( i = 0; i < descriptor_counts_count; i++)
 	{
-		desc_node->endpoint_desc.conf_desc.desc_count[i] = jdksavdecc_uint16_get(frame, descriptor_counts_offset + pos + offset);
-		offset += 0x4;
+		uint16_t desc_count = desc_node->endpoint_desc.conf_desc.desc_count[i] = jdksavdecc_uint16_get(frame, descriptor_counts_offset + pos + offset);
+                for (j = 0; j < descriptor_counts_count; j++)
+                {
+		        if (desc_node->endpoint_desc.conf_desc.desc_count[j] == desc_count)
+                        {      
+                                desc_node->endpoint_desc.conf_desc.desc_count[j] = desc_count;
+                                found = true;
+                                break;
+                        }
+                }
+
+                if (!found)
+                {
+                        desc_node->endpoint_desc.conf_desc.desc_count[i] = desc_count;
+                }
+                
+                offset += 0x4;
 	}
 }
 

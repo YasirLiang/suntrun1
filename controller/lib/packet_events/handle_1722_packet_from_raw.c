@@ -4,6 +4,9 @@
 #include "end_station_prcs.h"
 #include "controller_machine.h"
 #include "log_machine.h"
+#include "central_control_recieve_unit.h"
+#include "central_control_transmit_unit.h"
+#include "aecp_controller_machine.h"
 
 int send_controller_avail_response(const uint8_t *frame, size_t frame_len, const uint8_t dst_mac[6], const uint8_t src_mac[6] )
 {
@@ -115,8 +118,8 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
                                         	{
                                         	        memset(&descptor_info->endpoint_desc, 0, sizeof(desc_dblist));
                                                         descptor_info->endpoint_desc.entity_id = end_entity_id;
-                                                        central_control_recieve_uinit_destroy_node(end_entity_id);
-                                                        central_control_transmit_unit_model_destroy_node(end_entity_id);
+                                                        central_control_recieve_uinit_free_connect_node(end_entity_id);
+                                                        central_control_transmit_unit_model_destroy_output(end_entity_id);
                                         		found_descptor_endstation = true;
                                         	}
                                             

@@ -12,6 +12,7 @@
 #include <ucontext.h>
 #include "controller_machine.h"
 #include "raw_network.h"
+#include "global.h"
 
 struct fds net_fd;					// 网络通信套接字与线程间通信套接字
 struct raw_context net;				// 原始套接字
@@ -32,38 +33,19 @@ int gsig_num;			// 信号
 siginfo_t     gsegv_info;		// 信号的信息
 ucontext_t    gsegv_ptr;		// 上下文
 
-#define  w_printf( pt_str ) if( (gdump_core_flag == 0) && (gdump_core_fd != -1) ) { write(gdump_core_fd,  pt_str,  strlen( pt_str ) );\
-						printf( "%s", pt_str);}
 #define  debug_printf( format, args... )	do{memset(gmain_buf, 0, sizeof(gmain_buf)); snprintf( gmain_buf,  100,  format, ##args );\
 									w_printf( gmain_buf );}while(0)
-	
-#ifdef __TEST_DEBUG_CM__ 
-int thread_test_fn( void*pgm )
-{
-	uint64_t tar_id = 0;
-	
-	while( 1 )
-	{
-		sleep(1);
-		terminal_set_mic_status( 1, 0, tar_id );
-		sleep(1);
-		terminal_set_mic_status( 0, 0, tar_id );
-	}
-}
-#endif
 
-void signal_handle_main( int signum )
-{
-	if( SIGINT == signum )
-	{
-		DEBUG_INFO( "System Close......" );
-		system_close( &threads );
-		DEBUG_INFO( "System Close Success!" );
-		exit(0);
-	}
-}
+#ifdef __ARM_BACK_TRACE__
+#define  w_printf( pt_str ) if( (gdump_core_flag == 0) && (gdump_core_fd != -1) ) { write(gdump_core_fd,  pt_str,  strlen( pt_str ) );\
+						printf( "%s", pt_str);}
 
-int backtrace_arm(int ** buffer,  int size)
+static int backtrace_arm(int ** buffer,  int size);
+static void back_trace_dump(void);
+static void sigsegv_handler( int signum, siginfo_t *si_info, void * ptr );
+static void catch_sigsegv( void );
+
+static int backtrace_arm(int ** buffer,  int size)
 {
 	int *fp = 0;
 	int i  = 0;
@@ -106,7 +88,7 @@ int backtrace_arm(int ** buffer,  int size)
 }
 
 
-void back_trace_dump(void)
+static void back_trace_dump(void)
 {
 	int * buffer[100];
 
@@ -115,7 +97,7 @@ void back_trace_dump(void)
 	return;
 }
 
-void sigsegv_handler( int signum, siginfo_t *si_info, void * ptr )
+static void sigsegv_handler( int signum, siginfo_t *si_info, void * ptr )
 {
 	ucontext_t  * text = (ucontext_t * )ptr;
 	static const char * si_codes[3] = { "",  "SEGV_MAPERR",  "SEGV_ACCERR" };
@@ -181,7 +163,36 @@ void sigsegv_handler( int signum, siginfo_t *si_info, void * ptr )
 	}
 }
 
-void catch_sigin( void )
+static void catch_sigsegv( void )
+{
+	struct sigaction sa_segv;
+	memset( &sa_segv, 0, sizeof(struct sigaction));
+	sa_segv.sa_flags = SA_SIGINFO;
+	sa_segv.sa_sigaction = sigsegv_handler;
+	if( sigaction( SIGSEGV, &sa_segv, NULL ) == -1 )// 注册段违规信号处理函数
+	{
+		perror( "sigaction: " );
+		exit( -1 );
+	}
+}
+#endif
+
+static void catch_sigin( void );
+static void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32_t time_stamp_ms );
+static void signal_handle_main( int signum );
+
+static void signal_handle_main( int signum )
+{
+	if( SIGINT == signum )
+	{
+		DEBUG_INFO( "System Close......" );
+		system_close( &threads );
+		DEBUG_INFO( "System Close Success!" );
+		exit(0);
+	}
+}
+
+static void catch_sigin( void )
 {
 	struct sigaction sa;
 	sa.sa_handler = signal_handle_main;
@@ -194,20 +205,7 @@ void catch_sigin( void )
 	}
 }
 
-void catch_sigsegv( void )
-{
-	struct sigaction sa_segv;
-	memset( &sa_segv, 0, sizeof(struct sigaction));
-	sa_segv.sa_flags = SA_SIGINFO;
-	sa_segv.sa_sigaction = sigsegv_handler;
-	if( sigaction( SIGSEGV, &sa_segv, NULL ) == -1 )// 注册段违规信号处理函数
-	{
-		perror( "sigaction: " );
-		exit( -1 );
-	}
-}
-
-void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32_t time_stamp_ms )
+static void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32_t time_stamp_ms )
 {
 	if( glog_file_fd == NULL )
 	{// printf to screen
@@ -229,9 +227,26 @@ void log_callback_func(void *user_obj, int32_t log_level, const char *msg, int32
 	}
 }
 
+#ifdef __TEST_DEBUG_CM__ 
+int thread_test_fn( void*pgm )
+{
+	uint64_t tar_id = 0;
+	
+	while( 1 )
+	{
+		sleep(1);
+		terminal_set_mic_status( 1, 0, tar_id );
+		sleep(1);
+		terminal_set_mic_status( 0, 0, tar_id );
+	}
+}
+#endif
+
 int main( int argc, char *argv[] )
 {
+#ifdef __ARM_BACK_TRACE__
 	__asm__( "mov %0, fp\n" : "=r"(gmain_stack_fp));
+#endif
 	
 	int32_t log_level = LOGGING_LEVEL_ERROR;
 	
@@ -302,12 +317,12 @@ int main( int argc, char *argv[] )
 	}
 
 	catch_sigin();
+#ifdef __ARM_BACK_TRACE__
 	catch_sigsegv();
-
+#endif
 	struct udp_context udp_net;
 	init_system();	// 初始化系统，包括系统管理终端链表,inflight命令链表
 	build_socket( &net_fd, &net, NETWORT_INTERFACE, &udp_net ); // 建立raw, udp server, udp client socket
-	//build_pipe( net_fd.tx_pipe );	// 创建无名管道
 
 	threads.pthread_nums = 0;
 	pthread_t h_thread;

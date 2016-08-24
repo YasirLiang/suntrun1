@@ -8,6 +8,7 @@
 #include "terminal_common.h" // add date:2016/1/23 ;for register terminal;func interface:terminal_common_create_node_by_adp_discover_can_regist
 #include "log_machine.h"
 #include "controller_machine.h"
+#include "aecp.h"
 
 #ifdef __DEBUG__
 //#define __ADP_MACHINE_DEBUG__
@@ -110,7 +111,7 @@ int default_send_reboot_cmd(uint64_t entity_entity_id, uint16_t desc_type, uint1
 	aem_cmd_reboot.descriptor_type = desc_type;
 	aem_cmd_reboot.descriptor_index = desc_index;
 	int r = aecp_aem_form_msg(&cmd_frame,
-			                       &aem_cmd_reboot,
+			                       (struct jdksavdecc_aecpdu_aem *)&aem_cmd_reboot,
 			                       JDKSAVDECC_AECP_MESSAGE_TYPE_AEM_COMMAND,
 			                       JDKSAVDECC_AEM_COMMAND_REBOOT,
 			                       0,
@@ -130,7 +131,6 @@ int adp_1722_unit_reboot_pro(void)
 	static uint32_t  last_time = 0;
 	uint32_t current_time = get_current_time();
 	static solid_pdblist static_node = NULL;
-	solid_pdblist tmp_node = endpoint_list->next;
 
 	if (static_node == NULL && gstatic_node != NULL)
 		static_node = gstatic_node->next;

@@ -13,6 +13,8 @@
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 
+#define __ARM_BACK_TRACE__                                      /*arm*/
+
 #define central_control_unit_max_num 3 			// 中央传输单元的个数
 #define central_control_unit_name "AVB 4in/4out"	// 中央控制单元名字定义
 #define central_control_unit_transmit_name "DCS8000"	// 中央控制单元名字定义

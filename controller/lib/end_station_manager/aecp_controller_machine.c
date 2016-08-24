@@ -260,7 +260,7 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 		if (NULL != gp_log_imp)
 	                gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 			        LOGGING_LEVEL_DEBUG, 
-			        "======= aecp resend ========");
+			        "[ ======= aecp resend ======== ]");
         
 		transmit_aecp_packet_network( frame, frame_len, aecp_pstation, true, aecp_pstation->host_tx.inflight_frame.raw_dest.value, false, &interval_time );
 	}
@@ -358,7 +358,7 @@ int aecp_update_inflight_for_rcvd_resp( uint32_t msg_type, bool u_field, struct 
 			if (NULL != gp_log_imp)
 			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 			                    LOGGING_LEVEL_ERROR,
-			                    "Invalid message type");
+			                    "[ Invalid message type ]");
 			return -1;
 	}
 
@@ -550,7 +550,7 @@ int aecp_callback( uint32_t notification_flag, uint8_t *frame)
                             if (NULL != gp_log_imp)
 			            gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 			                    LOGGING_LEVEL_DEBUG,
-                                            "NO_MATCH_FOUND for %s", aem_cmd_value_to_name(cmd_type));
+                                            "[ NO_MATCH_FOUND for %s ]", aem_cmd_value_to_name(cmd_type));
 		            break;
 	        }
 	}

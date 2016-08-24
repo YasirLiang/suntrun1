@@ -161,7 +161,6 @@ void terminal_speak_track_pro_init( void )
 
 #ifdef __DEBUG__  // 模拟终端信息
 #define WRITE_ADDR_NUM 10
-// 测试接口的格式:test_interface_ + 实际会用到的接口
 void 	test_interface_terminal_address_list_write_file( FILE** fd )
 {
 	Fclose( *fd );
@@ -173,7 +172,6 @@ void 	test_interface_terminal_address_list_write_file( FILE** fd )
 		return;
 	}
 
-	// write info
 	int i = 0;
 	for( ; i < WRITE_ADDR_NUM; i++ )
 	{
@@ -516,7 +514,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
                                         if (NULL != gp_log_imp)
 				                gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
 				                    LOGGING_LEVEL_DEBUG, 
-				                    "terminal (0x%016llx-%04x) registed success ", 
+				                    "[ terminal (0x%016llx-%04x) registed success ]", 
                                                     p_tmnl_station->tmnl_dev.entity_id,
                                                     p_tmnl_station->tmnl_dev.address.addr);
 
@@ -589,7 +587,7 @@ void system_register_terminal_pro( void )
                                                 if (NULL != gp_log_imp)
 				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                                                 LOGGING_LEVEL_DEBUG, 
-                                                                "host register terminal 0x%016llx-%04x", 
+                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
                                                                 (uint64_t)0,
                                                                 addr);
             					break;
@@ -612,7 +610,7 @@ void system_register_terminal_pro( void )
                                                     if (NULL != gp_log_imp)
 				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                                                 LOGGING_LEVEL_DEBUG, 
-                                                                "host register terminal 0x%016llx-%04x", 
+                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
                                                                 (uint64_t)0,
                                                                 addr);
                 				    break;
@@ -666,7 +664,7 @@ void system_register_terminal_pro( void )
                                                 if (NULL != gp_log_imp)
                                                         gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                                                 LOGGING_LEVEL_DEBUG,
-                                                                "host register terminal 0x%016llx-%04x", 
+                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
                                                                 (uint64_t)0,
                                                                 addr);
                                                 
@@ -706,7 +704,7 @@ void system_register_terminal_pro( void )
                                                 if (NULL != gp_log_imp)
 				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                                                 LOGGING_LEVEL_DEBUG, 
-                                                                "host register terminal 0x%016llx-%04x", 
+                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
                                                                 (uint64_t)0,
                                                                 register_node->tmnl_dev.address.addr);
 
@@ -4552,7 +4550,7 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	uint16_t current_addr = 0;
 	tmnl_pdblist first_apply = NULL;
 
-	if( key_down ) // 申请发言,加地址入申请列表
+	if( key_down ) /* 申请发言,加地址入申请列表*/
 	{
 		uint8_t state = MIC_OTHER_APPLY_STATUS;
 		if(  gdisc_flags.apply_num < gdisc_flags.apply_limit )
@@ -4577,11 +4575,11 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 			terminal_key_action_host_special_num1_reply( recv_msg, state, speak_node );
 		}
 	}
-	else // 取消申请发言
+	else /* 取消申请发言*/
 	{
 		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
 		if(addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr ))
-		{// terminal apply
+		{/* terminal apply */
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 			terminal_mic_state_set_send_terminal( false, MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node );// 上报mic状态
 			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
@@ -4597,7 +4595,7 @@ bool terminal_apply_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 			terminal_main_state_send( 0, NULL, 0 );
 		}	
 		else
-		{// terminal speaking
+		{/* terminal speaking */
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 			if (trans_model_unit_is_connected(speak_node->tmnl_dev.entity_id))
 			{
@@ -4622,7 +4620,7 @@ void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_st
 	}
 }
 
-int terminal_speak_track( uint16_t addr, bool track_en )// 摄像跟踪接口
+int terminal_speak_track( uint16_t addr, bool track_en )/* 摄像跟踪接口*/
 {
 	uint16_t temp;
 	uint16_t i;
@@ -4711,7 +4709,7 @@ void terminal_vote_proccess( void )
 					&& ( tmp->tmnl_dev.tmnl_status.is_rgst) &&\
 					( tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_SET_FLAG ) &&\
 					( tmp->tmnl_dev.tmnl_status.vote_state & TVOTE_EN ))
-				{// 等待投票条件TVOTE_EN成立(即签到成功) ,
+				{/* 等待投票条件TVOTE_EN成立(即签到成功) */
 					waiting_query = true;
 					break;
 				}
@@ -4732,7 +4730,7 @@ void terminal_vote_proccess( void )
 			}
 		}
 		else
-		{// 查看系统是否投票完成
+		{/* 查看系统是否投票完成*/
 			int i = 0;
 			for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
 			{
@@ -4784,9 +4782,9 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 	}
 
 	uint8_t sys_state = get_sys_state();
-	if( (SIGN_STATE == sys_state ) && (vote_state & 0x80) )
-	{// sign complet
-		if( gtmnl_signstate == SIGN_IN_ON_TIME )// 设置签到标志
+	if( (SIGN_STATE == sys_state ) && (vote_state & 0x80) )/* sign complet? */
+	{                                                                                           
+		if( gtmnl_signstate == SIGN_IN_ON_TIME )            /* 设置签到标志*/
 		{
 			vote_node->tmnl_dev.tmnl_status.sign_state = TMNL_SIGN_ON_TIME;
 		}
@@ -4815,7 +4813,7 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 			terminal_vote_mode_max_key_num( &key_num, gvote_mode );
 			terminal_pro_debug( "max key num = %d-------vote num = %d", key_num, vote_num );
 			if ( vote_num >= key_num )
-			{// 投票完成，相应的终端停止查询投票结果
+			{/* 投票完成，相应的终端停止查询投票结果*/
 				vote_node->tmnl_dev.tmnl_status.vote_state &= (~TWAIT_VOTE_FLAG);
 			}
 #else
@@ -4917,7 +4915,7 @@ void terminal_over_time_speak_pro(void)
 		else if (NULL != speak_node && gdisc_flags.edis_mode == LIMIT_MODE)
 		{
 			if (0 == trans_model_unit_connect(speak_node->tmnl_dev.entity_id, speak_node))
-			{// connect success
+			{/* connect success */
 				if (speak_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST)
 				{
 					gdisc_flags.speak_limit_num++;
@@ -4944,7 +4942,7 @@ void terminal_over_time_speak_pro(void)
 	}
 }
 
-// 主机查询签到投票结果
+/* 主机查询签到投票结果*/
 void terminal_query_sign_vote_pro( void )
 {
 	bool sending = false;
@@ -5043,36 +5041,10 @@ void terminal_query_proccess_init( void )
 /*************************************************************
 *==开始签到处理
 */
-
-// 补签处理
-//#define __MIND_UPPER_CMPT_SIGN_RESULT__
 void terminal_sign_in_pro( void )
 {
 	uint8_t sign_type;
 	int i = 0;
-
-#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
-	/*
-	* 1、为了解决在主机正常上报签到状态而上位机还不停
-	*提醒签到的问题。2016/1/29
-	*2、这里被注释了，不用的根本原因是经过调试不起任何作用。这个
-	*修改了上报投票情况的超时时间从50ms改为150ms
-	*/
-	static int report_num = 0;
-	if( gvote_flag != NO_VOTE )
-	{// 投票时期
-		if( over_time_listen( MIND_UPPER_CMPT_SIGN_RESULT ))
-		{
-			over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );
-			proccess_upper_cmpt_sign_state_list();
-			if( (++report_num) == 5 )
-			{
-				report_num = 0;
-				over_time_stop( MIND_UPPER_CMPT_SIGN_RESULT );
-			}
-		}
-	}
-#endif
 
 	if( (gtmnl_signstate == SIGN_IN_BE_LATE)  )
 	{
@@ -5120,7 +5092,7 @@ void terminal_sign_in_pro( void )
 /*==================================================
 	start reallot address
 ====================================================*/
-//清除终端链表
+/* 清除终端链表*/
 tmnl_pdblist terminal_system_dblist_except_free( void )
 {
 	tmnl_pdblist p_node = NULL;
@@ -5132,7 +5104,7 @@ tmnl_pdblist terminal_system_dblist_except_free( void )
 	return p_node;
 }
 
-//清除除了target_id 终端链表节点
+/* 清除除了target_id 终端链表节点*/
 void terminal_system_clear_node_info_expect_target_id( void )
 {
 	tmnl_pdblist p_node = NULL;
@@ -5140,7 +5112,7 @@ void terminal_system_clear_node_info_expect_target_id( void )
 	for (p_node = dev_terminal_list_guard->next;\
             p_node != dev_terminal_list_guard; \
             p_node = p_node->next)
-	{// clear info expect target_id
+	{/* clear info expect target_id */
 	    p_node->tmnl_dev.address.addr = 0xffff;
             p_node->tmnl_dev.address.tmn_type = 0xffff;
             p_node->tmnl_dev.spk_operate_timp = 0;
@@ -5164,7 +5136,7 @@ void terminal_open_addr_file_wt_wb( void )
 	}	
 }
 
-// 摧毁终端链表
+/* 摧毁终端链表*/
 void terminal_system_dblist_destroy( void )
 {
 	tmnl_pdblist p_node = destroy_terminal_dblist( dev_terminal_list_guard );
@@ -5181,7 +5153,7 @@ end reallot address
 uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 {
 	uint16_t addr = 0xffff;
-	static int person = 0;// 1 链表最后一个；-1链表前一个可用节点
+	static int person = 0;/* 1 链表最后一个；-1链表前一个可用节点*/
 
 	assert( gcur_tmnl_list_node );
 	if( gcur_tmnl_list_node != NULL )
@@ -5192,7 +5164,7 @@ uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 			{
 				if( gcur_tmnl_list_node->next->tmnl_dev.address.addr != 0xffff &&\
 					gcur_tmnl_list_node->next->tmnl_dev.tmnl_status.is_rgst )
-				{// gcur_tmnl_list_node 只移到最后一个已注册终端(有效节点)
+				{/* gcur_tmnl_list_node 只移到最后一个已注册终端(有效节点) */
 					addr = gcur_tmnl_list_node->next->tmnl_dev.address.addr;
 					gcur_tmnl_list_node = gcur_tmnl_list_node->next;
 				}
@@ -5208,24 +5180,24 @@ uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 		{
 			if( person && gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&
 				 gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst )
-			{// 最后一个可用节点
+			{/* 最后一个可用节点*/
 				addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
 				person = 0;
 			}
 			else if( gcur_tmnl_list_node->prior != dev_terminal_list_guard && gcur_tmnl_list_node->prior->tmnl_dev.address.addr != 0xffff )
 			{
 				if(  gcur_tmnl_list_node->prior->tmnl_dev.tmnl_status.is_rgst )
-				{// gcur_tmnl_list_node 只移到最前一个已注册终端
+				{/* gcur_tmnl_list_node 只移到最前一个已注册终端*/
 					addr = gcur_tmnl_list_node->prior->tmnl_dev.address.addr;
 					gcur_tmnl_list_node = gcur_tmnl_list_node->prior;
 				}
 			}
 			else if(gcur_tmnl_list_node->prior != dev_terminal_list_guard && gcur_tmnl_list_node->prior->tmnl_dev.address.addr == 0xffff )
-			{// 不可用节点0xffff
+			{/* 不可用节点0xffff */
 				gcur_tmnl_list_node = gcur_tmnl_list_node->prior;
 				if( gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&
 				 	gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst)
-				{// 最后一个可用节点
+				{/* 最后一个可用节点*/
 					addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
 				}
 			}
@@ -5233,7 +5205,7 @@ uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur )
 			{
 				if( gcur_tmnl_list_node->tmnl_dev.address.addr != 0xffff &&\
 					gcur_tmnl_list_node->tmnl_dev.tmnl_status.is_rgst )
-				{// gcur_tmnl_list_node 只移到最前一个已注册终端
+				{/* gcur_tmnl_list_node 只移到最前一个已注册终端*/
 					addr = gcur_tmnl_list_node->tmnl_dev.address.addr;
 				}
 			}

@@ -5,7 +5,6 @@ int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 {
 	uint8_t loader_hdr = cnfrnc_pack->common_header.state_loader;
 	uint8_t sub_type = cnfrnc_pack->common_header.deal_type;
-	uint8_t cmd_type = cnfrnc_pack->common_header.command;
 	uint16_t data_len = cnfrnc_pack->common_header.data_len;
 	uint8_t data_payload[DATA_PAYLOAD_LEN_MAX];
 	memcpy( data_payload, cnfrnc_pack->data_payload, data_len );

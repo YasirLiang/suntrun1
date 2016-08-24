@@ -152,6 +152,8 @@ int proc_get_tx_connection_resp( const uint8_t *frame, size_t frame_len, int *st
 // store input stream to system desc list
 void store_stream_input_desc( const uint8_t *frame, int pos, size_t frame_len, desc_pdblist  desc_info_node )
 {
+        bool found = false;
+        int i = 0;
 	struct jdksavdecc_descriptor_stream stream_input_desc; // Structure containing the stream_output_desc fields
 	ssize_t ret = jdksavdecc_descriptor_stream_read(&stream_input_desc, frame, pos, frame_len);
         if (ret < 0)
@@ -159,23 +161,53 @@ void store_stream_input_desc( const uint8_t *frame, int pos, size_t frame_len, d
         	DEBUG_INFO( "avdecc_read_descriptor_error: stream_input_desc_read error" );
 		return ;
         }
+        
+        assert( desc_info_node);
+        if (desc_info_node == NULL || \
+            stream_input_desc.descriptor_type != JDKSAVDECC_DESCRIPTOR_STREAM_INPUT)
+            return;
+        
+        for (i = 0; i < MAX_STREAM_NUM; i++)
+        {
+                if (desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_index\
+                    == stream_input_desc.descriptor_index)
+                {
+                        desc_info_node->endpoint_desc.input_stream.desc[i].connect_num = 0;
+                        desc_info_node->endpoint_desc.input_stream.desc[i].stream_id = 0;
+                        desc_info_node->endpoint_desc.input_stream.desc[i].current_format = stream_input_desc.current_format;
+                        desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_index = stream_input_desc.descriptor_index;
+                        desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_type = stream_input_desc.descriptor_type;
+                        found = true;
+                        break;
+                }
+        }
 
-	uint8_t num = ++desc_info_node->endpoint_desc.input_stream.num;
-	assert( desc_info_node && num <=  MAX_STREAM_NUM );
-	if( desc_info_node == NULL ||num >  MAX_STREAM_NUM )
-	{
-		return;
-	}
-	
-	desc_info_node->endpoint_desc.input_stream.desc[num-1].descriptor_type = stream_input_desc.descriptor_type;
-	desc_info_node->endpoint_desc.input_stream.desc[num-1].descriptor_index = stream_input_desc.descriptor_index;
-	desc_info_node->endpoint_desc.input_stream.desc[num-1].current_format = stream_input_desc.current_format;
-	desc_info_node->endpoint_desc.is_input_stream_desc_exist = true;
+        if (!desc_info_node->endpoint_desc.is_input_stream_desc_exist)
+        	desc_info_node->endpoint_desc.is_input_stream_desc_exist = true;
+
+        if (!found)
+        {
+                for (i = 0; i < MAX_STREAM_NUM; i++)
+                {
+                        if (desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_index == 0xffff)
+                        {
+                                desc_info_node->endpoint_desc.input_stream.desc[i].connect_num = 0;
+                                desc_info_node->endpoint_desc.input_stream.desc[i].stream_id = 0;
+                                desc_info_node->endpoint_desc.input_stream.desc[i].current_format = stream_input_desc.current_format;
+                                desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_index = stream_input_desc.descriptor_index;
+                                desc_info_node->endpoint_desc.input_stream.desc[i].descriptor_type = stream_input_desc.descriptor_type;
+                                desc_info_node->endpoint_desc.input_stream.num++;
+                                break;
+                        }
+                }
+        }
 }
 
 // store output stream to system desc list
 void store_stream_output_desc( const uint8_t *frame, int pos, size_t frame_len, desc_pdblist  desc_info_node )
 {
+        bool found = false;
+        int i = 0;
 	struct jdksavdecc_descriptor_stream stream_output_desc; // Structure containing the stream_output_desc fields
 	ssize_t ret = jdksavdecc_descriptor_stream_read( &stream_output_desc, frame, pos, frame_len );
         if (ret < 0)
@@ -183,18 +215,46 @@ void store_stream_output_desc( const uint8_t *frame, int pos, size_t frame_len, 
         	DEBUG_INFO( "avdecc_read_descriptor_error:stream_output_desc_read error" );
 		return;
         }
-
-	uint8_t num = ++desc_info_node->endpoint_desc.output_stream.num;
-	assert( desc_info_node && num <=  MAX_STREAM_NUM );
-	if( desc_info_node == NULL ||num >  MAX_STREAM_NUM )
-	{
-		return;
-	}
 	
-	desc_info_node->endpoint_desc.output_stream.desc[num-1].descriptor_type = stream_output_desc.descriptor_type;
-	desc_info_node->endpoint_desc.output_stream.desc[num-1].descriptor_index = stream_output_desc.descriptor_index;
-	desc_info_node->endpoint_desc.output_stream.desc[num-1].current_format = stream_output_desc.current_format;
-	desc_info_node->endpoint_desc.is_output_stream_desc_exist = true;
+        assert( desc_info_node);
+        if (desc_info_node == NULL || \
+                stream_output_desc.descriptor_type != JDKSAVDECC_DESCRIPTOR_STREAM_OUTPUT)
+                return;
+        
+        for (i = 0; i < MAX_STREAM_NUM; i++)
+        {
+                if (desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_index\
+                    == stream_output_desc.descriptor_index)
+                {
+                        desc_info_node->endpoint_desc.output_stream.desc[i].connect_num = 0;
+                        desc_info_node->endpoint_desc.output_stream.desc[i].stream_id = 0;
+                        desc_info_node->endpoint_desc.output_stream.desc[i].current_format = stream_output_desc.current_format;
+                        desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_index = stream_output_desc.descriptor_index;
+                        desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_type = stream_output_desc.descriptor_type;
+                        found = true;
+                        break;
+                }
+        }
+
+        if (!desc_info_node->endpoint_desc.is_input_stream_desc_exist)
+        	desc_info_node->endpoint_desc.is_input_stream_desc_exist = true;
+
+        if (!found)
+        {
+                for (i = 0; i < MAX_STREAM_NUM; i++)
+                {
+                        if (desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_index == 0xffff)
+                        {
+                                desc_info_node->endpoint_desc.output_stream.desc[i].connect_num = 0;
+                                desc_info_node->endpoint_desc.output_stream.desc[i].stream_id = 0;
+                                desc_info_node->endpoint_desc.output_stream.desc[i].current_format = stream_output_desc.current_format;
+                                desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_index = stream_output_desc.descriptor_index;
+                                desc_info_node->endpoint_desc.output_stream.desc[i].descriptor_type = stream_output_desc.descriptor_type;
+                                desc_info_node->endpoint_desc.output_stream.num++;
+                                break;
+                        }
+                }
+        }
 }
 
 int background_read_descriptor_input_output_stream( void )

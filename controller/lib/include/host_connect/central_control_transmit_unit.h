@@ -51,6 +51,8 @@ extern void central_control_transmit_unit_update( subject_data_elem reflesh_data
 extern void central_control_transmit_unit_model_pro_init( void );
 extern bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_t tarker_index, struct list_head** pp_model, struct list_head** pp_model_output );
 extern void central_control_transmit_unit_model_destroy(void);
+extern void central_control_transmit_unit_model_destroy_output(uint64_t id);
+extern void central_control_transmit_unit_model_destroy_node(uint64_t id);
 
 //************************************//
 
