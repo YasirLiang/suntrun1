@@ -5,7 +5,6 @@
 **功能:管理系统中央广播连接表
 */
 
-
 /********************************************/
 //新建系统广播连接机制的管理模块，
 //代替原来muticast_connector.c文件中的
@@ -15,6 +14,8 @@
 /********************************************/
 
 #include "muticast_connect_manager.h"
+#include "system_database.h"
+#include "host_timer.h"
 #include "output_channel.h"
 #include "conference_recieve_unit.h"
 #include "linked_list_unit.h"
@@ -22,7 +23,33 @@
 #include "time_handle.h"
 #include "log_machine.h"
 #include "acmp_controller_machine.h"
-#include "muticast_connect_manager.h"
+
+enum _enum_muticast_pro_state
+{
+	MUTICAST_PRO_PRIMED,
+	MUTICAST_PRO_HANDING,
+	MUTICAST_PRO_IDLE,
+};
+
+enum _enum_change_muticast_state
+{
+	MUTICAST_CHANGE_BEGIN,
+	MUTICAST_CHANGE_HANDING,
+	MUTICAST_CHANGE_FINISH
+};
+
+typedef struct _type_muticast_manager
+{
+	enum _enum_change_muticast_state mm_cha_state;
+	enum _enum_muticast_pro_state mm_pro_state;
+	bool running;
+	bool muticast_exist;
+	Tstr_sysmuti_param mm_sys_flags;
+	host_timer mm_errlog_timer;
+	struct list_head * ptr_curcfc_recv_model;// tconference_recieve_model
+	struct list_head * ptr_muticastor;// T_pccuTModel
+	struct list_head *ptr_muticastor_output;// 定义广播者的输出通道 类型为TOutChannel
+}Tstr_MMPro;
 
 #ifdef __DEBUG__
 #define __MUTICASTOR_MANAGER_DEBUG__
@@ -51,6 +78,39 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 													const bool offline_connect,
 													const bool reconnect_self,
 													const uint8_t failed_count,
+													T_Ptrconference_recieve_model ptr_recv_model);
+static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_universe ptr_Inchn, 
+															const uint64_t muticastor_id,
+															const uint64_t local_listen_id,
+															const bool muticastor_exit,
+															const T_pOutChannel muticast_output,
+															const bool offline_connect,
+															const bool reconnect_self,
+															const uint8_t failed_count,
+															T_Ptrconference_recieve_model ptr_recv_model);
+static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_universe ptr_Inchn, 
+															const uint64_t muticastor_id,
+															const uint64_t local_listen_id,
+															const bool muticastor_exit,
+															const T_pOutChannel muticast_output,
+															const bool offline_connect,
+															const bool reconnect_self,
+															const uint8_t failed_count,
+															T_Ptrconference_recieve_model ptr_recv_model);
+static int muticast_connect_manger_uphold_muti_list( bool muti_flags );
+static int muticast_connect_manger_muticastor_default_change_pro( void );
+static int muticast_connect_manger_error_log( void );
+static int muticast_connect_manger_not_muticast_pro( void );
+static int muticast_connect_manger_muticast_pro( void );
+
+static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe ptr_muti_inchn, 
+													const uint64_t muticastor_id,
+													const uint64_t local_listen_id,
+													const bool muticastor_exit,
+													const T_pOutChannel muticast_output,
+													const bool offline_connect,
+													const bool reconnect_self,
+													const uint8_t failed_count,
 													T_Ptrconference_recieve_model ptr_recv_model )
 {
 	bool disconnect_flags = true;
@@ -58,13 +118,13 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 	struct jdksavdecc_eui64 talker_entity_id, listen_entity_id;
 	int ret = -1;
 	
-	if( ptr_muti_inchn == NULL || muticast_output == NULL\
-		|| ptr_recv_model == NULL )
+	if  ((ptr_muti_inchn == NULL) ||(muticast_output == NULL)\
+		|| (ptr_recv_model == NULL))
 	{
 		return -1;
 	}
 
-	if( ptr_muti_inchn->pro_status != INCHANNEL_PRO_FINISH )
+	if (ptr_muti_inchn->pro_status != INCHANNEL_PRO_FINISH)
 	{
 		muticastor_manager_debug( "Input Node does not proccess Finish......" );
 		return 0;
@@ -81,28 +141,28 @@ static int muti_cnnt_mngr_unmutic_pro_tmnl_by_selfstate( T_pInChannel_universe p
 	{
 		case INCHANNEL_UNAVAILABLE:
 			break;
-		case INCHANNEL_FREE:// 未连接上
+		case INCHANNEL_FREE:/* 未连接上*/
 			host_timer_stop( &ptr_recv_model->muticast_query_timer );
 			ptr_recv_model->query_stop = true;
 			break;
-		case INCHANNEL_BUSY:// 被占用了
+		case INCHANNEL_BUSY:/* 被占用了*/
 			if ((get_current_time() - muticast_output->operate_timetimp) < OUTPUT_CHANNEL_OPT_PROTECT_TIME)
 				disconnect_flags = false;
 			
-			// 检查广播者是否在线
+			/* 检查广播者是否在线*/
 			if (disconnect_flags)
 			{
 				solid = search_endtity_node_endpoint_dblist( endpoint_list, ptr_muti_inchn->tarker_id );
 				if( solid != NULL && (solid != NULL) &&\
 					(solid->solid.connect_flag == DISCONNECT))
-				{// 不检查更新
+				{/* 不检查更新*/
 					disconnect_flags = false;
 				}	
 			}
 
 			if( disconnect_flags )
 			{
-                                ptr_muti_inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
+                                ptr_muti_inchn->pro_status = INCHANNEL_PRO_PRIMED;/* 标示输入节点正在预处理，用于互斥访问改变节点*/
 
 				convert_uint64_to_eui64( talker_entity_id.value, ptr_muti_inchn->tarker_id );
 				convert_uint64_to_eui64( listen_entity_id.value, local_listen_id );	
@@ -138,13 +198,13 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 	bool connect_flags = true;
 	bool update_flags = true;
 	
-	if( ptr_Inchn == NULL || muticast_output == NULL\
-		|| ptr_recv_model == NULL )
+	if ((ptr_Inchn == NULL) || (muticast_output == NULL)\
+		|| (ptr_recv_model == NULL))
 	{
 		return -1;
 	}
 
-	if( ptr_Inchn->pro_status != INCHANNEL_PRO_FINISH )
+	if (ptr_Inchn->pro_status != INCHANNEL_PRO_FINISH)
 	{
 		muticastor_manager_debug( "0x%016llx - %d Input Node does not proccess Finish......", \
 			local_listen_id, ptr_Inchn->listener_index );
@@ -157,7 +217,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 	{
 		case INCHANNEL_UNAVAILABLE:
 			break;
-		case INCHANNEL_FREE:// 未连接上
+		case INCHANNEL_FREE:/* 未连接上*/
 			model_tark_discut = ptr_recv_model->tark_discut;
 
 			if ((get_current_time() - muticast_output->operate_timetimp) < OUTPUT_CHANNEL_OPT_PROTECT_TIME)
@@ -165,7 +225,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 			
 			if( connect_flags && ((model_tark_discut && !reconnect_self)\
 				||(!offline_connect && (ptr_Inchn->connect_failed_count > failed_count))))
-			{// 本机断开不重连或掉线不重连
+			{/* 本机断开不重连或掉线不重连*/
 				connect_flags = false;
 			}
 
@@ -182,15 +242,15 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 							gacmp_sequence_id++ );
 			}
 			break;
-		case INCHANNEL_BUSY:// 被占用了
+		case INCHANNEL_BUSY:/* 被占用了*/
 			if( (muticastor_id == ptr_Inchn->tarker_id) &&\
 				muticast_output->tarker_index == ptr_Inchn->tarker_index )
 			{
-				// 检查是否在线
+				/* 检查是否在线*/
 				if( ptr_recv_model != NULL && \
 					(ptr_recv_model->solid_pnode != NULL) &&\
 					(ptr_recv_model->solid_pnode->solid.connect_flag == DISCONNECT))
-				{// 不检查更新
+				{/* 不检查更新*/
 					update_flags = false;
 				}
 
@@ -201,7 +261,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
                                           *若数据处理函数的线程与此函数被调用的线程不同，则该线程被抢占后可能会导致其
                                           *ptr_Inchn->pro_status状态的设置推后,其他关于此状态INCHANNEL_PRO_PRIMED的设置的同理
                                           */
-				        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;// 标示输入节点正在预处理，用于互斥访问改变节点
+				        ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;/* 标示输入节点正在预处理，用于互斥访问改变节点*/
 
 				        if (ptr_Inchn->connect_count_interval)
                                         {
@@ -224,7 +284,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 				}
 			}
 			else
-			{// 不是默认广播者
+			{/* 不是默认广播者*/
 				muticastor_manager_debug( "listener id = 0x%016llx, current tarker id = 0x%016llx -%d,	default id =  0x%016llx-%d",
 					local_listen_id, ptr_Inchn->tarker_id, ptr_Inchn->tarker_index,muticastor_id, muticast_output->tarker_index );
 				if (0 != ptr_Inchn->tarker_id)
@@ -244,7 +304,7 @@ static int muticast_connect_manger_pro_terminal_by_selfstate( T_pInChannel_unive
 					}
 				}
 				else
-				{// update the right  listener's talker
+				{/* update the right  listener's talker */
 					muticastor_manager_debug(" update the right  listener's talker");
                                         ptr_Inchn->pro_status = INCHANNEL_PRO_PRIMED;
 					acmp_rx_state_avail( local_listen_id, ptr_Inchn->listener_index );
@@ -265,16 +325,16 @@ static int muticast_connect_manager_inout_channel_entry_get( struct list_head *p
 													T_pccuTModel* pptr_muticastor,
 													T_pOutChannel* ppOutChannel )
 {	
-	assert(p_recv_model != NULL && (p_ccut_model != NULL)&&\
+	assert((p_recv_model != NULL) && (p_ccut_model != NULL) &&\
 		(p_ccut_ouput != NULL));
-	if( p_recv_model == NULL || (p_ccut_model == NULL)||\
+	if( (p_recv_model == NULL) || (p_ccut_model == NULL)||\
 		(p_ccut_ouput == NULL))
 		return -1;
 
-	assert(pptr_Inchn != NULL && (pptr_muticastor != NULL)&&\
+	assert((pptr_Inchn != NULL) && (pptr_muticastor != NULL)&&\
 		(ppOutChannel != NULL));
-	if( pptr_Inchn == NULL || pptr_muticastor == NULL||\
-		ppOutChannel == NULL )
+	if ((pptr_Inchn == NULL) || (pptr_muticastor == NULL) ||\
+		ppOutChannel == NULL)
 		return -1;
 
 	*pptr_Inchn = list_entry( p_recv_model, TInChannel_universe, list );
@@ -296,7 +356,7 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
 		if( ptr_recv_model->query_stop )
 		{
 			if( muti_flags )
-			{// start query
+			{/* start query */
 				ptr_recv_model->query_stop = false;
 				host_timer_start( query_timeout, &ptr_recv_model->muticast_query_timer );
 			}
@@ -314,7 +374,7 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
                 
 			ret = -1;
 		}
-		else// not end query update and timeout?
+		else/* not end query update and timeout?*/
 		{
 			T_pInChannel_universe ptr_muti_Inchn = NULL;
 			T_pccuTModel ptr_muticastor = NULL;
@@ -323,7 +383,8 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
 			struct list_head *p_ccut_mo = gmuticast_manager_pro.ptr_muticastor;
 			struct list_head *p_ccut_out = gmuticast_manager_pro.ptr_muticastor_output;
 
-			if( p_recv_muti_model != NULL && p_ccut_mo != NULL && p_ccut_out != NULL )
+			if ((p_recv_muti_model != NULL) && (p_ccut_mo != NULL)
+                                && (p_ccut_out != NULL))
 			{
 				muticast_connect_manager_inout_channel_entry_get( p_recv_muti_model,
 													p_ccut_mo,
@@ -332,7 +393,8 @@ static int muticast_connect_manger_uphold_muti_list( bool muti_flags )
 													&ptr_muticastor, 
 													&pOutChannel );
 				assert( ptr_muti_Inchn  && ptr_muticastor && pOutChannel );
-				if( ptr_muti_Inchn != NULL && ptr_muticastor != NULL && pOutChannel != NULL )
+				if ((ptr_muti_Inchn != NULL) && (ptr_muticastor != NULL)
+                                        && (pOutChannel != NULL))
 				{
 					if( muti_flags )
 					{
@@ -380,7 +442,7 @@ static int muticast_connect_manger_muticastor_default_change_pro( void )
 	if( (gmuticast_manager_pro.mm_cha_state == MUTICAST_CHANGE_BEGIN) )
 	{
 		if( (gmuticast_manager_pro.ptr_muticastor != gpdefault_muticastor) &&
-			((gmuticast_manager_pro.ptr_muticastor_output != gpdefault_muticastor_output)))
+			(gmuticast_manager_pro.ptr_muticastor_output != gpdefault_muticastor_output))
 		{
 			gmuticast_manager_pro.mm_cha_state = MUTICAST_CHANGE_HANDING;
 		}
@@ -399,13 +461,13 @@ static int muticast_connect_manger_muticastor_default_change_pro( void )
 			
 			if( gmuticast_manager_pro.mm_sys_flags.en_default_muti && \
 					gmuticast_manager_pro.muticast_exist )
-			{// 不能改变
+			{/* 不能改变*/
 				change_default = false;
 			}
 			
 			if( change_default && \
-				gpdefault_muticastor != gmuticast_manager_pro.ptr_muticastor &&\
-				gpdefault_muticastor_output != gmuticast_manager_pro.ptr_muticastor )
+				(gpdefault_muticastor != gmuticast_manager_pro.ptr_muticastor) &&\
+				(gpdefault_muticastor_output != gmuticast_manager_pro.ptr_muticastor))
 			{
 				gmuticast_manager_pro.ptr_muticastor = gpdefault_muticastor;
 				gmuticast_manager_pro.ptr_muticastor_output = gpdefault_muticastor_output;
@@ -445,7 +507,7 @@ static int muticast_connect_manger_error_log( void )
 		}
 	}
 	
-	if( ( ptr_curcfc_recv_model != NULL) &&\
+	if ((ptr_curcfc_recv_model != NULL) &&\
 		gmuticast_manager_pro.mm_sys_flags.log_discut )
 	{
 		if( !host_timer_timeout( &ptr_curcfc_recv_model->errlog_timer ) )
@@ -484,7 +546,7 @@ static int muticast_connect_manger_not_muticast_pro( void )
 {
 	int ret = -1;
 
-	// 当改变广播者时，不能改变当前的广播者
+	/* 当改变广播者时，不能改变当前的广播者*/
 	if( gmuticast_manager_pro.mm_cha_state == MUTICAST_CHANGE_BEGIN )
 	{
 		over_time_stop( CHANGE_MUTICASTOR_TIMEOUT_INDEX );
@@ -518,7 +580,7 @@ int muticast_connect_manger_timeout_event_image( void )
 		struct list_head *tmp_recv_model = gmuticast_manager_pro.ptr_curcfc_recv_model;
 
 		if( conference_recieve_model_is_right(tmp_recv_model) )
-		{// 有用的节点
+		{/* 有用的节点*/
 			if( gmuticast_manager_pro.mm_sys_flags.muti_flag )
 			{
 				ret = muticast_connect_manger_muticast_pro();
@@ -529,14 +591,14 @@ int muticast_connect_manger_timeout_event_image( void )
 			}
 		}
 
-		// 移动被广播者的指针,指向下一个
+		/* 移动被广播者的指针,指向下一个*/
 		conference_recieve_model_found_next( tmp_recv_model,  &gmuticast_manager_pro.ptr_curcfc_recv_model );
 	}
 	
 	return ret;
 }
 
-// 系统改变广播者函数
+/* 系统改变广播者函数*/
 int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_muti, struct list_head *p_muit_out )
 {
 	assert( p_muti != NULL && p_muit_out != NULL);
@@ -557,7 +619,7 @@ int muticast_connect_manger_chdefault_outmuticastor( struct list_head *p_muti, s
 	return 0;
 }
 
-// 广播配置数据表回调函数
+/* 广播配置数据表回调函数*/
 int muticast_connect_manger_database_update( void* p_muti_param_tmp )
 {
 	Tstr_sysmuti_param*p_mm_sys_flags = &gmuticast_manager_pro.mm_sys_flags;

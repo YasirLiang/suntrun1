@@ -19,6 +19,23 @@
 #include "muticast_connect_manager.h"
 #include "time_handle.h"
 #include "log_machine.h"
+#include "host_time.h"
+#include "jdksavdecc_acmp.h"
+
+enum _enum_ccu_chout_pro// 中央广播者的初始化处理
+{
+	CENTRAL_OUT_PRIMITED = 0,// 中心输出未处理
+	CENTRAL_OUT_HANDLE,// 中心输出正处理
+	CENTRAL_OUT_FINISH//  中心输出初始化完成
+};
+
+typedef enum ccu_transmit_model_output_state
+{
+	TCCU_LEISURE,// 空闲
+	TCCU_EXCHANGE,// 正在改变广播者的状态
+	TCCU_MUTISCASTING,// 正在广播
+}EccuTModelOutputState;
+
 
 #ifdef __DEBUG__
 #define __CCU_TRANSMIT_UNIT_DEBUG__

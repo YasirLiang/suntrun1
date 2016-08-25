@@ -19,7 +19,7 @@
 #include "upper_computer_pro.h"
 #include "camera_pro.h"
 #include "time_handle.h"
-#include "log_machine.h" // 系统日志头文件
+#include "log_machine.h" /* 系统日志头文件*/
 #include "conference_transmit_unit.h"
 
 #ifdef __DEBUG__
@@ -33,30 +33,29 @@
 #define terminal_pro_debug(fmt, args...)
 #endif
 
-FILE* addr_file_fd = NULL; 								// 终端地址信息读取文件描述符
-terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	// 终端地址分配列表
+FILE* addr_file_fd = NULL; 								/* 终端地址信息读取文件描述符*/
+terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	/*终端地址分配列表*/
 terminal_address_list_pro allot_addr_pro;	
-tmnl_pdblist dev_terminal_list_guard = NULL; 				// 终端链表表头结点，对其正确地操作，必须先注册完终端
+tmnl_pdblist dev_terminal_list_guard = NULL; 				/*终端链表表头结点，对其正确地操作，必须先注册完终端*/
 tmnl_pdblist gcur_tmnl_list_node = NULL;
-volatile bool reallot_flag = false; 							// 重新分配标志
+volatile bool reallot_flag = false; 							/*重新分配标志*/
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
-tsys_discuss_pro gdisc_flags; 								// 系统讨论参数
-tchairman_control_in gchm_int_ctl;						// 主席插话
-volatile ttmnl_register_proccess gregister_tmnl_pro; 			// 终端报到处理
-volatile uint8_t speak_limit_time = 0; 						// 发言时长， 0表示无限时；1-63表示限时1-63分钟
-volatile uint8_t glcd_num = 0; 							// lcd 显示的屏号
-volatile uint8_t gled_buf[2] = {0}; 							// 终端指示灯
-volatile enum_signstate gtmnl_signstate;					// 签到的状态，也可为终端的签到状态
-volatile uint8_t gsign_latetime; 							// 补签的超时时间
-volatile bool gsigned_flag = false;							// 签到标志
-volatile evote_state_pro gvote_flag = NO_VOTE; 						// 投票处理
-volatile uint16_t gvote_index;								// 投票偏移
-volatile bool gfirst_key_flag; 								// 真为投票首键有效
-volatile tevote_type gvote_mode;							// 投票模式
-
+tsys_discuss_pro gdisc_flags; 								/*系统讨论参数*/
+tchairman_control_in gchm_int_ctl;						/*主席插话*/
+volatile ttmnl_register_proccess gregister_tmnl_pro; 			/* 终端报到处理*/
+volatile uint8_t speak_limit_time = 0; 						/*发言时长， 0表示无限时；1-63表示限时1-63分钟*/
+volatile uint8_t glcd_num = 0; 							/* lcd 显示的屏号*/
+volatile uint8_t gled_buf[2] = {0}; 							/*终端指示灯*/
+volatile enum_signstate gtmnl_signstate;					/*签到的状态，也可为终端的签到状态*/
+volatile uint8_t gsign_latetime; 							/*补签的超时时间*/ 
+volatile bool gsigned_flag = false;							/*签到标志*/
+volatile evote_state_pro gvote_flag = NO_VOTE; 				/*  投票处理*/
+volatile uint16_t gvote_index;								/* 投票偏移*/ 
+volatile bool gfirst_key_flag; 								/* 真为投票首键有效*/
+volatile tevote_type gvote_mode;							/* 投票模式*/
 type_spktrack gspeaker_track;
 
-tquery_svote  gquery_svote_pro;							// 查询签到表决结果
+tquery_svote  gquery_svote_pro;							/*  查询签到表决结果*/
 
 void init_terminal_proccess_fd( FILE ** fd )
 {
@@ -76,7 +75,7 @@ int init_terminal_address_list_from_file( void )
 	int i = 0;
 	int ret = 0;
 	
-	// 初始化全局变量tmnl_addr_list
+	/* 初始化全局变量tmnl_addr_list*/ 
 	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
 	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
 	{
@@ -84,7 +83,7 @@ int init_terminal_address_list_from_file( void )
 		tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
 	}
 
-	// 读终端地址信息到tmnl_addr_list, 若读取失败，则系统需要重新分配终端地址
+	/*读终端地址信息到tmnl_addr_list, 若读取失败，则系统需要重新分配终端地址 */ 
 	ret = terminal_address_list_read_file( addr_file_fd, tmnl_addr_list );
 	if( ret == -1 )
 	{
@@ -99,7 +98,7 @@ void init_terminal_address_list( void )
 {
 	int i = 0;
 	
-	// 初始化全局变量tmnl_addr_list
+	/*初始化全局变量tmnl_addr_list */ 
 	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
 	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
 	{
@@ -117,12 +116,12 @@ inline void init_terminal_allot_address( void )
 	allot_addr_pro.addr_start = 0;
 	allot_addr_pro.index = 0;
 	allot_addr_pro.renew_flag= 0;
-	reallot_flag = false; // disable reallot
+	reallot_flag = false; /*  disable reallot*/
 }
 
 inline void init_terminal_device_double_list( void )
 {
-	// init terminal system double list
+	/* init terminal system double list */
 	init_terminal_dblist( &dev_terminal_list_guard );
 	assert( dev_terminal_list_guard != NULL );
 	gcur_tmnl_list_node = dev_terminal_list_guard;
@@ -133,14 +132,14 @@ inline void init_terminal_device_double_list( void )
 */
 int init_terminal_discuss_param( void ) 
 {
-	thost_system_set set_sys; // 系统配置文件的格式
+	thost_system_set set_sys; /* 系统配置文件的格式*/ 
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
 
 	gdisc_flags.apply_limit = set_sys.apply_limit;
 	gdisc_flags.limit_num = set_sys.speak_limit;
 	gdisc_flags.currect_first_index = set_sys.apply_limit;
 	gdisc_flags.apply_num = 0;
-	gdisc_flags.speak_limit_num = 0; // 发言人数
+	gdisc_flags.speak_limit_num = 0; /*发言人数 */ 
 	gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
 	memset( gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM );
 	memset( gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM );
@@ -159,7 +158,7 @@ void terminal_speak_track_pro_init( void )
 	}
 }
 
-#ifdef __DEBUG__  // 模拟终端信息
+#ifdef __DEBUG__  /*  模拟终端信息*/
 #define WRITE_ADDR_NUM 10
 void 	test_interface_terminal_address_list_write_file( FILE** fd )
 {
@@ -200,7 +199,7 @@ void init_terminal_proccess_system( void )
 
 	terminal_register_init();
     
-    	init_terminal_device_double_list();	// 初始化链表
+    	init_terminal_device_double_list();	/*初始化链表 */ 
 
 	init_terminal_proccess_fd( &addr_file_fd );
 	if( NULL == addr_file_fd )
@@ -212,7 +211,7 @@ void init_terminal_proccess_system( void )
 		if( tmnl_count != -1)
 		{
 			terminal_pro_debug( "terminal count num = %d", tmnl_count );
-			gregister_tmnl_pro.tmn_total = tmnl_count;// 保存到未注册列表
+			gregister_tmnl_pro.tmn_total = tmnl_count;/* 保存到未注册列表 */
 			
 			for( i = 0; i < tmnl_count; i++ )
 			{
@@ -235,7 +234,7 @@ void init_terminal_proccess_system( void )
 		}		
 	}
 
-#ifdef __TERMINAL_PRO_DEBUG__ // 输出终端信息的数据
+#ifdef __TERMINAL_PRO_DEBUG__ /*输出终端信息的数据 */ 
 	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
 	if( tmnl_count != -1 )
 		terminal_pro_debug( "terminal count num = %d", tmnl_count );
@@ -252,7 +251,7 @@ void terminal_proccess_system_close( void )
 {
 	if( addr_file_fd != NULL )
 	{
-		Fclose( addr_file_fd );// 关闭文件描述符
+		Fclose( addr_file_fd );/* 关闭文件描述符*/ 
 		if( addr_file_fd != NULL )
 			addr_file_fd = NULL;
 	}
@@ -260,7 +259,7 @@ void terminal_proccess_system_close( void )
 /*********************************************
 =注册处理相关函数开始
 **********************************************/
-// 终端注册保存地址到已注册或未注册列表,注:保存已注册与未注册终端的算法不同
+/* 终端注册保存地址到已注册或未注册列表,注:保存已注册与未注册终端的算法不同*/ 
 bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_register_save )
 {
 	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
@@ -274,12 +273,12 @@ bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_regist
 			{
 				if( (p_regist_pro->register_pro_addr_list[*p_unregister_trail] == 0xffff) &&\
 					(*p_unregister_trail == p_regist_pro->noregister_head ) )
-				{// 当前列表无未注册的地址
-					p_regist_pro->register_pro_addr_list[*p_unregister_trail] = addr_save;//  先保存，这是列表无未注册的地址
+				{/*  当前列表无未注册的地址*/
+					p_regist_pro->register_pro_addr_list[*p_unregister_trail] = addr_save;/* 先保存，这是列表无未注册的地址 */ 
 				}
 				else if( p_regist_pro->register_pro_addr_list[*p_unregister_trail] != 0xffff )
 				{
-					p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;// 先移动trail，原因是trail 代表最后的元素的下标
+					p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;/* 先移动trail，原因是trail 代表最后的元素的下标*/ 
 				}
 				
 				if( *p_unregister_trail >= p_regist_pro->list_size )
@@ -308,13 +307,13 @@ bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_regist
 	return false;
 }
 
-// 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址(经测试暂时没有发现问题2016/01/26)
+/* 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址(经测试暂时没有发现问题2016/01/26)*/ 
 bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 {
 	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (register_addr_delect != 0xffff))
 	{
-		// 寻找删除的节点
+		/* 寻找删除的节点 */
 		int i = 0, delect_index;
 		bool found_dl = false;
 		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
@@ -339,7 +338,7 @@ bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 
 		if( found_dl )
 		{
-			// 将其与未注册列表的头的数据交换
+			/* 将其与未注册列表的头的数据交换*/ 
 			terminal_pro_debug( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
 				register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
 			if( *p_head > *p_trail )
@@ -372,13 +371,13 @@ bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
 	return false;
 }
 
-// 从未注册列表中清除未注册地址(未进行测试2016/01/26)
+/* 从未注册列表中清除未注册地址(未进行测试2016/01/26)*/ 
 bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 {
 	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (unregister_addr_delect != 0xffff))
 	{
-		// 寻找删除的节点
+		/* 寻找删除的节点 */
 		int i = 0, delect_index;
 		bool found_dl = false;
 		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
@@ -403,7 +402,7 @@ bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 
 		if( found_dl )
 		{
-			// 将其与未注册列表的头的数据交换
+			/* 将其与未注册列表的头的数据交换 */
 			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
 			{
 				/*
@@ -421,13 +420,13 @@ bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 	return false;
 }
 
-// 删除终端已注册地址，并将其放入未注册的地址列表表头中(未进行测试2016/01/26)
+/*  删除终端已注册地址，并将其放入未注册的地址列表表头中(未进行测试2016/01/26)*/
 bool terminal_delect_register_addr( uint16_t addr_delect )
 {
 	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
 	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
 	{
-		// 寻找删除的节点
+		/* 寻找删除的节点*/ 
 		int i = 0, delect_index = -1;
 		bool found_dl = false;
 		volatile uint16_t *p_head = &p_regist_pro->rgsted_head;
@@ -452,7 +451,7 @@ bool terminal_delect_register_addr( uint16_t addr_delect )
 
 		if( found_dl )
 		{
-			// 将其与已注册列表的尾的数据交换
+			/* 将其与已注册列表的尾的数据交换*/ 
 			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
 			{
 				/*
@@ -460,7 +459,7 @@ bool terminal_delect_register_addr( uint16_t addr_delect )
 				**2: 移动已注册表尾到已注册的表尾的上一个已注册元素
 				*/
 				p_regist_pro->noregister_head = *p_trail;
-				if( *p_trail > 0 )// 索引最小为零
+				if( *p_trail > 0 )/* 索引最小为零 */
 					(*p_trail)--;
 
 				gregister_tmnl_pro.tmn_rgsted--;
@@ -535,7 +534,7 @@ bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_
 *Paramer:
 *		None
 *******************************************/
-extern volatile bool gvregister_recved;// 单个终端注册完成的标志
+extern volatile bool gvregister_recved;/* 单个终端注册完成的标志 */
 extern bool inflight_conference_command_exist(void);
 extern void menu_first_display(void);
 void system_register_terminal_pro( void )
@@ -546,7 +545,7 @@ void system_register_terminal_pro( void )
         bool registing = false;
 	
 	if( reallot_flag )
-	{// reallot time, can't register
+	{/*reallot time, can't register */ 
 		return;
 	}
 
@@ -573,8 +572,8 @@ void system_register_terminal_pro( void )
 			{
 				tmnl_pdblist register_node = found_terminal_dblist_node_by_addr(addr);
 				if( NULL == register_node )
-				{// 未与1722 id绑定，发送0地址
-				        if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))// 单个终端注册完成的标志)
+				{/*未与1722 id绑定，发送0地址 */ 
+				        if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))/* 单个终端注册完成的标志)*/
         	                        {
         					terminal_query_endstation(addr, (uint64_t)0);
 
