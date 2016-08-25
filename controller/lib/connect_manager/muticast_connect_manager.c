@@ -478,6 +478,11 @@ static int muticast_connect_manger_muticastor_default_change_pro( void )
 			gmuticast_manager_pro.mm_cha_state = MUTICAST_CHANGE_FINISH;
 		}
 	}
+        else
+        {
+                /*gpdefault_muticastor or gpdefault_muticastor_output NULL value or 
+                    system muticastor finish being changed */
+        }
 
 	return 0;
 }
