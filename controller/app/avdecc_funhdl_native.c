@@ -389,6 +389,7 @@ int pthread_recv_data_fn( void *pgm )
 		camera_pro();// 摄像头处理流程
 		terminal_over_time_speak_pro();//
 		terminal_after_time_mic_state_pro();
+                Terminal_micCallbackPro();
 	}
 	
 	return 0;

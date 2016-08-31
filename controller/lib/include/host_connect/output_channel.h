@@ -16,7 +16,7 @@
 #include "jdksavdecc_world.h"
 #include "list.h"
 
-#define OUTPUT_CHANNEL_OPT_PROTECT_TIME (1000) // 输出通道操作保护时间
+#define OUTPUT_CHANNEL_OPT_PROTECT_TIME (2000) // 输出通道操作保护时间
 
 typedef struct _type_input_connect_node// 输出连接的输入节点
 {
