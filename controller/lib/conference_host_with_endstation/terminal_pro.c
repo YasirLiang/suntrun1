@@ -23,7 +23,7 @@
 #include "conference_transmit_unit.h"
 
 /* terminal mic time out set macro------------------------------------------*/
-#define MIC_SET_TIME_OUT 200
+#define MIC_SET_TIME_OUT 1000
 
 /* terminal mic num macro---------------------------------------------------*/
 #define MIC_ARRAY_NUM 20/*mic数组长度*/
@@ -1891,7 +1891,7 @@ void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_no
         }
 	else if((get_sys_state() == INTERPOSE_STATE) && p_tmnl_node->tmnl_dev.address.tmn_type != TMNL_TYPE_CHM_EXCUTE)
 	{
-                /*interpose state should will save mic state if endpiot
+                /*interpose state should will save mic state if endpiont
                   *is common and temp close is set.
                   */
                 if (!gset_sys.temp_close)
@@ -4126,14 +4126,20 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 				{
 #if 0
 					terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, dis_node );
-#else
+#elif 0
                                         terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
+#else
+                                        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OTHER_APPLY_STATUS, dis_node );
 #endif
                                         terminal_speak_track(dis_node->tmnl_dev.address.addr, true );
 				}
-				else if ((speak_num < gdisc_flags.limit_num) && ret_cnnt != -2)
+				else if ((speak_num < gdisc_flags.limit_num) && (ret_cnnt != -2))
 				{//has timeout for operation transmit ouput channel
+#if 0
 					terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
+#else
+                                        terminal_key_action_host_special_num1_reply(recv_msg, MIC_OTHER_APPLY_STATUS, dis_node);  
+#endif
 
 					/*
 					  *1\断开连接时间最长的
@@ -4179,8 +4185,11 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 				}
 				else if (speak_num >= gdisc_flags.limit_num)
 				{
+#if 0				
 					terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
-
+#else
+                                        terminal_key_action_host_special_num1_reply(recv_msg, MIC_OTHER_APPLY_STATUS, dis_node);  
+#endif
 					/*
 					  *1\断开连接时间最长的
 					  *2\超时后连接
@@ -4421,8 +4430,10 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 				dis_ret = trans_model_unit_connect(speak_node->tmnl_dev.entity_id, speak_node);
 #if 0
                                 terminal_key_action_host_special_num1_reply(recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node);
-#else
+#elif 0
                                 terminal_key_action_host_special_num1_reply(recv_msg, MIC_COLSE_STATUS, speak_node);
+#else
+                                terminal_key_action_host_special_num1_reply(recv_msg, MIC_OTHER_APPLY_STATUS, speak_node);
 #endif
                                 if (dis_ret == 0)
 				{
@@ -4476,8 +4487,12 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 #endif
                 if (0 == trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id, speak_node ))
 		{
+#if 0		
 		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
-			terminal_speak_track(speak_node->tmnl_dev.address.addr, false );
+#else
+		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OTHER_APPLY_STATUS, speak_node );
+#endif
+                        terminal_speak_track(speak_node->tmnl_dev.address.addr, false );
 		}
                 else
 		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );                    
@@ -4581,8 +4596,10 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 					terminal_speak_track(speak_node->tmnl_dev.address.addr, true );
 #if 0
 				terminal_key_action_host_special_num1_reply( recv_msg, ret?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
-#else
+#elif 0
 				terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );      
+#else
+                                terminal_key_action_host_special_num1_reply( recv_msg, MIC_OTHER_APPLY_STATUS, speak_node );
 #endif
                         }
 		}
@@ -4592,8 +4609,10 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 			dis_ret = trans_model_unit_connect( speak_node->tmnl_dev.entity_id, speak_node );
 #if 0
                         terminal_key_action_host_special_num1_reply( recv_msg, (dis_ret == 0)?MIC_OPEN_STATUS:MIC_COLSE_STATUS, speak_node );
-#else
+#elif 0
 			terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#else
+		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OTHER_APPLY_STATUS, speak_node );
 #endif
                         if (dis_ret == 0)
 			{
@@ -4629,7 +4648,6 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 		{
 			if (!trans_model_unit_is_connected(speak_node->tmnl_dev.entity_id))
 			{
-				terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 				if( gdisc_flags.speak_addr_list[0] != 0xffff ) // 先进先出
 				{
 					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( gdisc_flags.speak_addr_list[0] );
@@ -4640,17 +4658,30 @@ bool terminal_fifo_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdb
 							dis_ret = trans_model_unit_disconnect( first_speak->tmnl_dev.entity_id, first_speak );
 							if (0 == dis_ret)
 							{
+#if 0
+                                                                terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+#else
+                                                                terminal_key_action_host_special_num1_reply( recv_msg, MIC_OTHER_APPLY_STATUS, speak_node );
+#endif
 								terminal_speak_track(first_speak->tmnl_dev.address.addr, false );
 								addr_queue_delete_by_index( gdisc_flags.speak_addr_list, &gdisc_flags.speak_limit_num, 0 );// 首位发言删除
 								terminal_over_time_speak_node_set(speak_node);
 							}
+                                                        else
+                                                                terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 						}
+                                                else
+                                                        terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 					}
 					else
 					{
+					        terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
 						terminal_pro_debug( "fifo not found tmnl list node!");
 					}			
 				}
+                                else
+                                        terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+
 			}
 			else
 			{

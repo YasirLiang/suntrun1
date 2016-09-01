@@ -9,7 +9,7 @@
 #include "time_handle.h"
 #include "send_common.h"
 
-#define SEND_INTERVAL_TIMEOUT 2 // ·¢ËÍ¼ä¸ôms ×¢:1ms»áµ¼ÖÂ»áÒéÖÕ¶Ë²éÑ¯³¬Ê±,¸ÄÎª2ms(2016-05-06) 5-10ms·¢ËÍÌ«Âı
+#define SEND_INTERVAL_TIMEOUT 5 // ·¢ËÍ¼ä¸ôms ×¢:1ms»áµ¼ÖÂ»áÒéÖÕ¶Ë²éÑ¯³¬Ê±,¸ÄÎª2ms(2016-05-06) 5-10ms·¢ËÍÌ«Âı
 
 volatile bool gsend_pro_idle = true; // ·¢ËÍÍ£Ö¹±êÖ¾
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// ±¾µØ·¢ËÍ»º³åÇø
@@ -118,7 +118,6 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 			p_send_wnode = NULL;
 		}
 
-		//DEBUG_LINE();
 		// ready to sending data
 		pthread_mutex_lock(&ginflight_pro.mutex);
 		tx_packet_event( data_type, 
@@ -134,8 +133,9 @@ int thread_send_func( void *pgm ) // ¼ÓÈëÍ¬²½»úÖÆ£¬²ÉÓÃĞÅºÅÁ¿.(ĞŞ¸Äºó²»ÔÚ´ËÏß³ÌÊ
 		pthread_mutex_unlock(&ginflight_pro.mutex);
 #if 1
 		if (is_resp_data && (msg_type != JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
-			/*¼ì²é·¢ËÍ×´Ì¬*/
+		{	/*¼ì²é·¢ËÍ×´Ì¬*/
 			over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
+                }
 		else
 		{
 			if ((data_type == TRANSMIT_TYPE_AECP) && \
@@ -379,5 +379,4 @@ int pthread_send_network_create( pthread_t *send_pid )
 
 	return 0;
 }
-
 
