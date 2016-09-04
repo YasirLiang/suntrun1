@@ -61,7 +61,6 @@ void init_system( void )
 	conference_recieve_uinit_proccess_init();// 初始化会议接收模块
 	central_control_transmit_unit_model_pro_init();// 初始化中央传输单元模块处理
 	
-	init_sem_tx_can();
 	init_sem_wait_can();
 	init_network_send_queue();
 	system_1722_recv_handle_init();// 初始化接收处理

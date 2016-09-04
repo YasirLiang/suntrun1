@@ -22,7 +22,7 @@
 #include "time_handle.h"
 #include "send_common.h"
 
-/*sending data invteval Marco-----------------------------------------------*/
+/*sending data invteval Macro-----------------------------------------------*/
 #define SEND_INTERVAL_TIMEOUT 5
 /*Lacal Objects-------------------------------------------------------------*/
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE];
