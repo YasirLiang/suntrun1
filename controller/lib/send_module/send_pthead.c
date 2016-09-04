@@ -1,382 +1,198 @@
-/*send_pthread.c
-**Date:2015-11-5
-**
-**
+/*
+* @file
+* @brief sending external data
+* @ingroup system send pthread
+* @cond
+******************************************************************************
+* Last updated for version 1.0.0
+* Last updated on  2016-09-04
+*
+*                    Moltanisk Liang
+*                    ---------------------------
+*                    avb auto control system
+*
+* Copyright (C) Moltanisk Liang, GuangZhou Suntron. All rights reserved.
+******************************************************************************
+* @endcond
 */
 
+/*Including files-----------------------------------------------------------*/
 #include "send_pthread.h"
 #include <time.h>
 #include "time_handle.h"
 #include "send_common.h"
 
-#define SEND_INTERVAL_TIMEOUT 5 // 发送间隔ms 注:1ms会导致会议终端查询超时,改为2ms(2016-05-06) 5-10ms发送太慢
-
-volatile bool gsend_pro_idle = true; // 发送停止标志
-static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE] = {0};// 本地发送缓冲区
-
+/*sending data invteval Marco-----------------------------------------------*/
+#define SEND_INTERVAL_TIMEOUT 5
+/*Lacal Objects-------------------------------------------------------------*/
+static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE];
+/*Static function declaration-------------------------------------------------*/
+static int thread_send_func( void *pgm );
+/*Global Objecsts-----------------------------------------------------------*/
+volatile bool gsend_pro_idle = true; /*stop flags of sending*/
+/*Extern funcion declaraction-----------------------------------------------*/
 extern bool inflight_list_has_command(void);
 
-int thread_send_func( void *pgm ) // 加入同步机制，采用信号量.(修改后不在此线程使用同步机制2015-12-1).(经验证201512-6此线程暂无问题)
-{
-	sdpwqueue*  p_send_wq = &net_send_queue;
-	assert( p_send_wq );
+/*$thread_send_func.........................................................*/
+static int thread_send_func(void *pgm) {
+    (void)pgm;/*avoid waning when being compiled*/
+    sdpwqueue *p_send_wq = &net_send_queue;
+    assert(p_send_wq);
+    over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 
+                    SEND_INTERVAL_TIMEOUT); /*set to send interval*/
 
-	// 设置发送间隔
-	over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
-	
-	while( 1 )
-	{
-		if( !over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL) )
-		{
-			continue;
-		}
-		
-#ifdef SEND_DOUBLE_QUEUE_EABLE// 双队列发送线程函数处理流程
-		bool write_empty = is_queue_empty( &gwrite_send_queue.work );
-		bool read_empty = is_queue_empty( &p_send_wq->work );
+    while (1) {
+        uint8_t *frame;/*point to frame buf*/
+        bool is_resp_data;/*respond flags of send data*/
+        uint8_t data_type;/*type of sending data*/
+        uint32_t msg_type;/*message type of frame data*/
+        uint8_t dest_raw[6];/*message sending destination*/
+        bool notification_flag;/*notification flag*/
+        p_sdpqueue_wnode p;/*queue node*/
+        uint16_t send_frame_len;/*frame len of sending data*/
+        struct sockaddr_in udp_sin;/*udp sending destination contex*/
+        uint32_t resp_interval_time;/*responding interval time*/
+        bool write_empty, read_empty;/* queue empty flag writing or reading*/
+        
+        if (!over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL)) {
+            continue;
+        }
 
-		/**
-		  *读队列为空，写不为空，交换读写队列
-		  */ 
-		if( read_empty && !write_empty )
-		{
-			pthread_mutex_lock( &p_send_wq->control.mutex );
-			swap_sdpqueue( p_send_wq, &gwrite_send_queue );
-			pthread_mutex_unlock( &p_send_wq->control.mutex );
-		}
+        write_empty = is_queue_empty(&gwrite_send_queue.work);
+        read_empty = is_queue_empty(&p_send_wq->work);
 
-		/**
-		  *读写队列都为空，线程睡眠
-		  */ 
-		if( read_empty && write_empty )
-		{
-			pthread_mutex_lock( &p_send_wq->control.mutex );
-			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
-			pthread_mutex_unlock( &p_send_wq->control.mutex );
-			continue;
-		}
+        /*
+          *swap queue when queue for writing is not empty and
+          *for reading is empty
+          */ 
+        if (read_empty && !write_empty) {
+            pthread_mutex_lock(&p_send_wq->control.mutex);
+            swap_sdpqueue(p_send_wq, &gwrite_send_queue);
+            pthread_mutex_unlock(&p_send_wq->control.mutex);
+        }
 
-		/**
-		  *取出队列任务处理
-		  */
-		uint8_t dest_raw[6] = {0};
-		struct sockaddr_in udp_sin;
-		uint32_t resp_interval_time = 0;
-		p_sdpqueue_wnode p_send_wnode = NULL;
+        if (read_empty && write_empty) {/*All queue empty?*/
+            pthread_mutex_lock(&p_send_wq->control.mutex);
+            pthread_cond_wait(&p_send_wq->control.cond, 
+                    &p_send_wq->control.mutex);/*wait for cond sign*/
+            pthread_mutex_unlock(&p_send_wq->control.mutex);
+            continue;
+        }
 
-		// 获取队列数据
-		p_send_wnode = send_queue_message_get( p_send_wq );
-		if( p_send_wq->work.head == NULL )
-		{ // while queue isempty,make sure the queue trail not to be used again!!!!  
-			if( p_send_wq->work.trail != NULL )
-			{
-				p_send_wq->work.trail = NULL;
-			}
-		}
-		
-		if( NULL == p_send_wnode )
-		{
-			DEBUG_INFO( "No send queue message: ERROR!" );
-			continue;
-		}
+        /*for geting queue data*/
+        p = send_queue_message_get(p_send_wq);
+        if (p_send_wq->work.head == NULL) {
+            /*while queue is empty,
+              *make sure the queue trail not to be used again*/
+            if (p_send_wq->work.trail != NULL) {
+                p_send_wq->work.trail = NULL;
+            }
+        }
 
-		uint16_t send_frame_len = p_send_wnode->job_data.frame_len;
-		uint8_t data_type = p_send_wnode->job_data.data_type;
-		bool notification_flag = p_send_wnode->job_data.notification_flag;
-		bool is_resp_data = p_send_wnode->job_data.resp;
-		uint32_t msg_type = jdksavdecc_common_control_header_get_control_data(p_send_wnode->job_data.frame, ZERO_OFFSET_IN_PAYLOAD);
-		if( send_frame_len > TRANSMIT_DATA_BUFFER_SIZE )
-		{
-			if( p_send_wnode->job_data.frame != NULL )
-			{
-				free( p_send_wnode->job_data.frame );
-				p_send_wnode->job_data.frame = NULL;
-			}
-			
-			if( NULL != p_send_wnode )
-			{
-				free( p_send_wnode ); // 释放队列节点
-				p_send_wnode = NULL;
-			}
+        if (NULL == p)
+        {
+            DEBUG_INFO("No send queue message: ERROR!");
+            continue;
+        }
 
-			continue;
-		}
+        send_frame_len = p->job_data.frame_len;
+        data_type = p->job_data.data_type;
+        notification_flag = p->job_data.notification_flag;
+        is_resp_data = p->job_data.resp;
+        frame = p->job_data.frame;
+        msg_type = jdksavdecc_common_control_header_get_control_data(frame,
+                                                                            ZERO_OFFSET_IN_PAYLOAD);
+        if (send_frame_len > TRANSMIT_DATA_BUFFER_SIZE) {
+            if (frame != NULL) {
+                free(frame);
+                frame = NULL;
+            }
 
-		memset( send_frame, 0, sizeof(send_frame) );
-		memcpy( send_frame, p_send_wnode->job_data.frame, send_frame_len );
-		memcpy( dest_raw, p_send_wnode->job_data.raw_dest, 6 );
-		memcpy( &udp_sin, &p_send_wnode->job_data.udp_sin, sizeof(struct sockaddr_in));
-		if( p_send_wnode->job_data.frame != NULL )
-		{
-			free( p_send_wnode->job_data.frame );
-			p_send_wnode->job_data.frame = NULL;
-		}
-		
-		if( NULL != p_send_wnode )
-		{
-			free( p_send_wnode ); // 释放队列节点
-			p_send_wnode = NULL;
-		}
+            if (NULL != p) {
+                free(p); /*free queue node*/
+                p = NULL;
+            }
 
-		// ready to sending data
-		pthread_mutex_lock(&ginflight_pro.mutex);
-		tx_packet_event( data_type, 
-					    notification_flag, 
-					    send_frame, 
-					    send_frame_len, 
-					    &net_fd, 
-					    command_send_guard, 
-					    dest_raw, 
-					    &udp_sin, 
-					    is_resp_data, 
-					    &resp_interval_time );
-		pthread_mutex_unlock(&ginflight_pro.mutex);
-#if 1
-		if (is_resp_data && (msg_type != JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
-		{	/*检查发送状态*/
-			over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
+            continue;
+        }
+
+        memset(send_frame, 0, sizeof(send_frame));
+        memcpy(send_frame, frame, send_frame_len);
+        memcpy(dest_raw, p->job_data.raw_dest, 6);
+        memcpy(&udp_sin, &p->job_data.udp_sin, sizeof(struct sockaddr_in));
+        if (frame != NULL) {
+            free (frame);
+            p->job_data.frame = NULL;
+        }
+
+        if (NULL != p) {
+            free(p); /*free queue node*/
+            p = NULL;
+        }
+
+        /* ready to sending data*/
+        pthread_mutex_lock(&ginflight_pro.mutex);
+        tx_packet_event(data_type, notification_flag, send_frame,
+                                send_frame_len, &net_fd, command_send_guard,
+                                dest_raw, &udp_sin, is_resp_data,
+                                &resp_interval_time);
+        pthread_mutex_unlock(&ginflight_pro.mutex);
+
+        if (is_resp_data 
+            && (msg_type !=\
+                   JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
+        {/*checking send status*/
+            over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT);
+        }
+        else
+        {
+            if ((data_type == TRANSMIT_TYPE_AECP)
+                && (msg_type == \
+                       JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
+            {
+                int status = 0;
+                status = set_wait_message_primed_state();
+                assert(status == 0);
+                status = set_wait_message_active_state();
+                assert(status == 0);
+                gsend_pro_idle = false;
+
+                over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 200);
+                while (!gsend_pro_idle && !is_resp_data) {
+                    if (!inflight_list_has_command()) {
+                        break;
+                    }
+
+                    if (over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL)) {
+                        break;
+                    }
+
+                    continue;
                 }
-		else
-		{
-			if ((data_type == TRANSMIT_TYPE_AECP) && \
-				(msg_type == JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND))
-			{
-				int status = 0;
-				status = set_wait_message_primed_state();
-				assert( status == 0 );
-				status = set_wait_message_active_state();
-				assert( status == 0 );
-				gsend_pro_idle = false;
 
-				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 200);
-				while (!gsend_pro_idle && !is_resp_data)
-				{
-					if (!inflight_list_has_command())
-						break;
+                status = set_wait_message_idle_state();
+                assert(status == 0);
+                over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 10);
+            }
+            else {
+                over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL,
+                                SEND_INTERVAL_TIMEOUT);
+            }
+        }
+    }
 
-					if (over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL))
-						break;
-					
-					continue;
-				}
-
-				status = set_wait_message_idle_state();
-				assert( status == 0 );
-				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 10);
-			}
-			else
-				over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT);
-		}
-#else
-		over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT);
-#endif
-#else
-		/**
-		  *单队列发送线程函数处理流程
-		  *
-		  */ 
-		uint8_t dest_raw[6] = {0};
-		struct sockaddr_in udp_sin;
-		uint32_t resp_interval_time = 0;
-		p_sdpqueue_wnode p_send_wnode = NULL;
-		uint8_t cur_msg_type = 0xff;
-		uint8_t next_msg_type = 0xff;
-		
-		pthread_mutex_lock( &p_send_wq->control.mutex ); // lock mutex
-		while( p_send_wq->work.head == NULL && p_send_wq->control.active )
-		{
-			DEBUG_INFO( "active = %d", p_send_wq->control.active );
-			pthread_cond_wait( &p_send_wq->control.cond, &p_send_wq->control.mutex );
-		}
-
-		// 获取队列数据
-		p_send_wnode = send_queue_message_get( p_send_wq );
-		if( p_send_wq->work.head == NULL )
-		{ // while queue isempty,make sure the queue trail not to be used again!!!!  
-			if( p_send_wq->work.trail != NULL )
-			{
-				p_send_wq->work.trail = NULL;
-			}
-		}
-		
-		if( NULL == p_send_wnode )
-		{
-			DEBUG_INFO( "No send queue message: ERROR!" );
-			pthread_mutex_unlock( &p_send_wq->control.mutex );
-			continue;
-		}
-
-		uint16_t send_frame_len = p_send_wnode->job_data.frame_len;
-		uint8_t data_type = p_send_wnode->job_data.data_type;
-		bool notification_flag = p_send_wnode->job_data.notification_flag;
-		bool is_resp_data = p_send_wnode->job_data.resp;
-		if( send_frame_len > TRANSMIT_DATA_BUFFER_SIZE )
-		{
-			if( p_send_wnode->job_data.frame != NULL )
-			{
-				free( p_send_wnode->job_data.frame );
-				p_send_wnode->job_data.frame = NULL;
-			}
-			
-			if( NULL != p_send_wnode )
-			{
-				free( p_send_wnode ); // 释放队列节点
-				p_send_wnode = NULL;
-			}
-
-			pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
-			continue;
-		}
-		
-		memcpy( send_frame, p_send_wnode->job_data.frame, send_frame_len );
-		memcpy( dest_raw, p_send_wnode->job_data.raw_dest, 6 );
-		memcpy( &udp_sin, &p_send_wnode->job_data.udp_sin, sizeof(struct sockaddr_in));
-		if( p_send_wnode->job_data.frame != NULL )
-		{
-			free( p_send_wnode->job_data.frame );
-			p_send_wnode->job_data.frame = NULL;
-		}
-		
-		if( NULL != p_send_wnode )
-		{
-			free( p_send_wnode ); // 释放队列节点
-			p_send_wnode = NULL;
-		}
-
-		cur_msg_type = data_type;
-		next_msg_type = get_send_queue_message_type( p_send_wq );
-		pthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutexpthread_mutex_unlock( &p_send_wq->control.mutex ); // unlock mutex
-
-		// ready to sending data
-		pthread_mutex_lock(&ginflight_pro.mutex);
-		tx_packet_event( data_type, 
-					    notification_flag, 
-					    send_frame, 
-					    send_frame_len, 
-					    &net_fd, 
-					    command_send_guard, 
-					    dest_raw, 
-					    &udp_sin, 
-					    is_resp_data, 
-					    &resp_interval_time );
-		pthread_mutex_unlock(&ginflight_pro.mutex);
-
-		over_time_set( SYSTEM_SQUEUE_SEND_INTERVAL, SEND_INTERVAL_TIMEOUT );
-#if 0// 这里也有可能发送数据过快，而导致终端处理异常，2-3-2016
-		if ( (((next_msg_type == TRANSMIT_TYPE_ADP) ||(next_msg_type == TRANSMIT_TYPE_ACMP)||(next_msg_type == TRANSMIT_TYPE_AECP)) && ((cur_msg_type != TRANSMIT_TYPE_ADP) && (cur_msg_type != TRANSMIT_TYPE_ACMP) && (cur_msg_type != TRANSMIT_TYPE_AECP)))\
-			|| ((next_msg_type == TRANSMIT_TYPE_UDP_SVR) && (cur_msg_type != TRANSMIT_TYPE_UDP_SVR ))\
-			||((next_msg_type == TRANSMIT_TYPE_UDP_CLT) && (cur_msg_type != TRANSMIT_TYPE_UDP_CLT))\
-			||((next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_CAMERA_UART_CTRL))\
-			||((next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) && (cur_msg_type != TRANSMIT_TYPE_MATRIX_UART_CTRL)))
-		{// 当前发送消息的端口与下一个发送消息的端口不同，即开始下一个消息的发送
-			int nowait_status = set_wait_message_active_state();
-			assert( nowait_status == 0 );
-			nowait_status = set_wait_message_idle_state();
-			assert( nowait_status == 0 );
-			continue;
-		}
-#else
-		if ( (((cur_msg_type == TRANSMIT_TYPE_ADP) || (cur_msg_type == TRANSMIT_TYPE_ACMP) || (cur_msg_type == TRANSMIT_TYPE_AECP) || (cur_msg_type == TRANSMIT_TYPE_UDP_SVR ) || (cur_msg_type == TRANSMIT_TYPE_UDP_CLT))\
-			&& ((next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) ||(next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL)))\
-			|| ((cur_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL) && (next_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL))\
-			|| ((cur_msg_type == TRANSMIT_TYPE_MATRIX_UART_CTRL) && (next_msg_type == TRANSMIT_TYPE_CAMERA_UART_CTRL)))
-		{// 当前发送消息的端口与下一个发送消息的端口不同，即开始下一个消息的发送,网络除外
-			int nowait_status = set_wait_message_active_state();
-			assert( nowait_status == 0 );
-			nowait_status = set_wait_message_idle_state();
-			assert( nowait_status == 0 );
-			continue;
-		}
-#endif		
-		/*发送下一条数据的条件-数据获得响应或数据超时或时间间隔到了(注:时间间隔只适用于系统响应数据或摄像头控制数据的发送)*/
-		if( is_wait_messsage_primed_state() ) 
-		{
-			int status = -1;
-			struct timespec timeout;
-			int ret = 0;
-			if ( clock_gettime( CLOCK_REALTIME, &timeout ) == -1)
-			{
-				 perror("clock_gettime:");
-				 return -1;
-			}
-			
-			timeout.tv_sec += 4;	// timeouts is 4 seconds
-			
-			if( !is_resp_data )
-			{
-				status = set_wait_message_active_state();
-				assert( status == 0 );
-#if 0
-				sem_wait( &sem_waiting );
-#else
-				ret = sem_timedwait( &sem_waiting, &timeout );
-				if( ret == -1 )
-				{
-					if( errno == ETIMEDOUT )
-					{
-						DEBUG_INFO( "sem_timedwait(): time out!send pthread proccess continue" );
-						sem_post( &sem_waiting );
-					}
-					else
-					{
-						perror( "sem_timedwait():" );
-					}
-				}
-#endif
-				status = set_wait_message_idle_state();
-				assert( status == 0 );
-			}
-			else
-			{
-				status = set_wait_message_active_state();
-				assert( status == 0 );
-				if( resp_interval_time > 0 )
-				{
-					resp_send_interval_timer_start( resp_interval_time ); // start timer useful as all response data
-					//sem_wait( &sem_waiting );
-					ret = sem_timedwait( &sem_waiting, &timeout );
-					if( ret == -1 )
-					{
-						if( errno == ETIMEDOUT )
-						{
-							DEBUG_INFO( "sem_timedwait(): time out! send pthread proccess continue" );
-							sem_post( &sem_waiting );
-						}
-						else
-						{
-							perror( "sem_timedwait():" );
-						}
-					}
-
-					resp_send_interval_timer_stop();
-				}
-
-				status = set_wait_message_idle_state();
-				assert( status == 0 );
-			}
-		}
-		else
-		{
-			DEBUG_INFO(" not message primed success!" );
-		}
-#endif
-	}
-
-	return 0;
+    return 0;
 }
 
-int pthread_send_network_create( pthread_t *send_pid )
-{
-	assert( send_pid );
-	int rc = 0;
-
-	rc = pthread_create( send_pid, NULL, (void*)&thread_send_func, NULL );
-	if( rc )
-	{
-		DEBUG_INFO(" pthread_send_network_create ERROR; return code from pthread_create() is %d\n", rc);
-		assert( rc == 0 );
+/*$pthread_send_network_create..............................................*/
+int pthread_send_network_create(pthread_t *send_pid) {
+        int rc = 0;
+        assert( send_pid );
+	rc = pthread_create(send_pid, NULL, (void*)&thread_send_func, NULL);
+	if(rc != 0) {
+		DEBUG_INFO("send pthread create Failed: %d\n", rc);
+		assert(rc == 0);
 	}
-
 	return 0;
 }
 
