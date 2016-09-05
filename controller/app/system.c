@@ -1,3 +1,22 @@
+/*
+* @file
+* @brief system init and destroy
+* @ingroup system
+* @cond
+******************************************************************************
+* Last updated for version 1.0.0
+* Last updated on  2016-09-04
+*
+*                    Moltanisk Liang
+*                    ---------------------------
+*                    avb auto control system
+*
+* Copyright (C) Moltanisk Liang, GuangZhou Suntron. All rights reserved.
+******************************************************************************
+* @endcond
+*/
+
+/*Including files-----------------------------------------------------------*/
 #include "system.h"
 #include "host_controller_debug.h"
 #include "acmp_controller_machine.h"
@@ -16,7 +35,7 @@
 #include "check_timer.h"
 #include "camera_pro.h"
 #include "camera_common.h"
-#include "matrix_output_input.h"// 矩阵输出
+#include "matrix_output_input.h"/*Matrix output*/
 #include "control_matrix_common.h"
 #include "system_database.h"
 #include "conference_transmit_unit.h"
@@ -26,242 +45,203 @@
 #include "log_machine.h"
 #include "en485_send.h"
 #include "global.h"
-#include "lcd192x64.h"// lcd 界面显示
+#include "lcd192x64.h"
 #include "menu_f.h"
-
 #include "central_control_transmit_unit.h"
 #include "system_1722_recv_handle.h"
 #include "controller_machine.h"
 
-extern int gcontrol_sur_fd;
-extern sem_t gsem_surface;
+/*Global Objects declaration------------------------------------------------*/
+extern int gcontrol_sur_fd;/* menu display control fd */
+extern FILE *glog_file_fd;/* system log file fd*/
+/*extern function declaration-----------------------------------------------*/
+extern int lcd192x64_close(void);
 
-void init_system( void )
-{
-	endpoint_list = init_endpoint_dblist( &endpoint_list );
-	assert( endpoint_list );
-	command_send_guard = init_inflight_dblist( &command_send_guard );
-	assert( command_send_guard );
-	init_descptor_dblist( &descptor_guard );
-	assert( descptor_guard );
-
-	acmp_endstation_init( command_send_guard, endpoint_list, descptor_guard );
-	aecp_controller_init(endpoint_list, descptor_guard,command_send_guard );
-	DEBUG_ONINFO("[ SUCCESS: ENDPOINT AND INFLIGHT list init. ]");
-
-	init_profile_system_file();
-	init_terminal_system_state();// 初始化系统状态
-	init_terminal_proccess_system();
-	init_func_command_work_queue();
-	upper_computer_common_init();
-
-	init_connector_subjector();// 初始化系统的被观察者
-	conference_transmit_model_init();// 初始化系统会议单元传输模块
-	central_control_recieve_uinit_init_list();// 初始化中央接收模块
-	conference_recieve_uinit_proccess_init();// 初始化会议接收模块
-	central_control_transmit_unit_model_pro_init();// 初始化中央传输单元模块处理
-	
-	init_sem_wait_can();
-	init_network_send_queue();
-	system_1722_recv_handle_init();// 初始化接收处理
-	send_interval_init();// 发送间隔
-
-	inflight_proccess_init();// 初始化inflight 处理参数
-	matrix_output_init();// 初始化矩阵输出端口
-	control_matrix_common_init();
-
-	camera_common_control_init(); // 串口初始化
-	camera_pro_init();// 初始化预置点配置文件
-
-	system_database_init();// 打开数据库
-
-	avdecc_manage_init();// 初始化avdecc 管理 
-
-	muticast_muticast_connect_manger_init();
+/*$ system init before working..............................................*/
+void init_system(void) {
+    /* system endpoint double link list init */
+    endpoint_list = init_endpoint_dblist(&endpoint_list);
+    assert(endpoint_list != NULL);
+    /* system inflight double link list init */
+    command_send_guard = init_inflight_dblist(&command_send_guard);
+    assert(command_send_guard != NULL);
+    /* system descptor double link list init */
+    init_descptor_dblist(&descptor_guard);
+    assert(descptor_guard != NULL);
+    /* acmp model init */
+    acmp_endstation_init(command_send_guard, endpoint_list, descptor_guard);
+    /* aecp model init */
+    aecp_controller_init(endpoint_list, descptor_guard,command_send_guard);
     
+    /* system profile init */
+    init_profile_system_file();
+    /* system state init */
+    init_terminal_system_state();
+    /* terminal proccess init */
+    init_terminal_proccess_system();
+    /* function work queue init */
+    init_func_command_work_queue();
+    /* upper computer model init */
+    upper_computer_common_init();
+    /* system subjector model init */
+    init_connector_subjector();
+    /* conference transmit unit proccess init */
+    conference_transmit_model_init();
+    /* conference recieve unit proccess init */
+    central_control_recieve_uinit_init_list();
+    /* CCU recieve unit proccess init */
+    conference_recieve_uinit_proccess_init();
+    /* CCU transmit unit proccess init */
+    central_control_transmit_unit_model_pro_init();
+    /* sem wait init*/
+    init_sem_wait_can();
+    /* sending working queue */
+    init_network_send_queue();
+    /* 1722 recv data handle proccesss */
+    system_1722_recv_handle_init();
+    /* extern data interval time */
+    send_interval_init();
+    /* inflight command args init */
+    inflight_proccess_init();
+    /* matrix output init */
+    matrix_output_init();
+    /* matrix model init */
+    control_matrix_common_init();
+    /* camera common control init */
+    camera_common_control_init();
+    /* camera preset file init */
+    camera_pro_init();
+    /* system database init */
+    system_database_init();
+    /* avdecc manage init */
+    avdecc_manage_init();
+    /* muticator model init */
+    muticast_muticast_connect_manger_init();
+    /* enable 485 port sending */
+    en485_send_init();
 #ifdef __ARM_BACK_TRACE__
-	en485_send_init(); // 使能发送485端数据
+    int fd = -1;
+    int ret ;
+    fd = UART_File_Open(fd,UART4);/* menu display control port is UART4 */
+    if (fd == -1) {
+        printf("Open Port Failed!\n");  
+    }
 
-	/*
-	  * 初始化化界面控制数据串口传输
-	  * 文件描述符
-	  */
-	int fd = -1;
-	fd = UART_File_Open(fd,UART4);//打开串口，返回文件描述符 
-	if( fd == -1 )
-	{
-		printf("Open Port Failed!\n");  
-	}
+    if ((UART_File_Init( fd, 9600, 0, 8, 1, 'N' ) != -1) 
+    && (fd != -1))/* menu display control port init */
+    {
+        gcontrol_sur_fd = fd;
+    }
 
-	if( (UART_File_Init( fd, 9600, 0, 8, 1, 'N' ) != -1) && fd != -1 )
-	{
-		gcontrol_sur_fd = fd;
-		//sem_init( &gsem_surface, 0, 0 );
-	}
+    ret = lcd192x64_init();/* port of lcd init */
+    if (ret) {
+        printf("lcd192x64_init fail\n");
+        exit(1);
+    }
 
-	/*
-	  * 初始化化界面显示
-	  *
-	  */
-	int ret ;
-	ret = lcd192x64_init();
-	if (ret)
-	{
-		printf("lcd192x64_init fail\n");
-		exit(1);
-	}
-
-	MenuInit();
-#endif
-
-	DEBUG_INFO( "quue node size = %d ", sizeof(queue_node) );
-	DEBUG_INFO( "quue size = %d ", sizeof(queue) );
-	
-#ifdef __DEBUG__
-#ifdef __TEST_QUEUE__
-	fcqueue_data_elem queue_data_elem;
-	memset( &queue_data_elem, 0, sizeof(fcqueue_data_elem));
-	
-	pthread_mutex_lock( &fcwork_queue.control.mutex );
-	
-	int i = 0;
-	for( i = 0; i < 100; i++ ) // 目前测试的最大数是100000
-	{
-		queue_data_elem.func_msg_head.func_index = i;
-		queue_data_elem.func_msg_head.func_cmd = i + 2;
-		func_command_work_queue_messag_save( &queue_data_elem, &fcwork_queue );
-	}
-		
-	pthread_mutex_unlock( &fcwork_queue.control.mutex );
-#endif
-#endif
-
-#ifdef __DEBUG__
-#ifdef __TEST_SEND_QUEUE__
-
-	pthread_mutex_lock( &net_send_queue.control.mutex );
-
-	tx_data tnt;
-	memset( &tnt, 0, sizeof(tx_data));
-	int i = 0;
-	for(  i = 0; i < 100000; i++ )// 目前测试的最大数(同时存在)是100000,就frame总大小200M;在虚拟机上的测试，内存够大，无问题
-	{
-		uint8_t *tran_buf = NULL;
-		tran_buf = allot_heap_space( TRANSMIT_DATA_BUFFER_SIZE, &tran_buf );
-		if( tran_buf == NULL )
-		{
-			DEBUG_INFO( "Err allot_heap_space!" );
-			exit(1);
-		}
-		tnt.frame_len = i;
-		tnt.frame = tran_buf;
-		send_work_queue_message_save( &tnt );
-	}
-	
-	pthread_mutex_unlock( &net_send_queue.control.mutex );
-#endif
+    MenuInit(); /* init menu */
 #endif
 }
-
-void set_system_information( struct fds net_fd, struct udp_context* p_udp_net )
+/*$set_system_information...................................................*/
+void set_system_information(struct fds net_fd, 
+                                                struct udp_context* p_udp_net)
 {
-	assert( p_udp_net );
-	struct jdksavdecc_eui64 zero;
-	bzero( &zero, sizeof(struct jdksavdecc_eui64));
+    struct jdksavdecc_eui64 zero;
+    bzero(&zero, sizeof(struct jdksavdecc_eui64));
+    assert(p_udp_net);
+    /* init udp client */
+    init_udp_client_controller_endstation(net_fd.udp_server_fd,
+                                               &p_udp_net->udp_srv.sock_addr);
+    sleep(2);/* wait for net up */
 
-	init_udp_client_controller_endstation( net_fd.udp_server_fd,  &p_udp_net->udp_srv.sock_addr );
-
-	sleep(2);
-	
-	// found all endpoints
-	adp_entity_avail( zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER );
-
-	//terminal_query_endstation(0x8000, (uint64_t)0);// 广播查询
+    /* found all endpoints */
+    adp_entity_avail(zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER);
 }
+/*$system_close.............................................................*/
+void system_close(struct threads_info *p_threads) {	
+    int can_num = p_threads->pthread_nums;/* system pthread num */
+    int i = 0, ret;
+    /* exit muticast proccessing */
+    muticast_muticast_connect_manger_pro_stop();
+    /* en485 model clear*/
+    en485_send_mod_cleanup();
+    /* lcd ports close */
+    lcd192x64_close();
+     /* system controller machine */
+    controller_machine_destroy(&gp_controller_machine);
+    /* 1722 handle recv model destroy */
+    system_1722_recv_handle_destroy();
+    /* CCU recieve unit destroy */
+    central_control_recieve_uinit_destroy();
+    /* CCU transmit unit destroy */
+    central_control_transmit_unit_model_destroy();
+    /* conference transmit unit destroy */
+    conference_transmit_unit_destroy();
+    /* conference recieve unit destroy */
+    conference_recieve_unit_destroy();
+    /* kill system ptheads */
+    for (i = 0; i < can_num; i++) {
+        ret = pthread_kill(p_threads->tid[i], SIGQUIT);
+        if (ret != 0) {
+            if (errno == ESRCH) {
+                DEBUG_INFO("An invalid signal was specified: tid[%d] ", i);
+            }
+            else if(errno == EINVAL) {
+                DEBUG_INFO("no such tid[%d] thread to quit ", i);
+            }
+            else {
+                /* no need */
+            }
+        }
+    }
 
-extern FILE *glog_file_fd;
-extern int lcd192x64_close( void );// yasirLiang add in 2016/05/16
-void system_close( struct threads_info *p_threads )
-{	
-	int can_num = p_threads->pthread_nums;
-	int i = 0, ret;
+    /* endpiont double link list */
+    destroy_endpoint_dblist(endpoint_list);
+    if (endpoint_list != NULL) {
+        free( endpoint_list );
+        endpoint_list = NULL;
+    }
+    /* inflght command list destroy */
+    destroy_inflight_dblist(command_send_guard);
+    if (command_send_guard != NULL) {
+        free( command_send_guard );
+        command_send_guard = NULL;
+    }
 
-	muticast_muticast_connect_manger_pro_stop();// 退出广播管理，之后不再对连接状态进行管理，无论其状态如何
-	en485_send_mod_cleanup();// 释放使能发送485端数据文件
-	lcd192x64_close();// yasirLiang add in 2016/05/16
-	controller_machine_destroy(&gp_controller_machine);// 摧毁控制器
-	system_1722_recv_handle_destroy();
-	central_control_recieve_uinit_destroy();// 摧毁中央接收单元
-	central_control_transmit_unit_model_destroy();// 摧毁中央传输单元
-	conference_transmit_unit_destroy();
-	conference_recieve_unit_destroy();
-	
-	// 退出线程
-#ifndef SEND_DOUBLE_QUEUE_EABLE
-	sem_post( &sem_waiting );
-#endif
+    /* 1722 descption */
+    destroy_descptor_dblist(descptor_guard);
+    if (descptor_guard != NULL) {
+        free( descptor_guard );
+        descptor_guard = NULL;
+    }
 
-	for( i = 0; i < can_num; i++ )
-	{
-		ret = pthread_kill( p_threads->tid[i], SIGQUIT );
-		if( ret != 0 )
-		{
-			if( errno == ESRCH )
-			{
-				DEBUG_INFO( "An invalid signal was specified: tid[%d] ", i );
-			}
-			else if( errno == EINVAL )
-			{
-				DEBUG_INFO( "no such tid[%d] thread to quit ", i );
-			}
-		}
-	}
+    /* termianl double link list */
+    terminal_system_dblist_destroy();
 
-	// 释放所有系统链表
-	destroy_endpoint_dblist( endpoint_list );
-	if( endpoint_list != NULL )
-	{
-		free( endpoint_list );
-		endpoint_list = NULL;
-	}
+    /* queues of work pthread and sending pthread */
+    destroy_func_command_work_queue();
+    destroy_network_send_work_queue();
 
-	destroy_inflight_dblist( command_send_guard );
-	if( command_send_guard != NULL )
-	{
-		free( command_send_guard );
-		command_send_guard = NULL;
-	}
-
-	destroy_descptor_dblist( descptor_guard );
-	if( descptor_guard != NULL )
-	{
-		free( descptor_guard );
-		descptor_guard = NULL;
-	}
-
-	terminal_system_dblist_destroy();
-	
-	// 释放系统队列资源
-	destroy_func_command_work_queue();
-	destroy_network_send_work_queue();
-
-	profile_system_close();// 保存配置文件的信息
-	camera_pro_system_close();// 摄像头相关的资源释放
-	camera_common_control_destroy(); // 串口资源释放
-	matrix_control_destroy();
-	// 关闭数据库
-	system_database_destroy();
-	// 释放系统相关的资源
-	terminal_proccess_system_close();
-	log_machine_destroy();
-	// 释放所有文件描述符
-	if( NULL != glog_file_fd)
-		Fclose( glog_file_fd );
-	//close( net_fd.raw_fd );
-	//close( net_fd.tx_pipe[PIPE_RD] );
-	//close( net_fd.tx_pipe[PIPE_WR]);
-	close( net_fd.udp_client_fd );
-	close( net_fd.udp_server_fd );
+    /* save system profile */
+    profile_system_close();// 保存配置文件的信息
+    /* camera information destroy */
+    camera_pro_system_close();
+    /* camera control surface destroy */
+    camera_common_control_destroy();
+    /* matrix model destroy */
+    matrix_control_destroy();
+    /* close system database */
+    system_database_destroy();
+    /* terminal proccess destroy */
+    terminal_proccess_system_close();
+    /* log machine destroy */
+    log_machine_destroy();
+    /* clear all system fd */
+    if (NULL != glog_file_fd) {
+        Fclose(glog_file_fd);
+    }
+    close(net_fd.raw_fd);/* raw socket fd */
+    close(net_fd.udp_client_fd);/* as client udp socket fd */
+    close(net_fd.udp_server_fd);/* as server udp socket fd */
 }
-
 

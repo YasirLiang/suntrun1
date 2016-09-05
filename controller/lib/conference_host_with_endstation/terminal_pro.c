@@ -4188,7 +4188,14 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 #if 0				
 					terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, dis_node );
 #else
-                                        terminal_key_action_host_special_num1_reply(recv_msg, MIC_OTHER_APPLY_STATUS, dis_node);  
+                                        if (0 != speak_num)
+                                        {
+                                                terminal_key_action_host_special_num1_reply(recv_msg, MIC_OTHER_APPLY_STATUS, dis_node);
+                                        }
+                                        else
+                                        {
+                                                terminal_key_action_host_special_num1_reply(recv_msg, MIC_COLSE_STATUS, dis_node);  
+                                        }
 #endif
 					/*
 					  *1\断开连接时间最长的
