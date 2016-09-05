@@ -26,7 +26,7 @@
 #define SEND_INTERVAL_TIMEOUT 5
 /*Lacal Objects-------------------------------------------------------------*/
 static uint8_t send_frame[TRANSMIT_DATA_BUFFER_SIZE];
-/*Static function declaration-------------------------------------------------*/
+/*Static function declaration-----------------------------------------------*/
 static int thread_send_func( void *pgm );
 /*Global Objecsts-----------------------------------------------------------*/
 volatile bool gsend_pro_idle = true; /*stop flags of sending*/
@@ -52,7 +52,7 @@ static int thread_send_func(void *pgm) {
         uint16_t send_frame_len;/*frame len of sending data*/
         struct sockaddr_in udp_sin;/*udp sending destination contex*/
         uint32_t resp_interval_time;/*responding interval time*/
-        bool write_empty, read_empty;/* queue empty flag writing or reading*/
+        bool write_empty, read_empty; /* queue empty flag writing or reading*/
         
         if (!over_time_listen(SYSTEM_SQUEUE_SEND_INTERVAL)) {
             continue;
@@ -79,7 +79,7 @@ static int thread_send_func(void *pgm) {
             continue;
         }
 
-        /*for geting queue data*/
+        /*for getting queue data*/
         p = send_queue_message_get(p_send_wq);
         if (p_send_wq->work.head == NULL) {
             /*while queue is empty,
@@ -101,7 +101,7 @@ static int thread_send_func(void *pgm) {
         is_resp_data = p->job_data.resp;
         frame = p->job_data.frame;
         msg_type = jdksavdecc_common_control_header_get_control_data(frame,
-                                                                            ZERO_OFFSET_IN_PAYLOAD);
+                                                      ZERO_OFFSET_IN_PAYLOAD);
         if (send_frame_len > TRANSMIT_DATA_BUFFER_SIZE) {
             if (frame != NULL) {
                 free(frame);
