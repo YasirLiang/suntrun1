@@ -23,7 +23,7 @@
 #include "conference_transmit_unit.h"
 
 /* terminal reply mic other apply macro-------------------------------------*/
-#define MIC_RELY_OTHER_APPLY
+//#define MIC_RELY_OTHER_APPLY
 
 /* terminal mic time out set macro------------------------------------------*/
 #define MIC_SET_TIME_OUT 1000
