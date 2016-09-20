@@ -1,33 +1,41 @@
 /*
-*file:log_machine.h
-*build date:2016-4-6
+* @file
+* @brief log machine
+* @ingroup log machine
+* @cond
+******************************************************************************
+* Last updated for version 1.0.0
+* Last updated on  2016-09-20
 *
+*                    Moltanisk Liang
+*                    ---------------------------
+*                    avb auto control system
+*
+* Copyright (C) Moltanisk Liang, GuangZhou Suntron. All rights reserved.
+******************************************************************************
+* @endcond
 */
-
-/**
-//描述:信息采集系统框架源文件
-//
-//
-*/
-
 #ifndef __LOG_MACHINE_H__
 #define __LOG_MACHINE_H__
 
-#include "log.h"// 包含日志基础头文件
+#include "log.h"/*include log base include file */
 #include <semaphore.h>
 #include <pthread.h>
 
-typedef struct _type_log_machine
-{
-	tstrlog_base log;
-	pthread_t h_thread;
-        sem_t log_waiting;
+/*! log machine class define */
+typedef struct _type_log_machine {
+	tstrlog_base log;/*! super log class */
+	pthread_t h_thread;/*! log machine owner pthread */
+        sem_t log_waiting;/*! log machine object*/
 }tstrlog_imp, *tstrlog_pimp;
 
+/*! Extern global object */
 extern tstrlog_pimp gp_log_imp;
+/*! Create log machine */
+extern tstrlog_pimp log_machine_create(void (*callback_func)(void *,
+    int32_t, const char *, int32_t), int32_t log_level, void *user_obj);
+/*! destroy log machine */
+extern void log_machine_destroy(void);
 
-extern tstrlog_pimp log_machine_create( void (*callback_func)(void *, int32_t, const char *, int32_t), int32_t log_level, void *user_obj );
-extern void log_machine_destroy( void );
-
-#endif
+#endif /* __LOG_MACHINE_H__ */
 

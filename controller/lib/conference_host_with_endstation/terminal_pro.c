@@ -1831,7 +1831,7 @@ static bool Terminal_popMicFiFo(Terminal_micQueue* const queue,
 }
 /*${Terminal::micCallbackPro}...............................................*/
 /*${Terminal::micCallbackPro}*/
-void Terminal_micCallbackPro(void){
+void Terminal_micCallbackPro(void) {
     static Terminal_mic l_setNode;
     static bool l_finish = true;
     tmnl_pdblist p;

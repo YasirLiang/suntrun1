@@ -296,15 +296,7 @@ bool upper_computer_comm_recv_msg_pro( thost_upper_cmpt_msg *pmsg, uint8_t save_
 				{
 					// 处理接收的上位机发送过来的数据包
 					int rx_status = -1;
-					proccess_udp_client_msg_recv((uint8_t*)pmsg, msg_len, &rx_status );
-#ifndef SEND_DOUBLE_QUEUE_EABLE
-					if( rx_status && is_wait_messsage_active_state() )
-					{
-						set_wait_message_status( 0 );
-						sem_post( &sem_waiting );
-					}
-#endif
-
+					proccess_udp_client_msg_recv((uint8_t*)pmsg, msg_len, &rx_status);
 					grecv_cmpt_msg_pro.msg_len = 0;
 					return true;
 				}

@@ -71,7 +71,6 @@ bool find_func_command_link( uint8_t user, uint16_t cfc_cmd, uint16_t func_cmd, 
   	uint16_t func_cmd_pre = 0xFFFF;
   	uint16_t index=0;
   	fcqueue_data_elem queue_data_elem;
-	//DEBUG_INFO( "sizeof fcqueue_data_elem = %d ", sizeof(fcqueue_data_elem) );
   	
 	if( !fcwork_queue.control.active )
 		return false;

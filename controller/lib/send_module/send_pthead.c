@@ -89,8 +89,7 @@ static int thread_send_func(void *pgm) {
             }
         }
 
-        if (NULL == p)
-        {
+        if (NULL == p) {
             DEBUG_INFO("No send queue message: ERROR!");
             continue;
         }
