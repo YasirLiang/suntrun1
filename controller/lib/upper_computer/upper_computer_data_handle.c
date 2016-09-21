@@ -9,14 +9,11 @@ int handle_pack_event( struct host_upper_cmpt *cnfrnc_pack )
 	uint8_t data_payload[DATA_PAYLOAD_LEN_MAX];
 	memcpy( data_payload, cnfrnc_pack->data_payload, data_len );
 
-	DEBUG_INFO("loader_hdr = %02x sub_type = %02x cmd_type = %02x data_len = %02x", \
-					loader_hdr, sub_type,cmd_type,data_len);
 	if( loader_hdr == UPPER_COMPUTER_DATA_LOADER )
 	{	
 		// 是否为上位机主动发出, 是则要响应客户机后，清除相应的inflight命令，这里依据数据类型与协议的命令类型
 		if( isupper_active_send( sub_type ) )
 		{
-			//handle_command_from_udp_client( cmd_type, data_len, data_payload );
 		}
 		else	// 上位机响应，主机暂时不做处理，直接返回
 		{
@@ -37,7 +34,6 @@ int handle_upper_computer_conference_data( struct host_upper_cmpt_frame * pframe
 	assert( pframe && status );
 	int frame_len = pframe->payload_len;
 	
-	//DEBUG_INFO( "CoLoad = %02x",  cpy_frame.payload[0] );
 	if( pframe->payload[0] == UPPER_COMPUTER_DATA_LOADER )
 	{	
 		if( !check_crc( pframe->payload, frame_len) )

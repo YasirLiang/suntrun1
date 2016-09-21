@@ -76,7 +76,6 @@ int upper_computer_send( struct host_upper_cmpt* data_send )
 	if( is_upper_udp_client_connect )
 	{
 #ifdef __PRINTF_UPD_PACKET__
-		//DEBUG_INFO( " (ret =%d)?= (pay len = %d)", ret, upper_send_frame.payload_len );
 		test_udp_printf( upper_send_frame.payload, upper_send_frame.payload_len, "Udp Client Send Data:" );
 #endif
 		system_udp_packet_tx( &upper_udp_client.sock_addr, upper_send_frame.payload, upper_send_frame.payload_len, RUNINFLIGHT, TRANSMIT_TYPE_UDP_CLT );

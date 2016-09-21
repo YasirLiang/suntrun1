@@ -18,6 +18,7 @@
 /*Including files-----------------------------------------------------------*/
 #include "log_machine.h"
 #include "enum.h"
+#include "host_controller_debug.h"
 /*Local Objects-------------------------------------------------------------*/
 static bool l_logRun;
 /*Golbal Objects------------------------------------------------------------*/
@@ -35,7 +36,6 @@ void *log_machine_thread(void* param) {
     int32_t level, m;/* log level and stamp ms */
     char *pMsg; /* pointer to message buffer. */
     
-    gp_log_imp->log.log_init(&gp_log_imp->log);/* initial log machine */
     while (l_logRun) {
         sem_wait(&gp_log_imp->log_waiting);
         write_index = gp_log_imp->log.write_index;
@@ -65,6 +65,7 @@ tstrlog_pimp log_machine_create(void (*callback_func)(void *,
     }
     else {
         gp_log_imp->log.log_init = log_init;
+        gp_log_imp->log.log_init(&gp_log_imp->log);/* initial log machine */
         gp_log_imp->log.set_log_level = set_log_level;
         gp_log_imp->log.post_log_msg = post_log_msg;
         gp_log_imp->log.post_log_event = log_machine_post_event;

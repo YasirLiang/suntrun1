@@ -629,7 +629,7 @@ void system_register_terminal_pro( void )
 			{
 				tmnl_pdblist register_node = found_terminal_dblist_node_by_addr(addr);
 				if( NULL == register_node )
-				{/*未与1722 id绑定，发送0地址 */ 
+				{/*未与1722 id绑定，发送0地址 */
 				        if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))/* 单个终端注册完成的标志)*/
         	                        {
         					terminal_query_endstation(addr, (uint64_t)0);
@@ -662,19 +662,20 @@ void system_register_terminal_pro( void )
                 				    static_norgst_index++;
                 				    static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
                                                     registing = true;
-                                                    
-                                                    if (NULL != gp_log_imp)
+                                                
+                                                    if (NULL != gp_log_imp) {
 				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                                                 LOGGING_LEVEL_DEBUG, 
                                                                 "[Terminal (0x%016llx-%04x) Registing ]", 
                                                                 (uint64_t)0,
                                                                 addr);
+                                                    }
                 				    break;
                                                }
                                         }
 				}
 			}
-			
+
 			static_norgst_index++;
 			static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
 			count_num++;
