@@ -1629,7 +1629,7 @@ int termianal_camera_track_set(uint16_t cmd, void *data, uint32_t data_len) {
     /* return success */
     return 0;
 }
-/*$ Terminal command function begin---------------------------------------@}*/
+/*$ Terminal command function ending--------------------------------------@}*/
 /*===================================================
 {@终端处理流程
 =====================================================*/
