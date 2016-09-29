@@ -48,7 +48,8 @@ int trans_model_unit_disconnect_longest_connect( void );
 bool trans_model_unit_is_connected( uint64_t tarker_id );
 bool trans_model_unit_reconnect_disconnect_tarker( uint64_t tarker_id, bool connect_or_disconnect_flag );
 void conference_transmit_unit_destroy(void);
-int trans_model_unit_disconnect_longest_connect_re_id_cfcnode(uint64_t *id, tmnl_pdblist* pp_confenrence_node);
+/*! Ctrans_disLongest */
+int Ctrans_disLongest(uint64_t *pId, tmnl_pdblist* ppC);
 uint8_t trans_model_unit_get_system_input_num(void);
 
 // *************************************************//

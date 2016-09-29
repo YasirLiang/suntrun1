@@ -1,9 +1,21 @@
-/**
-*terminal_pro.c
+/*
+* @file terminal_pro.c
+* @brief meeting proccess
+* @ingroup Terminal
+* @cond
+******************************************************************************
+* Last updated for version 1.0.0
+* Last updated on  2016-09-27
 *
-*proccess meeting
-*****************************************************************************/
-
+*                    Moltanisk Liang
+*                    ---------------------------
+*                    avb auto control system
+*
+* Copyright (C) Moltanisk Liang, GuangZhou Suntron. All rights reserved.
+******************************************************************************
+* @endcond
+*/
+/*Including files-----------------------------------------------------------*/
 #include "terminal_pro.h"
 #include "linked_list_unit.h"
 #include "host_controller_debug.h"
@@ -19,11 +31,11 @@
 #include "upper_computer_pro.h"
 #include "camera_pro.h"
 #include "time_handle.h"
-#include "log_machine.h" /* 系统日志头文件*/
+#include "log_machine.h" /* system log include file*/
 #include "conference_transmit_unit.h"
 
 /* terminal reply mic other apply macro-------------------------------------*/
-//#define MIC_RELY_OTHER_APPLY
+/* #define MIC_RELY_OTHER_APPLY */
 
 /* terminal mic time out set macro------------------------------------------*/
 #define MIC_SET_TIME_OUT 1000
@@ -33,18 +45,16 @@
 
 /* terminal mic structure --------------------------------------------------*/
 /*${terminal::Terminal_mic} ................................................*/
-typedef struct terminal_micLater 
-{
-    tmnl_pdblist node; /*会议单元节点*/
-    uint32_t timeTick; /*超时时间*/
-    uint8_t setCount;   /*设置次数*/
-    uint8_t micState; /*mic status to set enpointment*/
+typedef struct terminal_micLater {
+    tmnl_pdblist node;  /*! terminal unit node pointer */
+    uint32_t timeTick;                    /*! time out */
+    uint8_t setCount;                /*! count setting */
+    uint8_t micState; /*!mic status to set enpointment */
 }Terminal_mic;
 
 /* Terminal micQueue structure ---------------------------------------------*/
 /*${Terminal::micQueue } ...................................................*/
-typedef struct terminal_micQueue 
-{
+typedef struct terminal_micQueue {
     uint8_t head; /*head of queue*/
     uint8_t trail; /*trail of queue*/
     uint8_t size;   /*size of queue*/
@@ -62,839 +72,829 @@ static Terminal_micQueue l_micQueue = {
 };
 
 #ifdef __DEBUG__
+/*Macro define Terminal debug-----------------------------------------------*/
 #define __TERMINAL_PRO_DEBUG__
 #endif
-
 #ifdef __TERMINAL_PRO_DEBUG__
+/*Macro define terminal_pro_debug-------------------------------------------*/
 #define terminal_pro_debug(fmt, args...) \
 	fprintf(stdout,"\033[32m %s-%s-%d:\033[0m "fmt" \r\n",\
-	           __FILE__, __func__, __LINE__, ##args);
+	                 __FILE__, __func__, __LINE__, ##args);
 #else
 #define terminal_pro_debug(fmt, args...)
 #endif
 
-/* 终端地址信息读取文件描述符*/
+/*Global varialable define--------------------------------------------------*/
+/*the file decriptor of saving terminal address.............................*/
 FILE* addr_file_fd = NULL;
-/*终端地址分配列表*/
-terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];	
+/*Table of alloting terminal address........................................*/
+terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];
 terminal_address_list_pro allot_addr_pro;
-/*终端链表表头结点，对其正确地操作，必须先注册完终端*/
-tmnl_pdblist dev_terminal_list_guard = NULL; 				
+/*the guard node of terminal double list....................................*/
+tmnl_pdblist dev_terminal_list_guard = NULL;
 tmnl_pdblist gcur_tmnl_list_node = NULL;
-/*重新分配标志*/
-volatile bool reallot_flag = false; 							
+/*The flag of reallot address...............................................*/
+volatile bool reallot_flag = false;					
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
-/*系统讨论参数*/
+/*the flag of system discuss proccessing....................................*/
 tsys_discuss_pro gdisc_flags;
-/*主席插话*/
+/*chairman interrupt........................................................*/
 tchairman_control_in gchm_int_ctl;
-/* 终端报到处理*/
-volatile ttmnl_register_proccess gregister_tmnl_pro; 			
-/*发言时长， 0表示无限时；1-63表示限时1-63分钟*/
+/*terminal register proccessing.............................................*/
+volatile ttmnl_register_proccess gregister_tmnl_pro;
+/*speaking time, zero means no limit........................................*/
 volatile uint8_t speak_limit_time = 0; 						
-/* lcd 显示的屏号*/
+/*lcd num display...........................................................*/
 volatile uint8_t glcd_num = 0;
-/*终端指示灯*/
+/*terminal led lamp.........................................................*/
 volatile uint8_t gled_buf[2] = {0};
-/*签到的状态，也可为终端的签到状态*/
+/*sign status...............................................................*/
 volatile enum_signstate gtmnl_signstate;
-/*补签的超时时间*/
+/*time of retroactive.......................................................*/
 volatile uint8_t gsign_latetime;
-/*签到标志*/
+/*the flags of sign.........................................................*/
 volatile bool gsigned_flag = false;
-/*  投票处理*/
+/*voting proccessing........................................................*/
 volatile evote_state_pro gvote_flag = NO_VOTE;
-/* 投票偏移*/ 
+/*the global index of voting................................................*/
 volatile uint16_t gvote_index;
-/* 真为投票首键有效*/
+/*true means first key being value..........................................*/
 volatile bool gfirst_key_flag;
-/* 投票模式*/
+/*the stype of vote mode....................................................*/
 volatile tevote_type gvote_mode;							
 type_spktrack gspeaker_track;
-/*  查询签到表决结果*/
+/*proccess query the voting result..........................................*/
 tquery_svote  gquery_svote_pro;
+/* the flag of finishing single terminal register...........................*/
+extern volatile bool gvregister_recved;
+/*$ init_terminal_proccess_fd...............................................*/
+void init_terminal_proccess_fd(FILE ** fd) {
+    *fd = Fopen(ADDRESS_FILE, "rb+");
+    if (NULL == *fd) {
+        terminal_pro_debug("open %s Err: not exit!"
+                       "Will create for the address file for the first time!",
+                            ADDRESS_FILE);
+        terminal_open_addr_file_wt_wb();
+    }
+}
+/*$ initial termianl address list...........................................*/
+int init_terminal_address_list_from_file(void) {
+    int i; /* loop varialable */
+    int ret;  /* return value */
+    /* initial terminal address list */ 
+    memset(tmnl_addr_list, 0, sizeof(tmnl_addr_list));
+    for(i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        tmnl_addr_list[i].addr = INIT_ADDRESS;
+        tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
+    }
+    /* read terminal address information from address file
+        if read failed, the system need to reallot agian */
+    ret = terminal_address_list_read_file(addr_file_fd, tmnl_addr_list);
+    if (ret == -1) {
+        terminal_pro_debug("init tmnl_addr_list from address file"
+                                      "need to reallot terminal address\n\t\t"
+                              "Please send reAllot command by command line!");
+        reallot_flag = true;/* set reallot flag */
+    }
+    return ret;
+}
+/*$ init_terminal_address_list..............................................*/
+void init_terminal_address_list(void) {
+    int i;
+    /* initial terminal address list */ 
+    memset(tmnl_addr_list, 0, sizeof(tmnl_addr_list));
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        tmnl_addr_list[i].addr = INIT_ADDRESS;
+        tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
+    }
+}
+/*$ Inline function init_terminal_allot_address.............................*/
+inline void init_terminal_allot_address(void) {
+    allot_addr_pro.addr_start = 0;
+    allot_addr_pro.index = 0;
+    allot_addr_pro.renew_flag= 0;
+    reallot_flag = false; /* disable reallot */
+}
+/*$ Inline function init_terminal_device_double_list........................*/
+inline void init_terminal_device_double_list(void) {
+    /* init terminal system double list */
+    init_terminal_dblist(&dev_terminal_list_guard);
+    assert(dev_terminal_list_guard != NULL);
+    gcur_tmnl_list_node = dev_terminal_list_guard;
+}
+/*$ init_terminal_discuss_param.............................................*/
+int init_terminal_discuss_param(void) {
+    thost_system_set set_sys;/* the format structure of system profile file */
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));   /* zero buffer */
+    gdisc_flags.apply_limit = set_sys.apply_limit;    /* apply limit number */
+    gdisc_flags.limit_num = set_sys.speak_limit;     /* speak limit number */
+    gdisc_flags.currect_first_index = set_sys.apply_limit;/* priority index */
+    gdisc_flags.apply_num = 0;                              /* apply number */
+    gdisc_flags.speak_limit_num = 0;                  /* speak limit number */
+    gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
+    memset(gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM);
+    memset(gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM);
+    return 0; /* default return value */
+}
+/*$ terminal_speak_track_pro_init...........................................*/
+void terminal_speak_track_pro_init(void) {/* initial speak list */
+    int i;
+    gspeaker_track.spk_num = 0;
+    for (i = 0; i < MAX_SPK_NUM; i++) {
+        gspeaker_track.spk_addrlist[i] = 0xffff;
+    }
+}
 
-void init_terminal_proccess_fd( FILE ** fd )
-{
-	*fd = Fopen( ADDRESS_FILE, "rb+" );
-	if( NULL == *fd )
-	{
-		terminal_pro_debug( "open %s Err: not exit!Will create for the address file for the first time!", ADDRESS_FILE );
-		terminal_open_addr_file_wt_wb();
+void print_out_terminal_addr_infomation(terminal_address_list* p, int num) {
+#ifdef __TERMINAL_PRO_DEBUG__
+	int i; /* loop varialable */
+	printf("Addr Info:\n");/* head information */
+	for (i = 0; i < num; i++) {
+		printf("[ (addr-type)-> (%d -%d) ]\n", p[i].addr, p[i].tmn_type);
 	}
-}
-
-/*==============================================
-初始化终端地址列表
-================================================*/
-int init_terminal_address_list_from_file( void )
-{
-	int i = 0;
-	int ret = 0;
-	
-	/* 初始化全局变量tmnl_addr_list*/ 
-	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
-	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
-	{
-		tmnl_addr_list[i].addr = INIT_ADDRESS;
-		tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
-	}
-
-	/*读终端地址信息到tmnl_addr_list, 若读取失败，则系统需要重新分配终端地址 */ 
-	ret = terminal_address_list_read_file( addr_file_fd, tmnl_addr_list );
-	if( ret == -1 )
-	{
-		terminal_pro_debug( "init tmnl_addr_list from address file!need to reallot terminal address\n\t\tPlease send reAllot command by command line!!!");
-		reallot_flag = true;
-	}
-
-	return ret;
-}
-
-void init_terminal_address_list( void )
-{
-	int i = 0;
-	
-	/*初始化全局变量tmnl_addr_list */ 
-	memset( tmnl_addr_list, 0, sizeof(tmnl_addr_list) );
-	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
-	{
-		tmnl_addr_list[i].addr = INIT_ADDRESS;
-		tmnl_addr_list[i].tmn_type = TMNL_TYPE_COMMON_RPRST;
-	}
-}
-
-/*==============================================
-结束初始化终端地址列表
-================================================*/
-
-inline void init_terminal_allot_address( void )
-{
-	allot_addr_pro.addr_start = 0;
-	allot_addr_pro.index = 0;
-	allot_addr_pro.renew_flag= 0;
-	reallot_flag = false; /*  disable reallot*/
-}
-
-inline void init_terminal_device_double_list( void )
-{
-	/* init terminal system double list */
-	init_terminal_dblist( &dev_terminal_list_guard );
-	assert( dev_terminal_list_guard != NULL );
-	gcur_tmnl_list_node = dev_terminal_list_guard;
-}
-
-/*
-*date:2015-11-6
-*/
-int init_terminal_discuss_param( void ) 
-{
-	thost_system_set set_sys; /* 系统配置文件的格式*/ 
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-
-	gdisc_flags.apply_limit = set_sys.apply_limit;
-	gdisc_flags.limit_num = set_sys.speak_limit;
-	gdisc_flags.currect_first_index = set_sys.apply_limit;
-	gdisc_flags.apply_num = 0;
-	gdisc_flags.speak_limit_num = 0; /*发言人数 */ 
-	gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
-	memset( gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM );
-	memset( gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM );
-
-	return 0;
-}
-
-void terminal_speak_track_pro_init( void )
-{
-	int i = 0;
-
-	gspeaker_track.spk_num = 0;
-	for( i = 0; i < MAX_SPK_NUM;i++ )
-	{
-		gspeaker_track.spk_addrlist[i] = 0xffff;
-	}
-}
-
-#ifdef __DEBUG__  /*  模拟终端信息*/
-#define WRITE_ADDR_NUM 10
-void 	test_interface_terminal_address_list_write_file( FILE** fd )
-{
-	Fclose( *fd );
-	*fd = Fopen( ADDRESS_FILE, "wb+" );
-	if( *fd == NULL )
-	{
-		DEBUG_ERR( "init terminal addr fd Err!" );
-		assert( NULL != *fd );
-		return;
-	}
-
-	int i = 0;
-	for( ; i < WRITE_ADDR_NUM; i++ )
-	{
-		terminal_address_list tmp_addr;
-		tmp_addr.addr = i;
-		tmp_addr.tmn_type = 0;
-		terminal_address_list_write_file( *fd, &tmp_addr, 1 );
-	}
-}
-
-void print_out_terminal_addr_infomation( terminal_address_list* p, int num )
-{
-	int i = 0;
-
-	printf( "Addr Info:\n" );
-	for( ; i < num; i++ )
-	{
-		printf( "[ (addr-type)-> (%d -%d) ]\n", p[i].addr, p[i].tmn_type );
-	}
-}
 #endif
-
-void init_terminal_proccess_system( void )
-{
-	int tmnl_count = 0, i = 0;
-
-	terminal_register_init();
-    
-    	init_terminal_device_double_list();	/*初始化链表 */ 
-
-	init_terminal_proccess_fd( &addr_file_fd );
-	if( NULL == addr_file_fd )
-		return;
-
-	if( NULL != addr_file_fd )
-	{
-		tmnl_count = init_terminal_address_list_from_file();
-		if( tmnl_count != -1)
-		{
-			terminal_pro_debug( "terminal count num = %d", tmnl_count );
-			gregister_tmnl_pro.tmn_total = tmnl_count;/* 保存到未注册列表 */
-			
-			for( i = 0; i < tmnl_count; i++ )
-			{
-                                tmnl_pdblist tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
-                                if (tmnl_list_station != NULL)
-                                {
-                                        init_terminal_dblist_node_info( tmnl_list_station );
-                                        tmnl_list_station->tmnl_dev.entity_id = 0;
-                                        tmnl_list_station->tmnl_dev.address.addr = tmnl_addr_list[i].addr;
-                                        tmnl_list_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
-                                        insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
-                                        terminal_pro_debug( "create new tmnl list node[ 0x%04x ] Success", tmnl_list_station->tmnl_dev.address.addr );
-                                }
-			}
-
-                        if( -1 == sort_terminal_dblist_node(dev_terminal_list_guard) )
-			{
-				terminal_pro_debug( "insert  register node is Err!................" );
-			}
-		}		
-	}
-
-#ifdef __TERMINAL_PRO_DEBUG__ /*输出终端信息的数据 */ 
-	print_out_terminal_addr_infomation( tmnl_addr_list, tmnl_count );
-	if( tmnl_count != -1 )
-		terminal_pro_debug( "terminal count num = %d", tmnl_count );
-#endif
-
-	init_terminal_allot_address();
-	init_terminal_discuss_param();
-	terminal_speak_track_pro_init();
-	terminal_query_proccess_init();
+}
+/*$ init_terminal_proccess_system...........................................*/
+void init_terminal_proccess_system(void) {/*initial terminal proccess sytem*/
+    int tmnl_count;/* terminal count */
+    int i;    /* loop varialable */
+    tmnl_pdblist p; /* pointer to new terminal node */
+    /* terminal register initial */
+    terminal_register_init();
+    /* initial terminal double list accroding to address file */
+    init_terminal_device_double_list();
+    /* initial terminal proccess fd */
+    init_terminal_proccess_fd(&addr_file_fd);
+    if (NULL == addr_file_fd) {/* Error initial file fd? */
+        return;
+    }
+    /* termanal counts in the system */
+    tmnl_count = init_terminal_address_list_from_file();
+    if (tmnl_count != -1) {/* initial success ? */
+        /* Debug terminal counts */
+        terminal_pro_debug("terminal count num = %d", tmnl_count);
+        /* Debug terminal address information */
+        print_out_terminal_addr_infomation(tmnl_addr_list, tmnl_count);
+        /* set the total number of terminal */
+        gregister_tmnl_pro.tmn_total = tmnl_count;
+        /* create node of terminal and initial */
+        for (i = 0; i < tmnl_count; i++) {
+            /* create terminal double list node */
+            p = create_terminal_dblist_node(&p);
+            if (p != NULL) {
+                /* initial terminal node number */
+                init_terminal_dblist_node_info(p);
+                p->tmnl_dev.entity_id = 0;
+                p->tmnl_dev.address.addr = tmnl_addr_list[i].addr;
+                p->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
+                /* save node to link list */
+                insert_terminal_dblist_trail(dev_terminal_list_guard, p);
+                
+                terminal_pro_debug("create new "
+                        "tmnl list node[0x%04x] Success",
+                               p->tmnl_dev.address.addr);
+            }
+        }
+        /* sort terminal node by address */
+        if (-1 == sort_terminal_dblist_node(dev_terminal_list_guard)) {
+            terminal_pro_debug("insert register node is Err!");
+        }
+    }
+    /* initial terminal allot proccessing */
+    init_terminal_allot_address();
+    /* initial terminal discuss param */
+    init_terminal_discuss_param();
+    /* initial speak track proccessing */
+    terminal_speak_track_pro_init();
+    /* initial query the result of voting proccessing */
+    terminal_query_proccess_init();
 }
 
-/*释放终端资源2016-1-23*/
-void terminal_proccess_system_close( void )
-{
-	if( addr_file_fd != NULL )
-	{
-		Fclose( addr_file_fd );/* 关闭文件描述符*/ 
-		if( addr_file_fd != NULL )
-			addr_file_fd = NULL;
-	}
+/*$ terminal_proccess_system_close..........................................*/
+void terminal_proccess_system_close(void) {         /* release address file */
+    if (addr_file_fd != NULL) {
+        Fclose(addr_file_fd); /* close fd */ 
+        if (addr_file_fd != NULL) {
+            addr_file_fd = NULL;/* make sure no be using agian */
+        }
+    }
 }
-/*********************************************
-=注册处理相关函数开始
-**********************************************/
-/* 终端注册保存地址到已注册或未注册列表,注:保存已注册与未注册终端的算法不同*/ 
-bool terminal_register_pro_address_list_save( uint16_t addr_save, bool is_register_save )
+/*$ terminal_register_pro_address_list_save.................................*/
+bool terminal_register_pro_address_list_save(uint16_t addr_save,
+                                                        bool is_register_save)
 {
-	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
-	if( (p_regist_pro != NULL) && (addr_save != 0xffff))
-	{
-		if( !is_register_save )
-		{
-			volatile uint16_t *p_unregister_trail = &p_regist_pro->noregister_trail;
-			volatile bool *p_unregister_full = &p_regist_pro->unregister_list_full;
-			if(  *p_unregister_trail < p_regist_pro->list_size )
-			{
-				if( (p_regist_pro->register_pro_addr_list[*p_unregister_trail] == 0xffff) &&\
-					(*p_unregister_trail == p_regist_pro->noregister_head ) )
-				{/*  当前列表无未注册的地址*/
-					p_regist_pro->register_pro_addr_list[*p_unregister_trail] = addr_save;/* 先保存，这是列表无未注册的地址 */ 
-				}
-				else if( p_regist_pro->register_pro_addr_list[*p_unregister_trail] != 0xffff )
-				{
-					p_regist_pro->register_pro_addr_list[++(*p_unregister_trail)] = addr_save;/* 先移动trail，原因是trail 代表最后的元素的下标*/ 
-				}
-				
-				if( *p_unregister_trail >= p_regist_pro->list_size )
-				{
-					*p_unregister_full = true;
-				}
-
-				return true;
-			}
-		}
-		else
-		{
-			/*
-			**1、将未注册列表头的元素插入未注册的尾部
-			**2、未注册的头部加1
-			**3、往已注册列表的尾部插入需保存的地址
-			*/ 
-			if( terminal_register_pro_address_list_save( p_regist_pro->register_pro_addr_list[p_regist_pro->noregister_head], false ) )
-			{
-				p_regist_pro->noregister_head++;
-				p_regist_pro->register_pro_addr_list[++p_regist_pro->rgsted_trail] = addr_save;
-			}
-		}
-	}
-
-	return false;
-}
-
-/* 从未注册列表中删除已注册终端,并保存此地址到已注册的列表中:register_addr_delect必须是已注册的地址(经测试暂时没有发现问题2016/01/26)*/ 
-bool terminal_delect_unregister_addr( uint16_t register_addr_delect )
-{
-	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
-	if( (p_regist_pro != NULL) && (register_addr_delect != 0xffff))
-	{
-		/* 寻找删除的节点 */
-		int i = 0, delect_index;
-		bool found_dl = false;
-		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
-		volatile uint16_t *p_trail = &p_regist_pro->noregister_trail;
-		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
-		{
-			terminal_pro_debug( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
-				*p_head, *p_trail, p_regist_pro->rgsted_trail );
-			return false;
-		}
-
-		for( i = *p_head; i <= *p_trail; i++ )
-		{
-			if( p_regist_pro->register_pro_addr_list[i] == register_addr_delect )
-			{
-				delect_index = i;
-				found_dl = true;
-				break;
-			}
-		}
-
-		if( found_dl )
-		{
-			/* 将其与未注册列表的头的数据交换*/ 
-			terminal_pro_debug( "save register addr = %04x ?=( (delect index = %d)list addr = %04x)-(swap addr = %04x)<<====>> %d(head_index)----%d(trail)---%d(rgsted_trail)", \
-				register_addr_delect, delect_index,p_regist_pro->register_pro_addr_list[delect_index], p_regist_pro->register_pro_addr_list[*p_head],*p_head, *p_trail, p_regist_pro->rgsted_trail );
-			if( *p_head > *p_trail )
-				return false;
-			else 
-			{
-				if( swap_valtile_uint16( &p_regist_pro->register_pro_addr_list[*p_head], &p_regist_pro->register_pro_addr_list[delect_index]) )
-				{
-					/*
-					**1: 移动已注册表尾到未注册表头
-					**2:移动未注册表头到未注册的表头的下一个未注册元素
-					*/
-					p_regist_pro->rgsted_trail = *p_head;
-					if( *p_head == *p_trail )
-					{
-						*p_trail = ++(*p_head);
-					}
-					else
-					{
-						++(*p_head);
-					}
-					
-					return true;
-				}
-			}
-		}
-		
-	}
-
-	return false;
-}
-
-/* 从未注册列表中清除未注册地址(未进行测试2016/01/26)*/ 
-bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
-{
-	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
-	if( (p_regist_pro != NULL) && (unregister_addr_delect != 0xffff))
-	{
-		/* 寻找删除的节点 */
-		int i = 0, delect_index;
-		bool found_dl = false;
-		volatile uint16_t *p_head = &p_regist_pro->noregister_head;
-		volatile uint16_t *p_trail = &p_regist_pro->noregister_trail;
-		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) ||  ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
-		{
-			terminal_pro_debug( "Err delect unregister address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
-				*p_head, *p_trail, p_regist_pro->rgsted_trail );
-			return false;
-		}
-
-		for( i = *p_head; i <= *p_trail; i++ )
-		{
-			if( p_regist_pro->register_pro_addr_list[i] == unregister_addr_delect )
-			{
-				delect_index = i;
-				found_dl = true;
-				break;
-			}
-		}
-
-		if( found_dl )
-		{
-			/* 将其与未注册列表的头的数据交换 */
-			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
-			{
-				/*
-				**1: 直接把尾节点置为不可用地址0xffff,并将尾指针向前移一元素
-				*/
-				p_regist_pro->register_pro_addr_list[(*p_trail)--] = 0xffff;
-				terminal_pro_debug( "noregister list trail index = %d-trail  emlem value = %d", *p_trail, p_regist_pro->register_pro_addr_list[(*p_trail)] );
-
-				return true;
-			}
-		}
-		
-	}
-
-	return false;
-}
-
-/*  删除终端已注册地址，并将其放入未注册的地址列表表头中(未进行测试2016/01/26)*/
-bool terminal_delect_register_addr( uint16_t addr_delect )
-{
-	volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
-	if( (p_regist_pro != NULL) && (addr_delect != 0xffff))
-	{
-		/* 寻找删除的节点*/ 
-		int i = 0, delect_index = -1;
-		bool found_dl = false;
-		volatile uint16_t *p_head = &p_regist_pro->rgsted_head;
-		volatile uint16_t *p_trail = &p_regist_pro->rgsted_trail;
-		if( (*p_head > *p_trail) ||(*p_head > (SYSTEM_TMNL_MAX_NUM-1))||\
-			(*p_trail > (SYSTEM_TMNL_MAX_NUM-1)) || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))&&(*p_head != 0)) )
-		{
-			terminal_pro_debug( "Err delect register address %d(head_index)----%d(trail)---%d(rgsted_trail)", \
-				*p_head, *p_trail, p_regist_pro->rgsted_trail );
-			return false;
-		}
-
-		for( i = *p_head; i <= *p_trail; i++ )
-		{
-			if( p_regist_pro->register_pro_addr_list[i] == addr_delect )
-			{
-				delect_index = i;
-				found_dl = true;
-				break;
-			}
-		}
-
-		if( found_dl )
-		{
-			/* 将其与已注册列表的尾的数据交换*/ 
-			if( swap_valtile_uint16(&p_regist_pro->register_pro_addr_list[*p_trail], &p_regist_pro->register_pro_addr_list[delect_index]) )
-			{
-				/*
-				**1: 移动未注册表头到已注册表尾
-				**2: 移动已注册表尾到已注册的表尾的上一个已注册元素
-				*/
-				p_regist_pro->noregister_head = *p_trail;
-				if( *p_trail > 0 )/* 索引最小为零 */
-					(*p_trail)--;
-
-				gregister_tmnl_pro.tmn_rgsted--;
-
-				return true;
-			}
-		}
-		
-	}
-
-	return false;
-}
-
-/*注册*/
-bool terminal_register( uint16_t address, uint8_t dev_type, tmnl_pdblist p_tmnl_station )
-{
-	bool bret = false;
-	int i = 0;
-	
-	if( NULL == p_tmnl_station )
-	{
-#ifdef __DEBUG__
-		assert( p_tmnl_station );
-#else
-		bret = false;
-#endif
-	}
-	else
-	{
-		if( !p_tmnl_station->tmnl_dev.tmnl_status.is_rgst )
-		{
-			for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
-			{
-				if( (address & TMN_ADDR_MASK) == (tmnl_addr_list[i].addr))
-				{
-					terminal_pro_debug( "register addr = %04x-%04x, index = %d ", address & TMN_ADDR_MASK, tmnl_addr_list[i].addr, i );
-					p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
-					p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
-				        p_tmnl_station->tmnl_dev.address.addr = address & TMN_ADDR_MASK;
-					p_tmnl_station->tmnl_dev.address.tmn_type = tmnl_addr_list[i].tmn_type;
-
-					if( -1 == sort_terminal_dblist_node(dev_terminal_list_guard) )
-					{
-						terminal_pro_debug( "insert  register node is Err!................" );
-					}
-
-					set_terminal_system_state( DISCUSS_STATE, true );
-                    
-                    			gregister_tmnl_pro.tmn_rgsted++;
-					bret = true;
-                                        if (NULL != gp_log_imp)
-				                gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-				                    LOGGING_LEVEL_DEBUG, 
-				                    "[ terminal (0x%016llx-%04x) registed success ]", 
-                                                    p_tmnl_station->tmnl_dev.entity_id,
-                                                    p_tmnl_station->tmnl_dev.address.addr);
-
-					break;
-				}
-			}
-		}
-	}
-
-	return bret;
-}
-
-/******************************************
-*Auther:YasirLiang
-*Date:2016/1/23
-*Name:system_register_terminal_pro
-*Func:register terminal proccess
-*Paramer:
-*		None
-*******************************************/
-extern volatile bool gvregister_recved;/* 单个终端注册完成的标志 */
-extern bool inflight_conference_command_exist(void);
-extern void menu_first_display(void);
-void system_register_terminal_pro( void )
-{
-	static bool static_reset_flags = true;
-	static uint16_t static_norgst_index = 0;
-	volatile register_state reg_state = gregister_tmnl_pro.rgs_state;
-        bool registing = false;
-	
-	if( reallot_flag )
-	{/*reallot time, can't register */ 
-		return;
-	}
-
-	if (static_reset_flags)
-	{
-		static_reset_flags = false;
-		over_time_set(WAIT_TMN_RESTART, 10000);
-	}
-
-	if (over_time_listen(WAIT_TMN_RESTART) && (RGST_WAIT == reg_state))
-	{
-	        terminal_query_endstation(0x8000, (uint64_t)0);
-		gregister_tmnl_pro.rgs_state = RGST_QUERY;
-		over_time_set(TRGST_OTIME_HANDLE, 15000);
-	}
-	
-	if (RGST_QUERY == reg_state)
-	{
-		uint16_t count_num = 0;
-		while(count_num < SYSTEM_TMNL_MAX_NUM)
-		{
-			uint16_t addr = tmnl_addr_list[static_norgst_index].addr;
-			if (addr != 0xffff)
-			{
-				tmnl_pdblist register_node = found_terminal_dblist_node_by_addr(addr);
-				if( NULL == register_node )
-				{/*未与1722 id绑定，发送0地址 */
-				        if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))/* 单个终端注册完成的标志)*/
-        	                        {
-        					terminal_query_endstation(addr, (uint64_t)0);
-
-                                                gvregister_recved = false;
-                                                over_time_set(SIG_TMNL_REGISTER, 200);
-            					static_norgst_index++;
-            					static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
-                                                registing = true;
-                                                
-                                                if (NULL != gp_log_imp)
-				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-                                                                LOGGING_LEVEL_DEBUG, 
-                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
-                                                                (uint64_t)0,
-                                                                addr);
-            					break;
-                                        }
-				}
-				else
-				{
-					if (!register_node->tmnl_dev.tmnl_status.is_rgst)
-					{
-					        if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))// 单个终端注册完成的标志)
-        	                                {
-    						    terminal_query_endstation(addr, (uint64_t)0);
-
-                                                    gvregister_recved = false;
-                                                    over_time_set(SIG_TMNL_REGISTER, 200);
-                				    static_norgst_index++;
-                				    static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
-                                                    registing = true;
-                                                
-                                                    if (NULL != gp_log_imp) {
-				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-                                                                LOGGING_LEVEL_DEBUG, 
-                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
-                                                                (uint64_t)0,
-                                                                addr);
-                                                    }
-                				    break;
-                                               }
-                                        }
-				}
-			}
-
-			static_norgst_index++;
-			static_norgst_index %= SYSTEM_TMNL_MAX_NUM;
-			count_num++;
-		}
-
-		if ((count_num >= SYSTEM_TMNL_MAX_NUM && !registing &&\
-                        gregister_tmnl_pro.tmn_total <= gregister_tmnl_pro.tmn_rgsted) ||\
-			(over_time_listen(TRGST_OTIME_HANDLE)))
-		{
-		        DEBUG_INFO( "total = %d, rgsted = %d", gregister_tmnl_pro.tmn_total, gregister_tmnl_pro.tmn_rgsted);
-			gregister_tmnl_pro.rgs_state = RGST_IDLE;
-			set_terminal_system_state(DISCUSS_STATE, true);
-			menu_first_display();
-			terminal_start_discuss(false);
-			terminal_main_state_send( 0, NULL, 0 );
-		}
-	}
-	else if (RGST_IDLE == reg_state && (over_time_listen(QUEUE_REGISTER_TIMEOUT)))
-	{
-		uint16_t count_num = 0;
-		static uint16_t static_query_index =  0;
-
-		while(count_num < SYSTEM_TMNL_MAX_NUM)
-		{
-			uint16_t addr = tmnl_addr_list[static_query_index].addr;
-			tmnl_pdblist register_node = NULL;
-			if (addr != 0xffff)
-			{
-				register_node = found_terminal_dblist_node_by_addr(addr);
-                                if (NULL == register_node) // not found?
-                                {// address is not in dev_terminal_list_guard double list, should register again
-                                	if (gvregister_recved ||over_time_listen(SIG_TMNL_REGISTER))
-                                        {   
-                                                terminal_query_endstation(addr, (uint64_t)0);
-                                                
-                                                gvregister_recved = false;
-                                                over_time_set(SIG_TMNL_REGISTER, 100);// 100ms
-                                                
-                                                static_query_index++;
-                				static_query_index %= SYSTEM_TMNL_MAX_NUM;
-                                                registing = true;
-                                                
-                                                if (NULL != gp_log_imp)
-                                                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-                                                                LOGGING_LEVEL_DEBUG,
-                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
-                                                                (uint64_t)0,
-                                                                addr);
-                                                
-                                                break;
-                                        }
-                                }
-				else
-				{
-				        bool regis = false;
-                                        solid_pdblist endpoint_node = NULL;
-				        if (!register_node->tmnl_dev.tmnl_status.is_rgst)
-                                              regis = true;
-                        
-                                        if (!regis && (0 != register_node->tmnl_dev.entity_id))
-                                        {
-                                                endpoint_node = search_endtity_node_endpoint_dblist(endpoint_list, register_node->tmnl_dev.entity_id);
-                                                if (endpoint_node != NULL)
-        					{
-        						if (!endpoint_node->solid.connect_flag)
-        						{
-        							register_node->tmnl_dev.tmnl_status.is_rgst = false;
-                                                                regis = true;
-        						}
-        					}
-                                        }
-
-                                        if (regis && (gvregister_recved || over_time_listen(SIG_TMNL_REGISTER)))
-                                        {
-                                                terminal_query_endstation(addr, (uint64_t)0);
-        					gvregister_recved = false;
-        					over_time_set(SIG_TMNL_REGISTER, 100);
-                    
-                                                static_query_index++;
-                				static_query_index %= SYSTEM_TMNL_MAX_NUM;
-                                                registing = true;
-                                                
-                                                if (NULL != gp_log_imp)
-				                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-                                                                LOGGING_LEVEL_DEBUG, 
-                                                                "[Terminal (0x%016llx-%04x) Registing ]", 
-                                                                (uint64_t)0,
-                                                                register_node->tmnl_dev.address.addr);
-
-                                                break;
-                                        }
-					
-				}
-			}
-
-			static_query_index++;
-			static_query_index %= SYSTEM_TMNL_MAX_NUM;
-			count_num++;
-		}
-
-		if (count_num >= SYSTEM_TMNL_MAX_NUM && !registing)
-		{
-			over_time_set(QUEUE_REGISTER_TIMEOUT, 3*1000);// 3S
-		}
+    volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
+    volatile uint16_t *pRelist;               /*pointer to register list */
+    volatile uint16_t *pUnTrail; /* pointer to noregister trail */
+    if ((p_regist_pro != NULL)
+          && (addr_save != 0xffff)) 
+    {
+        pRelist = p_regist_pro->register_pro_addr_list;
+        pUnTrail = &p_regist_pro->noregister_trail;
+        
+        if (!is_register_save) { /* no save to register list */
+            if (*pUnTrail < p_regist_pro->list_size) {
+                if ((pRelist[*pUnTrail] == 0xffff)
+                      &&(*pUnTrail == p_regist_pro->noregister_head))
+                {
+                    /* no unregister address in the current list */
+                    pRelist[*pUnTrail] = addr_save;
+                }
+                else if (pRelist[*pUnTrail] != 0xffff)
+                {
+                    pRelist[++(*pUnTrail)] = addr_save;
+                }
                 else
-                        over_time_set(QUEUE_REGISTER_TIMEOUT, 500);
-	}
+                {
+                    /* no other case */
+                }
+                
+                if (*pUnTrail >= p_regist_pro->list_size) {
+                    p_regist_pro->unregister_list_full = true;
+                }
+                return true;
+            }
+        }
+        else {
+            /*step1: insert the element of unregister list head to unregister
+                list trail 
+                step2: increment the head of unregister list 
+                step3: insert address to register list trail */
+            uint16_t a;/* temp address saving */
+            uint16_t head; /* head of no register list */
+            uint16_t trail; /* trail of register list */
+            head = p_regist_pro->noregister_head;
+            a = pRelist[head]; /* head element of register list */
+            if (terminal_register_pro_address_list_save(a, false)) {
+                p_regist_pro->noregister_head++;
+                trail = ++p_regist_pro->rgsted_trail;
+                pRelist[trail] = addr_save;
+            }
+        }
+    }
+    else {
+        /* nothing to do */
+    }
+    return false; /* default return value */
+}
+/*$ terminal_delect_unregister_addr.................................*/
+bool terminal_delect_unregister_addr(uint16_t register_addr_delect)
+{/* delect registed address from unregister list and save it to register
+    list, and register_addr_delect must be address of being registed */
+    volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
+    volatile uint16_t *pRelist;               /*pointer to register list */
+    volatile uint16_t *pUnTrail; /* pointer to noregister trail */
+    int i = 0, delect_index;
+    bool found_dl = false;
+    volatile uint16_t *p_head; /* pointer to head of no register head */
+
+    if ((p_regist_pro != NULL)
+          && (register_addr_delect != 0xffff))
+    {
+        p_head = &p_regist_pro->noregister_head;
+        pUnTrail = &p_regist_pro->noregister_trail;
+        pRelist = p_regist_pro->register_pro_addr_list;
+        if ((*p_head > *pUnTrail)
+              || (*p_head > (SYSTEM_TMNL_MAX_NUM-1))
+              || (*pUnTrail > (SYSTEM_TMNL_MAX_NUM-1))
+              || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))
+                      &&(*p_head != 0)))
+        {
+            terminal_pro_debug("Err delect unregister address %d"
+            "(head_index)----%d(trail)---%d(rgsted_trail)",
+            *p_head, *pUnTrail, p_regist_pro->rgsted_trail);
+            return false;
+        }
+        /*look for delect address */
+        for (i = *p_head; i <= *pUnTrail; i++) {
+            if (pRelist[i] == register_addr_delect) {
+                delect_index = i;
+                found_dl = true;
+                break;
+            }
+        }
+
+        if (found_dl) {
+            terminal_pro_debug("save register addr = %04x ?="
+                                     "( (delect index = %d)list addr = %04x)-"
+                                   "(swap addr = %04x)<<====>> %d(head_index)"
+                                           "----%d(trail)---%d(rgsted_trail)",
+                                           register_addr_delect, delect_index,
+                           pRelist[delect_index], pRelist[*p_head],
+                               *p_head, *pUnTrail, p_regist_pro->rgsted_trail);
+            if (*p_head > *pUnTrail) {
+                return false;
+            }
+            else {/* swap with the head of unregister list */
+                if (swap_valtile_uint16(&pRelist[*p_head],
+                                                      &pRelist[delect_index]))
+                {
+                    /* step1:move the tail of register list to the head of
+                         unregister
+                         step2: move the head of unregister to the next
+                         unregister elememt of unregister list head
+                        */
+                    p_regist_pro->rgsted_trail = *p_head;
+                    if (*p_head == *pUnTrail) {
+                        *pUnTrail = ++(*p_head);
+                    }
+                    else {
+                        ++(*p_head);
+                    }
+                    return true;
+                }
+            }
+        }
+    }
+    return false; /* default return value */
+}
+/*$ terminal_clear_from_unregister_addr_list................................*/
+bool terminal_clear_from_unregister_addr_list(uint16_t addr) {
+    volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
+    volatile uint16_t *pRelist;              /*pointer to register list */
+    volatile uint16_t *p_head;/* pointer to the head of unregister list */
+    volatile uint16_t *p_trail;/* pointer to the trail of register list */
+    if ((p_regist_pro != NULL)
+          && (addr != 0xffff))
+    {
+        int i = 0, delect_index;
+        bool found_dl = false;
+        p_head = &p_regist_pro->noregister_head;
+        p_trail = &p_regist_pro->noregister_trail;
+        pRelist = p_regist_pro->register_pro_addr_list;
+        if ((*p_head > *p_trail)
+              || (*p_head > (SYSTEM_TMNL_MAX_NUM-1))
+              || (*p_trail > (SYSTEM_TMNL_MAX_NUM-1))
+              || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))
+                     && (*p_head != 0)))
+        {
+            terminal_pro_debug("Err delect unregister address %d"
+                               "(head_index)----%d(trail)---%d(rgsted_trail)",
+                              *p_head, *p_trail, p_regist_pro->rgsted_trail );
+            return false;
+        }
+
+        /*looking for address delected*/
+        for (i = *p_head; i <= *p_trail; i++) {
+            if (pRelist[i] == addr) {
+                delect_index = i;
+                found_dl = true;
+                break;
+            }
+        }
+
+        if (found_dl) {
+            /* swap the address of delect and the head of unregister list */
+            if (swap_valtile_uint16(&pRelist[*p_trail], &pRelist[delect_index])) {
+                /* make trail to 0xffff and move the trial to ahead of trail */
+                pRelist[(*p_trail)--] = 0xffff;
+                terminal_pro_debug("noregister list trail index = %d-trail"
+                               "emlem value = %d", *p_trail, pRelist[(*p_trail)]);
+                return true;
+            }
+        }
+    }
+    return false; /* default return value */
+}
+/*$ terminal_delect_register_addr...........................................*/
+bool terminal_delect_register_addr(uint16_t addr_delect) {
+    /* delect the address of being register,
+        and put it to the head of unregister list */
+    volatile ttmnl_register_proccess *p_regist_pro = &gregister_tmnl_pro;
+    volatile uint16_t *pRelist;              /*pointer to register list */
+    volatile uint16_t *p_head;/* pointer to the head of unregister list */
+    volatile uint16_t *p_trail;/* pointer to the trail of register list */
+    if ((p_regist_pro != NULL)
+          && (addr_delect != 0xffff)) 
+    {
+        int i = 0, delect_index = -1;
+        bool found_dl = false;
+        p_head = &p_regist_pro->rgsted_head;
+        p_trail = &p_regist_pro->rgsted_trail;
+        pRelist = p_regist_pro->register_pro_addr_list;
+        if ((*p_head > *p_trail)
+              || (*p_head > (SYSTEM_TMNL_MAX_NUM-1))
+              || (*p_trail > (SYSTEM_TMNL_MAX_NUM-1))
+              || ((*p_head !=  (p_regist_pro->rgsted_trail + 1))
+                      &&(*p_head != 0)))
+        {
+            terminal_pro_debug("Err delect register address %d"
+                    "(head_index)----%d(trail)---%d(rgsted_trail)",
+                    *p_head, *p_trail, p_regist_pro->rgsted_trail);
+            return false;
+        }
+        /* found delect address index */              
+        for (i = *p_head; i <= *p_trail; i++) {
+            if (pRelist[i] == addr_delect) {
+                delect_index = i;
+                found_dl = true;
+                break;
+            }
+        }
+        /* found ? */
+        if (found_dl) {
+            /* swap the address of delect and the head of unregister list */
+            if (swap_valtile_uint16(&pRelist[*p_trail], &pRelist[delect_index])) {
+                /*Step1: move the head of unregister list to
+                the trail of register list; Step2: move the head of unregister to the next
+                unregister elememt of unregister list head*/
+                p_regist_pro->noregister_head = *p_trail;
+                if( *p_trail > 0 ) {/* zero is least index */
+                    (*p_trail)--;
+                }
+                gregister_tmnl_pro.tmn_rgsted--;
+                return true;
+            }
+        }
+    }
+    return false;/* default return value */
+}
+/*$ terminal_register.......................................................*/
+bool terminal_register(uint16_t address, uint8_t dev_type,
+                                tmnl_pdblist p_tmnl_station)
+{
+    bool bret;       /* bool return value */
+    int i;      /* the varialable of loop */
+    uint16_t addr; /* address of terminal */
+    uint16_t type;       /* terminal type */
+    tmnl_pdblist p; /* pointer to guard of terminal double link list */
+
+    if (NULL == p_tmnl_station) {
+        assert(p_tmnl_station);
+        bret = false;
+    }
+    else {
+        if (!p_tmnl_station->tmnl_dev.tmnl_status.is_rgst) {
+            /* set address */
+            addr = address & TMN_ADDR_MASK;
+            p = dev_terminal_list_guard;
+            /* found address in the address list */
+            for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+                if (addr == tmnl_addr_list[i].addr) {
+                    /* debug register address */
+                    terminal_pro_debug("register addr = %04x-"
+                                       "%04x, index = %d ", addr,
+                                      tmnl_addr_list[i].addr, i);
+                    /* save terminal register information */
+                    type = tmnl_addr_list[i].tmn_type;
+                    p_tmnl_station->tmnl_dev.tmnl_status.is_rgst = true;
+                    p_tmnl_station->tmnl_dev.tmnl_status.device_type = dev_type;
+                    p_tmnl_station->tmnl_dev.address.addr = addr;
+                    p_tmnl_station->tmnl_dev.address.tmn_type = type;
+                    /* sort the terminal double list */
+                    if (-1 == sort_terminal_dblist_node(p)) {
+                        terminal_pro_debug("insert  register node is Err!");
+                    }
+                    /* set system state */
+                    set_terminal_system_state(DISCUSS_STATE, true);
+                    /* increment of register num */
+                    gregister_tmnl_pro.tmn_rgsted++;
+                    /* register success */
+                    bret = true;
+                    /* log message */
+                    if (NULL != gp_log_imp) {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                                          LOGGING_LEVEL_DEBUG,
+                             "[ terminal (0x%016llx-%04x) registed success ]",
+                                           p_tmnl_station->tmnl_dev.entity_id,
+                                        p_tmnl_station->tmnl_dev.address.addr);
+                    }
+                    break;/* end for loop */
+                }
+            }
+        }
+    }
+    return bret; /* return value */
 }
 
-// 开始注册函数
-void terminal_begin_register( void )
-{
+/*Extern function declaration-----------------------------------------------*/
+/*Extern inflight_conference_command_exist declaration......................*/
+extern bool inflight_conference_command_exist(void);
+/*Extern menu_first_display declaration.....................................*/
+extern void menu_first_display(void);
+/*$ system register terminal proccess.......................................*/
+void system_register_terminal_pro(void) {
+    static bool l_resetFlag = true;              /* first reset flag is true */
+    static uint16_t l_norgstIndex = 0;    /* index of terminal address list */
+    static uint16_t l_queryIndex =  0;/* query index in idle register state */
+    volatile register_state regState = gregister_tmnl_pro.rgs_state;
+    bool registing = false; /* one terminal register success */
+    tmnl_pdblist pRe; /* terminal node */
+    uint16_t count_num = 0; /* while count num */
+    uint16_t totalNum; /* all terminal num */
+    uint16_t regNum;/* register num */
+
+    if (reallot_flag) {
+        return;/* reallot time, can't register, return */
+    }
+
+    if (l_resetFlag) {
+        l_resetFlag = false; /* make run once only */
+        over_time_set(WAIT_TMN_RESTART, 10000);/*waiting timeout*/
+    }
+
+    if (over_time_listen(WAIT_TMN_RESTART)
+         && (RGST_WAIT == regState)) {
+         /* send muticast query comand */
+        terminal_query_endstation(0x8000, (uint64_t)0);
+        gregister_tmnl_pro.rgs_state = RGST_QUERY;
+        /* set register handle timeout */
+        over_time_set(TRGST_OTIME_HANDLE, 15000);
+    }
+
+    if (RGST_QUERY == regState) {
+        while (count_num < SYSTEM_TMNL_MAX_NUM) {
+            uint16_t addr = tmnl_addr_list[l_norgstIndex].addr;
+            if (addr != 0xffff) {
+                pRe  = found_terminal_dblist_node_by_addr(addr);
+                if (NULL == pRe) {/* not bind with 1722 target id */
+                    if ((gvregister_recved)
+                          ||(over_time_listen(SIG_TMNL_REGISTER))) {
+                        /* query address */
+                        terminal_query_endstation(addr, (uint64_t)0);
+                        l_norgstIndex++;/* loop to next */
+                        l_norgstIndex %= SYSTEM_TMNL_MAX_NUM;
+                        /* reset register flag */
+                        gvregister_recved = false;
+                        /*at least 150ms*/
+                        over_time_set(SIG_TMNL_REGISTER, 150);
+                        registing = true;
+                        /* terminal register log debug */
+                        if (NULL != gp_log_imp) {
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                                      LOGGING_LEVEL_DEBUG,
+                                 "[Terminal (0x%016llx-%04x) Registing ]",
+                                                              (uint64_t)0,
+                                                                      addr);
+                        }
+                        break;/* register one */
+                    }
+                }
+                else {
+                    if (!pRe->tmnl_dev.tmnl_status.is_rgst) {
+                        /* single terminal register finishing or timeout?*/
+                        if ((gvregister_recved)
+                              ||over_time_listen(SIG_TMNL_REGISTER))
+                        {
+                            /* query address */
+                            terminal_query_endstation(addr, (uint64_t)0);
+                            l_norgstIndex++;/* loop to next */
+                            l_norgstIndex %= SYSTEM_TMNL_MAX_NUM;
+                            /* reset register flag */
+                            gvregister_recved = false;
+                            /*at least 150ms*/
+                            over_time_set(SIG_TMNL_REGISTER, 150);
+                            registing = true;
+                            /* terminal register log debug */
+                            if (NULL != gp_log_imp) {
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                                          LOGGING_LEVEL_DEBUG,
+                                     "[Terminal (0x%016llx-%04x) Registing ]",
+                                                                  (uint64_t)0,
+                                                                        addr);
+                            }
+                            break; /* register one */
+                        }
+                    }
+                }
+            }
+            else {
+                l_norgstIndex++; /* loop to next address */
+                l_norgstIndex %= SYSTEM_TMNL_MAX_NUM;
+            }
+            /* count while run times */
+            count_num++;
+        }
+        /* get total num and the num of registered */
+        totalNum = gregister_tmnl_pro.tmn_total;
+        regNum = gregister_tmnl_pro.tmn_rgsted;
+        if (((count_num >= SYSTEM_TMNL_MAX_NUM)
+                && (!registing)
+                && (totalNum <= regNum))
+             ||(over_time_listen(TRGST_OTIME_HANDLE)))
+        {/* register finished or register timeout */
+            /* debug now */
+            DEBUG_INFO( "total = %d, rgsted = %d",
+                     gregister_tmnl_pro.tmn_total,
+                   gregister_tmnl_pro.tmn_rgsted);
+            /* register idle */
+            gregister_tmnl_pro.rgs_state = RGST_IDLE;
+            /* set system state first */
+            set_terminal_system_state(DISCUSS_STATE, true);
+            menu_first_display();
+            /* system discuss start, to close all mic */
+            terminal_start_discuss(false);
+            /* send main state of terminal */
+            terminal_main_state_send(0, NULL, 0);
+        }
+    }
+    else if ((RGST_IDLE == regState)
+                  && (over_time_listen(QUEUE_REGISTER_TIMEOUT)))
+    {
+        while (count_num < SYSTEM_TMNL_MAX_NUM) {
+            uint16_t addr = tmnl_addr_list[l_queryIndex].addr;
+            if (addr != 0xffff) {
+                pRe = found_terminal_dblist_node_by_addr(addr);
+                if (NULL == pRe) {/* not found? */
+                    /* address is not in dev_terminal_list_guard double list,
+                        should register again */
+                    if ((gvregister_recved)
+                          ||over_time_listen(SIG_TMNL_REGISTER))
+                    {
+                        /* send query command */
+                        terminal_query_endstation(addr, (uint64_t)0);
+                        /* reset register flag */
+                        gvregister_recved = false;
+                        over_time_set(SIG_TMNL_REGISTER, 100);/* 100ms */
+                        l_queryIndex++;/* loop to next */
+                        l_queryIndex %= SYSTEM_TMNL_MAX_NUM;
+                        registing = true;
+                        /* terminal register log debug */
+                        if (NULL != gp_log_imp) {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                                LOGGING_LEVEL_DEBUG,
+                                "[Terminal (0x%016llx-%04x) Registing ]",
+                                (uint64_t)0,
+                                addr);
+                        }
+                        break;/* register one */
+                    }
+                }
+                else {
+                    bool regis = false;
+                    solid_pdblist p = NULL;
+                    if (!pRe->tmnl_dev.tmnl_status.is_rgst) {/*no register? */
+                        regis = true;
+                    }
+
+                    if (!regis && (0 != pRe->tmnl_dev.entity_id)) {
+                        p = search_endtity_node_endpoint_dblist(endpoint_list,
+                                               pRe->tmnl_dev.entity_id);
+                        if (p != NULL) {
+                            if (!p->solid.connect_flag) {/*online?*/
+                                pRe->tmnl_dev.tmnl_status.is_rgst = false;
+                                regis = true;
+                            }
+                        }
+                    }
+
+                    if ((regis)
+                          && ((gvregister_recved)
+                                   || (over_time_listen(SIG_TMNL_REGISTER))))
+                    {
+                        terminal_query_endstation(addr, (uint64_t)0);
+                        gvregister_recved = false; /* wait for register success */
+                        /* interval timeout set */
+                        over_time_set(SIG_TMNL_REGISTER, 100);
+                        l_queryIndex++;/* loop to next */
+                        l_queryIndex %= SYSTEM_TMNL_MAX_NUM;
+                        registing = true;
+                        /* terminal register log debug */
+                        if (NULL != gp_log_imp) {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                                  LOGGING_LEVEL_DEBUG,
+                             "[Terminal (0x%016llx-%04x) Registing ]",
+                                                          (uint64_t)0,
+                                pRe->tmnl_dev.address.addr);
+                        }
+
+                        break;/* register one */
+                    }
+                }
+            }
+
+            l_queryIndex++;/* loop to next */
+            l_queryIndex %= SYSTEM_TMNL_MAX_NUM;
+            count_num++; /* count while run times */
+        }
+
+        if ((count_num >= SYSTEM_TMNL_MAX_NUM)
+              && (!registing)) { /* no terminal register*/
+            over_time_set(QUEUE_REGISTER_TIMEOUT, 3*1000);/*3S*/
+        }
+        else {
+            over_time_set(QUEUE_REGISTER_TIMEOUT, 500);
+        }
+    }
+    else {
+        /* no other else case */
+    }
+}
+/*$ begin to register.......................................................*/
+void terminal_begin_register(void) {
 	gregister_tmnl_pro.rgs_state = RGST_WAIT;
-	over_time_set( WAIT_TMN_RESTART, 500 );
+	over_time_set(WAIT_TMN_RESTART, 500);
 }
+/*$ register system initial.................................................*/
+void terminal_register_init(void) {
+    int i = 0; /* varialable of loop */
+    gregister_tmnl_pro.list_size = SYSTEM_TMNL_MAX_NUM;
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        gregister_tmnl_pro.register_pro_addr_list[i] = 0xffff;
+    }
 
-void terminal_register_init( void )
-{
-	int i = 0;
-	gregister_tmnl_pro.list_size = SYSTEM_TMNL_MAX_NUM;
-	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
-		gregister_tmnl_pro.register_pro_addr_list[i] = 0xffff;
-
-	gregister_tmnl_pro.tmn_rgsted = 0;
-	gregister_tmnl_pro.tmn_total = 0;
-	gregister_tmnl_pro.noregister_head = 0;
-	gregister_tmnl_pro.noregister_trail = 0;
-	gregister_tmnl_pro.rgsted_head = 0;
-	gregister_tmnl_pro.rgsted_trail = 0;
-	gregister_tmnl_pro.register_list_full = false;
-	gregister_tmnl_pro.unregister_list_full = false;
-	gregister_tmnl_pro.rgs_state = RGST_WAIT;
-	gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT; // 等待查询注册
-	gvregister_recved = true;// 程序开始允许第一个终端注册
-	over_time_set(SIG_TMNL_REGISTER, 50);
-	over_time_set(QUEUE_REGISTER_TIMEOUT, 10*1000);// 10S
+    gregister_tmnl_pro.tmn_rgsted = 0;
+    gregister_tmnl_pro.tmn_total = 0;
+    gregister_tmnl_pro.noregister_head = 0;
+    gregister_tmnl_pro.noregister_trail = 0;
+    gregister_tmnl_pro.rgsted_head = 0;
+    gregister_tmnl_pro.rgsted_trail = 0;
+    gregister_tmnl_pro.register_list_full = false;
+    gregister_tmnl_pro.unregister_list_full = false;
+    gregister_tmnl_pro.rgs_state = RGST_WAIT;
+    /* wait for query register */
+    gregister_tmnl_pro.rgs_query_state = QUERY_RTST_WAIT;
+    /* permit to register first */
+    gvregister_recved = true;
+    over_time_set(SIG_TMNL_REGISTER, 50);
+    over_time_set(QUEUE_REGISTER_TIMEOUT, 10*1000);/*10S*/
 }
-/*********************************************
-=注册处理相关函数结束
-**********************************************/
+/*$ terminal_type_save......................................................*/
+void terminal_type_save(uint16_t address, uint8_t tmnl_type, bool is_chman) {
+    int i = 0;/* varialable of loop */
+    tmnl_pdblist p;/* pointer to terminal node */
 
-void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman )
-{
-	int i = 0;
-
-	for( i = 0; i < SYSTEM_TMNL_MAX_NUM; i++ )
-	{
-		if( ( address != 0xffff) && (address == (tmnl_addr_list[i].addr)))
-		{
-			terminal_pro_debug( "terminal(--%04x--) save type = %d ", address, tmnl_type );
-
-			if( (is_chman && ((tmnl_type == TMNL_TYPE_CHM_COMMON) ||(tmnl_type == TMNL_TYPE_CHM_EXCUTE)))\
-				|| (!is_chman && ((tmnl_type == TMNL_TYPE_COMMON_RPRST) ||(tmnl_type == TMNL_TYPE_VIP))))
-			{
-				tmnl_pdblist tmnl_node = found_terminal_dblist_node_by_addr( address );
-				if( tmnl_node !=NULL )
-				{
-					tmnl_node->tmnl_dev.address.tmn_type = tmnl_type;
-				}
-
-				tmnl_addr_list[i].tmn_type = tmnl_type;
-				break;
-			}	
-		}
-	}
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        if ((address != 0xffff)
+               && (address == (tmnl_addr_list[i].addr))) {
+            terminal_pro_debug("terminal(--%04x--) save type = %d ",
+                                                address, tmnl_type);
+            /* check for right type */
+            if (((is_chman)
+                    && ((tmnl_type == TMNL_TYPE_CHM_COMMON)
+                            ||(tmnl_type == TMNL_TYPE_CHM_EXCUTE)))
+                 || ((!is_chman)
+                         && ((tmnl_type == TMNL_TYPE_COMMON_RPRST)
+                                 ||(tmnl_type == TMNL_TYPE_VIP))))
+            {
+                p = found_terminal_dblist_node_by_addr(address);
+                if (p !=NULL) {
+                    p->tmnl_dev.address.tmn_type = tmnl_type;
+                }
+                /* save type */
+                tmnl_addr_list[i].tmn_type = tmnl_type;
+                break; /* break for loop */
+            }	
+        }
+    }
 }
-
-void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len )
+/*$ terminal_trasmint_message.................................................*/
+void terminal_trasmint_message(uint16_t address, uint8_t *p_data,
+                        uint16_t msg_len)
 {
-	assert( p_data );
-	if( p_data == NULL )
-		return;
-	
-	upper_cmpt_terminal_message_report( p_data, msg_len, address );
+    assert(NULL != p_data);
+    if (p_data == NULL) { /* NULL pointer? */
+        return;/* return */
+    }
+    /* report to upper computer */
+    upper_cmpt_terminal_message_report(p_data, msg_len, address);
 }
-
-uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_address_list* p_gaddr_list, uint16_t* new_index)
+/*$ find_new_apply_addr.....................................................*/
+uint16_t find_new_apply_addr(terminal_address_list_pro* p_gallot,
+                     terminal_address_list* p_gaddr_list, uint16_t* new_index)
 {
-	assert( p_gallot && p_gaddr_list && new_index );
-	if( (p_gaddr_list == NULL) || (p_gallot == NULL) || (new_index == NULL))
-		return 0xffff;
-	
-	uint16_t current_index = p_gallot->index;
-	uint16_t temp_addr = 0;
-	uint16_t i = 0;
-	
-	if( current_index >= SYSTEM_TMNL_MAX_NUM || NULL == new_index)
-		return 0xffff;
+    uint16_t temp_addr = 0;/* temp address */
+    uint16_t i = 0;/* loop varialable */
+    uint16_t current_index = p_gallot->index; /* current allot index */
+    /* assert */
+    assert((NULL != p_gallot)
+                && (NULL != p_gaddr_list)
+                && (NULL != new_index));
+    if ((p_gaddr_list == NULL)
+          || (p_gallot == NULL)
+          || (new_index == NULL))
+    {
+        return 0xffff;
+    }
 
-	if( p_gaddr_list[current_index].addr == 0xffff )
-	{
-		temp_addr = p_gallot->addr_start + current_index;
-		*new_index = current_index;
-	}
-	else
-	{
-		i = current_index + 1;
-		temp_addr = p_gaddr_list[i].addr;
-		do
-		{
-			i %= SYSTEM_TMNL_MAX_NUM;
-			if( p_gaddr_list[i].addr == 0xffff)
-			{
-				break;
-			}
+    if ((current_index >= SYSTEM_TMNL_MAX_NUM)
+          || (NULL == new_index))
+    {
+        return 0xffff;
+    }
 
-			i++;
-		}
-		while( i != current_index);
+    if (p_gaddr_list[current_index].addr == 0xffff) {
+        temp_addr = p_gallot->addr_start + current_index;
+        *new_index = current_index;
+    }
+    else {
+        i = current_index + 1;
+        temp_addr = p_gaddr_list[i].addr;
+        do {
+            i %= SYSTEM_TMNL_MAX_NUM;
+            if( p_gaddr_list[i].addr == 0xffff) {
+            break;
+            }
 
-		if( i != current_index)
-		{
-			temp_addr = p_gallot->addr_start + i;
-			*new_index = i;
-		}
-	}
+            i++;
+        }while (i != current_index);
 
-	terminal_pro_debug( "new addr = %04x",  temp_addr );
-	return temp_addr;
+        if (i != current_index) {
+            temp_addr = p_gallot->addr_start + i;
+            *new_index = i;
+        }
+    }
+    return temp_addr; /* return allot address */
 }
 
 /*==================================================
@@ -910,753 +910,739 @@ uint16_t find_new_apply_addr( terminal_address_list_pro* p_gallot, terminal_addr
 **		data_len: recv data length
 **Func: procces conference allot command data sended by terminal
 ******************************************************/
-int terminal_func_allot_address( uint16_t cmd, void *data, uint32_t data_len )
+/*Terminal command function begin-------------------------------------------*/
+/*$ Terminal command function::terminal_func_allot_address..................*/
+int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
+    /* procces conference allot command data sended by terminal */
+    struct endstation_to_host msg; 
+    struct endstation_to_host_special spe_msg;
+    terminal_address_list* p_addr_list = tmnl_addr_list;
+    terminal_address_list_pro* p_allot = &allot_addr_pro;
+    uint16_t new_addr = 0;
+    uint16_t new_index = 0;
+    uint8_t data_buf[DATAMAXLENGTH] = {0};
+    uint16_t send_data_lng = 0;
+
+    conference_end_to_host_frame_read(data, &msg, &spe_msg, 0, sizeof(msg));
+
+    /* save address data */
+    if (msg.cchdr.command_control & COMMAND_TMN_REPLY) {
+        send_data_lng = 0;
+        if (p_addr_list[p_allot->index].addr != 0xffff) {
+            p_allot->renew_flag = 1;
+
+            terminal_pro_debug( "man type = 0x%02x ",
+                     msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN);
+            if (msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN) {
+                p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_CHM_EXCUTE;
+                terminal_pro_debug("tmn type = %d ",
+                    p_addr_list[p_allot->index].tmn_type);
+            }
+            else {
+                p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_COMMON_RPRST;
+                terminal_pro_debug("tmn type = %d ",
+                    p_addr_list[p_allot->index].tmn_type);
+            }
+
+            terminal_address_list tmp_addr;
+            tmp_addr.addr = p_addr_list[p_allot->index].addr;
+            tmp_addr.tmn_type = p_addr_list[p_allot->index].tmn_type;
+            if (1 == terminal_address_list_write_file(addr_file_fd, &tmp_addr, 1)) {
+                /* nomal save,  start register terminal */
+                gregister_tmnl_pro.tmn_total++;
+            }
+        }
+    }
+    else {
+        if ((msg.data == ADDRESS_ALREADY_ALLOT)
+              && (p_allot->renew_flag)
+              && (p_addr_list[p_allot->index].addr != 0xffff))
+        {
+            new_addr = p_addr_list[p_allot->index].addr;
+        }
+        else
+        {
+            new_addr = find_new_apply_addr(p_allot, p_addr_list, &new_index);
+            p_allot->index = new_index;
+            p_allot->renew_flag = 0;
+            p_addr_list[p_allot->index].addr = new_addr;
+        }
+        /* low bytes in the head */
+        data_buf[0] = (uint8_t)((new_addr & 0x00ff) >> 0);
+        data_buf[1] = (uint8_t )((new_addr & 0xff00) >> 8);
+        send_data_lng = sizeof(uint16_t);
+    }
+    /* reply for terminal allot */
+    host_reply_terminal(ALLOCATION, msg.cchdr.address, data_buf, send_data_lng);
+    return 0;
+}
+/*$ Terminal command function::terminal_func_key_action.....................*/
+int terminal_func_key_action(uint16_t cmd, void *data, uint32_t data_len) {
+    struct endstation_to_host msg;               /* host message format */
+    struct endstation_to_host_special spe_msg;    /* special message format */
+    uint16_t addr;     /*address of terminal*/
+    uint8_t key_num; /* terminal key number */
+    uint8_t key_value;/* terminal key value */
+    uint8_t tmnl_state;  /* terminal status */
+    uint8_t sys_state;         /* sys state */
+    uint8_t reply;     /* the flag of reply */
+    uint8_t tType;         /* terminal type */
+    tmnl_pdblist p;        /* terminal node */
+    /* format message to msg or spe_msg */
+    conference_end_to_host_frame_read(data, &msg, &spe_msg, 0, sizeof(msg));
+    /* get address */
+    addr = msg.cchdr.address & TMN_ADDR_MASK;
+    /* get key num */
+    key_num = KEY_ACTION_KEY_NUM(msg.data);
+    /* get key value */
+    key_value = KEY_ACTION_KEY_VALUE(msg.data);
+    /* get terminal state */
+    tmnl_state = KEY_ACTION_STATE_VALUE(msg.data);
+    /* sys state get */
+    sys_state = get_sys_state();
+    /* get reply flag */
+    reply = msg.cchdr.command_control & COMMAND_TMN_REPLY;
+    /* debug info */
+    terminal_pro_debug("key_num = %d, key_value = %d,"
+                    "tmnl_state = %d, sys_state = %d",key_num,
+                            key_value, tmnl_state, sys_state);
+    if (reply == COMMAND_TMN_REPLY) {/* only not reply message */
+        terminal_pro_debug("key action command not valid!");
+        return -1; /* error value */
+    }
+
+    switch (sys_state) {
+        case SIGN_STATE:
+        case VOTE_STATE:
+        case GRADE_STATE:
+        case ELECT_STATE: {
+            terminal_vote(addr, key_num, key_value, tmnl_state, msg.data);
+            terminal_key_speak(addr, key_num, key_value,
+                                                        tmnl_state, msg.data);
+            terminal_key_action_chman_interpose(addr, key_num,
+                                             key_value, tmnl_state, msg.data);
+            break;
+        }
+        case DISCUSS_STATE: {
+            /* terminal type */
+            tType = msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN;
+            /* proccess key to discuccess */
+            terminal_key_discuccess(addr, key_num, key_value,
+                                    tmnl_state, msg.data);
+            /* only reply to chairman */
+            terminal_chairman_apply_reply(tType, addr, key_num,
+                                key_value, tmnl_state, msg.data);
+            /* proccess chairman interpose */
+            terminal_key_action_chman_interpose(addr, key_num, key_value,
+                                        tmnl_state, msg.data);
+            break;
+        }
+        case INTERPOSE_STATE: {
+            /* proccess chairman interpose */
+            terminal_key_action_chman_interpose(addr, key_num,
+                                             key_value, tmnl_state, msg.data);
+            break;
+        }
+        case CAMERA_PRESET: {
+            p = found_terminal_dblist_node_by_addr(addr);
+            if (p != NULL) {
+                terminal_key_action_host_common_reply(msg.data, p);
+                terminal_key_preset(0, addr, tmnl_state, key_num, key_value);
+            }
+            break;
+        }
+        default: {
+            /* will never come in this case */
+            break;
+        }
+    }
+    return 0;/* default value */
+}
+/*$ Terminal command function::terminal_func_chairman_control...............*/
+int terminal_func_chairman_control(uint16_t cmd,
+                                       void *data, uint32_t data_len)
 {
-	struct endstation_to_host msg; 
-	struct endstation_to_host_special spe_msg;
-	terminal_address_list* p_addr_list = tmnl_addr_list;
-	terminal_address_list_pro* p_allot = &allot_addr_pro;
-	uint16_t new_addr = 0;
-	uint16_t new_index = 0;
-	uint8_t data_buf[DATAMAXLENGTH] = {0};
-	uint16_t send_data_lng = 0;
-	
-	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
-	
-	// 保存地址数据
-	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
-	{
-		send_data_lng = 0;
-		if( p_addr_list[p_allot->index].addr != 0xffff)
-		{
-			p_allot->renew_flag = 1;
+    struct endstation_to_host msg; /* message format */
+    struct endstation_to_host_special spe_msg; /* special message format */
+    uint16_t addr; /* addresss of termianl */
+    uint8_t sign_value; /* sign value */
+    uint8_t chair_opt; /* chairman option */
+    uint8_t sign_flag; /* sign flag */
+    tmnl_pdblist p, tmp; /* terminal node */
+    thost_system_set set_sys; /*system profile format*/
 
-			terminal_pro_debug( "man type = 0x%02x ", msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN );
-			if( msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN )
-			{
-				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_CHM_EXCUTE;
-				terminal_pro_debug( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
-			}
-			else
-			{
-				p_addr_list[p_allot->index].tmn_type = TMNL_TYPE_COMMON_RPRST;
-				terminal_pro_debug( "tmn type = %d ", p_addr_list[p_allot->index].tmn_type );
-			}
+    /* set temp profile */
+    conference_end_to_host_frame_read(data, &msg, &spe_msg, 0, sizeof(msg));
+    addr = msg.cchdr.address & TMN_ADDR_MASK;
+    chair_opt = msg.data&CHAIRMAN_CONTROL_MEET_MASK;
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
+    sign_value = 0; /* error or  */
 
-			terminal_address_list tmp_addr;
-			tmp_addr.addr = p_addr_list[p_allot->index].addr;
-			tmp_addr.tmn_type = p_addr_list[p_allot->index].tmn_type;
-			if( 1 == terminal_address_list_write_file( addr_file_fd, &tmp_addr, 1 ) )
-			{// 正常保存，则开始注册终端,用于有终端链表但没有注册的节点
-				gregister_tmnl_pro.tmn_total++;
-#if 0
-				if (terminal_register_pro_address_list_save( tmp_addr.addr, false ) )
-				{
-					//terminal_begin_register();
-				}
-				else
-				{
-					terminal_pro_debug( "allot address register Not begin!new allot address = --0x%04x--", tmp_addr.addr );
-				}
-#endif
-			}
-		}
-	}
-	else
-	{
-		if( (msg.data == ADDRESS_ALREADY_ALLOT) && (p_allot->renew_flag) && (p_addr_list[p_allot->index].addr != 0xffff))
-		{
-			new_addr = p_addr_list[p_allot->index].addr;
-		}
-		else
-		{
-			new_addr = find_new_apply_addr( p_allot, p_addr_list, &new_index );
-			p_allot->index = new_index;
-			p_allot->renew_flag = 0;
-			p_addr_list[p_allot->index].addr = new_addr;
-		}
+    /* found terminal node basing on current node */
+    tmp = found_terminal_dblist_node_by_addr(addr);
+    if (tmp == NULL) {
+        terminal_pro_debug("not found chairman conntrol address!");
+        return -1;
+    }
 
-		data_buf[0] = (uint8_t)((new_addr & 0x00ff) >> 0);// 低字节在前
-		data_buf[1] = (uint8_t )((new_addr & 0xff00) >> 8);
-		send_data_lng = sizeof(uint16_t);
-	}
+    if (chair_opt != CHM_BEGIN_VOTE) {
+        terminal_chairman_control_meeting(tmp->tmnl_dev.entity_id,
+                    addr, sign_value);
+    }
 
-	host_reply_terminal( ALLOCATION, msg.cchdr.address, data_buf, send_data_lng );
+    switch (chair_opt) {
+        case CHM_BEGIN_SIGN: {
+            gset_sys.sign_type = KEY_SIGN_IN;
+            terminal_chman_control_start_sign_in(KEY_SIGN_IN, 10);
+            break;
+        }
+        case CHM_END_SIGN: {
+            /* ending sign */
+            terminal_end_sign(0, NULL, 0);
+            break;
+        }
+        case CHM_BEGIN_VOTE: {
+            if (gtmnl_signstate) { /* sign proccessed */
+                terminal_chairman_control_meeting(tmp->tmnl_dev.entity_id,
+                                addr, sign_value);
+                terminal_chman_control_begin_vote(VOTE_MODE, false,
+                                &sign_flag);/* last key value */
+            }
+            else {
+                sign_value = 1; /* not sign */
+                terminal_chairman_control_meeting(tmp->tmnl_dev.entity_id,
+                                                addr, sign_value);
+            }
+            break;
+        }
+        case CHM_END_VOTE: {
+            /* sending command of end voting */
+            terminal_end_vote(0, NULL, 0);
+            /* set terminal type */
+            gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0;
+            gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+            terminal_state_set_base_type(BRDCST_ALL,
+                        gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+            terminal_state_all_copy_from_common();
+            /*set lcd */
+            terminal_lcd_display_num_send(BRDCST_ALL,
+                        LCD_OPTION_CLEAR, VOTE_INTERFACE);
+            /* set led */
+            terminal_led_set_save(BRDCST_ALL, TLED_KEY2, TLED_OFF);
+            terminal_led_set_save(BRDCST_ALL, TLED_KEY3, TLED_OFF);
+            terminal_led_set_save(BRDCST_ALL, TLED_KEY4, TLED_OFF);
+            fterminal_led_set_send(BRDCST_ALL);
+            /*send voting result */
+            terminal_broadcast_end_vote_result(msg.data&0x10?BRDCST_ALL:addr);
+            break;
+        }
+        case CHM_SUSPEND_VOTE: {
+            /* pause voting */
+            terminal_pause_vote(0, NULL, 0);
+            break;
+        }
+        case CHM_RECOVER_VOTE: {
+            /* recover voting */
+            terminal_regain_vote(0, NULL, 0);
+            break;
+        }
+        case CHM_RETURN_DISCUSS: {
+            /* return to discuss */
+            set_terminal_system_state(DISCUSS_STATE, true);
+            terminal_start_discuss(false);
+            break;
+        }
+        case CHM_CLOSE_ALL_MIC: {
+            assert(dev_terminal_list_guard);
+            if (dev_terminal_list_guard == NULL) {
+                return -1;
+            }
+            /* close all chairman terminal */
+            for (p = dev_terminal_list_guard->next;
+                  p != dev_terminal_list_guard;
+                  p = p->next)
+            {
+                if ((p->tmnl_dev.address.addr != 0xffff)
+                      && (p->tmnl_dev.tmnl_status.is_rgst)
+                      && (p->tmnl_dev.address.tmn_type ==\
+                                    TMNL_TYPE_COMMON_RPRST)
+                      && (p->tmnl_dev.tmnl_status.mic_state \
+                                             != MIC_COLSE_STATUS))
+                {
+                    p->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
+                    trans_model_unit_disconnect(p->tmnl_dev.entity_id, p);
+                    terminal_speak_track(p->tmnl_dev.address.addr, false);
+                }
+            }
 
-	return 0;
+            cmpt_miscrophone_status_list();
+            gdisc_flags.speak_limit_num = 0;
+            gdisc_flags.apply_num = 0;
+            gdisc_flags.currect_first_index = gdisc_flags.apply_limit;
+            terminal_main_state_send(0, NULL, 0);
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+    return 0; /* default return value */
+}
+/*$ Terminal command function::terminal_func_send_main_state................*/
+int terminal_func_send_main_state(uint16_t cmd,
+                            void *data,uint32_t data_len)
+{
+    terminal_main_state_send(0, NULL, 0);
+    return 0;
+}
+/*$ Terminal command function::terminal_func_cmd_event......................*/
+int terminal_func_cmd_event(uint16_t cmd, void *data, uint32_t data_len) {
+    struct endstation_to_host msg;
+    struct endstation_to_host_special spe_msg;
+    conference_end_to_host_frame_read(data, &msg, &spe_msg, 0, sizeof(msg));
+    uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
+    thost_system_set set_sys; /* system profile format */
+    tmnl_pdblist p; /* terminal node */
+    uint8_t dis_mode; /* discuss mode */
+    thost_sys_state sys_state; /* system state */
+    uint8_t special_event; /* special message data */
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
+
+    /* reply termianl */
+    if (msg.cchdr.command_control & COMMAND_TMN_REPLY) {
+        return -1;
+    }
+
+    p = found_terminal_dblist_node_by_addr(addr);
+    if (p == NULL) {
+        return -1;
+    }
+
+    /* reply special event for terminal */
+    terminal_endstation_special_event_reply(p->tmnl_dev.entity_id, addr);
+
+    special_event = msg.data;
+    if (special_event == SIGN_IN_SPECIAL_EVENT) {/* terminal sign */
+        terminal_sign_in_special_event(p);
+        sys_state = get_terminal_system_state();
+        if (DISCUSS_STATE == sys_state.host_state) {
+            dis_mode = set_sys.discuss_mode;
+            if ((APPLY_MODE == dis_mode)
+                  && (p->tmnl_dev.address.tmn_type ==\
+                                        TMNL_TYPE_CHM_EXCUTE))
+            {
+                terminal_chairman_apply_type_set(addr);
+            }
+            else {
+                terminal_state_set_base_type(addr,
+                        gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+            }
+        }
+    }
+    return 0;/* default return value */
+}
+/*$ Terminal command function::terminal_mic_auto_close......................*/
+int terminal_mic_auto_close(uint16_t cmd, void *data, uint32_t data_len) {
+    uint8_t auto_close = 0; /* auto close flag */
+    tmnl_pdblist p; /* terminal node */
+    int i; /* loop varialable */
+    thost_system_set set_sys; /* temp varialable of system profile setting */
+    uint64_t id; /* terminal 1722.1 target id */
+    uint16_t addr; /* address of terminal */
+    /* set temp variabable */
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
+    /*set state of micphone */
+    auto_close = set_sys.auto_close;
+    /* set state operation */
+    for (i = 0; i < TMNL_TYPE_NUM; i++) {
+        gtmnl_state_opt[i].auto_close = auto_close?1:0;
+        gtmnl_state_opt[i].MicClose = MIC_CLOSE;
+    }
+    /* close all micphone */
+    p = dev_terminal_list_guard->next;
+    for (; p != dev_terminal_list_guard; p = p->next) {
+        id = p->tmnl_dev.entity_id;
+        if ((p->tmnl_dev.tmnl_status.is_rgst)
+              && (trans_model_unit_is_connected(id)))
+        {
+            addr = p->tmnl_dev.address.addr;
+            /* check and disconnect terminal */
+            if (0 == trans_model_unit_disconnect(id, p)) {
+                /* camera track */
+                terminal_speak_track(addr, false);
+            }
+        }
+    }
+    /* send main state */
+    terminal_main_state_send(0, NULL, 0);
+    return 0; /* default value */
+}
+/*$ Terminal command function::terminal_main_state_send.....................*/
+int terminal_main_state_send(uint16_t cmd, void *data, uint32_t data_len) {
+    tmnl_main_state_send host_main_state;/* main state */
+    uint8_t spk_num = 0;               /* speak number */
+    uint8_t spk_common_num = 0; /* speak common number */
+    uint8_t apply_num = 0;                /* apply num */
+    tmnl_pdblist p, pGuard;	          /* terminal node */
+    thost_system_set set_sys;  /* temp varialable of system profile setting */
+
+    terminal_pro_debug("conference_stype = %d",
+                     host_main_state.conference_stype);
+    /* set guard node */
+    pGuard = dev_terminal_list_guard;
+    assert(NULL != pGuard);
+    if (pGuard == NULL) { /* no terminal */
+        return -1;
+    }
+
+    for (p = pGuard->next; p != pGuard; p = p->next) {
+        if ((p->tmnl_dev.address.addr != 0xffff)
+              && (p->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
+        {
+            spk_num++;
+        }
+
+        /* calculate the number of speaking person who is not chairman */
+        if ((p->tmnl_dev.address.addr != 0xffff)
+              && (p->tmnl_dev.tmnl_status.is_rgst)
+              && (p->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST)
+              && (p->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
+        {
+            spk_common_num++;
+        }
+
+        /* calculate the number of speaking person who is appling */
+        if ((p->tmnl_dev.address.addr != 0xffff)
+              && (p->tmnl_dev.tmnl_status.is_rgst)
+              && ((p->tmnl_dev.tmnl_status.mic_state ==\
+                                                MIC_FIRST_APPLY_STATUS)
+                      ||(p->tmnl_dev.tmnl_status.mic_state ==\
+                                    MIC_OTHER_APPLY_STATUS)))
+        {
+            apply_num++;
+        }
+    }
+
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
+    host_main_state.unit = gregister_tmnl_pro.tmn_total;
+    host_main_state.camera_follow = set_sys.camara_track ? 1 : 0;
+    host_main_state.chm_first = set_sys.temp_close ? 1 : 0;
+    /* set low 3bit change intime 2016-06-28 */
+    host_main_state.conference_stype = (set_sys.discuss_mode&0x07);
+    /* set the number of limited speak */
+    host_main_state.limit = set_sys.speak_limit;
+    /* set the number of limited apply */
+    host_main_state.apply_set = set_sys.apply_limit;
+    /* set the number of speaking currently */
+    host_main_state.spk_num = spk_num;
+    host_main_state.apply = gdisc_flags.apply_num;
+    /* muticastor to all terminal */
+    terminal_host_send_state(BRDCST_1722_ALL, host_main_state);
+    return 0;/* default number */
 }
 
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/29
-**Name:terminal_func_key_action
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces conference key_action command data sended by terminal
-******************************************************/
-int terminal_func_key_action( uint16_t cmd, void *data, uint32_t data_len )
-{
-	struct endstation_to_host msg;
-	struct endstation_to_host_special spe_msg;
-	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
-	tmnl_pdblist cam_node = NULL;
-	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
-	uint8_t key_num = KEY_ACTION_KEY_NUM( msg.data );
-	uint8_t key_value = KEY_ACTION_KEY_VALUE( msg.data );
-	uint8_t tmnl_state = KEY_ACTION_STATE_VALUE( msg.data );
-	uint8_t sys_state = get_sys_state();
-	terminal_pro_debug( "key_num = %d, key_value = %d, tmnl_state = %d, sys_state = %d", key_num, key_value, tmnl_state, sys_state );
+/*terminal_lcd_display_num_send.............................................*/
+int terminal_lcd_display_num_send(uint16_t addr, uint8_t display_opt, uint8_t display_num) {
+    tmnl_send_end_lcd_display lcd_dis;
+    lcd_dis.opt = display_opt;
+    lcd_dis.num = display_num;
 
-	if( (msg.cchdr.command_control & COMMAND_TMN_REPLY) == COMMAND_TMN_REPLY )
-	{
-		terminal_pro_debug( "key action command not valid!" );
-		return -1;
-	}
-	
-	switch( sys_state )
-	{
-		case SIGN_STATE:
-		case VOTE_STATE:
-		case GRADE_STATE:
-		case ELECT_STATE:
-			terminal_vote( addr, key_num, key_value, tmnl_state, msg.data );
-			terminal_key_speak( addr, key_num, key_value, tmnl_state, msg.data );
-			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
-			break;
-		case DISCUSS_STATE:
-			terminal_key_discuccess( addr, key_num, key_value, tmnl_state, msg.data );
-			terminal_chairman_apply_reply( msg.cchdr.command_control & COMMAND_TMN_CHAIRMAN,addr, key_num, key_value, tmnl_state, msg.data);
-			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
-			break;
-		case INTERPOSE_STATE:
-			terminal_key_action_chman_interpose( addr, key_num, key_value, tmnl_state, msg.data );
-			break;
-		case CAMERA_PRESET:
-			cam_node = found_terminal_dblist_node_by_addr( addr );
-			if( cam_node != NULL )
-			{
-				terminal_key_action_host_common_reply( msg.data, cam_node );
-				terminal_key_preset( 0, addr, tmnl_state, key_num, key_value );
-			}
-			break;
-		default:
-			break;
-	}
-	
-	return 0;
+    if (display_opt == LCD_OPTION_DISPLAY) {
+        glcd_num = display_num; /* set lcd number */
+    }
+
+    terminal_send_end_lcd_display(0, addr, lcd_dis);
+
+    return 0; /* return success */
 }
-
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/29
-**Name:terminal_func_chairman_control
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces conference chairman control command data sended by terminal
-******************************************************/
-int terminal_func_chairman_control( uint16_t cmd, void *data, uint32_t data_len )
-{
-	struct endstation_to_host msg;
-	struct endstation_to_host_special spe_msg;
-	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
-	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
-	uint8_t sign_value = 0;
-	uint8_t chair_opt = msg.data&CHAIRMAN_CONTROL_MEET_MASK;
-	uint8_t sign_flag = 0;
-	tmnl_pdblist query_tmp = NULL;
-	thost_system_set set_sys; // 系统配置文件的格式
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	
-	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
-	if( tmp == NULL )
-	{
-		terminal_pro_debug( "not found chairman conntrol address!" );
-		return -1;
-	}
-
-	if(  chair_opt != CHM_BEGIN_VOTE )
-	{
-		terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
-	}
-
-	switch( chair_opt )
-	{
-		case CHM_BEGIN_SIGN:
-			gset_sys.sign_type = KEY_SIGN_IN;
-			terminal_chman_control_start_sign_in( KEY_SIGN_IN, 10 );
-			break;
-		case CHM_END_SIGN:
-			terminal_end_sign( 0, NULL, 0 );
-			break;
-		case CHM_BEGIN_VOTE:
-			if( gtmnl_signstate ) // 系统已经签到
-			{
-				terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
-				terminal_chman_control_begin_vote( VOTE_MODE, false, &sign_flag );// 末次按键有效
-			}
-			else
-			{
-				sign_value = 1; // 未签到
-				terminal_chairman_control_meeting( tmp->tmnl_dev.entity_id, addr, sign_value );
-			}
-			break;
-		case CHM_END_VOTE:
-			terminal_end_vote( 0, NULL, 0 );
-
-			// 设置终端的状态
-			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0; 
-			gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
-			terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST] );
-			terminal_state_all_copy_from_common();
-
-			// 设置lcd
-			terminal_lcd_display_num_send( BRDCST_ALL, LCD_OPTION_CLEAR, VOTE_INTERFACE );
-			// 设置led灯
-			terminal_led_set_save( BRDCST_ALL, TLED_KEY2, TLED_OFF );
-			terminal_led_set_save( BRDCST_ALL, TLED_KEY3, TLED_OFF );
-			terminal_led_set_save( BRDCST_ALL, TLED_KEY4, TLED_OFF );
-			fterminal_led_set_send( BRDCST_ALL );
-
-			// 发送表决结果
-			terminal_broadcast_end_vote_result( msg.data&0x10?BRDCST_ALL: addr);
-			
-			break;
-		case CHM_SUSPEND_VOTE:
-			terminal_pause_vote( 0, NULL, 0 );
-			break;
-		case CHM_RECOVER_VOTE:
-			terminal_regain_vote( 0, NULL, 0 );
-			break;
-		case CHM_RETURN_DISCUSS:
-			set_terminal_system_state( DISCUSS_STATE, true );
-			terminal_start_discuss( false );
-			break;
-		case CHM_CLOSE_ALL_MIC:// 关闭所有普通代表机
-			assert( dev_terminal_list_guard );
-			if( dev_terminal_list_guard == NULL )
-				return -1;
-			
-			for( query_tmp = dev_terminal_list_guard->next; query_tmp != dev_terminal_list_guard; query_tmp = query_tmp->next )
-			{
-				if( (query_tmp->tmnl_dev.address.addr != 0xffff) && \
-					query_tmp->tmnl_dev.tmnl_status.is_rgst && \
-					query_tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST &&\
-					(query_tmp->tmnl_dev.tmnl_status.mic_state != MIC_COLSE_STATUS) )
-				{
-					query_tmp->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
-					trans_model_unit_disconnect( query_tmp->tmnl_dev.entity_id, query_tmp );
-					terminal_speak_track(query_tmp->tmnl_dev.address.addr, false );
-				}
-			}
-			
-			//terminal_mic_state_set( MIC_COLSE_STATUS, BRDCST_MEM,BRDCST_1722_ALL, false, NULL );
-			cmpt_miscrophone_status_list();
-			gdisc_flags.speak_limit_num = 0;
-			gdisc_flags.apply_num = 0;
-			gdisc_flags.currect_first_index = gdisc_flags.apply_limit;
-			terminal_main_state_send( 0, NULL, 0 );
-			break;
-		default:
-			break;
-	}
-
-	return 0;
+/*$ Terminal command function::terminal_pause_vote..........................*/
+int terminal_pause_vote(uint16_t cmd, void *data, uint32_t data_len) {
+    /* set voting  pause command to all terminal */
+    terminal_option_endpoint(BRDCST_1722_ALL,
+            CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_SUSPEND_VOTE);
+    return 0; /* return success */
 }
-
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/29
-**Name:terminal_func_send_main_state
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces conference send main state command data sended by terminal
-******************************************************/
-int terminal_func_send_main_state( uint16_t cmd, void *data, uint32_t data_len )
-{
-	terminal_main_state_send( 0, NULL, 0 );
-	
-	return 0;
+/*$ Terminal command function::terminal_regain_vote.........................*/
+int terminal_regain_vote(uint16_t cmd, void *data, uint32_t data_len) {
+    /* set voting regain command to all terminal */
+    terminal_option_endpoint(BRDCST_1722_ALL,
+            CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_RECOVER_VOTE);
+    return 0;/* return success */
 }
-
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/29
-**Name:terminal_func_cmd_event
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces conference special event command data sended by terminal
-******************************************************/
-int terminal_func_cmd_event( uint16_t cmd, void *data, uint32_t data_len )
+/*$ Terminal command function::terminal_system_discuss_mode_set.............*/
+int terminal_system_discuss_mode_set(uint16_t cmd, void *data,
+                                                        uint32_t data_len)
 {
-	struct endstation_to_host msg;
-	struct endstation_to_host_special spe_msg;
-	conference_end_to_host_frame_read( data, &msg, &spe_msg, 0, sizeof(msg) );
-	uint16_t addr = msg.cchdr.address & TMN_ADDR_MASK;
-	thost_system_set set_sys; // 系统配置文件的格式
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	
-	/*reply termianl*/
-	if( msg.cchdr.command_control & COMMAND_TMN_REPLY )
-	{
-		return -1;
-	}
+    uint8_t dis_mode;          /* discuss mode */
+    tmnl_pdblist p; /*pointer to terminal node */
+    assert((data != NULL)
+                && (dev_terminal_list_guard != NULL));
+    if ((data == NULL)
+          || (dev_terminal_list_guard == NULL))
+    {   
+         return -1;
+    }
+    /*set discuss mode */
+    dis_mode = *((uint8_t*)data);
+    /* initail speak track pro */
+    terminal_speak_track_pro_init();
+    gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
+    gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
+    gdisc_flags.apply_num = 0;
+    gdisc_flags.speak_limit_num = 0;
 
-	tmnl_pdblist tmp = found_terminal_dblist_node_by_addr( addr );
-	if( tmp == NULL )
-	{
-		return -1;
-	}
+    if (APPLY_MODE == dis_mode) {
+        terminal_chairman_apply_type_set(BRDCST_EXE);
+    }
+    else {
+        terminal_chairman_apply_type_clear(BRDCST_EXE);
+    }
 
-	terminal_endstation_special_event_reply( tmp->tmnl_dev.entity_id, addr);
-	
-	uint8_t special_event = msg.data;
-	if( special_event == SIGN_IN_SPECIAL_EVENT ) // 终端签到
-	{
-		terminal_sign_in_special_event( tmp );
-		thost_sys_state sys_state = get_terminal_system_state();
-		if( DISCUSS_STATE == sys_state.host_state )
-		{
-			uint8_t dis_mode = set_sys.discuss_mode;
-			
-			if( APPLY_MODE == dis_mode  && (tmp->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE))
-			{
-				terminal_chairman_apply_type_set( addr );
-			}
-			else
-			{
-				terminal_state_set_base_type( addr, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
-			}
-		}
-	}
-	
-	return 0;
+    /* initial pointer */
+    p = dev_terminal_list_guard;
+    for (p = p->next; p != dev_terminal_list_guard; p = p->next) {
+        if ((p->tmnl_dev.tmnl_status.is_rgst)
+              && trans_model_unit_is_connected(p->tmnl_dev.entity_id))
+            {
+            if (0 ==trans_model_unit_disconnect(p->tmnl_dev.entity_id, p)) {
+                terminal_speak_track(p->tmnl_dev.address.addr, false);
+            }
+        }
+    }
+    /* send main state */
+    terminal_main_state_send(0, NULL, 0);
+    return 0;/* return success */
 }
+/*$ Terminal command function::terminal_speak_limit_num_set.................*/
+int terminal_speak_limit_num_set(uint16_t cmd, void *data,
+                                                uint32_t data_len)
+{ /* open apply list terminal because of speaking
+        limit number reset bigger than before */
+    thost_system_set ss; /* system setting */
+    uint16_t curAddr; /* current address */
+    tmnl_pdblist p; /* pointer to termianl node */
+    uint64_t id; /* 1722.1 taget id */
+    memcpy(&ss, &gset_sys, sizeof(thost_system_set));
+    while ((ss.speak_limit > gdisc_flags.limit_num)
+               && (ss.discuss_mode == LIMIT_MODE)
+               && (gdisc_flags.apply_num > 0))
+    {
+        curAddr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
+        if (addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+                &gdisc_flags.apply_num, gdisc_flags.currect_first_index))
+        {/* open next apply terminal */
+            p = found_terminal_dblist_node_by_addr(curAddr);
+            if (p != NULL) {
+                id = p->tmnl_dev.entity_id;
+                if (!trans_model_unit_is_connected(id)) {
+                    if (0 == trans_model_unit_connect(id, p)){
+                        /* connect success */
+                        gdisc_flags.speak_limit_num++;
+                        terminal_apply_list_first_speak(p);
+                    }
+                }
+            }
+            else {
+                terminal_pro_debug(" no such tmnl dblist node!");
+            }
+        }
+        else {
+            gdisc_flags.currect_first_index = 0;
+        }
 
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/29
-**Name:terminal_mic_auto_close
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces mic_auto_close system set command
-******************************************************/
-int terminal_mic_auto_close( uint16_t cmd, void *data, uint32_t data_len )
-{
-	uint8_t auto_close = 0;
-	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
-	int i = 0;
-	thost_system_set set_sys;
-	
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	
-	/* 设置终端的麦克风状态*/
-	auto_close = set_sys.auto_close;
-	for( i = 0; i < TMNL_TYPE_NUM; i++)
-	{
-		gtmnl_state_opt[i].auto_close = auto_close?1:0;
-		gtmnl_state_opt[i].MicClose = MIC_CLOSE;
-	}
-	
-	/*关闭所有麦克风，这里需要一个机制，即通道分配机制与麦克风设置机制(这时未实现10/29), 使用连接表管理系统的麦克风的连接状态，暂时未考虑同步的问题(11/4)*/
-	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
-	{
-		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && trans_model_unit_is_connected(tmnl_node->tmnl_dev.entity_id))
-		{
-			if (0 ==trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node ))
-				terminal_speak_track(tmnl_node->tmnl_dev.address.addr, false );			
-		}
-	}
+        gdisc_flags.limit_num++;
+    }
 
-	/*发送主机状态*/
-	terminal_main_state_send( 0, NULL, 0 );
-
-	return 0;
+    /* set new limit speak number */
+    gdisc_flags.limit_num = ss.speak_limit;
+    /* main state send */
+    terminal_main_state_send(0, NULL, 0);
+    /* return success */
+    return 0;
 }
-
-/*主机发送状态, */
-int terminal_main_state_send( uint16_t cmd, void *data, uint32_t data_len )
+/*$ Terminal command function::terminal_apply_limit_num_set.................*/
+int terminal_apply_limit_num_set(uint16_t cmd, void *data,
+                                                    uint32_t data_len)
 {
-	tmnl_pdblist p_tmnl_list = NULL;	
-	tmnl_main_state_send host_main_state;
-	uint8_t spk_num = 0;
-	uint8_t spk_common_num = 0;
-	uint8_t apply_num = 0;
-	thost_system_set set_sys; // 系统配置文件的格式
-
-	terminal_pro_debug("conference_stype = %d", host_main_state.conference_stype);
-	assert( dev_terminal_list_guard );
-	if( dev_terminal_list_guard == NULL )
-		return -1;	
-
-	for( p_tmnl_list = dev_terminal_list_guard->next;p_tmnl_list != dev_terminal_list_guard; p_tmnl_list = p_tmnl_list->next )
-	{
-		if( p_tmnl_list->tmnl_dev.address.addr != 0xffff && (p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
-			spk_num++;
-
-		// 计算非主席发言人数
-		if ( p_tmnl_list->tmnl_dev.address.addr != 0xffff && \
-			p_tmnl_list->tmnl_dev.tmnl_status.is_rgst &&\
-			p_tmnl_list->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST\
-			&&(p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS))
-		{
-			spk_common_num++;
-		}
-
-		// 计算非主席发言人数
-		if ( p_tmnl_list->tmnl_dev.address.addr != 0xffff && \
-			p_tmnl_list->tmnl_dev.tmnl_status.is_rgst &&\
-			(p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_FIRST_APPLY_STATUS||\
-			p_tmnl_list->tmnl_dev.tmnl_status.mic_state == MIC_OTHER_APPLY_STATUS))
-		{
-			apply_num++;
-		}
-
-		// 计算申请人数
-	}
-
-#if 0
-	if (gdisc_flags.speak_limit_num != spk_common_num)
-		gdisc_flags.speak_limit_num = spk_common_num;
-
-	if (gdisc_flags.apply_num != apply_num)
-		gdisc_flags.apply_num = apply_num;
-#endif
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	host_main_state.unit = gregister_tmnl_pro.tmn_total;
-	host_main_state.camera_follow = set_sys.camara_track ? 1 : 0;
-	host_main_state.chm_first = set_sys.temp_close ? 1 : 0;
-	host_main_state.conference_stype = (set_sys.discuss_mode&0x07); // low 3bit change intime 2016-06-28
-	host_main_state.limit = set_sys.speak_limit; 		// 讲话人数上限
-	host_main_state.apply_set = set_sys.apply_limit;	// 申请人数上限
-	host_main_state.spk_num = spk_num; // 当前讲话人数
-	host_main_state.apply = gdisc_flags.apply_num;
-
-	terminal_host_send_state( BRDCST_1722_ALL, host_main_state ); // target id is 0
-
-	return 0;
+    uint8_t alb; /* apply limit number */
+    assert(NULL != data);
+    if (NULL == data) {
+        return -1; /* return failed */
+    }
+    /* setting after database update */
+    alb = *((uint8_t*)data);
+    gdisc_flags.apply_limit = alb;
+    gset_sys.apply_limit = alb;
+    /* main state send */
+    terminal_main_state_send(0, NULL, 0);
+    (void)cmd; /* avoid warning */
+    (void)data_len; /* avoid warning */
+    /* return success */
+    return 0;
 }
-
-/*终端发送显示屏号，可以继续完善11/2*/
-int terminal_lcd_display_num_send( uint16_t addr, uint8_t display_opt, uint8_t display_num )
+/*$ Terminal command function::terminal_limit_speak_time_set................*/
+int terminal_limit_speak_time_set(uint16_t cmd, void *data,
+                                                    uint32_t data_len)
 {
-	tmnl_send_end_lcd_display lcd_dis;
-	lcd_dis.opt = display_opt;
-	lcd_dis.num = display_num;
+    tmnl_limit_spk_time spk_time; /* struct speak limit time */
+    thost_system_set ss; /* system setting */
+    uint16_t nolimit_addr; /* no limit address */
+    uint16_t limit_addr; /* limit address */
+    tmnl_limit_spk_time nolimit_spk_time; /* struct no speak limit time */
+    
+    memcpy(&ss, &gset_sys, sizeof(thost_system_set));
+    spk_time.limit_time = ss.spk_limtime;
+    speak_limit_time = (uint8_t)spk_time.limit_time;
+    /* no limit time? */
+    if(!ss.spk_limtime) {
+        terminal_limit_spk_time(0, BRDCST_ALL, spk_time);
+    }
+    else {
+        nolimit_addr = 0;
+        limit_addr = BRDCST_MEM; /* to all common */
 
-	if( display_opt == LCD_OPTION_DISPLAY )
-	{
-		glcd_num = display_num;
-	}
-	
-	terminal_send_end_lcd_display( 0, addr, lcd_dis );
-	
-	return 0;
+        if (ss.vip_limitime) {
+            /* vip limit time */
+            limit_addr |= BRDCST_VIP;
+        }
+        else {
+            nolimit_addr |= BRDCST_VIP;
+        }
+
+        if (ss.chman_limitime) {
+            /* chairman limit time */
+            limit_addr |= BRDCST_CHM |BRDCST_EXE;
+        }
+        else {
+            nolimit_addr |= BRDCST_CHM |BRDCST_EXE;
+        }
+
+        if (nolimit_addr) {
+            nolimit_spk_time.limit_time = 0;
+            terminal_limit_spk_time(BRDCST_1722_ALL,
+                                    nolimit_addr, nolimit_spk_time);
+        }
+
+        terminal_limit_spk_time(BRDCST_1722_ALL, limit_addr, spk_time);
+    }
+
+    return 0;
 }
-
-/*暂定投票*/
-int terminal_pause_vote( uint16_t cmd, void *data, uint32_t data_len )
+/*$ Terminal command function::terminal_end_sign............................*/
+int terminal_end_sign(uint16_t cmd, void *data, uint32_t data_len)
 {
-	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_SUSPEND_VOTE );
-
-	return 0;
+    /* set discuss state */
+    set_terminal_system_state(DISCUSS_STATE, true);
+    gtmnl_signstate = SIGN_IN_BE_LATE;
+    /* start discuss state */
+    terminal_start_discuss(false);
+    /* begin sign in late and set timeout of signing */
+    over_time_set(SIGN_IN_LATE_HANDLE, gsign_latetime * 60 * 1000);
+    gquery_svote_pro.running = false;
+    /* return success */
+    return 0;
 }
-
-/*重新投票*/
-int terminal_regain_vote( uint16_t cmd, void *data, uint32_t data_len )
-{
-	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_RECOVER_VOTE );
-
-#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
-	gvote_flag = VOTE_SET;
-	over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );// 设置上报终端签到情况的初始超时时间
-#endif
-
-	return 0;
-}
-
-int terminal_system_discuss_mode_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	assert( data && dev_terminal_list_guard );
-	if( data == NULL || dev_terminal_list_guard == NULL )
-		return -1;
-	
-	uint8_t dis_mode = *((uint8_t*)data);
-	tmnl_pdblist tmnl_node = dev_terminal_list_guard->next;
-
-	terminal_speak_track_pro_init();
-	gdisc_flags.edis_mode = (ttmnl_discuss_mode)dis_mode;
-	gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
-	gdisc_flags.apply_num = 0;
-	gdisc_flags.speak_limit_num = 0;
-
-	if (APPLY_MODE == dis_mode)
-	{
-		terminal_chairman_apply_type_set( BRDCST_EXE );
-	}
-	else
-	{
-		terminal_chairman_apply_type_clear(BRDCST_EXE);
-	}
-
-	/*关闭所有麦克风*/
-	for( ; tmnl_node != dev_terminal_list_guard; tmnl_node = tmnl_node->next )
-	{
-		// 2.设置麦克风tarker的状态,上报麦克风状态, 设置相应终端的麦克风状态(会议主机与终端协议)
-		if( tmnl_node->tmnl_dev.tmnl_status.is_rgst && trans_model_unit_is_connected(tmnl_node->tmnl_dev.entity_id))
-		{
-			if (0 ==trans_model_unit_disconnect( tmnl_node->tmnl_dev.entity_id, tmnl_node))
-				terminal_speak_track(tmnl_node->tmnl_dev.address.addr, false );
-		}
-	}
-
-	/*发送主机状态*/
-	terminal_main_state_send( 0, NULL, 0 );
-
-	return 0;
-}
-
-int terminal_speak_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )// 处理函数有待完善(11/4)
-{
-	thost_system_set set_sys;
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-
-	while (set_sys.speak_limit > gdisc_flags.limit_num && \
-		set_sys.discuss_mode == LIMIT_MODE && \
-		gdisc_flags.apply_num > 0)
-	{
-		uint16_t current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-		if (addr_queue_delete_by_index (gdisc_flags.apply_addr_list, 
-			&gdisc_flags.apply_num, gdisc_flags.currect_first_index))// 开启下一个申请话筒
-		{
-			tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr(current_addr);
-			if (first_speak != NULL)
-			{
-				if (!trans_model_unit_is_connected(first_speak->tmnl_dev.entity_id))
-				{
-					if (0 == trans_model_unit_connect( first_speak->tmnl_dev.entity_id, first_speak ))
-					{// connect success
-						gdisc_flags.speak_limit_num++;
-						terminal_apply_list_first_speak(first_speak);
-					}
-				}
-			}
-			else
-			{
-				terminal_pro_debug( " no such tmnl dblist node!");
-			}
-		}
-		else
-		{
-			gdisc_flags.currect_first_index = 0;
-		}
-		
-		gdisc_flags.limit_num++;
-	}
-	
-	gdisc_flags.limit_num = set_sys.speak_limit;
-	
-	terminal_main_state_send( 0, NULL, 0 );
-
-	return 0;
-}
-
-int terminal_apply_limit_num_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	thost_system_set set_sys;
-	uint8_t apply_limt_num = *((uint8_t*)data);
-	
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-
-	/*更新数据库成功后设置*/
-	gdisc_flags.apply_limit = apply_limt_num;
-	gset_sys.apply_limit = apply_limt_num;
-
-	terminal_main_state_send( 0, NULL, 0 );
-
-	return 0;
-}
-
-/* 终端发言限时的控制,由于终端不能控制麦克风的关闭与打开，
-所以系统不仅仅是会议协议数据的发送，还需管理终端的发言时长;而发言时长由系统的超时机制进行管理,
-因此只需在终端连接时设置连接表相应的超时时间即可*/
-int terminal_limit_speak_time_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	tmnl_limit_spk_time spk_time;
-	thost_system_set set_sys; // 系统配置文件的格式
-
-	//terminal_pro_debug( "SIZE OF SYS SET = %d", sizeof(thost_system_set) );
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	spk_time.limit_time = set_sys.spk_limtime;
-	speak_limit_time = (uint8_t)spk_time.limit_time;
-	
-	if( !set_sys.spk_limtime ) // 无限时
-	{
-		terminal_limit_spk_time( 0, BRDCST_ALL, spk_time );
-	}
-	else
-	{
-		uint16_t nolimit_addr = 0;
-		uint16_t limit_addr = BRDCST_MEM; // 限时对所有普通代表有效
-		tmnl_limit_spk_time nolimit_spk_time;
-		
-		if( set_sys.vip_limitime ) // vip 限时
-		{
-			limit_addr |= BRDCST_VIP;
-		}
-		else
-		{
-			nolimit_addr |= BRDCST_VIP;
-		}
-		
-		if( set_sys.chman_limitime ) // 主席限时
-		{
-			limit_addr |= BRDCST_CHM |BRDCST_EXE;
-		}
-		else
-		{
-			nolimit_addr |= BRDCST_CHM |BRDCST_EXE;
-		}
-
-		if( nolimit_addr )
-		{
-			nolimit_spk_time.limit_time = 0;
-			terminal_limit_spk_time( BRDCST_1722_ALL, nolimit_addr, nolimit_spk_time );
-		}
-
-		terminal_limit_spk_time( BRDCST_1722_ALL, limit_addr, spk_time );
-	}
-
-	return 0;
-}
-
-int terminal_end_sign( uint16_t cmd, void *data, uint32_t data_len )
-{
-	set_terminal_system_state( DISCUSS_STATE, true );
-	gtmnl_signstate = SIGN_IN_BE_LATE;
-
-	// 设置讨论的状态
-	terminal_start_discuss( false );
-	// 开始补签// 设置超时签到
-	over_time_set( SIGN_IN_LATE_HANDLE, gsign_latetime * 60 * 1000 );
-	gquery_svote_pro.running = false;
-
-	return 0;
-}
-
-int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len )
-{
-	gvote_flag = NO_VOTE;// 结束投票
-
-	// 结束投票结果的查询
+/*$ Terminal command function::terminal_end_vote............................*/
+int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len) {
+        /*set end voting flag */
+	gvote_flag = NO_VOTE;
+	/* end query voting result */
 	gquery_svote_pro.index = 0;
 	gquery_svote_pro.running = false;
-	host_timer_stop( &gquery_svote_pro.query_timer );
-
-	return 0;
+	host_timer_stop(&gquery_svote_pro.query_timer);
+        /* return success */
+        return 0;
 }
-
-int termianal_music_enable( uint16_t cmd, void *data, uint32_t data_len )
+/*$ Terminal command function::termianal_music_enable.......................*/
+int termianal_music_enable(uint16_t cmd, void *data, uint32_t data_len) {
+    uint8_t t; /* the temp varialable music enable flag */
+    if ((data_len != sizeof(uint8_t))
+        || (data == NULL))
+    {   
+        return -1;/* return failed */
+    }
+    /* get flags */
+    t = *((uint8_t*)data);
+    if (gset_sys.chman_music != t) {
+        /* set flags */
+        gset_sys.chman_music = t;
+    }
+    /* return success */
+    return 0;
+}
+/*$ Terminal command function::termianal_chairman_prior_set.................*/
+int termianal_chairman_prior_set(uint16_t cmd, void *data,
+                                uint32_t data_len)
 {
-	if( data_len != sizeof(uint8_t) || data == NULL)
-		return -1;
-
-	uint8_t value = *((uint8_t*)data);
-	if (gset_sys.chman_music != value)
-		gset_sys.chman_music = value;
-	
-	return 0;
+    uint8_t t; /* the temp varialable of prior flag */
+    if ((data_len != sizeof(uint8_t))
+          || (data == NULL))
+    {   
+        return -1;/* return failed */
+    }
+    /* get flags */
+    t = *((uint8_t*)data);
+    if (gset_sys.chman_first != t) {
+        /* set flags */
+        gset_sys.chman_first = t;
+    }
+    /* return success */
+    return 0;
 }
-
-int termianal_chairman_prior_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	if( data_len != sizeof(uint8_t) || data == NULL)
-		return -1;
-
-	uint8_t value = *((uint8_t*)data);
-	if (gset_sys.chman_first != value)
-		gset_sys.chman_first = value;
-	return 0;
+/*$ Terminal command function::terminal_system_register.....................*/
+int terminal_system_register(uint16_t cmd, void *data, uint32_t data_len) {
+/* register terminal */
+    uint16_t t; /* the temp varialable of address */
+    assert(NULL != data);
+    if (data == NULL) {
+        return -1;/* return failed */
+    }
+    /* get flag */
+    t = *((uint16_t*)data);
+    /* send query endstation command */
+    terminal_query_endstation(t, BRDCST_1722_ALL);
+    /* return success */
+    return 0;
 }
-
-/******************************************
-*Auther:YasirLiang
-*Date:2016/1/23
-*Name:terminal_system_register
-*Func:register terminal
-*Paramer:
-*		cmd;data;data_len
-*******************************************/
-int terminal_system_register( uint16_t cmd, void *data, uint32_t data_len )
-{
-	assert( data );
-	if( data != NULL )
-	{
-		uint16_t address = *((uint16_t*)data);
-		terminal_query_endstation( address, BRDCST_1722_ALL );
-		
-		return 0;
-	}
-	
-	return -1;
+/*$ Terminal command function::termianal_temp_close_set.....................*/
+int termianal_temp_close_set(uint16_t cmd, void *data, uint32_t data_len) {
+/* SET temp close flags */
+    uint8_t t; /* temp close flags */
+    assert (data != NULL);
+    if ((data_len != sizeof(uint8_t))
+        || (data == NULL))
+    {
+        return -1;/* return failed */
+    }
+    /* get flag */
+    t = *((uint8_t*)data);
+    if (gset_sys.temp_close != t) {
+        /* set flag */
+        gset_sys.temp_close = t;
+    }
+    /* return success */
+    return 0;
 }
-
-/******************************************
-*Auther:YasirLiang
-*Date:2016/3/18
-*Name:termianal_temp_close_set
-*Func:SET temp close flags
-*Paramer:
-*		cmd;data;data_len
-*******************************************/
-int termianal_temp_close_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	assert( data != NULL );
-	if( data_len != sizeof(uint8_t) || data == NULL )
-		return -1;
-	
-	uint8_t value = *((uint8_t*)data);
-	if (gset_sys.temp_close != value)
-		gset_sys.temp_close = value;
-	
-	return 0;
+/*$ Terminal command function::termianal_camera_track_set...................*/
+int termianal_camera_track_set(uint16_t cmd, void *data, uint32_t data_len) {
+/* SET camera track flags */
+    uint8_t ct; /* camara track flag */
+    assert(data != NULL);
+    if ((data_len != sizeof(uint8_t))
+          || (data == NULL)) {
+        return -1;/* return failed */
+    }
+    /* get flag */
+    ct = *((uint8_t*)data);
+    if (gset_sys.camara_track != ct) {
+        /* set flag */
+        gset_sys.camara_track = ct;
+    }
+    /* main state send */
+    terminal_main_state_send(0, NULL, 0);
+    /* return success */
+    return 0;
 }
-
-/******************************************
-*Auther:YasirLiang
-*Date:2016/3/18
-*Name:termianal_camera_track_set
-*Func:SET camera track flags
-*Paramer:
-*		cmd;data;data_len
-*******************************************/
-int termianal_camera_track_set( uint16_t cmd, void *data, uint32_t data_len )
-{
-	assert( data != NULL );
-	if( data_len != sizeof(uint8_t) || data == NULL )
-		return -1;
-
-	uint8_t value = *((uint8_t*)data);
-	if (gset_sys.camara_track != value)
-		gset_sys.camara_track = value;
-	terminal_main_state_send( 0, NULL, 0 );
-	
-	return 0;
-}
-
-/*==================================================
-					结束终端命令函数
-====================================================*/
-
 
 /*===================================================
 {@终端处理流程
@@ -1889,7 +1875,7 @@ void terminal_mic_status_set_callback( bool connect_flag, tmnl_pdblist p_tmnl_no
         mic_status = connect_flag?MIC_OPEN_STATUS:MIC_COLSE_STATUS;
 	if( (get_sys_state() == INTERPOSE_STATE) && p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE)
 	{
-                /*interpose state should not save mic state if endpiot
+                /*interpose state should not save mic state if endpoint
                   *is excute chairman.
                   */
         }
@@ -2181,7 +2167,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 						int ret = -1;
 						bool if_common = false;
 
-						ret = trans_model_unit_disconnect_longest_connect_re_id_cfcnode(&id, &disconnect_lnode);
+						ret = Ctrans_disLongest(&id, &disconnect_lnode);
 						if (0 == ret)
 						{
 							if (disconnect_lnode != NULL && \
@@ -2225,7 +2211,7 @@ int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag )
 						int ret = -1;
 						bool if_common = false;
 
-						ret = trans_model_unit_disconnect_longest_connect_re_id_cfcnode(&id, &disconnect_lnode);
+						ret = Ctrans_disLongest(&id, &disconnect_lnode);
 						if (0 == ret)
 						{
 							if (disconnect_lnode != NULL && \
@@ -4152,7 +4138,7 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 					int ret = -1;
 					bool if_common = false;
 
-					ret = trans_model_unit_disconnect_longest_connect_re_id_cfcnode(&id, &disconnect_lnode);
+					ret = Ctrans_disLongest(&id, &disconnect_lnode);
 					if (0 == ret)
 					{
 						if (disconnect_lnode != NULL && \
@@ -4207,8 +4193,7 @@ bool terminal_key_speak_proccess( tmnl_pdblist dis_node, bool key_down, uint8_t 
 					uint64_t id = 0;
 					int ret = -1;
 					bool if_common = false;
-
-					ret = trans_model_unit_disconnect_longest_connect_re_id_cfcnode(&id, &disconnect_lnode);
+					ret = Ctrans_disLongest(&id, &disconnect_lnode);
 					if (0 == ret)
 					{
 						if (disconnect_lnode != NULL && \

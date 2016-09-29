@@ -25,31 +25,31 @@
 static void menuClihelpPro( char (*args)[CMD_OPTION_STRING_LEN] )
 {
 	MSGINFO( "\nEnter follow String command to Test menu Function (\"quit\" to exit control)\n" );
-	MSGINFO( "ModeSet: 模式设置(1:ppt 2:limit 3:fifo 4:apply)" );
-	MSGINFO( "TempClose: Usage: TempClose 0;TempClose 1" );
-	MSGINFO( "ChairmanHint: Usage: ChairmanHint 0;ChairmanHint 1" );
-	MSGINFO( "CameraTrack: Usage: CameraTrack 0;CameraTrack 1" );
-	MSGINFO( "AutoClose: Usage: AutoClose 0;AutoClose 1" );
-	MSGINFO( "SpeakLimit: Usage: SpeakLimit 1\\2\\3\\4\\5\\6" );
-	MSGINFO( "ApplyNumSet: Usage:ApplyNumSet 1\\2\\3\\4\\5\\6..." );
-	MSGINFO( "ReAllot: 重新分配地址" );
-	MSGINFO( "NewAllot: 新增分配" );
-	MSGINFO( "SetFinish: 重启程序" );
-	MSGINFO( "CameraCtl: Usage: CameraCtl 1(向上);2(向下);3(向左);4(向右);5(聚焦);6(光圈);7(缩放);" );
-	MSGINFO( "CameraCtlLeftRight: 左右(0 1)" );
-	MSGINFO( "CameraCtlUpDown: 上下(1 0)" );
-	MSGINFO( "CameraCtlFouce: 聚焦" );
-	MSGINFO( "CameraCtlIris: 光圈" );
-	MSGINFO( "CameraCtlZoom: 缩放" );
-	MSGINFO( "DistanceCtl: 遥控器对码:" );
-	MSGINFO( "PresetSave: 预置位存储" );
-	MSGINFO( "SwitchCmr: 切换摄像头 (SwitchCmr 1\\2\\3\\4)" );
-	MSGINFO( "ClearPreset: 清除预置位" );
-	MSGINFO( "SelectPresetAddr: 预置位终端选择" );
-	MSGINFO( "EnterEscPreset: 在进行摄像头控制时必须设置 0:退出 1:进入" );
-	MSGINFO( "ChangeMuticastor: ChangeMuticastor 0x0011223344556677 0(改变广播者)" );
-	MSGINFO( "help: 帮助菜单" );
-	MSGINFO( "quit: 退出菜单控制,返回主菜单" );
+	MSGINFO( "ModeSet: 模式设置(1:ppt 2:limit 3:fifo 4:apply)\n" );
+	MSGINFO( "TempClose: Usage: TempClose 0;TempClose 1\n" );
+	MSGINFO( "ChairmanHint: Usage: ChairmanHint 0;ChairmanHint 1\n" );
+	MSGINFO( "CameraTrack: Usage: CameraTrack 0;CameraTrack 1\n" );
+	MSGINFO( "AutoClose: Usage: AutoClose 0;AutoClose 1\n" );
+	MSGINFO( "SpeakLimit: Usage: SpeakLimit 1\\2\\3\\4\\5\\6\n" );
+	MSGINFO( "ApplyNumSet: Usage:ApplyNumSet 1\\2\\3\\4\\5\\6...\n" );
+	MSGINFO( "ReAllot: 重新分配地址\n" );
+	MSGINFO( "NewAllot: 新增分配\n" );
+	MSGINFO( "SetFinish: 重启程序\n" );
+	MSGINFO( "CameraCtl: Usage: CameraCtl 1(向上);2(向下);3(向左);4(向右);5(聚焦);6(光圈);7(缩放);\n" );
+	MSGINFO( "CameraCtlLeftRight: 左右(0 1)\n" );
+	MSGINFO( "CameraCtlUpDown: 上下(1 0)\n" );
+	MSGINFO( "CameraCtlFouce: 聚焦\n" );
+	MSGINFO( "CameraCtlIris: 光圈\n" );
+	MSGINFO( "CameraCtlZoom: 缩放\n" );
+	MSGINFO( "DistanceCtl: 遥控器对码:\n" );
+	MSGINFO( "PresetSave: 预置位存储\n" );
+	MSGINFO( "SwitchCmr: 切换摄像头 (SwitchCmr 1\\2\\3\\4)\n" );
+	MSGINFO( "ClearPreset: 清除预置位\n" );
+	MSGINFO( "SelectPresetAddr: 预置位终端选择\n" );
+	MSGINFO( "EnterEscPreset: 在进行摄像头控制时必须设置 0:退出 1:进入\n" );
+	MSGINFO( "ChangeMuticastor: ChangeMuticastor 0x0011223344556677 0(改变广播者)\n" );
+	MSGINFO( "help: 帮助菜单\n" );
+	MSGINFO( "quit: 退出菜单控制,返回主菜单\n" );
 }
 
 static void menuCliModeSetPro( char (*args)[CMD_OPTION_STRING_LEN] )

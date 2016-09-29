@@ -1,6 +1,24 @@
+/*
+* @file
+* @brief main function
+* @ingroup main function
+* @cond
+******************************************************************************
+* Last updated for version 1.0.0
+* Last updated on  2016-09-22
+*
+*                    Moltanisk Liang
+*                    ---------------------------
+*                    avb auto control system
+*
+* Copyright (C) Moltanisk Liang, GuangZhou Suntron. All rights reserved.
+******************************************************************************
+* @endcond
+*/
 #ifndef __AVDECC_MAIN_H__
 #define __AVDECC_MAIN_H__
 
+/*Including files-----------------------------------------------------------*/
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
@@ -13,58 +31,56 @@
 #include "func_proccess.h"
 #include "data.h"
 
-#ifdef __DEBUG__
-
-#ifndef __TEST_DEBUG_CM__ // 测试透传功能
-//#define __TEST_DEBUG_CM__
-#endif
-#endif
-
+/*! Macro network interface name */
 #define NETWORT_INTERFACE "eth0"
-
-enum useful_enums
-{
-	PIPE_RD = 0,
-	PIPE_WR = 1,
-	POLL_COUNT = 6,
-	TIME_PERIOD_1_MILLISECONDS = 1,
-	TIME_PERIOD_25_MILLISECONDS = 25
-};
-       
-struct fds
-{
-	int raw_fd;		// raw socket
-	int udp_server_fd;	// udp server
-	int udp_client_fd;	// udp client
-	int tx_pipe[2];		// pipe
-};
-
-struct socket_info_s
-{
-	int sock_fd;
-	struct sockaddr_in sock_addr;
-	socklen_t sock_len;
-};
-
-struct udp_context
-{
-	struct socket_info_s udp_srv, udp_clt;
-};
-
+/*! Macro threads mux num */
 #define THREADS_MUX_NUM 16
-struct threads_info
-{
-	pthread_t tid[THREADS_MUX_NUM];
-	int pthread_nums;
+/*! enum useful value */
+enum useful_enums {
+    PIPE_RD = 0,    /*! pipe read fd index */
+    PIPE_WR = 1,   /*! pipe write fd index */
+    POLL_COUNT = 6,        /*! poll number */
+    TIME_PERIOD_1_MILLISECONDS = 1,
+    TIME_PERIOD_25_MILLISECONDS = 25
 };
+/*! fds of extern ports set */ 
+struct fds {
+    int raw_fd;        /*! raw socket fd*/
+    int udp_server_fd;/*! udp server fd */
+    int udp_client_fd;/*! udp client fd */
+    int tx_pipe[2];            /*! pipe */
+};
+/*! socket_info_s */ 
+struct socket_info_s {
+    int sock_fd;                        /*! socket fd*/
+    struct sockaddr_in sock_addr; /*! socket address */
+    socklen_t sock_len;            /*! socket length */
+};
+/*! udp_context */ 
+struct udp_context {
+    struct socket_info_s udp_srv, udp_clt;
+};
+/*! threads_info */ 
+struct threads_info {
+    pthread_t tid[THREADS_MUX_NUM];
+    int pthread_nums;
+};
+/*! Extern global net_fd varialable declaration*/
+extern struct fds net_fd;
+/*! Extern global udp client fd varialable declaration*/
+extern struct socket_info_s upper_udp_client;
+/*! Extern global pc_controller_server variable declaration*/
+extern struct socket_info_s pc_controller_server;
+/*! Extern system terminal double list guard node declaration*/
+extern solid_pdblist endpoint_list;
+/*! Extern inflight command double list guard node declaration*/
+extern inflight_plist command_send_guard;
+/*! Extern raw context varialable declaration */
+extern struct raw_context net;
+/*! Extern 1722.1 terminal descptor double list guard varialable declaration*/
+extern desc_pdblist descptor_guard;
+/*! Extern the varialable of table command function delaration*/
+const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS];
 
-extern struct fds net_fd;						// 网络通信套接字与线程间通信套接字
-extern struct socket_info_s upper_udp_client;		// 上位机的通信信息
-extern struct socket_info_s pc_controller_server;	// 主机显示信息与摄像头控制器的通信信息 
-extern solid_pdblist endpoint_list;				// 系统中终端链表哨兵节点
-extern inflight_plist command_send_guard;		// 系统中发送网络数据命令链表哨兵节点
-extern struct raw_context net;				// 原始套接字
-extern desc_pdblist descptor_guard;			// 系统中描述符链表哨兵节点
-const proccess_func_items proccess_func_link_tables[MAX_FUNC_LINK_ITEMS]; // 处理函数列表
+#endif /*__AVDECC_MAIN_H__*/
 
-#endif

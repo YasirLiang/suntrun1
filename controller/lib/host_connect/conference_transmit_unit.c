@@ -332,49 +332,64 @@ int trans_model_unit_disconnect_longest_connect( void )
 	return ret;
 }
 
-int trans_model_unit_disconnect_longest_connect_re_id_cfcnode(uint64_t *id, tmnl_pdblist* pp_confenrence_node)
-{
-	tconference_trans_pmodel p_temp_node = NULL, longest = NULL;
-	timetype curtime = get_current_time();
-	int ret = -1;
+/*$ Ctrans::disLongest......................................................*/
+/* only using for 'vip ppt chairman' speaking */
+int Ctrans_disLongest(uint64_t *pId, tmnl_pdblist* ppC) {
+    tconference_trans_pmodel p, pL;  /* pointer to conference transmit node */
+    tmnl_pdblist pT;             /* terminal point */
+    timetype curtime;               /*cortime timp */
+    int ret;      /*the varialable of return value */
+    uint32_t tt, lt; /* temp time and longest time */
 
-	if (id == NULL || pp_confenrence_node == NULL)
-		return -1;
+    if ((pId == NULL)
+          || (ppC == NULL))
+    {
+        return -1;
+    }
 
-	list_for_each_entry(p_temp_node, &gconference_model_guard.list, list)
-	{
-		if (!p_temp_node->model_speak_time.running)
-			continue;
-
-		if (longest == NULL)
-		{
-			longest = p_temp_node;
-		}
-		else
-		{
-			if ((curtime - longest->model_speak_time.start_time) < \
-				(curtime - p_temp_node->model_speak_time.start_time))
-			longest = p_temp_node;
-		}
-	}
-
-	if (NULL != longest)
-	{// found
-		ret = ccu_recv_model_untalk( longest->tarker_id, CONFERENCE_OUTPUT_INDEX );
-		if ( ret == 0)
-		{
-			*id = longest->tarker_id;
-			if (longest->confenrence_node != NULL) 
-				*pp_confenrence_node = longest->confenrence_node;
-		}
-		else
-		{
-			*id = 0;
-			*pp_confenrence_node = NULL;
-		}
-	}
-
-	return ret;
+    p = NULL;      /* make temp node invalue */
+    pL = NULL;  /* make longest node invalue */
+    pT = NULL;/* make terminal point invalue */
+    curtime = get_current_time(); /* get current time */
+    list_for_each_entry(p, &gconference_model_guard.list, list)
+    {
+        if (!p->model_speak_time.running) { /* not speaking terminal */
+            continue;
+        }
+        
+        pT = p->confenrence_node;/*get terminal node */
+        if ((pT != NULL)
+               && (pT->tmnl_dev.address.tmn_type == 0))
+        {/* only for comon terminal */
+            if (pL == NULL) {
+                pL = p;
+            }
+            else {
+                /* set temp node start time */
+                tt = p->model_speak_time.start_time;
+                /* set longest node start time */
+                lt = pL->model_speak_time.start_time;
+                if ((curtime - lt) < (curtime - tt)) {
+                    pL = p; /* set longest one */
+                }
+            }
+        }
+    }
+    
+    ret = -1;/*set error return value */
+    *pId = 0;     /* first set */
+    *ppC = NULL;  /* first set */
+    if (NULL != pL) {/* found */
+        ret = ccu_recv_model_untalk(pL->tarker_id, CONFERENCE_OUTPUT_INDEX);
+        if (ret == 0) {
+            *pId = pL->tarker_id; /* reset */
+            if (pL->confenrence_node != NULL) {
+                *ppC = pL->confenrence_node;/* reset */
+            }
+        }
+    }
+    /* return */
+    return ret;
 }
 
 uint8_t trans_model_unit_get_system_input_num(void)

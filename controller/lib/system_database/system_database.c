@@ -1003,14 +1003,14 @@ void system_database_init( void )
 	INIT_ZERO( &gmatrix_record, sizeof(gmatrix_record));
 	if( -1 == system_db_queue_matrix_config_record( &gmatrix_record ))
 	{
-		MSGINFO( " init matrix system configuration failed" );
+		MSGINFO( " init matrix system configuration failed\n" );
 	}
 
 	INIT_ZERO( gmatrix_io_sw_array, sizeof(gmatrix_io_sw_array));	
 	INIT_ZERO( &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
 	if( -1 == system_database_matrix_io_queue(AV_SWITCH) )
 	{
-		MSGINFO( " init matrix AVSW output input failed" );
+		MSGINFO( " init matrix AVSW output input failed\n" );
 	}
 	else
 		memcpy( &gmatrix_io_sw_array[AV_SWITCH], &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
@@ -1018,7 +1018,7 @@ void system_database_init( void )
 	INIT_ZERO( &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
 	if( -1 == system_database_matrix_io_queue(V_SWITCH) )
 	{
-		MSGINFO( " init matrix VSW output input failed" );
+		MSGINFO( " init matrix VSW output input failed\n" );
 	}
 	else
 		memcpy( &gmatrix_io_sw_array[V_SWITCH], &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
@@ -1026,7 +1026,7 @@ void system_database_init( void )
 	INIT_ZERO( &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));
 	if( -1 == system_database_matrix_io_queue(A_SWITCH) )
 	{
-		MSGINFO( " init matrix ASW output input failed" );
+		MSGINFO( " init matrix ASW output input failed\n" );
 	}
 	else
 		memcpy( &gmatrix_io_sw_array[A_SWITCH], &gmatrix_io_swich_pro, sizeof(gmatrix_io_swich_pro));

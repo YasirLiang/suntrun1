@@ -112,15 +112,17 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 						// 重新枚举
 						/*找到id 并清除其内容而不free其节点*/
                                                 desc_pdblist  descptor_info = NULL;	
-                                        	bool found_descptor_endstation = false;
                                         	descptor_info = search_desc_dblist_node(end_entity_id, descptor_guard );
                                         	if( NULL != descptor_info )
                                         	{
-                                        	        memset(&descptor_info->endpoint_desc, 0, sizeof(desc_dblist));
+                                        	        memset(&descptor_info->endpoint_desc, 0, sizeof(struct endpoint_decriptor));
+                                                        memcpy(descptor_info->endpoint_desc.firmware_version.value, "UNKNOWN",
+                                                            sizeof(struct jdksavdecc_string));
+                                                        memcpy(descptor_info->endpoint_desc.entity_name.value, "UNKNOWN",
+                                                            sizeof(struct jdksavdecc_string));
                                                         descptor_info->endpoint_desc.entity_id = end_entity_id;
                                                         central_control_recieve_uinit_free_connect_node(end_entity_id);
                                                         central_control_transmit_unit_model_destroy_output(end_entity_id);
-                                        		found_descptor_endstation = true;
                                         	}
                                             
 						aecp_read_desc_init( JDKSAVDECC_DESCRIPTOR_ENTITY, 0, end_station->solid.entity_id);
@@ -148,7 +150,7 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 				if (NULL != gp_log_imp)
 			                gp_log_imp->log.post_log_msg( &gp_log_imp->log, 
 				            LOGGING_LEVEL_ERROR,
-				            "Invalid ADP packet with an entity ID of 0.");
+				            "[ Invalid ADP packet with an entity ID of 0. ]");
 			}
 
 			//*status = 0;

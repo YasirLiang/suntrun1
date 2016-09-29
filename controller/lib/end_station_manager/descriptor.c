@@ -6,7 +6,7 @@ void descriptor_looking_for_connections( desc_pdblist desc_head )
 	assert( desc_head );
 	desc_pdblist desc = desc_head->next;
 	
-	MSGINFO( "\n----------------------------------connections list------------------------------------");
+	MSGINFO( "\n----------------------------------connections list------------------------------------\n");
 	
 	for( ; desc != desc_head; desc = desc->next )
 	{
@@ -33,7 +33,7 @@ void descriptor_looking_for_connections( desc_pdblist desc_head )
 						&& (out_desc->endpoint_desc.output_stream.desc[out_stream_index].stream_id \
 						== desc->endpoint_desc.input_stream.desc[in_stream_index].stream_id ) )
 					{
-						MSGINFO( "[ 0x%016llx(%d) -> 0x%016llx(%d) Stream ID = 0x%016llx ]",\
+						MSGINFO( "[ 0x%016llx(%d) -> 0x%016llx(%d) Stream ID = 0x%016llx ]\n",\
 							out_desc->endpoint_desc.entity_id,\
 							out_desc->endpoint_desc.output_stream.desc[out_stream_index].descriptor_index,\
 							desc->endpoint_desc.entity_id,\

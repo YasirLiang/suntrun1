@@ -71,7 +71,7 @@ void init_system(void) {
     /* acmp model init */
     acmp_endstation_init(command_send_guard, endpoint_list, descptor_guard);
     /* aecp model init */
-    aecp_controller_init(endpoint_list, descptor_guard,command_send_guard);
+    aecp_controller_init(endpoint_list, descptor_guard, command_send_guard);
     
     /* system profile init */
     init_profile_system_file();
@@ -127,8 +127,8 @@ void init_system(void) {
         printf("Open Port Failed!\n");  
     }
 
-    if ((UART_File_Init( fd, 9600, 0, 8, 1, 'N' ) != -1) 
-    && (fd != -1))/* menu display control port init */
+    if ((UART_File_Init(fd, 9600, 0, 8, 1, 'N') != -1)
+          && (fd != -1))/* menu display control port init */
     {
         gcontrol_sur_fd = fd;
     }
@@ -152,13 +152,13 @@ void set_system_information(struct fds net_fd,
     /* init udp client */
     init_udp_client_controller_endstation(net_fd.udp_server_fd,
                                                &p_udp_net->udp_srv.sock_addr);
-    sleep(2);/* wait for net up */
+    sleep(3);/* wait for net up */
 
     /* found all endpoints */
     adp_entity_avail(zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER);
 }
 /*$system_close.............................................................*/
-void system_close(struct threads_info *p_threads) {	
+void system_close(struct threads_info *p_threads) {
     int can_num = p_threads->pthread_nums;/* system pthread num */
     int i = 0, ret;
     /* exit muticast proccessing */
@@ -186,7 +186,7 @@ void system_close(struct threads_info *p_threads) {
             if (errno == ESRCH) {
                 DEBUG_INFO("An invalid signal was specified: tid[%d] ", i);
             }
-            else if(errno == EINVAL) {
+            else if (errno == EINVAL) {
                 DEBUG_INFO("no such tid[%d] thread to quit ", i);
             }
             else {

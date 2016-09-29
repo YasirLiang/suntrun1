@@ -10,7 +10,6 @@
 #include "host_timer.h"
 
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
-//#define ADDRESS_FILE "profile/address.dat"	// 终端地址信息存放的文件
 
 #define MAX_LIMIT_SPK_NUM 6
 #define MAX_LIMIT_APPLY_NUM 10

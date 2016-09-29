@@ -42,9 +42,9 @@
 #define SYS_BUF_RECV_COUNT 2
 /*Extern function delaration------------------------------------------------*/
 extern void input_recv_pro(unsigned char *p_buf, unsigned recv_len);
-/*Extern function delaration------------------------------------------------*/
+/*Extern Global varialable delaration-----------------------------------------*/
 extern unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN]; 
-/*Extern Global vaviable delaration-----------------------------------------*/
+/*Extern Global varialable delaration-----------------------------------------*/
 extern volatile unsigned char gcontrol_sur_msg_len;
 
 /*$ command function thread proccess........................................*/
@@ -57,7 +57,7 @@ int thread_func_fn(void * pgm) {
     /* queue node pointer of  command queue */
     fcqueue_wnode *p_msg_wnode = NULL;
 
-    /* The thread will be waked up by other threads which  save queue
+    /* The thread will be waked up by other threads which save queue
     node to command working queue.When the thread wake up by
     recieving pthread cond signal, this thread will run the command
     function according to the command function index from queue node
@@ -179,7 +179,7 @@ int pthread_recv_data_fn(void *pgm) {
             terminal_vote_proccess();
             /* query the result of sign and vote */
             terminal_query_sign_vote_pro();
-            /* enable arm version when __ARM_BACK_TRACE__ is defined */
+/* enable arm version when __ARM_BACK_TRACE__ is defined */
 #ifdef __ARM_BACK_TRACE__
             /*proccessing the menu display according to the data recieving from*/
             if (gcontrol_sur_msg_len > 0) {
@@ -187,7 +187,7 @@ int pthread_recv_data_fn(void *pgm) {
                 gcontrol_sur_msg_len = 0;
             }
 #endif
-            /*muticast connect table manager*/
+            /* muticast connect table manager */
             muticast_connect_manger_timeout_event_image();
         }
         
@@ -199,7 +199,7 @@ int pthread_recv_data_fn(void *pgm) {
         camera_pro();
         /* speaking timeout proccessing */
         terminal_over_time_speak_pro();
-        /* microphone state set later*/
+        /* microphone state set later */
         terminal_after_time_mic_state_pro();
         /*mic state set callback proccessing */
         Terminal_micCallbackPro();
@@ -215,7 +215,6 @@ int pthread_proccess_recv_data_create(pthread_t *pid, void * pgm) {
         DEBUG_INFO("recv thread Create failed: rc = %d", rc);
         assert(rc == 0);
     }
-
     return 0;
 }
 

@@ -170,7 +170,7 @@ void cmd_adp_proccess( const char *opt )
 			memcpy( entity_str_msg, first, copy_num );
 			if( !get_adpdu_msg_type_value_with_str(entity_str_msg, &msg_type))
 			{
-				MSGINFO( " Please check type is ENTITY_AVAILABLE or ENTITY_DEPARTING or ENTITY_DISCOVER" );
+				MSGINFO( " Please check type is ENTITY_AVAILABLE or ENTITY_DEPARTING or ENTITY_DISCOVER\n" );
 				return; 
 			}
 			
@@ -184,7 +184,7 @@ void cmd_adp_proccess( const char *opt )
 			input_flag++;
 		}
 
-		MSGINFO( "input_flag = %d", input_flag);
+		MSGINFO( "input_flag = %d\n", input_flag);
 	}
 
 	if( (input_flag == 2))
@@ -308,42 +308,54 @@ void cmd_reboot_proccess(const char *opt)
 	convert_eui64_to_uint64( talker_entity_id.value, &current_endpoint_id );
 	default_send_reboot_cmd(current_endpoint_id, JDKSAVDECC_DESCRIPTOR_ENTITY, 0);
 }
-
-void cmd_list_proccess( void )
-{
-	uint16_t end_num = 0;
-	uint64_t end_id = 0;
-	uint64_t end_mac = 0;
-	bool connect_flag = false;
-	solid_pdblist end_list_node = end_list_guard->next;
-	desc_pdblist desc_entity_node = NULL;
-	uint8_t firmware[64] = "UNKNOWN";
-	uint8_t entity_name[64] = "UNKNOWN";
-	
-	MSGINFO( "\nEnd Station    |  Name\t\t  |  Entity ID\t      |  Firmware    |  Mac\t\n--------------------------------------------------------------------------------------" );
-	for( ; end_list_node != end_list_guard; end_list_node = end_list_node->next )
-	{
-		char connect_ch = 'D';
-		end_num = end_list_node->solid.entity_index;
-		end_id = end_list_node->solid.entity_id;
-		connect_flag = end_list_node->solid.connect_flag;
-		end_mac = convert_entity_id_to_uit64_mac_address( end_id );
-		if( connect_flag )
-			connect_ch = 'C';
-		else 
-			connect_ch = 'D';
-
-		desc_entity_node = search_desc_dblist_node_no_printf_info( end_id, descptor_guard);
-		if( NULL != desc_entity_node )
-		{
-			memcpy( firmware, desc_entity_node->endpoint_desc.firmware_version.value, sizeof(struct jdksavdecc_string));
-			memcpy( entity_name, desc_entity_node->endpoint_desc.entity_name.value, sizeof(struct jdksavdecc_string));
-		}
-			
-		MSGINFO( "%c\t%d      |  %s    |  0x%016llx    |  %s\t     |  %012llx", connect_ch,  end_num, entity_name, end_id, firmware, end_mac );
-	}
-
-	MSGINFO( "\r\nC  End Station connect\nD  End Stastion disconnect\r\n\r\n" );
+/*$ controller command::cmd_list_proccess */
+void cmd_list_proccess(void) {
+    uint16_t endIndex; /* endstation index in the list */
+    uint64_t endId;            /* endstation target id */
+    uint64_t endMac;                 /* endstation mac */
+    bool connectFlag;        /* endstation online flag */
+    solid_pdblist p;             /* solid node pointer */
+    desc_pdblist pD;              /* desc node pointer */
+    uint8_t firmware[64] = "UNKNOWN";      /* firmware */
+    uint8_t endName[64] = "UNKNOWN"; /* name of endstation */
+    char ch;            /* the temp varialable of char */
+    /* head of message debug */
+    MSGINFO( "\n| End Station | Name                      "
+          "| Entity ID          | Firmware                "
+                                  "  | Mac          |\n" );
+    /* head of message debug */
+    MSGINFO("----------------------------------------------"
+                       "-----------------------------------"
+                            "--------------------------\n");
+    /* loop for message debugging */
+    p = end_list_guard;
+    for (p = p->next; p != end_list_guard; p = p->next) {
+        endIndex = p->solid.entity_index;
+        endId = p->solid.entity_id;
+        connectFlag = p->solid.connect_flag;
+        endMac = convert_entity_id_to_uit64_mac_address(endId);
+        if (connectFlag) {
+            ch = 'C';
+        }
+        else {
+            ch = 'D';
+        }
+        /* get node of descriptor */
+        pD = search_desc_dblist_node(endId, descptor_guard);
+        if (NULL != pD) {
+            /* set firmware name */
+            memcpy(firmware, pD->endpoint_desc.firmware_version.value,
+                sizeof(struct jdksavdecc_string));
+            /* set endstation name */
+            memcpy(endName, pD->endpoint_desc.entity_name.value,
+                sizeof(struct jdksavdecc_string));
+        }
+        /* printf message */
+        MSGINFO("| %c %9.1d | %25.25s | 0x%016llx | %25.25s | %012llx |\n",
+                ch,  endIndex, endName, endId, firmware, endMac);
+    }
+    /* 'C' means online, 'D' means offline */
+    MSGINFO("\r\nC  End Station connect\nD  End Stastion disconnect\r\n\r\n");
 }
 
 /*===================================
@@ -1060,7 +1072,7 @@ void terminal_cmd_query_vote_sign_proccess(const char *opt)
 
 void cmd_terminal_proccess( const char *opt )
 {
-	MSGINFO( "Please enter \"help\" to testing terminal protocol command!(quit to return main loop)");
+	MSGINFO( "Please enter \"help\" to testing terminal protocol command!(quit to return main loop)\n");
 
 	while(1)
 	{
@@ -1175,7 +1187,7 @@ void cmd_terminal_proccess( const char *opt )
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "clear\nlist\nls\nq\nquit\nquery\nallot\nreAllot\nsetState\nsetMic\nsetIndicator\nnewAllot\nsetLcd\nsetled\nchairManControl\nvoteResult\nlimitSpkTime\nhostSendState\nsendEndLcd\noptionEndpoint\nspecialEventReply\ntnmtCmptMsg\nreplyEndMessage\nqueryVoteSign");
+			MSGINFO( "clear\nlist\nls\nq\nquit\nquery\nallot\nreAllot\nsetState\nsetMic\nsetIndicator\nnewAllot\nsetLcd\nsetled\nchairManControl\nvoteResult\nlimitSpkTime\nhostSendState\nsendEndLcd\noptionEndpoint\nspecialEventReply\ntnmtCmptMsg\nreplyEndMessage\nqueryVoteSign\n");
 		}
 		
 		free(cmd_buf);
@@ -1273,7 +1285,7 @@ void cmd_udp_client_command_avail( const char *opt ) // 4 paramt
 
 void cmd_udp_client( void )
 {
-	MSGINFO( "Please enter \"help\" to testing upper protocol command!(quit to return main loop)");
+	MSGINFO( "Please enter \"help\" to testing upper protocol command!(quit to return main loop)\n");
 
 	while(1)
 	{
@@ -1317,7 +1329,7 @@ void cmd_host_func_command_reallot( const char *opt ) // no paramt
 
 void cmd_host_func_proccess( void )
 {
-	MSGINFO( "Please enter \"help\" to see host functions command Usage!(quit to return main loop)");
+	MSGINFO( "Please enter \"help\" to see host functions command Usage!(quit to return main loop)\n");
 
 	while(1)
 	{
@@ -1376,11 +1388,11 @@ void cmd_matrix_control_proccess( void )
 		MSGINFO( ">>" );
 		if( scanf( "%d", &cmd ) != 1 )
 		{
-			MSGINFO( "wrong enter cmd: Will Return to Main menu" );
+			MSGINFO( "wrong enter cmd: Will Return to Main menu\n" );
 			return;
 		}
 
-		MSGINFO( "Your Enter command-->%d", cmd );
+		MSGINFO( "Your Enter command-->%d\n", cmd );
 		switch( cmd )
 		{
 			case 1:
@@ -1406,33 +1418,33 @@ void cmd_matrix_control_proccess( void )
 				}
 				else
 				{
-					MSGINFO( "step 1: Enter input channal (1-%d)", MATRIX_INPUT_NUM );
+					MSGINFO( "step 1: Enter input channal (1-%d)\n", MATRIX_INPUT_NUM );
 					while( (int_input == 0) || (int_input > MATRIX_OUTPUT_NUM))
 					{
 						if( scanf( "%d", &int_input ) != 1 )
 						{
-							MSGINFO( "wrong enter param: Will Return to Main menu" );
+							MSGINFO( "wrong enter param: Will Return to Main menu\n" );
 							return;
 						}
 						
 						if( (int_input > MATRIX_OUTPUT_NUM ) || (int_input <=0))
-							MSGINFO( "input num (%d)out of range!Please enter right num",int_input );
+							MSGINFO( "input num (%d)out of range!Please enter right num\n",int_input );
 					}
 
-					MSGINFO( "step 2: Enter output number (1-%d) <--input = %d", MATRIX_OUTPUT_NUM, int_input );
+					MSGINFO( "step 2: Enter output number (1-%d) <--input = %d\n", MATRIX_OUTPUT_NUM, int_input );
 					while( (int_output_num == 0) || (int_output_num > MATRIX_OUTPUT_NUM))
 					{
 						if( scanf( "%d", (int*)&int_output_num ) != 1 )
 						{
-							MSGINFO( "wrong enter param: Will Return to Main menu" );
+							MSGINFO( "wrong enter param: Will Return to Main menu\n" );
 							return;
 						}
 
 						if( (int_output_num > MATRIX_OUTPUT_NUM ) || (int_output_num) <=0 )
-							MSGINFO( "output num (%d)out of range!Please enter right num", int_output_num );
+							MSGINFO( "output num (%d)out of range!Please enter right num\n", int_output_num );
 					}
 					
-					MSGINFO( "step 3(end):Enter output channal (1-%d)", MATRIX_OUTPUT_NUM );
+					MSGINFO( "step 3(end):Enter output channal (1-%d)\n", MATRIX_OUTPUT_NUM );
 					int i = 0;
 					for( i = 0; i < int_output_num; i++ )
 					{
@@ -1440,12 +1452,12 @@ void cmd_matrix_control_proccess( void )
 						{
 							if( scanf( "%d", (int*)&int_output[i] ) != 1 )
 							{
-								MSGINFO( "wrong enter param: Will Return to Main menu" );
+								MSGINFO( "wrong enter param: Will Return to Main menu\n" );
 								return;
 							}
 							
 							if( (int_output[i] > MATRIX_OUTPUT_NUM ) || (int_output[i]) <=0 )
-								MSGINFO( "output channal (%d)out of range!Please enter right num. Or have same output", int_output[i] );
+								MSGINFO( "output channal (%d)out of range!Please enter right num. Or have same output\n", int_output[i] );
 						}
 					}
 
@@ -1457,11 +1469,11 @@ void cmd_matrix_control_proccess( void )
 						uoutput[i] = (int)int_output[i];
 					if( -1 != control_matrix_input_output_switch( matrix_cmd, (uint8_t)int_input, uoutput, (uint8_t)int_output_num ))
 					{
-						MSGINFO( "switch Success" );
+						MSGINFO( "switch Success\n" );
 					}
 					else
 					{
-						MSGINFO( "switch failed: input = %d, output_num %d", int_input, int_output_num );
+						MSGINFO( "switch failed: input = %d, output_num %d\n", int_input, int_output_num );
 					}
 				}
 				break;
@@ -1541,7 +1553,7 @@ void cmd_menu_control_proccess( void )
 {
 	char treated_cmd[CMD_OPTION_MAX_NUM][CMD_OPTION_STRING_LEN] = {{0}};
 
-	MSGINFO( "Please enter \"help\" to see menu command Usage!(quit to return main loop)");
+	MSGINFO( "\nPlease enter \"help\" to see menu command Usage!(quit to return main loop)\n");
 	while( 1 )
 	{
 		char* cmd_buf = readline( ">: " );
@@ -1678,7 +1690,7 @@ void controller_proccess( void )
 		}
 		else if(!isspace(cmd_buf[0]))
 		{
-			MSGINFO( "adp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\nmatrixControl\nMenuTest\n");
+			MSGINFO( "\nadp\nclear\nconnect\ndisconnect\nhostFunc\nlist\nupdate\nudpClient\nq\nquit\nshow\nterminal\nmatrixControl\nMenuTest\n\n");
 		}
 
 		free(cmd_buf); // free command
