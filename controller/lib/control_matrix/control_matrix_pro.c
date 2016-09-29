@@ -324,7 +324,7 @@ int control_matrix_switch( char *p_string, uint8_t string_len )
 		sw_cmd = A_SWITCH;
 	else 
 	{
-		MSGINFO( "Err switch cmd = %c, check cmd is A B V", str[2] );
+		MSGINFO( "Err switch cmd = %c, check cmd is A B V\n", str[2] );
 		return -1;
 	}
 	

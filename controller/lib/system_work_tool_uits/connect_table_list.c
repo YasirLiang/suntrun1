@@ -71,12 +71,12 @@ void connect_table_double_list_show_connected( connect_tbl_pdblist guard )
 	assert( guard );
 	connect_tbl_pdblist connect_pnode = NULL;
 	
-	MSGINFO( "\n------------------------------connnect table----------------------------");
+	MSGINFO( "\n------------------------------connnect table----------------------------\n");
 	list_for_each_entry( connect_pnode, &guard->list, list )
 	{
 		if( connect_pnode->connect_elem.listener_connect_flags )
 		{
-			MSGINFO( "0x%016llx(%d)-->0x%llx(%d)",\
+			MSGINFO( "0x%016llx(%d)-->0x%llx(%d)\n",\
 				connect_pnode->connect_elem.tarker_id, connect_pnode->connect_elem.tarker_index,\
 				connect_pnode->connect_elem.listener_id, connect_pnode->connect_elem.listener_index );
 		}
@@ -91,14 +91,14 @@ void connect_table_double_list_show_all( connect_tbl_pdblist guard )
 	assert( guard );
 	connect_tbl_pdblist connect_pnode = NULL;
 	
-	MSGINFO( "\n---------------------------connnect table all----------------------------");
+	MSGINFO( "\n---------------------------connnect table all----------------------------\n");
 	list_for_each_entry( connect_pnode, &guard->list, list )
 	{
-		MSGINFO( "0x%016llx(%d)-->0x%llx(%d)",\
+		MSGINFO( "0x%016llx(%d)-->0x%llx(%d)\n",\
 			connect_pnode->connect_elem.tarker_id, connect_pnode->connect_elem.tarker_index,\
 			connect_pnode->connect_elem.listener_id, connect_pnode->connect_elem.listener_index );
 	}
 
-	MSGINFO( "------------------------------end----------------------------------------\n");
+	MSGINFO( "------------------------------end----------------------------------------\n\n");
 }
 
