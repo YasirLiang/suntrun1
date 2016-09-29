@@ -896,21 +896,7 @@ uint16_t find_new_apply_addr(terminal_address_list_pro* p_gallot,
     }
     return temp_addr; /* return allot address */
 }
-
-/*==================================================
-					开始终端命令函数
-====================================================*/
-/***************************************************
-**Writer:YasirLiang
-**Date: 2015/10/26
-**Name:terminal_func_allot_address
-**Garam:
-**		cmd: func cmd
-**		data: proccess recv data
-**		data_len: recv data length
-**Func: procces conference allot command data sended by terminal
-******************************************************/
-/*Terminal command function begin-------------------------------------------*/
+/*{@ $Terminal command function begin---------------------------------------*/
 /*$ Terminal command function::terminal_func_allot_address..................*/
 int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
     /* procces conference allot command data sended by terminal */
@@ -1544,14 +1530,14 @@ int terminal_end_sign(uint16_t cmd, void *data, uint32_t data_len)
 }
 /*$ Terminal command function::terminal_end_vote............................*/
 int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len) {
-        /*set end voting flag */
-	gvote_flag = NO_VOTE;
-	/* end query voting result */
-	gquery_svote_pro.index = 0;
-	gquery_svote_pro.running = false;
-	host_timer_stop(&gquery_svote_pro.query_timer);
-        /* return success */
-        return 0;
+    /*set end voting flag */
+    gvote_flag = NO_VOTE;
+    /* end query voting result */
+    gquery_svote_pro.index = 0;
+    gquery_svote_pro.running = false;
+    host_timer_stop(&gquery_svote_pro.query_timer);
+    /* return success */
+    return 0;
 }
 /*$ Terminal command function::termianal_music_enable.......................*/
 int termianal_music_enable(uint16_t cmd, void *data, uint32_t data_len) {
@@ -1643,11 +1629,10 @@ int termianal_camera_track_set(uint16_t cmd, void *data, uint32_t data_len) {
     /* return success */
     return 0;
 }
-
+/*$ Terminal command function begin---------------------------------------@}*/
 /*===================================================
 {@终端处理流程
 =====================================================*/
-
 int terminal_socroll_synch(void )
 {
 	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_LED_DISPLAY_ROLL_SYNC );
