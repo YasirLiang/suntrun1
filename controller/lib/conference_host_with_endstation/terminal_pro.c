@@ -33,6 +33,7 @@
 #include "time_handle.h"
 #include "log_machine.h" /* system log include file*/
 #include "conference_transmit_unit.h"
+#include "central_control_recieve_unit.h" /* CHANNEL_MUX_NUM is defined */
 
 /* terminal reply mic other apply macro-------------------------------------*/
 /* #define MIC_RELY_OTHER_APPLY */
@@ -3842,8 +3843,8 @@ void terminal_key_action_chman_interpose( uint16_t addr, uint8_t key_num, uint8_
 
 void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chman_node, const uint8_t recvdata )
 {
-	tcmpt_data_mic_status mic_list[SYSTEM_TMNL_MAX_NUM]; // 100-临时发言总人数
-	uint16_t report_mic_num = 0;
+	tcmpt_data_mic_status mic_list[CHANNEL_MUX_NUM]; /* six is max speak number */
+        uint8_t report_mic_num;
 	thost_system_set set_sys; // 系统配置文件的格式
 	int dis_ret = -1;
 	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
@@ -3895,6 +3896,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 			return;
 		
 		tmnl_pdblist tmp_node = dev_terminal_list_guard->next;
+                report_mic_num = 0;
 		for( ; tmp_node != dev_terminal_list_guard; tmp_node = tmp_node->next )
 		{
 			if( tmp_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST )
@@ -3903,7 +3905,7 @@ void terminal_chairman_interpose( uint16_t addr, bool key_down, tmnl_pdblist chm
 				{
 					trans_model_unit_disconnect( tmp_node->tmnl_dev.entity_id, tmp_node );
 					terminal_speak_track(tmp_node->tmnl_dev.address.addr, false );
-					if( report_mic_num <= SYSTEM_TMNL_MAX_NUM )
+					if( report_mic_num < CHANNEL_MUX_NUM )
 					{
 						mic_list[report_mic_num].addr.low_addr = (uint8_t)((tmp_node->tmnl_dev.address.addr&0x00ff) >> 0);
 						mic_list[report_mic_num].addr.high_addr = (uint8_t)((tmp_node->tmnl_dev.address.addr&0xff00) >> 0);

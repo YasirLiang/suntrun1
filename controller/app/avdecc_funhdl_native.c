@@ -82,7 +82,7 @@ int thread_func_fn(void * pgm) {
         p_msg_wnode = func_command_work_queue_messag_get(p_func_wq);
         if (p_func_wq->work.head == NULL) {
             if (p_func_wq->work.trail != NULL) {
-                /*while queue isempty,
+                /*while queue is empty,
                 make sure the queue trail not to be used again*/
                 p_func_wq->work.trail = NULL;
             }
