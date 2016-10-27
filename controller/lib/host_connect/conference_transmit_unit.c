@@ -253,6 +253,22 @@ static bool trans_model_unit_isopt_timeout_by_output_channel_index(const tconfer
 	return bret;
 }
 
+/* user for disconnect */
+static bool trans_model_unit_disconnect_isopt_timeout(const tconference_trans_pmodel p_trans_model, const uint16_t talker_index)
+{
+	T_pOutChannel p_Outnode = NULL;
+	bool bret = false;
+	
+	if (conference_transmit_unit_found_output_channel_by_index(talker_index, p_trans_model, &p_Outnode))
+	{
+		assert(p_Outnode);
+		if ( (get_current_time() - p_Outnode->operate_timetimp) >
+                        (OUTPUT_CHANNEL_OPT_PROTECT_TIME*4))
+			bret = true;
+	}
+	
+	return bret;
+}
 
 /*return value: 0:nomal; -1:error,but not timeout; -2:err for timeout*/
 int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node )// return -1; means that there is no ccu reciever model 
@@ -290,7 +306,7 @@ int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_n
 				p_trans_model->confenrence_node = p_tmnl_node;
 
 			// found and operate timeout?
-			if (trans_model_unit_isopt_timeout_by_output_channel_index(p_trans_model, CONFERENCE_OUTPUT_INDEX))
+			if (trans_model_unit_disconnect_isopt_timeout(p_trans_model, CONFERENCE_OUTPUT_INDEX))
 				return ccu_recv_model_untalk( tarker_id, CONFERENCE_OUTPUT_INDEX );
 			else
 				return -2;
