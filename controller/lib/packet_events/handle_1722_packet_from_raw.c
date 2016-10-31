@@ -97,11 +97,14 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			{
 				if(!found_adp_in_end_station) // 终端不在系统中，加入系统
 				{          
-					end_station = adp_proccess_new_entity( guard, &end_station, &adpdu, list_len );
-					if( end_station->solid.connect_flag == CONNECT )
-						DEBUG_ONINFO("[ END_STATION CONNECT: 0x%llx ] ", end_station->solid.entity_id );
-
-				}
+					end_station = adp_proccess_new_entity(guard,
+                                                &end_station, &adpdu, list_len);
+					if ((NULL != end_station)
+                                              && (end_station->solid.connect_flag == CONNECT)) {
+						DEBUG_ONINFO("[ END_STATION CONNECT: 0x016%llx ] ",
+                                                    end_station->solid.entity_id);
+            				}
+                                }
 				else// 终端在系统中
 				{
 					// 终端已在系统中，只是available_index不同
@@ -137,7 +140,7 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 					{
 						end_station->solid.connect_flag = CONNECT;
 						adp_entity_state_avail( guard, end_station, &adpdu.header );
-						DEBUG_ONINFO("[ END_STATION AFLESH CONNECT: 0x%llx ] ", end_station->solid.entity_id );
+						DEBUG_ONINFO("[ END_STATION AFLESH CONNECT: 0x016%llx ] ", end_station->solid.entity_id );
 					}
 					else// 更新终端的可用时间，即超时时间。因为终端存在系统的时间永远是最新的
 					{

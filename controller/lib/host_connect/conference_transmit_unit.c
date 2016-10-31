@@ -263,7 +263,7 @@ static bool trans_model_unit_disconnect_isopt_timeout(const tconference_trans_pm
 	{
 		assert(p_Outnode);
 		if ( (get_current_time() - p_Outnode->operate_timetimp) >
-                        (OUTPUT_CHANNEL_OPT_PROTECT_TIME*4))
+                        (OUTPUT_CHANNEL_OPT_PROTECT_TIME))
 			bret = true;
 	}
 	
