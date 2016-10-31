@@ -280,8 +280,8 @@ void adp_entity_avail(struct jdksavdecc_eui64 discover_entity_id,
     memcpy(frame.src_address.value, net.m_my_mac, 6U);
 
     if (adp_form_msg(&frame, &adpdu, msg_type, discover_entity_id ) == 0) {
-            system_raw_packet_tx(frame.dest_address.value, frame.payload,
-            frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ADP,  true);
+        system_raw_packet_tx(frame.dest_address.value, frame.payload,
+            frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ADP, true);
     }
     else {
         DEBUG_INFO("adp form msg failed!");

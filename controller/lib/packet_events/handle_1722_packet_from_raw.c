@@ -97,13 +97,14 @@ int rx_raw_packet_event( const uint8_t dst_mac[6], const uint8_t src_mac[6], boo
 			{
 				if(!found_adp_in_end_station) // 终端不在系统中，加入系统
 				{          
-					end_station = adp_proccess_new_entity(guard,
-                                                &end_station, &adpdu, list_len);
-					if ((NULL != end_station)
-                                              && (end_station->solid.connect_flag == CONNECT)) {
-						DEBUG_ONINFO("[ END_STATION CONNECT: 0x016%llx ] ",
-                                                    end_station->solid.entity_id);
-            				}
+                                    end_station = adp_proccess_new_entity(guard,
+                                        &end_station, &adpdu, list_len);
+                                    if ((NULL != end_station)
+                                          && (end_station->solid.connect_flag == CONNECT))
+                                    {
+                                        DEBUG_ONINFO("[END_STATION CONNECT: 0x016%llx]",
+                                            end_station->solid.entity_id);
+                                    }
                                 }
 				else// 终端在系统中
 				{
