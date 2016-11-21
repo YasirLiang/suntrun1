@@ -230,7 +230,8 @@ int conference_recieve_model_init( const uint8_t *frame, int pos, size_t frame_l
 	}
 #else
 	if ((strcmp((char*)entity_name.value, CCU_R_MODEL_NAME) == 0) ||\
-		(strcmp((char*)entity_name.value, CCU_TR_MODEL_NAME) == 0))
+		(strcmp((char*)entity_name.value, CCU_TR_MODEL_NAME) == 0)
+		|| (strcmp((char*)entity_name.value, avb_switch_name) == 0))
 	{
 		conference_recv_unit_debug( "not a right conference recieve model = %s:ring name is %s", \
 			(char*)entity_name.value, CONFERENCE_RECIEVE_UNIT_NAME );

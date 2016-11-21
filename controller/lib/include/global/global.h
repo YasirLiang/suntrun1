@@ -28,6 +28,8 @@
 #define central_control_unit_name "AVB 4in/4out"
 /*! the name of transmit central control unit name*/
 #define central_control_unit_transmit_name "DCS8000"
+/*! the name of avb switch name */
+#define avb_switch_name "default_entity_name"
 /*! stream ouput of central control transmit unit*/
 #define central_control_transmit_uint_output 0
 /*! conference unit name*/
