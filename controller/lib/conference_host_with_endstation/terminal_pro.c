@@ -940,7 +940,7 @@ int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
             }
         }
     }
-    else {
+    else { 
         if ((msg.data == ADDRESS_ALREADY_ALLOT)
               && (!p_allot->renew_flag)
               && (p_addr_list[p_allot->index].addr != 0xffff))
