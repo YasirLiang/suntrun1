@@ -260,6 +260,7 @@ uint16_t terminal_pro_get_address( int get_flags, uint16_t addr_cur );
 void terminal_pro_init_cur_terminal_node( void );
 void terminal_after_time_mic_state_pro(void);
 extern void Terminal_micCallbackPro(void);
+void Terminal_arcsStarSign(void);
 
 #endif
 

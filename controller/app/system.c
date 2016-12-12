@@ -50,7 +50,10 @@
 #include "central_control_transmit_unit.h"
 #include "system_1722_recv_handle.h"
 #include "controller_machine.h"
-
+#include "arcs_common.h" /*! for arcs process */
+#include "arcs_extern_port.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 /*Global Objects declaration------------------------------------------------*/
 extern int gcontrol_sur_fd;/* menu display control fd */
 extern FILE *glog_file_fd;/* system log file fd*/
@@ -72,6 +75,8 @@ void init_system(void) {
     acmp_endstation_init(command_send_guard, endpoint_list, descptor_guard);
     /* aecp model init */
     aecp_controller_init(endpoint_list, descptor_guard, command_send_guard);
+    /* initial arcs */
+    ArcsCommon_initial(command_send_guard);
     
     /* system profile init */
     init_profile_system_file();
@@ -158,9 +163,16 @@ void set_system_information(struct fds net_fd,
     adp_entity_avail(zero, JDKSAVDECC_ADP_MESSAGE_TYPE_ENTITY_DISCOVER);
 }
 /*$system_close.............................................................*/
+extern volatile bool m_isRunning;
 void system_close(struct threads_info *p_threads) {
-    int can_num = p_threads->pthread_nums;/* system pthread num */
-    int i = 0, ret;
+    /* system exit */
+    m_isRunning = false;
+    rl_callback_handler_remove(); /* make readline sure clear */
+    /* notify abcs system stop */
+    char abstr[] = "quit";
+    ExternPort_send(EP0_arcs, abstr, strlen(abstr));
+    /* destroy extern port */
+    ExternPort_destroy(EP0_arcs);
     /* exit muticast proccessing */
     muticast_muticast_connect_manger_pro_stop();
     /* en485 model clear*/
@@ -179,21 +191,6 @@ void system_close(struct threads_info *p_threads) {
     conference_transmit_unit_destroy();
     /* conference recieve unit destroy */
     conference_recieve_unit_destroy();
-    /* kill system ptheads */
-    for (i = 0; i < can_num; i++) {
-        ret = pthread_kill(p_threads->tid[i], SIGQUIT);
-        if (ret != 0) {
-            if (errno == ESRCH) {
-                DEBUG_INFO("An invalid signal was specified: tid[%d] ", i);
-            }
-            else if (errno == EINVAL) {
-                DEBUG_INFO("no such tid[%d] thread to quit ", i);
-            }
-            else {
-                /* no need */
-            }
-        }
-    }
 
     /* endpiont double link list */
     destroy_endpoint_dblist(endpoint_list);
@@ -220,7 +217,9 @@ void system_close(struct threads_info *p_threads) {
 
     /* queues of work pthread and sending pthread */
     destroy_func_command_work_queue();
+    pthread_cond_signal(&fcwork_queue.control.cond);
     destroy_network_send_work_queue();
+    pthread_cond_signal(&net_send_queue.control.cond);
 
     /* save system profile */
     profile_system_close();// 保存配置文件的信息

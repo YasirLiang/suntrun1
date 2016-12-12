@@ -39,7 +39,7 @@
 enum useful_enums {
     PIPE_RD = 0,    /*! pipe read fd index */
     PIPE_WR = 1,   /*! pipe write fd index */
-    POLL_COUNT = 6,        /*! poll number */
+    POLL_COUNT = 7,        /*! poll number */
     TIME_PERIOD_1_MILLISECONDS = 1,
     TIME_PERIOD_25_MILLISECONDS = 25
 };

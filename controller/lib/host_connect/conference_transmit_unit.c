@@ -1007,3 +1007,25 @@ void conference_transmit_model_init( void )
 	attach_observer( &gconnector_subjector, &gconference_trans_observer );
 }
 
+uint16_t conference_transmit_unit_allcount_cnnts(uint64_t id) {
+    uint16_t num = 0;
+    tconference_trans_pmodel pos = NULL, n = NULL;
+    T_pOutChannel pos1 = NULL, n1 = NULL;
+    Input_pChannel pos2 = NULL, n2 = NULL;
+
+    list_for_each_entry_safe(pos, n,&gconference_model_guard.list, list) {
+        if (id == pos->tarker_id) {
+            list_for_each_entry_safe(pos1, n1,&pos->out_ch.list, list) {
+                list_for_each_entry_safe(pos2, n2, &pos1->input_head.list,
+                    list)
+                {
+                    num++;
+                }
+
+            }
+            break;
+        }
+    }
+    return num;
+}
+

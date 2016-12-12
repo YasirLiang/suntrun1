@@ -51,6 +51,7 @@ void conference_transmit_unit_destroy(void);
 /*! Ctrans_disLongest */
 int Ctrans_disLongest(uint64_t *pId, tmnl_pdblist* ppC);
 uint8_t trans_model_unit_get_system_input_num(void);
+uint16_t conference_transmit_unit_allcount_cnnts(uint64_t id);
 
 // *************************************************//
 

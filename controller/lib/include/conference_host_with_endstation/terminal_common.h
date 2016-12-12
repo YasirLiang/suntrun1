@@ -313,6 +313,9 @@ typedef  struct _tterminal_state	// 终端的状态，一个终端对应一个状态
 	uint8_t sys_state;			// 终端在系统中的状态
 	uint8_t sign_state;			// 终端的签到状态
 	uint8_t vote_state;			// 投票状态
+	bool is_vote; /* voted flag */
+        bool is_select; /* is select */
+        bool is_grade; /* is grade */
 }terminal_state; 
 
 #define SPK_KEY_OPT_TIME 500

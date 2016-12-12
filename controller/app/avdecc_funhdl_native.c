@@ -35,18 +35,19 @@
 #include <pthread.h>
 #include "func_proccess.h"
 #include "avdecc_funhdl_native.h"
+#include "arcs_common.h" /*$ for arcs interface */
 
 /*Macro INPUT_MSG_LEN for control surface message len-----------------------*/
 #define INPUT_MSG_LEN	6
 /*Macro SYS_BUF_RECV_COUNT buffer counts------------------------------------*/
-#define SYS_BUF_RECV_COUNT 2
+#define SYS_BUF_RECV_COUNT 3
 /*Extern function delaration------------------------------------------------*/
 extern void input_recv_pro(unsigned char *p_buf, unsigned recv_len);
 /*Extern Global varialable delaration-----------------------------------------*/
 extern unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN]; 
 /*Extern Global varialable delaration-----------------------------------------*/
 extern volatile unsigned char gcontrol_sur_msg_len;
-
+extern volatile bool m_isRunning;
 /*$ command function thread proccess........................................*/
 int thread_func_fn(void * pgm) {
     /* pointer to function working queue */
@@ -119,7 +120,7 @@ int thread_func_fn(void * pgm) {
         /* run function command */
         p_func_items[func_index].cmd_proccess(func_cmd, func_data, data_len);
     }
-
+    
     return 0;
 }
 /*$ for create the thread of command function...............................*/
@@ -138,7 +139,7 @@ int pthread_handle_cmd_func(pthread_t *pid,
 /*$ thread funtion..........................................................*/
 int pthread_recv_data_fn(void *pgm) {
     static int static_buf_num = 0;/*for change buffer*/
-    while(1) {
+    while(m_isRunning) {
         unsigned long us_per_ms = 1000;
         unsigned long interval_ms = 0;
         struct timeval tempval;
@@ -165,11 +166,20 @@ int pthread_recv_data_fn(void *pgm) {
                 control_matrix_common_recv_message_pro();
                 break;
             }
+            case 2: { /* arcs */
+                if (gregister_tmnl_pro.rgs_state == RGST_IDLE) {
+                    /* for arcs process */
+                    ArcsCommon_process();
+                }
+                break;
+            }
             default: {/* will never come this case */
                 break;
             }
         }
-
+        if (!m_isRunning) {
+            break;
+        }
         /* proccess termianl point register */
         system_register_terminal_pro();
         if (gregister_tmnl_pro.rgs_state == RGST_IDLE) {
@@ -189,8 +199,7 @@ int pthread_recv_data_fn(void *pgm) {
 #endif
             /* muticast connect table manager */
             muticast_connect_manger_timeout_event_image();
-        }
-        
+        }     
         /* avdecc discover terminal managing */
         avdecc_manage_discover_proccess();
         /* check send queue is empty? */
@@ -204,6 +213,7 @@ int pthread_recv_data_fn(void *pgm) {
         /*mic state set callback proccessing */
         Terminal_micCallbackPro();
     }	
+    /* exit pthread */
     return 0;
 }
 /*$ create the thread for proccessing recieve data..........................*/

@@ -117,6 +117,14 @@ enum udp_upper_cmd_timeout //  upper and host deal timouts
 	REPORT_ENDSTATION_MESSAGE_TIMEOUTS = 50,
 	HIGH_DEFINITION_SWITCH_SET_TIMEOUTS = 50, 
 };
+/*$ arcs command timeout(ms)*/
+enum {
+    QT_QUEUE_ID_MS = 500,
+    QT_SWITCH_MATRIX_MS = 50,
+    QT_OPT_TMNL_MS = 50,
+    QT_SYS_SET_MS = 50,
+    QT_CMR_CTL_MS = 50
+};
 
 typedef enum enum_func_link // conferenc command functions command link
 {

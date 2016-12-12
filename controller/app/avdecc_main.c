@@ -39,6 +39,7 @@ solid_pdblist endpoint_list; /*terminal double list guard node in the system*/
 inflight_plist command_send_guard;       /* inflight double list guard node */
 desc_pdblist descptor_guard;                 /* 1722.1 terminal description */
 struct threads_info threads;                          /* system threads set */
+volatile bool m_isRunning = 1;                                     /* system running flags */
 /*Global varialable for log machine-----------------------------------------*/
 char *glog_file_name = NULL;                         /* pointer to log file */
 FILE *glog_file_fd = NULL;                                   /* log file fd */
@@ -72,6 +73,8 @@ static int backtrace_arm(int **buffer,  int size);
 static void back_trace_dump(void);
 static void sigsegv_handler(int signum, siginfo_t *si_info, void * ptr);
 static void catch_sigsegv(void);
+/*$ extern function declartion----------------------------------------------*/
+extern int pthread_cli_create(pthread_t *cli_pid);
 /*$ arm backtrace-----------------------------------------------------------*/
 static int backtrace_arm(int ** buffer, int size) {
     int *fp = 0;
@@ -245,7 +248,7 @@ static void log_callback_func(void *user_obj, int32_t log_level,
 }
 
 int main(int argc, char *argv[]) {
-    /*enable arm version if __ARM_BACK_TRACE__ is defined-----------------------*/
+/*enable arm version if __ARM_BACK_TRACE__ is defined-----------------------*/
 #ifdef __ARM_BACK_TRACE__
     __asm__( "mov %0, fp\n" : "=r"(gmain_stack_fp));
 #endif /*__ARM_BACK_TRACE__*/
@@ -333,6 +336,7 @@ int main(int argc, char *argv[]) {
     pthread_t proccess_thread;/* recieve data handle thread */
     pthread_t f_thread;          /* function command thread */
     pthread_t s_thread;            /* port data send thread */
+    pthread_t c_thread;            /* command line thread */
 
     /* initial system */
     init_system();
@@ -360,11 +364,12 @@ int main(int argc, char *argv[]) {
     threads.tid[threads.pthread_nums++] = s_thread;   /* save thread handle */
     pthread_detach(s_thread);               /* detach port data send thread */
 
+    pthread_cli_create(&c_thread);
+    threads.tid[threads.pthread_nums++] = s_thread;   /* save thread handle */
+    pthread_detach(s_thread);               /* detach thread */
+    
     /* set system information */
     set_system_information(net_fd, &udp_net);
-    /* main thread of command line system function */
-    controller_proccess();
-    /* exit thread */
     pthread_exit(NULL);
 }
 

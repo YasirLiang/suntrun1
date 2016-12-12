@@ -249,12 +249,31 @@ void central_control_transmit_unit_update_by_connect_rx_state( const uint64_t ta
 
 	if( found_output  )// found ?
 	{
-		Input_pChannel p_intput = input_connect_node_create();
-		if( p_intput != NULL )
-		{// create success
-			input_connect_node_init_by_index( p_intput, listern_id, listern_id_index );
-			input_connect_node_insert_node_to_list( &p_outch->input_head.list, p_intput );
-		}
+	        Input_pChannel pos3 = NULL, n3 = NULL;
+                bool foundInput = false;
+	        list_for_each_entry_safe(pos3, n3, &p_outch->input_head.list,
+                    list)
+                {
+                    if ((listern_id == pos3->listener_id)
+                          && (listern_id_index == pos3->listen_index))
+                    {
+                        foundInput = true;
+                        break;
+                    }
+                }
+            
+                if (!foundInput) {
+                    Input_pChannel p_intput = input_connect_node_create();
+                    if( p_intput != NULL )
+                    {// create success
+                        input_connect_node_init_by_index(
+                            p_intput, listern_id,
+                            listern_id_index );
+                        input_connect_node_insert_node_to_list(
+                            &p_outch->input_head.list,
+                            p_intput);
+                    }
+                }
 	}
 }
 
@@ -511,5 +530,28 @@ bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, uint16_
 	}
 
 	return bret;
+}
+
+uint16_t central_control_transmit_unit_allcount_cnnts(uint64_t id) {
+    uint16_t num = 0;
+    T_pccuTModel pos = NULL, n = NULL;
+    T_pOutChannel pos2 = NULL, n2 = NULL;
+    Input_pChannel pos3 = NULL, n3 = NULL;
+
+    list_for_each_entry_safe(pos, n, &gccu_trans_model_guard, list) {
+        if (id == pos->tarker_id) {
+            list_for_each_entry_safe(pos2, n2, &pos->out_ch.list, list) {
+                list_for_each_entry_safe(pos3, n3, &pos2->input_head.list,
+                    list)
+                {
+                    num++;
+                }
+            }
+
+            break;
+        }
+    }
+    /* return number */
+    return num;
 }
 

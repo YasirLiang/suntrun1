@@ -60,6 +60,8 @@ const char* logging_level_string_get( int32_t level_value );
 void convert_uint64_to_eui48(const uint64_t value, uint8_t new_value[6]);
 uint64_t convert_stream_id_to_tarker_id( const uint64_t listern_stream_id );
 uint8_t get_conference_command_resend_count(const uint8_t cmd);
+const char *getArcsCmdString(uint32_t cmd_value);
+uint32_t getArcsCmdTimeout(uint32_t cmd_value);
 
 #endif
 

@@ -6,7 +6,7 @@
 
 #define COMMAND_BUF 512
 
-void controller_proccess( void );
+void *controller_proccess(void *);
 void cmd_list_proccess( void );
 
 #endif

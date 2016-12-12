@@ -2,6 +2,7 @@
 #include "jdksavdecc_util.h"
 #include "system_packet_tx.h"
 #include "pelco_d.h"
+#include "protocal_qt.h"
 
 const char *aem_cmds_names[] =
 {
@@ -245,61 +246,56 @@ bool get_adpdu_msg_type_value_with_str(const char* msg_str, uint16_t *msg_code )
 	return false;
 }
 
-struct host_and_endstation_cmd_string_values
-{
-	uint32_t cmd;
-	const char * string_valus;
+typedef struct TCmdCorrespString {
+    uint32_t cmd;
+    const char * string_valus;
+}TCmdCorrespString;
+
+typedef struct TCmdCorrespTimeout {
+    uint32_t cmd;
+    uint32_t timeout_ms;    
+}TCmdCorrespTmt;
+
+TCmdCorrespString const host_and_end_string_values[] = {
+    {QUERY_END , "QUERY_END"},
+    {ALLOCATION , "ALLOCATION"},
+    {SET_END_STATUS, "SET_END_STATUS"},
+    {REALLOCATION, "REALLOCATION"},
+    {KEYPAD_ACTION, "KEYPAD_ACTION"},
+    {SET_ENDLIGHT , "SET_ENDLIGHT"},
+    {NEW_ALLOCATION, "NEW_ALLOCATION"},
+    {END_ASSIGN,"END_ASSIGN"},
+    {SET_END_LCD, "SET_END_LCD"},
+    {COMMON_SEND_END_LCD, "COMMON_SEND_END_LCD"},
+    {SET_END_LED, "SET_END_LED"},
+    {COMMON_SEND_END_LED, "COMMON_SEND_END_LED"},
+    {PRESIDENT_CONTROL, "PRESIDENT_CONTROL"},
+    {SEND_VOTE_RESULT, "SEND_VOTE_RESULT"},
+    {TALKTIME_LEN , "TALKTIME_LEN"},
+    {HOST_SEND_STATUS, "HOST_SEND_STATUS"},
+    {SEND_END_LCD_DISPLAY , "SEND_END_LCD_DISPLAY"},
+    {OPTITION_END, "OPTITION_END"},
+    {SET_MIS_STATUS, "SET_MIS_STATUS"},
+    {END_SPETHING, "END_SPETHING"},
+    {CHECK_END_RESULT , "CHECK_END_RESULT"},
+    {TRANSIT_HOST_MSG, "TRANSIT_HOST_MSG"},
+    {TRANSIT_END_MSG, "TRANSIT_END_MSG"},
+    {CONFERENCE_HOST_AND_END_CMD_ERROR, "UNKNOW"}
 };
 
-struct host_and_endstation_cmd_string_values host_and_end_string_values[] =
-{
-	{ QUERY_END , "QUERY_END" },
-	{ ALLOCATION , "ALLOCATION" },
-	{ SET_END_STATUS, "SET_END_STATUS" },
-	{ REALLOCATION, "REALLOCATION" },
-	{ KEYPAD_ACTION, "KEYPAD_ACTION" },
-	{SET_ENDLIGHT , "SET_ENDLIGHT" },
-	{ NEW_ALLOCATION, "NEW_ALLOCATION" },
-	{ END_ASSIGN,"END_ASSIGN" },
-	{ SET_END_LCD, "SET_END_LCD" },
-	{ COMMON_SEND_END_LCD, "COMMON_SEND_END_LCD" },
-	{ SET_END_LED, "SET_END_LED" },
-	{ COMMON_SEND_END_LED, "COMMON_SEND_END_LED" },
-	{ PRESIDENT_CONTROL, "PRESIDENT_CONTROL" },
-	{ SEND_VOTE_RESULT, "SEND_VOTE_RESULT" },
-	{ TALKTIME_LEN , "TALKTIME_LEN" },
-	{ HOST_SEND_STATUS, "HOST_SEND_STATUS" },
-	{ SEND_END_LCD_DISPLAY , "SEND_END_LCD_DISPLAY" },
-	{ OPTITION_END, "OPTITION_END" },
-	{ SET_MIS_STATUS, "SET_MIS_STATUS" },
-	{ END_SPETHING, "END_SPETHING" },
-	{ CHECK_END_RESULT , "CHECK_END_RESULT" },
-	{ TRANSIT_HOST_MSG, "TRANSIT_HOST_MSG" },
-	{ TRANSIT_END_MSG, "TRANSIT_END_MSG" },
-	{ CONFERENCE_HOST_AND_END_CMD_ERROR, "UNKNOW"}
-};
+const char * get_host_and_end_conference_string_value(uint8_t cmd) {
+    TCmdCorrespString const *p = &host_and_end_string_values[0];
+    while (p->cmd != CONFERENCE_HOST_AND_END_CMD_ERROR) {
+        if (p->cmd == cmd) {
+        	return p->string_valus;
+        }
+        p++;
+    }
 
-const char * get_host_and_end_conference_string_value( uint8_t cmd )
-{
-	struct host_and_endstation_cmd_string_values *p = &host_and_end_string_values[0];
-
-	while( p->cmd != CONFERENCE_HOST_AND_END_CMD_ERROR )
-	{	
-		if(p->cmd == cmd )
-			return p->string_valus;
-		p++;
-	}
-	
-	return "UNKNOW";
+    return "UNKNOW";
 }
 
-struct host_and_endstation_cmd_timeout
-{
-	uint32_t cmd;
-	uint32_t timeout_ms;
-};
-
-struct host_and_endstation_cmd_timeout host_and_endstation_commands_timeout_tables[]=
+TCmdCorrespTmt host_and_endstation_commands_timeout_tables[]=
 {
 	{ QUERY_END, QUERY_END_TIMEOUTS },
 	{ ALLOCATION, ALLOCATION_TIMEOUTS},
@@ -329,7 +325,7 @@ struct host_and_endstation_cmd_timeout host_and_endstation_commands_timeout_tabl
 
 uint32_t get_host_endstation_command_timeout( uint32_t cmd_value )
 {
-	struct host_and_endstation_cmd_timeout *p = &host_and_endstation_commands_timeout_tables[0];
+	TCmdCorrespTmt *p = &host_and_endstation_commands_timeout_tables[0];
 
 	while( p->cmd != CONFERENCE_HOST_AND_END_CMD_ERROR )
 	{
@@ -344,13 +340,7 @@ uint32_t get_host_endstation_command_timeout( uint32_t cmd_value )
 	return (uint32_t)0xffff;
 }
 
-struct udp_upper_cmpt_command_and_timeout
-{
-	uint32_t cmd;
-	uint32_t timeout_ms;
-};
-
-struct udp_upper_cmpt_command_and_timeout udp_upper_cmpt_command_and_timeout_table[] =
+TCmdCorrespTmt udp_upper_cmpt_command_and_timeout_table[] =
 {
 	{DISCUSSION_PARAMETER, CONFERENCE_DISCUSSION_PARAMETER_TIMEOUTS},
 	{MISCROPHONE_SWITCH,MISCROPHONE_SWITCH_TIMEOUTS},
@@ -381,13 +371,7 @@ struct udp_upper_cmpt_command_and_timeout udp_upper_cmpt_command_and_timeout_tab
 	{HOST_AND_UPPER_CMPT_CMD_ERROR,0xffff}
 };
 
-struct udp_upper_cmpt_command_strings_value
-{
-	uint32_t cmd;
-	const char* strings_value;
-};
-
-struct udp_upper_cmpt_command_strings_value udp_upper_cmpt_command_table[] =
+TCmdCorrespString const udp_upper_cmpt_command_table[] =
 {
 	{ DISCUSSION_PARAMETER, "DISCUSSION_PARAMETER" },
 	{ MISCROPHONE_SWITCH, "MISCROPHONE_SWITCH"},
@@ -419,14 +403,7 @@ struct udp_upper_cmpt_command_strings_value udp_upper_cmpt_command_table[] =
 	{ HOST_AND_UPPER_CMPT_CMD_ERROR, "UNKNOW" },
 };
 
-
- struct acmp_command_and_timeout
- {
- 	uint32_t cmd;
-        uint32_t timeout_ms;
- };
-
-struct acmp_command_and_timeout acmp_command_and_timeout_table[] =
+TCmdCorrespTmt acmp_command_and_timeout_table[] =
 {
 	{CONNECT_TX_COMMAND, ACMP_CONNECT_TX_COMMAND_TIMEOUT_MS},
         {DISCONNECT_TX_COMMAND, ACMP_DISCONNECT_TX_COMMAND_TIMEOUT_MS},
@@ -522,7 +499,7 @@ const char * acmp_cmd_status_value_to_name( uint32_t acmp_cmd_status_value )
 
 uint32_t get_udp_client_timeout_table( uint8_t msg_type )
 {
-	struct udp_upper_cmpt_command_and_timeout *p = &udp_upper_cmpt_command_and_timeout_table[0];
+	TCmdCorrespTmt *p = &udp_upper_cmpt_command_and_timeout_table[0];
 
 	while(p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
 	{
@@ -539,12 +516,12 @@ uint32_t get_udp_client_timeout_table( uint8_t msg_type )
 
 const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value )
 {
-	struct udp_upper_cmpt_command_strings_value *p = &udp_upper_cmpt_command_table[0];
+	TCmdCorrespString const *p = &udp_upper_cmpt_command_table[0];
 
 	while( p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
 	{
 		if( p->cmd == cmd_value )
-			return p->strings_value;
+			return p->string_valus;
 		p++;
 	}
 
@@ -553,10 +530,10 @@ const char *upper_cmpt_cmd_value_to_string_name( uint8_t cmd_value )
 
 bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *msg_code )
 {
-	struct udp_upper_cmpt_command_strings_value *p = &udp_upper_cmpt_command_table[0];
+	TCmdCorrespString const *p = &udp_upper_cmpt_command_table[0];
 	while( p->cmd != HOST_AND_UPPER_CMPT_CMD_ERROR )
 	{
-		if( strcmp( msg_str, p->strings_value ) == 0)
+		if( strcmp( msg_str, p->string_valus) == 0)
 		{
 			*msg_code = p->cmd;
 			return true;
@@ -570,7 +547,7 @@ bool get_upper_cmpt_cmd_value_from_string_name(const char* msg_str, uint32_t *ms
 
 uint32_t get_acmp_timeout( uint8_t msg_type )
 {
-	struct acmp_command_and_timeout *p = &acmp_command_and_timeout_table[0];
+	TCmdCorrespTmt *p = &acmp_command_and_timeout_table[0];
 
 	while(p->cmd != AEM_ACMP_ERROR)
 	{
@@ -582,6 +559,49 @@ uint32_t get_acmp_timeout( uint8_t msg_type )
 
 	return (uint32_t)0xffff;
 }
+
+static TCmdCorrespString const l_arcsCmdStrTable[] = {
+    {QT_QUEUE_ID, "QT_QUEUE_ID"},
+    {QT_SWITCH_MATRIX, "QT_SWITCH_MATRIX"},
+    {QT_OPT_TMNL, "QT_OPT_TMNL"},
+    {QT_SYS_SET, "QT_SYS_SET"},
+    {QT_CMR_CTL, "QT_SYS_SET"},
+    {0xffffffff, "UNKOWN"}
+};
+
+static TCmdCorrespTmt const l_arcsCmdTimeTable[] = {
+    {QT_QUEUE_ID, QT_QUEUE_ID_MS},
+    {QT_SWITCH_MATRIX, QT_SWITCH_MATRIX_MS},
+    {QT_OPT_TMNL, QT_OPT_TMNL_MS},
+    {QT_SYS_SET, QT_SYS_SET_MS},
+    {QT_CMR_CTL, QT_CMR_CTL_MS},
+    {0xffffffff, 0xffffffff}
+};
+
+const char *getArcsCmdString(uint32_t cmd_value) {
+    TCmdCorrespString const *p = &l_arcsCmdStrTable[0];
+    while (p->cmd != 0xffffffff) {
+    if (p->cmd == cmd_value) {
+            return p->string_valus;
+        }
+        p++;
+    }
+
+    return "UNKNOW";
+}
+
+uint32_t getArcsCmdTimeout(uint32_t cmd_value) {
+    TCmdCorrespTmt const *p = &l_arcsCmdTimeTable[0];
+    while (p->cmd != AEM_ACMP_ERROR) {
+        if (p->cmd == cmd_value) {
+            return p->timeout_ms;
+        }
+        p++;
+    }
+
+    return (uint32_t)0xffffffff;
+}
+
 
 uint8_t conference_command_type_read( void *base, uint16_t offerset )
 {

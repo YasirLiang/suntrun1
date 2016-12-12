@@ -32,7 +32,7 @@ static int thread_send_func( void *pgm );
 volatile bool gsend_pro_idle = true; /*stop flags of sending*/
 /*Extern funcion declaraction-----------------------------------------------*/
 extern bool inflight_list_has_command(void);
-
+extern volatile bool m_isRunning;
 /*$thread_send_func.........................................................*/
 static int thread_send_func(void *pgm) {
     (void)pgm;/*avoid waning when being compiled*/
@@ -41,7 +41,7 @@ static int thread_send_func(void *pgm) {
     over_time_set(SYSTEM_SQUEUE_SEND_INTERVAL, 
                     SEND_INTERVAL_TIMEOUT); /*set to send interval*/
 
-    while (1) {
+    while (m_isRunning) {
         uint8_t *frame;/*point to frame buf*/
         bool is_resp_data;/*respond flags of send data*/
         uint8_t data_type;/*type of sending data*/
@@ -179,7 +179,7 @@ static int thread_send_func(void *pgm) {
             }
         }
     }
-
+    
     return 0;
 }
 

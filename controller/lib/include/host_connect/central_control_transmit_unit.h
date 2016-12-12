@@ -39,6 +39,7 @@ extern bool central_control_transmit_unit_can_output_found( uint64_t tarker_id, 
 extern void central_control_transmit_unit_model_destroy(void);
 extern void central_control_transmit_unit_model_destroy_output(uint64_t id);
 extern void central_control_transmit_unit_model_destroy_node(uint64_t id);
+extern uint16_t central_control_transmit_unit_allcount_cnnts(uint64_t id);
 
 //************************************//
 

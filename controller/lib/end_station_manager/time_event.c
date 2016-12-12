@@ -1,5 +1,6 @@
 #include "time_event.h"
 #include "aecp_controller_machine.h"
+#include "arcs_common.h"
 #include "send_common.h" // °üº¬SEND_DOUBLE_QUEUE_EABLE
 
 bool inflight_list_has_command(void)
@@ -53,8 +54,6 @@ void inflight_time_tick( inflight_plist guard )
 	{
 		tmp_inflight = inflight_station->next; // save next node
 		uint8_t data_type = inflight_station->host_tx.inflight_frame.data_type;
-		
-		//DEBUG_INFO( "inflight data type = %d", data_type );
 		if( inflight_timer_timeout(inflight_station) )
 		{	
 			if( data_type == INFLIGHT_TRANSMIT_TYPE_UDP_CLIENT )
@@ -65,6 +64,9 @@ void inflight_time_tick( inflight_plist guard )
 				acmp_inflight_station_timeouts( inflight_station, guard );
 			else if( data_type == JDKSAVDECC_SUBTYPE_AECP )
 				aecp_inflight_station_timeouts( inflight_station, guard );
+                        else if (data_type == INFLIGHT_TRANSMIT_TYPE_ARCS) {
+                            ArcsCommon_packetTimeouts(inflight_station);
+                        }
 			else
 			{
 				DEBUG_INFO("Err inflight data type = 0x%02x", data_type );
@@ -91,7 +93,8 @@ void time_tick_event( solid_pdblist guard, inflight_plist inflight_guard )
 	pthread_mutex_lock(&ginflight_pro.mutex);
 	inflight_time_tick( inflight_guard );
 	pthread_mutex_unlock(&ginflight_pro.mutex);
-
-	//acmp_binflight_cmd_time_tick();
+#if 0
+	acmp_binflight_cmd_time_tick();
+#endif
 }
 

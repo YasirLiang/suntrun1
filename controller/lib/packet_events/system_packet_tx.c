@@ -26,6 +26,7 @@
 #include "camera_uart_controller_machine.h"
 #include "send_common.h" /* °üº¬SEND_DOUBLE_QUEUE_EABLE*/
 #include "matrix_output_input.h"
+#include "arcs_common.h"
 
 /*Local Objects-------------------------------------------------------------*/
 static uint8_t gsys_tx_buf[TRANSMIT_DATA_BUFFER_SIZE];/*system tx buffer*/
@@ -36,6 +37,8 @@ static int system_udp_queue_tx(void *frame, uint16_t frame_len,
                             uint8_t data_type, const struct sockaddr_in *sin);
 static int system_uart_queue_tx(void *frame, uint16_t frame_len,
                                               uint8_t data_type, bool isresp);
+static int system_arcs_queue_tx(void *frame, uint16_t frame_len,
+                                               uint8_t data_type, bool isresp);
 /*$system_raw_queue_tx-----------------------------------------------------*/
 static int system_raw_queue_tx(void *frame, uint16_t frame_len, uint8_t data_type,
                                        const uint8_t dest_mac[6], bool isresp)
@@ -197,6 +200,55 @@ int system_uart_packet_tx(void *frame, uint16_t frame_len,
 	return system_uart_queue_tx(frame, frame_len, data_type, isresp);
 }
 
+/*$system_arcs_queue_tx-----------------------------------------------------*/
+static int system_arcs_queue_tx(void *frame, uint16_t frame_len,
+                                               uint8_t data_type, bool isresp)
+{
+    int ret;
+    assert(frame != NULL);
+
+    if (data_type == TRANSMIT_TYPE_ARCS_CTRL) {
+        tx_data tx;
+
+        if (frame_len > TRANSMIT_DATA_BUFFER_SIZE) {
+            DEBUG_INFO("frame_len bigger than pipe transmit buffer!");
+            return -1;
+        }
+
+        memset(gsys_tx_buf, 0, TRANSMIT_DATA_BUFFER_SIZE);
+        memcpy(gsys_tx_buf, frame, frame_len);
+        tx.frame = gsys_tx_buf;
+        tx.data_type = data_type;
+        tx.frame_len = frame_len;
+        tx.notification_flag = RUNINFLIGHT;
+        tx.resp = isresp;
+
+        ret = system_packet_save_send_queue(tx);
+    }
+    else {
+        ret = -1;
+        DEBUG_INFO("transmit data type not uart data!");
+    }
+    return ret;
+}
+
+/****************************************************************************/
+/**
+* @description
+* @param[in] frame pointer to data buf
+*                    frame_len frame len of data sended
+*                    notication frame send status notify or not
+*                    data_type system sending data type
+*                    isresp is response or not
+* @returns -1 err for no data type in the system
+*/
+int system_arcs_packet_tx(void *frame, uint16_t frame_len,
+                            bool notification, uint8_t data_type, bool isresp)
+{
+	assert( frame);	
+	return system_arcs_queue_tx(frame, frame_len, data_type, isresp);
+}
+
 /****************************************************************************/
 /**
 * @description
@@ -241,6 +293,11 @@ int system_tx(void *frame, uint16_t frame_len, bool notification,
         case TRANSMIT_TYPE_CAMERA_UART_CTRL:
         case TRANSMIT_TYPE_MATRIX_UART_CTRL: {
             ret = system_uart_packet_tx(frame, frame_len, notification,
+                                                           data_type, isresp);
+            break;
+        }
+        case TRANSMIT_TYPE_ARCS_CTRL: {
+            ret = system_arcs_packet_tx(frame, frame_len, notification,
                                                            data_type, isresp);
             break;
         }
@@ -314,6 +371,9 @@ int tx_packet_event(uint8_t type, bool notification_flag,	uint8_t *frame,
     else if (type == TRANSMIT_TYPE_MATRIX_UART_CTRL) {
         matrix_output_transmit_uart_control_packet(frame, frame_len, false,
                                                          resp, interval_time);
+    }
+    else if (type == TRANSMIT_TYPE_ARCS_CTRL) {
+        ArcsCommon_sendPacket(frame, frame_len, resp, interval_time);
     }
     else {
         /* will never come in this else */

@@ -39,7 +39,7 @@
 /* #define MIC_RELY_OTHER_APPLY */
 
 /* terminal mic time out set macro------------------------------------------*/
-#define MIC_SET_TIME_OUT 1000
+#define MIC_SET_TIME_OUT 0
 
 /* terminal mic num macro---------------------------------------------------*/
 #define MIC_ARRAY_NUM 20/*mic数组长度*/
@@ -595,9 +595,12 @@ void system_register_terminal_pro(void) {
     }
 
     if (over_time_listen(WAIT_TMN_RESTART)
-         && (RGST_WAIT == regState)) {
-         /* send muticast query comand */
+         && (RGST_WAIT == regState))
+    {
+        #if 0
+        /* send muticast query comand */
         terminal_query_endstation(0x8000, (uint64_t)0);
+        #endif
         gregister_tmnl_pro.rgs_state = RGST_QUERY;
         /* set register handle timeout */
         over_time_set(TRGST_OTIME_HANDLE, 15000);
@@ -1174,6 +1177,25 @@ int terminal_func_chairman_control(uint16_t cmd,
         }
     }
     return 0; /* default return value */
+}
+/*$ terminal end vote process...............................................*/
+void Terminal_endVotePro(void) {
+    /* sending command of end voting */
+    terminal_end_vote(0, NULL, 0);
+    /* set terminal type */
+    gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0;
+    gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+    terminal_state_set_base_type(BRDCST_ALL,
+                gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+    terminal_state_all_copy_from_common();
+    /*set lcd */
+    terminal_lcd_display_num_send(BRDCST_ALL,
+                LCD_OPTION_CLEAR, VOTE_INTERFACE);
+    /* set led */
+    terminal_led_set_save(BRDCST_ALL, TLED_KEY2, TLED_OFF);
+    terminal_led_set_save(BRDCST_ALL, TLED_KEY3, TLED_OFF);
+    terminal_led_set_save(BRDCST_ALL, TLED_KEY4, TLED_OFF);
+    fterminal_led_set_send(BRDCST_ALL);
 }
 /*$ Terminal command function::terminal_func_send_main_state................*/
 int terminal_func_send_main_state(uint16_t cmd,
@@ -1774,7 +1796,7 @@ static bool Terminal_isMicQueueEmpty(Terminal_micQueue * const queue) {
 /*${Terminal::isMicQueueFull}*/
 static bool Terminal_isMicQueueFull(Terminal_micQueue * const queue) {
     assert(queue != NULL);
-    return (queue->head+1) % queue->size == queue->trail;
+    return (queue->trail + 1) % queue->size == queue->head;
 }
 /*${Terminal::postMicFiFo}..................................................*/
 /*${Terminal::postMicFiFo}*/
@@ -3228,6 +3250,44 @@ void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
+void Terminal_arcsStarSign(void) {
+	assert( dev_terminal_list_guard );
+	if( dev_terminal_list_guard == NULL )
+		return;
+	gset_sys.sign_type = KEY_SIGN_IN;
+	tmnl_pdblist tmp = dev_terminal_list_guard->next;
+	int i = 0;
+
+	set_terminal_system_state( SIGN_STATE, true );
+	gtmnl_signstate = SIGN_IN_ON_TIME;
+	gsign_latetime = 10;
+	gsigned_flag = true;
+
+	for( ; tmp != dev_terminal_list_guard; tmp = tmp->next )
+	{
+		if( tmp->tmnl_dev.address.addr != 0xffff && tmp->tmnl_dev.tmnl_status.is_rgst )
+		{
+			tmp->tmnl_dev.tmnl_status.sign_state = TMNL_NO_SIGN_IN;
+		}
+	}
+
+	for( i = 0; i < TMNL_TYPE_NUM; i++)
+	{
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keydown = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].keyup = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].MicClose = 0;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sys = TMNL_SYS_STA_SIGN;
+		gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST].sign_stype = KEY_SIGN_IN? CARD_SIGN_IN : KEY_SIGN_IN; // 1插卡；0按键
+	}
+
+	terminal_state_set_base_type( BRDCST_ALL, gtmnl_state_opt[TMNL_TYPE_COMMON_RPRST]);
+
+	// 设置查询签到投票结果(2016-1-28添加)
+	gquery_svote_pro.running = true;
+	gquery_svote_pro.index = 0;
+	host_timer_start( 500, &gquery_svote_pro.query_timer );
+}
+
 void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 {
 	uint8_t vote_type = vote_start_flag.vote_type;
@@ -3261,6 +3321,9 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	
 	for( tmp = dev_terminal_list_guard->next ; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
+	        tmp->tmnl_dev.tmnl_status.is_grade = false;
+                tmp->tmnl_dev.tmnl_status.is_vote = false;
+                tmp->tmnl_dev.tmnl_status.is_select = false;
 		if( tmp->tmnl_dev.tmnl_status.is_rgst && (tmp->tmnl_dev.address.addr != 0xffff))
 		{
 			if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
@@ -4356,7 +4419,7 @@ void terminal_apply_list_first_speak( tmnl_pdblist const first_speak )
 	
 	terminal_speak_track(first_speak->tmnl_dev.address.addr, true );
 
-	//terminal_mic_state_set(MIC_OPEN_STATUS, first_speak->tmnl_dev.address.addr, first_speak->tmnl_dev.entity_id, true, first_speak);
+	terminal_mic_state_set(MIC_OPEN_STATUS, first_speak->tmnl_dev.address.addr, first_speak->tmnl_dev.entity_id, true, first_speak);
 	if( gdisc_flags.apply_num > 0 ) // 设置首位申请发言终端
 	{
 		tmnl_pdblist first_apply = NULL;
@@ -5000,6 +5063,24 @@ void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 		
 		vote_node->tmnl_dev.tmnl_status.vote_state &= (~TVOTE_KEY_MARK);
 		vote_node->tmnl_dev.tmnl_status.vote_state |= (vote_state & TVOTE_KEY_MARK);
+                if (VOTE_STATE == sys_state) {
+                    if (!vote_node->tmnl_dev.tmnl_status.is_vote) {
+                        vote_node->tmnl_dev.tmnl_status.is_vote = true;
+                    }
+                }
+                else if (GRADE_STATE == sys_state) {
+                    if (!vote_node->tmnl_dev.tmnl_status.is_grade) {
+                        vote_node->tmnl_dev.tmnl_status.is_grade = true;
+                    }   
+                }
+                else if (ELECT_STATE == sys_state) {
+                    if (!vote_node->tmnl_dev.tmnl_status.is_select) {
+                        vote_node->tmnl_dev.tmnl_status.is_select = true;
+                    }   
+                }
+                else {
+                    /* nerver came this case */
+                }
 
 		upper_cmpt_vote_situation_report( vote_node->tmnl_dev.tmnl_status.vote_state, vote_node->tmnl_dev.address.addr );
 	}

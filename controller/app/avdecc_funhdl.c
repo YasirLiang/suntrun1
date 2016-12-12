@@ -11,6 +11,8 @@
 #include "controller_machine.h"
 #include "raw_network.h"
 #include "system_1722_recv_handle.h"
+#include "arcs_extern_port.h"
+#include "arcs_common.h"
 
 volatile bool is_inflight_timeout = false;
 extern bool acmp_recv_resp_err;	// acmp 接收到命令但响应错误参数
@@ -188,6 +190,12 @@ int control_surface_recv_fn( struct epoll_priv *priv )
 	return 0;
 }
 
+int Arcs_recv_fn(struct epoll_priv *priv);
+int Arcs_recv_fn(struct epoll_priv *priv) {
+    ArcsCommon_recvPacketPro();
+    return 0;
+}
+
 int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_event *ev)
 {
 	priv->fd = fd;
@@ -197,7 +205,7 @@ int prep_evt_desc(int fd,handler_fn fn,struct epoll_priv *priv,struct epoll_even
 	
 	return 0;
 }
-
+extern volatile bool m_isRunning;
 int thread_fn(void *pgm)
 {
 	struct fds *fn_fds = (struct fds *)pgm;
@@ -237,6 +245,14 @@ int thread_fn(void *pgm)
 	}
 	else 
 		DEBUG_INFO( "init gcontrol_sur_fd recv thread handle failed!" );
+        if (EP0_readFd > 0) {
+        	prep_evt_desc(EP0_readFd,
+                    &Arcs_recv_fn, &fd_fns[6], &ev);
+        	epoll_ctl(epollfd, EPOLL_CTL_ADD, fd_fns[6].fd, &ev);
+        }
+        else {
+            DEBUG_INFO("init ARCS extern recv function failed!");
+        }
 
 	fcntl( fd_fns[0].fd, F_SETFL, O_NONBLOCK );
 	timer_start_interval( fd_fns[0].fd );
@@ -260,7 +276,7 @@ int thread_fn(void *pgm)
 			return -errno;
 		}
  
-		if( system_stop ) //  stop the thread?
+		if( system_stop || !m_isRunning) //  stop the thread?
 		{
 			DEBUG_INFO( "thread_fn return success......" );
 			return 0;
@@ -273,8 +289,8 @@ int thread_fn(void *pgm)
 				return -1;
 		}
 	}
-	while (1);
-
+	while (m_isRunning);
+    
 	return 0;
 }
 

@@ -33,24 +33,25 @@
 
 /*! data type for transmit extern data*/
 enum transmit_data_type {
-	TRANSMIT_TYPE_ADP,/*$ subtype of 1722.1 protocol*/
-	TRANSMIT_TYPE_ACMP,/*$ subtype of 1722.1 protocol*/
-	TRANSMIT_TYPE_AECP,/*$ subtype of 1722.1 protocol*/
-	TRANSMIT_TYPE_UDP_SVR,/*$ udp server data*/
-	TRANSMIT_TYPE_UDP_CLT,/*$ udp client data*/
-	TRANSMIT_TYPE_CAMERA_UART_CTRL,/*$ camera extern control data*/
-	TRANSMIT_TYPE_MATRIX_UART_CTRL/*$ matrix extern control data*/
+    TRANSMIT_TYPE_ADP,/*$ subtype of 1722.1 protocol*/
+    TRANSMIT_TYPE_ACMP,/*$ subtype of 1722.1 protocol*/
+    TRANSMIT_TYPE_AECP,/*$ subtype of 1722.1 protocol*/
+    TRANSMIT_TYPE_UDP_SVR,/*$ udp server data*/
+    TRANSMIT_TYPE_UDP_CLT,/*$ udp client data*/
+    TRANSMIT_TYPE_CAMERA_UART_CTRL,/*$ camera extern control data*/
+    TRANSMIT_TYPE_MATRIX_UART_CTRL,/*$ matrix extern control data*/
+    TRANSMIT_TYPE_ARCS_CTRL/*$ arcs extern control data*/
 };
 
 /*! transmit data node type*/
 typedef struct transmit_data {
-	uint8_t data_type;/*date type of enum transmit_data_type*/
-	bool notification_flag;/*sending status to notify*/
-	bool resp;/*response data flags*/
-	uint8_t *frame;/*pointer to data frame*/
-	uint8_t raw_dest[6];/*raw destination*/
-	uint16_t frame_len;/*frame len*/
-	struct sockaddr_in udp_sin;/*udp context*/
+    uint8_t data_type;/*date type of enum transmit_data_type*/
+    bool notification_flag;/*sending status to notify*/
+    bool resp;/*response data flags*/
+    uint8_t *frame;/*pointer to data frame*/
+    uint8_t raw_dest[6];/*raw destination*/
+    uint16_t frame_len;/*frame len*/
+    struct sockaddr_in udp_sin;/*udp context*/
 }tx_data,*ptr_tx_data;
 
 struct fds;/*fds declaration*/
@@ -72,5 +73,7 @@ extern int tx_packet_event(uint8_t type, bool notification_flag,
 extern int system_tx(void *frame, uint16_t frame_len, bool notification,
                    uint8_t data_type, bool isresp, const uint8_t dest_mac[6],
                             				   const struct sockaddr_in *sin);
+extern int system_arcs_packet_tx(void *frame, uint16_t frame_len,
+                            bool notification, uint8_t data_type, bool isresp);
 #endif
 

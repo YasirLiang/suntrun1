@@ -2,6 +2,7 @@
 #include "acmp_controller_machine.h"
 #include "adp_controller_machine.h"
 #include <ctype.h>
+#include <locale.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 #include "terminal_pro.h"
@@ -1603,14 +1604,27 @@ void cmd_menu_control_proccess( void )
 *====================================*/
 
 extern struct threads_info threads;
-void controller_proccess( void )
+extern volatile bool m_isRunning;
+void *controller_proccess(void *pagram)
 {
 	end_list_guard = endpoint_list;
 	initialize_readline(); // init command list
 	
-	while( 1 )
+	while(m_isRunning)
 	{
 	        char* cmd_buf = readline( ">: " );
+                rl_set_keyboard_input_timeout(0);
+                if (!m_isRunning) {
+                    DEBUG_INFO("controller_proccess exit 1");
+                    //pthread_exit(NULL);
+                    if ( strlen(cmd_buf) == 0 )
+                    {
+                    	free(cmd_buf);
+                    	continue;
+                    }
+                    break;
+                }
+                
 	        if ( !cmd_buf )
 	            break;
 	        if ( strlen(cmd_buf) == 0 )
@@ -1695,6 +1709,166 @@ void controller_proccess( void )
 
 		free(cmd_buf); // free command
 	}
+       
+        return (void *)0;
+}
+extern int pthread_cli_create(pthread_t *cli_pid);
+void *controller_proccess_fn(void *pagram);
+/*$ pthread_cli_create......................................................*/
+int pthread_cli_create(pthread_t *cli_pid) {
+        int rc = 0;
+        assert( cli_pid );
+	rc = pthread_create(cli_pid, NULL, controller_proccess_fn, NULL);
+	if(rc != 0) {
+		DEBUG_INFO("send pthread create Failed: %d\n", rc);
+		assert(rc == 0);
+	}
+	return 0;
 }
 
+static void cb_linehandler(char *);
+static void sighandler(int);
+int sigwinch_received;
+static bool l_stop = 0;
+const char *prompt = ">: ";
+
+/* Handle SIGWINCH and window size changes when readline is not active and
+   reading a character. */
+static void sighandler(int sig) {
+  sigwinch_received = 1;
+}
+
+/* Callback function called for each line when accept-line executed, EOF
+   seen, or EOF character read.  This sets a flag and returns; it could
+   also call exit(3). */
+static void cb_linehandler(char *line) {
+    /* Can use ^D (stty eof) or `exit' to exit. */
+    if ((line == NULL)
+          ||(strcmp(line, "quit") == 0))
+    {
+        if (line == 0) {
+            printf ("\n");
+        }
+        printf ("exit\n");
+        /* This function needs to be called to reset the terminal settings,
+        and calling it from the line handler keeps one extra prompt from
+        being displayed. */
+        rl_callback_handler_remove();
+        l_stop = 1;
+        system_close(&threads);
+    }
+    else {
+        if (*line) {
+            add_history (line);
+        }
+        if ((strncmp(line, "list", 4) == 0)
+            || (strncmp(line, "ls", 2) == 0))
+        {
+            cmd_list_proccess();
+        }
+        else if (strncmp(line, "adp", 3) == 0) {
+            cmd_adp_proccess(line);
+        }
+        else if (strncmp(line, "clear", 5) == 0) {
+            system("clear");
+        }
+        else if (strncmp(line, "connect", 7) == 0) {
+            cmd_connect_and_disconnect_proccess(&line[8], true);
+        }
+        else if (strncmp(line, "disconnect", 10) == 0) {
+            cmd_connect_and_disconnect_proccess(&line[11], false);
+        }
+        else if (strncmp(line, "show", 4) == 0) {
+            cmd_show_proccess();
+        }
+        else if (strncmp(line, "update", 6 ) == 0) {
+            cmd_update_proccess();
+        }
+        else if (strncmp(line, "terminal", 8 ) == 0) {
+            cmd_terminal_proccess(line);
+        }
+        else if (strncmp(line, "hostFunc", 8 ) == 0) {
+            cmd_host_func_proccess();
+        }
+        else if (strncmp(line, "udpClient", 9) == 0) {
+            cmd_udp_client();
+        }
+        else if (strncmp(line, "matrixControl", 13) == 0) {
+            cmd_matrix_control_proccess();
+        }
+        else if (strncmp(line, "MenuTest", 8 ) == 0) {
+            cmd_menu_control_proccess();
+        }
+        else if (strncmp(line, "reboot", 6 ) == 0){
+            cmd_reboot_proccess(line + 7);
+        }
+        else if (!isspace(line[0])) {
+            MSGINFO( "\nadp\nclear\nconnect\ndisconnect\nhostFunc\nlist\n"
+                "update\nudpClient\nq\nquit\nshow\n"
+                "terminal\nmatrixControl\nMenuTest\n\n");
+        }
+        else {
+            /* no else case */
+        }
+
+        printf ("input line: %s\n", line);
+        free (line);
+    }
+}
+
+void *controller_proccess_fn(void *pagram) {
+    fd_set fds;
+    int r;
+
+    /* Set the default locale values according to environment variables. */
+    setlocale(LC_ALL, "");
+
+    /* Handle window size changes when readline is not active and reading
+    characters. */
+    signal(SIGWINCH, sighandler);
+
+    /* Install the line handler. */
+    rl_callback_handler_install(prompt, cb_linehandler);
+    end_list_guard = endpoint_list;
+    initialize_readline();
+    /* Enter a simple event loop.  This waits until something is available
+    to read on readline's input stream (defaults to standard input) and
+    calls the builtin character read callback to read it.  It does not
+    have to modify the user's terminal settings. */
+    while (m_isRunning) {
+        unsigned long us_per_ms = 1000;
+        unsigned long interval_ms = TIME_PERIOD_25_MILLISECONDS;
+
+        struct timeval tempval;
+	tempval.tv_sec = interval_ms/1000;  
+	tempval.tv_usec = (interval_ms%1000)*us_per_ms;
+
+        FD_ZERO(&fds);
+        FD_SET(fileno(rl_instream), &fds);
+
+        r = select(FD_SETSIZE, &fds, NULL, NULL, &tempval);
+        if (r < 0 && errno != EINTR) {
+            perror (">: select");
+            rl_callback_handler_remove();
+            break;
+        }
+        
+        if (sigwinch_received) {
+            rl_resize_terminal();
+            sigwinch_received = 0;
+        }
+        if (r < 0) {
+            continue;
+        }    
+
+        if (FD_ISSET(fileno(rl_instream), &fds)) {
+            rl_callback_read_char();
+        }
+    }
+    if (!l_stop) {
+        rl_callback_handler_remove();
+    }
+    
+    return (void *)0;
+}
 
