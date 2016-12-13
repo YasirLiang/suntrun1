@@ -522,3 +522,9 @@ void ArcsCommon_postQrQueue(void **node) {
     QueueCom_postFiFo(l_arcsPro.arcsQrQueue, node);
 }
 
+uint32_t ArcsCommon_postQrQueueCount(void) {
+    uint32_t cout = QueueCom_count(l_arcsPro.arcsQrQueue);
+    DEBUG_INFO("queue qr count = %d", cout);
+    return cout;
+}
+

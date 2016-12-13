@@ -1548,6 +1548,7 @@ int terminal_end_sign(uint16_t cmd, void *data, uint32_t data_len)
     /* begin sign in late and set timeout of signing */
     over_time_set(SIGN_IN_LATE_HANDLE, gsign_latetime * 60 * 1000);
     gquery_svote_pro.running = false;
+    gquery_svote_pro.endQr = true;
     /* return success */
     return 0;
 }
@@ -1558,6 +1559,7 @@ int terminal_end_vote( uint16_t cmd, void *data, uint32_t data_len) {
     /* end query voting result */
     gquery_svote_pro.index = 0;
     gquery_svote_pro.running = false;
+    gquery_svote_pro.endQr = true;
     host_timer_stop(&gquery_svote_pro.query_timer);
     /* return success */
     return 0;
@@ -3207,6 +3209,7 @@ void terminal_start_sign_in( tcmpt_begin_sign sign_flag )
 	// 设置查询签到投票结果(2016-1-27添加)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
+        gquery_svote_pro.endQr = true;
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
@@ -3247,6 +3250,7 @@ void terminal_chman_control_start_sign_in( uint8_t sign_type, uint8_t timeouts )
 	// 设置查询签到投票结果(2016-1-28添加)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
+        gquery_svote_pro.endQr = true;
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
@@ -3285,6 +3289,7 @@ void Terminal_arcsStarSign(void) {
 	// 设置查询签到投票结果(2016-1-28添加)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
+        gquery_svote_pro.endQr = true;
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
@@ -3321,9 +3326,6 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	
 	for( tmp = dev_terminal_list_guard->next ; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
-	        tmp->tmnl_dev.tmnl_status.is_grade = false;
-                tmp->tmnl_dev.tmnl_status.is_vote = false;
-                tmp->tmnl_dev.tmnl_status.is_select = false;
 		if( tmp->tmnl_dev.tmnl_status.is_rgst && (tmp->tmnl_dev.address.addr != 0xffff))
 		{
 			if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
@@ -3334,6 +3336,16 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 			{
 				tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // 未签到不能投票
 			}
+            
+                        if (vote_type == VOTE_MODE) {
+                            tmp->tmnl_dev.tmnl_status.is_vote = false;
+                        }
+                        else if ( vote_type ==  GRADE_MODE ) {
+                            tmp->tmnl_dev.tmnl_status.is_grade = false;
+                        }
+                        else {
+                           tmp->tmnl_dev.tmnl_status.is_select = false;
+                        }
 		}
 	}
 
@@ -3342,11 +3354,8 @@ void terminal_begin_vote( tcmp_vote_start vote_start_flag,  uint8_t* sign_flag )
 	// 设置查询签到投票结果 (2016-1-27)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
+        gquery_svote_pro.endQr = true;
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
-	
-#ifdef __MIND_UPPER_CMPT_SIGN_RESULT__
-	over_time_set( MIND_UPPER_CMPT_SIGN_RESULT, 500 );// 设置上报终端签到情况的初始超时时间
-#endif
 }
 
 void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, uint8_t* sign_flag )
@@ -3383,21 +3392,6 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 	
 	for( tmp = dev_terminal_list_guard->next; tmp != dev_terminal_list_guard; tmp = tmp->next )
 	{
-#if 0 // yasir change in 2016-4-11
-		if( tmp->tmnl_dev.tmnl_status.is_rgst || tmp->tmnl_dev.address.addr )
-		{
-			continue;
-		}
-
-		if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
-		{
-			tmp->tmnl_dev.tmnl_status.vote_state = TWAIT_VOTE_FLAG;
-		}
-		else
-		{
-			tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // 未签到不能投票
-		}
-#else
 		if( tmp->tmnl_dev.tmnl_status.is_rgst && (tmp->tmnl_dev.address.addr != 0xffff))
 		{
 			if( tmp->tmnl_dev.tmnl_status.sign_state != TMNL_NO_SIGN_IN )// 已签到
@@ -3408,15 +3402,26 @@ void terminal_chman_control_begin_vote(  uint8_t vote_type, bool key_effective, 
 			{
 				tmp->tmnl_dev.tmnl_status.vote_state = TVOTE_SET_FLAG; // 未签到不能投票
 			}
+                        if (vote_type == VOTE_MODE) {
+                            tmp->tmnl_dev.tmnl_status.is_vote = false;
+                        }
+                        else if ( vote_type ==  GRADE_MODE ) {
+                            tmp->tmnl_dev.tmnl_status.is_grade = false;
+                        }
+                        else {
+                           tmp->tmnl_dev.tmnl_status.is_select = false;
+                        }
 		}
-#endif
 	}
-
-	terminal_vote_state_set( BRDCST_ALL );
+    
+        if (gsigned_flag) {
+        	terminal_vote_state_set( BRDCST_ALL );
+        }
 
 	// 设置查询签到投票结果 (2016-4-8)
 	gquery_svote_pro.running = true;
 	gquery_svote_pro.index = 0;
+        gquery_svote_pro.endQr = true;
 	host_timer_start( 500, &gquery_svote_pro.query_timer );
 }
 
@@ -5011,7 +5016,11 @@ void terminal_vote_proccess( void )
 **************************************************************/
 void terminal_query_vote_ask( uint16_t address, uint8_t vote_state )
 {
-	tmnl_pdblist vote_node = found_terminal_dblist_node_by_addr( address );
+        tmnl_pdblist vote_node;
+        if (!gquery_svote_pro.endQr) {
+            gquery_svote_pro.endQr = true;
+        }
+	vote_node = found_terminal_dblist_node_by_addr( address );
 	if( NULL == vote_node )
 	{
 		terminal_pro_debug( "no such address 0x%04x node ", address );
@@ -5207,13 +5216,15 @@ void terminal_query_sign_vote_pro( void )
 	uint16_t addr = 0xffff;
 
 	index = gquery_svote_pro.index;
-	if( (index > (SYSTEM_TMNL_MAX_NUM - 1)) && (index < 0 ))
+	if(index > (SYSTEM_TMNL_MAX_NUM - 1))
 	{
 		terminal_pro_debug( "out of system terminal list bank!" );
 		return;
 	}
 	
-	if ( (gquery_svote_pro.running) && host_timer_timeout(&gquery_svote_pro.query_timer))
+	if ( (gquery_svote_pro.running)
+                && (/*host_timer_timeout(&gquery_svote_pro.query_timer)
+                        || (*/gquery_svote_pro.endQr/*)*/))
 	{
 		host_timer_update( 60, &gquery_svote_pro.query_timer );
 		if( sys_state == SIGN_STATE )
@@ -5230,6 +5241,7 @@ void terminal_query_sign_vote_pro( void )
 					{
 						terminal_query_vote_sign_result( tmp_node->tmnl_dev.entity_id, addr );
 						sending = true;
+                                                gquery_svote_pro.endQr = false;
 						break;
 					}
 				}
@@ -5247,7 +5259,7 @@ void terminal_query_sign_vote_pro( void )
 				gquery_svote_pro.running = false;
 			}
 		}
-		else if( (sys_state == VOTE_STATE ) || (sys_state == GRADE_STATE) ||(ELECT_STATE))
+		else if( (sys_state == VOTE_STATE ) || (sys_state == GRADE_STATE) ||(sys_state == ELECT_STATE))
 		{
 			do
 			{
@@ -5261,6 +5273,7 @@ void terminal_query_sign_vote_pro( void )
 					{
 						terminal_query_vote_sign_result( tmp_node->tmnl_dev.entity_id, addr );
 						sending = true;
+                                                gquery_svote_pro.endQr = false;
 						break;
 					}
 				}
@@ -5286,6 +5299,7 @@ void terminal_query_proccess_init( void )
 {
 	gquery_svote_pro.index = 0;
 	gquery_svote_pro.running = false;
+        gquery_svote_pro.endQr = true;
 	host_timer_stop(&gquery_svote_pro.query_timer );
 }
 

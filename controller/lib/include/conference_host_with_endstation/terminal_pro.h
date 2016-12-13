@@ -119,6 +119,7 @@ typedef struct type_query_sign_vote // 2016/1/27
 {
 	uint16_t index;
 	bool running;// 查询处理标志
+	volatile bool endQr; /*! end query */
 	host_timer query_timer;// 查询定时器
 }tquery_svote;
 

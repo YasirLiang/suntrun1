@@ -36,7 +36,7 @@
 /*! protocal handling mask */
 #define PRO_HANDLING_MASK 0x02
 /*! protocal error mask */
-#define PRO_ERR_MASK 0x01
+#define PRO_ERR_MASK 0x1f
 /*! protocal commom lenght */
 #define PRO_COMMON_LEN 0x07
 /*! protocal data offset */
@@ -55,6 +55,35 @@
 /*! qt camera control command */
 #define QT_CMR_CTL 0x05
 /*!end of command define @} */
+/*! each cmd max error number */
+#define MAX_ERR_CODE 0x32
+#define MAX_CMD_NUM 0x05
+
+/*! {@Error code define-----------------------------------------------------*/
+enum TEArcsErrorCode {
+    QR_SUCCESS = 0x00, /*! NORMAL */
+    NO_ID = 0x01, /*! QEURY NO SUCH ID */
+    HOST_HANDING = 0x02, /*! HANDLING */
+    MAX_QR_ER_PUB = MAX_ERR_CODE, /*! QUERY ID MAX PUB */
+    SM_SUCCESS = 0x00, /*! NORMAL */
+    MAX_SM_ER_PUB = MAX_ERR_CODE, /*! QT_SWITCH_MATRIX MAX PUB */
+    OPT_SUCCESS = 0x00, /*! NORMAL */
+    NO_SIGN = 0x01, /*! SYSTEM NOT SIGN */
+    NO_SUCH_ID = 0x02,
+    PRESET_STATE = 0x03,
+    MAX_OPT_ER_PUB = MAX_ERR_CODE, /*! QT_OPT_TMNL MAX PUB */
+    SSET_SUCCESS = 0x00, /*! NORMAL */
+    UPDATE_WRITE_ERR = 0x01,
+    DATA_FORMAT_ERR = 0x02,
+    START_SYS_ERR = 0x03,
+    STOP_SYS_ERR = 0x04,
+    NO_SPACE = 0x05,
+    TRANSMIT_ERR = 0x06,
+    MAX_SYSSET_ER_PUB = MAX_ERR_CODE, /*! QT_SYS_SET MAX PUB */
+    CMR_CTL_SUCCESS = 0x00, /*! NORMAL */
+    MAX_CMRCTL_ER_PUB = MAX_ERR_CODE, /*! QT_CMR_CTL MAX PUB */
+};
+/*! Error code define-----------------------------------------------------@}*/
 /*!struct of qt protocal with service define */
 typedef struct TProtocalQt {
     uint8_t head; /*! protocal head */

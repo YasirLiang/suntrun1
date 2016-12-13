@@ -69,11 +69,19 @@ int ArcsCmd_queryId(uint16_t cmd, void *data, uint32_t data_len) {
         memset(&buf, 0, sizeof(TProtocalQt));
         buf.head = PROTOCAL_QT_TYPE;
         buf.type = PRO_QUERY_TYPE | PRO_RESP_MASK;
+        /* check last query ending? */
+        if (ArcsCommon_postQrQueueCount() > 0) {
+            buf.type |= 0x02; /*! handling last query cmd */
+        }
         buf.seq = pMsg->seq;
         buf.cmd = QT_QUEUE_ID;
         buf.dataLen = 0;
         msgLen = PRO_COMMON_LEN;
         ArcsCommon_send(&buf, true, msgLen);
+
+        if (buf.type & PRO_ERR_MASK) {
+            return 0;
+        }
 
         solid_pdblist pSolid = endpoint_list;
         tNum = 0;
@@ -101,6 +109,9 @@ int ArcsCmd_queryId(uint16_t cmd, void *data, uint32_t data_len) {
                     (uint8_t)pDev->tmnl_dev.address.tmn_type;
                 qData.micStatus |=
                     (uint8_t)pDev->tmnl_dev.tmnl_status.mic_state;
+            }
+            else {
+                qData.id = 0xffff;
             }
             
             struct jdksavdecc_string endName;
@@ -181,6 +192,21 @@ int ArcsCmd_queryId(uint16_t cmd, void *data, uint32_t data_len) {
         }
     }
     else {
+        /* check last query ending? */
+        if (ArcsCommon_postQrQueueCount() > 0) {
+            /* reponse to arcs */
+            memset(&buf, 0, sizeof(TProtocalQt));
+            buf.head = PROTOCAL_QT_TYPE;
+            buf.type = PRO_QUERY_TYPE | PRO_RESP_MASK;
+            buf.type |= 0x02; /*! handling last query cmd */
+            buf.seq = pMsg->seq;
+            buf.cmd = QT_QUEUE_ID;
+            buf.dataLen = 0;
+            msgLen = buf.dataLen + PRO_COMMON_LEN;
+            ArcsCommon_send(&buf, true, msgLen);
+            return 0;
+        }
+        
         bool found = (bool)0;
         for (pDev = dev_terminal_list_guard->next;
                 (pDev != dev_terminal_list_guard)
@@ -199,6 +225,7 @@ int ArcsCmd_queryId(uint16_t cmd, void *data, uint32_t data_len) {
         if (!found) {
             buf.type |= 0x01; /* no such id */
         }
+        
         buf.seq = pMsg->seq;
         buf.cmd = QT_QUEUE_ID;
         buf.dataLen = 2;
@@ -353,7 +380,6 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
             case 0: { /* talk */
                 /* found avail address */
                 addr = *((uint16_t*)&pMsg->dataBuf[1]);
-                printf("addr = 0x%04x\n", addr);
                 for (pDev = pDev->next;
                     (pDev != dev_terminal_list_guard)
                         && (pDev != NULL);
@@ -370,6 +396,11 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
                     memset(&buf, 0, sizeof(TProtocalQt));
                     buf.head = PROTOCAL_QT_TYPE;
                     buf.type = PRO_SET_TYPE | PRO_RESP_MASK;
+                    if (pDev->tmnl_dev.tmnl_status.mic_state\
+                        == MIC_PRESET_BIT_STATUS)
+                    {
+                        buf.type |= 0x03; /* preset state , opt ended */
+                    }
                     buf.seq = pMsg->seq;
                     buf.cmd = QT_OPT_TMNL;
                     buf.dataLen = 3;
@@ -378,9 +409,14 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
                     buf.dataBuf[2] = pMsg->dataBuf[2];
                     msgLen = PRO_COMMON_LEN + buf.dataLen;
                     ArcsCommon_send(&buf, true, msgLen);
-
+                    if (buf.type & PRO_ERR_MASK) {
+                        return 0; /* out */
+                    }
+                    
                     mic.addr.low_addr = pMsg->dataBuf[1];
                     mic.addr.high_addr = pMsg->dataBuf[2];
+                    DEBUG_INFO("arcs opt addr = 0x%04x",
+                        *((uint16_t*)&mic.addr));
                     if (optCode == 0) {/* begin */
                         mic.switch_flag = 1;
                         terminal_upper_computer_speak_proccess(mic);
@@ -398,7 +434,7 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
                     memset(&buf, 0, sizeof(TProtocalQt));
                     buf.head = PROTOCAL_QT_TYPE;
                     /* 0x07 is no such id */
-                    buf.type = (PRO_SET_TYPE | PRO_RESP_MASK) | 0x07;
+                    buf.type = (PRO_SET_TYPE | PRO_RESP_MASK) | 0x02;
                     buf.seq = pMsg->seq;
                     printf("buf.seq = %d\n", pMsg->seq);
                     buf.cmd = QT_OPT_TMNL;
@@ -426,14 +462,14 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
             }
             case 2: { /* vote */
                 ArcsProcess_vote(optCode, &signFg);
-                if (optCode == 0) {
-                    /* set error code */
-                }
-                else {
-                    /* set error code */
-                }
                 buf.head = PROTOCAL_QT_TYPE;
                 buf.type = PRO_SET_TYPE | PRO_RESP_MASK;
+                if ((signFg == false)
+                      && (optCode == 0))
+                { /* sign for begin vote */
+                    /* set error code */
+                    buf.type |= 0x01; /* no sign */
+                }                
                 buf.seq = pMsg->seq;
                 buf.cmd = QT_OPT_TMNL;
                 buf.dataLen = 1;

@@ -47,6 +47,8 @@ extern bool QueueCom_popFiFo(TComQueue * const queue,
                                      uint32_t *addr);
 /*! QueueCom_itemFree-------------------------------------------------------*/
 extern void QueueCom_itemFree(void *p);
+/*! QueueCom_count----------------------------------------------------------*/
+uint32_t QueueCom_count(TComQueue * const queue);
 
 #ifdef __cplusplus
 } /*end extern "C" */

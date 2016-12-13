@@ -163,7 +163,7 @@ int transmit_aecp_packet_network( uint8_t* frame, uint32_t frame_len, inflight_p
 	
 	return (ssize_t)send_len;
 }
-
+extern tquery_svote  gquery_svote_pro;
 void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr )
 {
 	bool is_retried = false;
@@ -236,6 +236,11 @@ void aecp_inflight_station_timeouts( inflight_plist aecp_sta, inflight_plist hdr
 			uint8_t cfc_cmd = conference_command_type_read( frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
 			uint16_t cfc_addr = conferenc_terminal_read_address_data(frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET);
 			cfc_cmd &= 0x1f;// ÃüÁîÔÚµÍÎåÎ»
+			if ((gquery_svote_pro.running)
+                                && (cfc_cmd == CHECK_END_RESULT))
+                        {
+                            gquery_svote_pro.endQr = true;
+                        }         
 	        	if (NULL != gp_log_imp)
 				gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
         		                LOGGING_LEVEL_ERROR, 

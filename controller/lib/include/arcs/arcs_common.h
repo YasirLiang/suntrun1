@@ -42,6 +42,8 @@ extern void ArcsCommon_packetTimeouts(inflight_plist pIn);
 extern void ArcsCommon_process(void);
 /*$ */
 extern void ArcsCommon_postQrQueue(void **node);
+/*$ */
+uint32_t ArcsCommon_postQrQueueCount(void);
 
 #endif /* __ARCS_COMMON_H__ */
 
