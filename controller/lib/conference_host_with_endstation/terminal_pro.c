@@ -662,10 +662,9 @@ void system_register_terminal_pro(void) {
                     }
                 }
             }
-            else {
-                l_norgstIndex++; /* loop to next address */
-                l_norgstIndex %= SYSTEM_TMNL_MAX_NUM;
-            }
+            
+            l_norgstIndex++; /* loop to next address */
+            l_norgstIndex %= SYSTEM_TMNL_MAX_NUM;
             /* count while run times */
             count_num++;
         }
@@ -887,7 +886,7 @@ uint16_t find_new_apply_addr(terminal_address_list_pro* p_gallot,
         do {
             i %= SYSTEM_TMNL_MAX_NUM;
             if( p_gaddr_list[i].addr == 0xffff) {
-            break;
+                break;
             }
 
             i++;
@@ -918,7 +917,9 @@ int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
     /* save address data */
     if (msg.cchdr.command_control & COMMAND_TMN_REPLY) {
         send_data_lng = 0;
-        if (p_addr_list[p_allot->index].addr != 0xffff) {
+        if ((p_addr_list[p_allot->index].addr != 0xffff)
+             && (!p_allot->renew_flag))
+       {
             p_allot->renew_flag = 1;
 
             terminal_pro_debug( "man type = 0x%02x ",
@@ -937,13 +938,15 @@ int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
             terminal_address_list tmp_addr;
             tmp_addr.addr = p_addr_list[p_allot->index].addr;
             tmp_addr.tmn_type = p_addr_list[p_allot->index].tmn_type;
-            if (1 == terminal_address_list_write_file(addr_file_fd, &tmp_addr, 1)) {
+            if (1 == terminal_address_list_write_file(addr_file_fd,
+                &tmp_addr, 1))
+            {
                 /* nomal save,  start register terminal */
                 gregister_tmnl_pro.tmn_total++;
             }
         }
     }
-    else { 
+    else {
         if ((msg.data == ADDRESS_ALREADY_ALLOT)
               && (!p_allot->renew_flag)
               && (p_addr_list[p_allot->index].addr != 0xffff))
@@ -963,7 +966,8 @@ int terminal_func_allot_address(uint16_t cmd, void *data, uint32_t data_len) {
         send_data_lng = sizeof(uint16_t);
     }
     /* reply for terminal allot */
-    host_reply_terminal(ALLOCATION, msg.cchdr.address, data_buf, send_data_lng);
+    host_reply_terminal(ALLOCATION, msg.cchdr.address,
+        data_buf, send_data_lng);
     return 0;
 }
 /*$ Terminal command function::terminal_func_key_action.....................*/
@@ -4533,74 +4537,86 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 	}
 	else
         {
-                if (0 == trans_model_unit_disconnect( speak_node->tmnl_dev.entity_id, speak_node ))
-		{
+                int ret = trans_model_unit_disconnect(speak_node->tmnl_dev.entity_id, speak_node);
+                if (0 == ret)
+    		{
 		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
                         terminal_speak_track(speak_node->tmnl_dev.address.addr, false );
-		}
-                else
-		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );                    
-		
-		current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-		cc_state = speak_node->tmnl_dev.tmnl_status.mic_state;
-		if( cc_state == MIC_FIRST_APPLY_STATUS || cc_state == MIC_OTHER_APPLY_STATUS )
-		{
-			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr );
-			terminal_mic_state_set(MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node);
-			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
-			{
-				gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-				first_apply = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
-				if( first_apply != NULL )
-				{
-					terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, first_apply->tmnl_dev.address.addr, first_apply->tmnl_dev.entity_id, true, first_apply );
-				}
-			}
+    		}
+                else if ((-2 == ret)) {
+		        terminal_key_action_host_special_num1_reply( recv_msg, MIC_OPEN_STATUS, speak_node );
+                }                   
+                else {
+                    terminal_key_action_host_special_num1_reply( recv_msg, MIC_COLSE_STATUS, speak_node );
+                }
 
-			terminal_main_state_send( 0, NULL, 0 );
-			ret = true;
-		}
-		else if( cc_state == MIC_OPEN_STATUS )
-		{
-			if( gdisc_flags.speak_limit_num > 0 )
-			{
-				gdisc_flags.speak_limit_num--;
-			}
+                if (ret != -2) {
+            		cc_state = speak_node->tmnl_dev.tmnl_status.mic_state;
+                        current_addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
+        		if( cc_state == MIC_FIRST_APPLY_STATUS || cc_state == MIC_OTHER_APPLY_STATUS )
+        		{
+        			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr );
+        			//terminal_mic_state_set(MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node);
+        			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
+        			{
+        				gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
+        				first_apply = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
+        				if( first_apply != NULL )
+        				{
+        				        #if 0
+        					terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, first_apply->tmnl_dev.address.addr, first_apply->tmnl_dev.entity_id, true, first_apply );
+                                                #else
+                                                DEBUG_INFO("set first apply(0x%04x)", first_apply->tmnl_dev.address);
+                                                terminal_over_time_firstapply_node_set(first_apply);
+                                                #endif
+                                        }
+        			}
 
-			if(gdisc_flags.speak_limit_num < gdisc_flags.limit_num && gdisc_flags.apply_num > 0 )// 结束发言,并开始下一个申请终端的发言
-			{
-				if( addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index) )// 开启下一个申请话筒
-				{
-					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
-					if( first_speak != NULL )
-					{
-						if (0 == trans_model_unit_connect( first_speak->tmnl_dev.entity_id, first_speak ))
-						{// connect success
-							gdisc_flags.speak_limit_num++;
-							terminal_apply_list_first_speak(first_speak);
-						}
-						else
-						{
-							/*
-							  *当前的mic断开成功后会留出一个通道
-							  */
-							terminal_over_time_speak_node_set(first_speak);
-						}
-					}
-					else
-					{
-						terminal_pro_debug( " no such tmnl dblist node!");
-					}
-				}
-				else
-				{
-					gdisc_flags.currect_first_index = 0;
-				}
-			}
+        			terminal_main_state_send( 0, NULL, 0 );
+        			ret = true;
+        		}
+        		else if( cc_state == MIC_OPEN_STATUS )
+        		{
+        			if( gdisc_flags.speak_limit_num > 0 )
+        			{
+        				gdisc_flags.speak_limit_num--;
+        			}
 
-			terminal_main_state_send( 0, NULL, 0 );
-			ret = true;
-		}
+        			if(gdisc_flags.speak_limit_num < gdisc_flags.limit_num && gdisc_flags.apply_num > 0 )// 结束发言,并开始下一个申请终端的发言
+        			{
+        				if( addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index) )// 开启下一个申请话筒
+        				{
+        					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
+        					if( first_speak != NULL )
+        					{
+        						if (0 == trans_model_unit_connect( first_speak->tmnl_dev.entity_id, first_speak ))
+        						{// connect success
+        							gdisc_flags.speak_limit_num++;
+        							terminal_apply_list_first_speak(first_speak);
+        						}
+        						else
+        						{
+        							/*
+        							  *当前的mic断开成功后会留出一个通道
+        							  */
+        							terminal_over_time_speak_node_set(first_speak);
+        						}
+        					}
+        					else
+        					{
+        						terminal_pro_debug( " no such tmnl dblist node!");
+        					}
+        				}
+        				else
+        				{
+        					gdisc_flags.currect_first_index = 0;
+        				}
+        			}
+
+        			terminal_main_state_send( 0, NULL, 0 );
+        			ret = true;
+        		}
+                }
 	}
 		
 	return ret;
@@ -5158,6 +5174,16 @@ void terminal_over_time_speak_node_set( tmnl_pdblist speak_node )
 	}
 }
 
+void terminal_over_time_firstapply_node_set( tmnl_pdblist speak_node )
+{
+	if ((!gdisc_flags.overApply.running) && (NULL != speak_node) )
+	{
+		gdisc_flags.overApply.speak_node = speak_node;
+		gdisc_flags.overApply.running = true;
+		over_time_set( DISCUSS_MODE_APPLY_AFTER, 500);
+	}
+}
+
 void terminal_over_time_speak_pro(void)
 {
 	if (gdisc_flags.over_speak.running && over_time_listen(DISCUSS_MODE_SPEAK_AFTER))
@@ -5205,6 +5231,21 @@ void terminal_over_time_speak_pro(void)
 		over_time_stop(DISCUSS_MODE_SPEAK_AFTER);
 	}
 }
+
+void terminal_over_time_firstapply_pro(void)
+{
+	if (gdisc_flags.overApply.running && over_time_listen(DISCUSS_MODE_APPLY_AFTER))
+	{
+		tmnl_pdblist apply_node = gdisc_flags.overApply.speak_node;
+		terminal_mic_state_set(MIC_FIRST_APPLY_STATUS, 
+                    apply_node->tmnl_dev.address.addr,
+                    apply_node->tmnl_dev.entity_id, true, apply_node);
+		gdisc_flags.overApply.running = false;
+		gdisc_flags.overApply.speak_node = NULL;
+		over_time_stop(DISCUSS_MODE_APPLY_AFTER);
+	}
+}
+
 
 /* 主机查询签到投票结果*/
 void terminal_query_sign_vote_pro( void )

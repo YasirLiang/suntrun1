@@ -35,6 +35,11 @@ typedef struct TComQueue {
        \ operation in common function */
     uint32_t *pBuf;
 }TComQueue;
+/*! list for each of queue node */
+#define queue_for_each(qe, pos, addr) \
+    for (pos = (qe)->head, addr = (qe)->pBuf[pos];\
+           pos != (qe)->trail;\
+           pos = (pos + 1) % (qe)->size, addr = (qe)->pBuf[pos])
 /*! QueueCom_isEmpty--------------------------------------------------------*/
 extern bool QueueCom_isEmpty(TComQueue * const queue);
 /*! QueueCom_isFull---------------------------------------------------------*/

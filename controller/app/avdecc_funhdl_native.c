@@ -199,7 +199,7 @@ int pthread_recv_data_fn(void *pgm) {
 #endif
             /* muticast connect table manager */
             muticast_connect_manger_timeout_event_image();
-        }     
+        }
         /* avdecc discover terminal managing */
         avdecc_manage_discover_proccess();
         /* check send queue is empty? */
@@ -212,6 +212,8 @@ int pthread_recv_data_fn(void *pgm) {
         terminal_after_time_mic_state_pro();
         /*mic state set callback proccessing */
         Terminal_micCallbackPro();
+        Terminal_comPro();
+        terminal_over_time_firstapply_pro();
     }	
     /* exit pthread */
     return 0;

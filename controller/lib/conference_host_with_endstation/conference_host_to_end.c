@@ -182,7 +182,6 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 							                   uint16_t cfc_dlgh )
 {
 	//设置1722控制头
-	//frame->dest_address = destination_mac;
 	memcpy( frame->dest_address.value, destination_mac.value, sizeof(struct jdksavdecc_eui48));
 	frame->ethertype = JDKSAVDECC_AVTP_ETHERTYPE;
 
@@ -206,12 +205,56 @@ int conference_1722_control_form_info( struct jdksavdecc_frame *frame,
 
 	aemdu->command_type = cfc_dlgh;
 	memcpy( aemdu->aecpdu_header.header.target_entity_id.value, target_entity_id.value, sizeof(struct jdksavdecc_eui64));
-	//aemdu->aecpdu_header.header.target_entity_id = target_entity_id;
 	aemdu->aecpdu_header.sequence_id = 0;
 
 	frame->length = jdksavdecc_aecpdu_aem_write( aemdu, frame->payload, 0, sizeof( frame->payload ) ) + cfc_dlgh;
 
 	return ( int )frame->length;
+}
+
+int Conference_1722DataFormat( struct jdksavdecc_frame *frame,
+    struct jdksavdecc_aecpdu_aem *aemdu,
+    struct jdksavdecc_eui48 destination_mac,
+    struct jdksavdecc_eui64 target_entity_id,
+    uint16_t cfcLen,
+    uint8_t const * const pIn)
+{
+    	/* set common head of 1722.1 */
+	memcpy( frame->dest_address.value, destination_mac.value, sizeof(struct jdksavdecc_eui48));
+	frame->ethertype = JDKSAVDECC_AVTP_ETHERTYPE;
+	aemdu->aecpdu_header.header.cd = 1;
+	aemdu->aecpdu_header.header.subtype = JDKSAVDECC_SUBTYPE_AECP;
+	aemdu->aecpdu_header.header.version = 0;
+	aemdu->aecpdu_header.header.status = 0;
+	aemdu->aecpdu_header.header.sv = 0;
+	aemdu->aecpdu_header.header.control_data_length =
+            JDKSAVDECC_AECPDU_AEM_LEN - JDKSAVDECC_COMMON_CONTROL_HEADER_LEN
+	                                                      + cfcLen;
+	aemdu->aecpdu_header.header.message_type = JDKSAVDECC_AECP_MESSAGE_TYPE_VENDOR_UNIQUE_COMMAND;
+	aemdu->aecpdu_header.controller_entity_id.value[0] = frame->src_address.value[0];
+	aemdu->aecpdu_header.controller_entity_id.value[1] = frame->src_address.value[1];
+	aemdu->aecpdu_header.controller_entity_id.value[2] = frame->src_address.value[2];
+	aemdu->aecpdu_header.controller_entity_id.value[3] = 0xff;
+	aemdu->aecpdu_header.controller_entity_id.value[4] = 0xfe;
+	aemdu->aecpdu_header.controller_entity_id.value[5] = frame->src_address.value[3];
+	aemdu->aecpdu_header.controller_entity_id.value[6] = frame->src_address.value[4];
+	aemdu->aecpdu_header.controller_entity_id.value[7] = frame->src_address.value[5];
+	aemdu->command_type = cfcLen;
+	memcpy(aemdu->aecpdu_header.header.target_entity_id.value,
+            target_entity_id.value, sizeof(struct jdksavdecc_eui64));
+	aemdu->aecpdu_header.sequence_id = 0;
+        /* write common head in payload*/
+	frame->length = jdksavdecc_aecpdu_aem_write(aemdu,
+            frame->payload, 14, sizeof(frame->payload));
+        if (frame->length < 0) {
+            return frame->length;
+        }
+        
+        /* conference data set */
+        memcpy(frame->payload + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET + 14,
+            pIn, cfcLen);
+        frame->length += cfcLen;
+	return (int)frame->length;
 }
 
 //设置命令,参数可以使用定义的宏，包括高三位high3bit与低5位scmd

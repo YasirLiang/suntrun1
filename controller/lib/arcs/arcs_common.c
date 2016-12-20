@@ -418,6 +418,9 @@ static void ArcsCommon_qtCharMsgPro(void) {
                     pRingPro->recvOver = (bool)1;
                     userTimerStart(2, &pRingPro->smTimer);
                 }
+                else {
+                    pRingPro->msgLen = 0;
+                }
             }
             else {
                 pRingPro->msgLen = 0;

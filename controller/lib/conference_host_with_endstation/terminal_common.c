@@ -9,10 +9,167 @@
 #include "file_util.h"
 #include "linked_list_unit.h"
 #include "terminal_pro.h"
+#include "queue_com.h"
+#include "time_handle.h"
+#include "ring_buffer.h"
+#include "controller_machine.h"
+
+/*$ terminal Recieve Buffer Process */
+typedef struct TTlRingMsgPro {
+    /*! state switch and interval timer */
+    TUserTimer smTimer, itvTimer;
+    /* receive message over flag */
+    bool recvOver;
+    /*! recieve message lenght */
+    uint32_t msgLen;
+    /*! trace message count */
+    uint16_t traceMsgCnt;
+}TTlRingMsgPro;
+
+enum TESendState {
+    TMNL_SENDING,
+    TMNL_WAITASK,
+    TMNL_SEND_IDLE
+};
+
+/*$ terminal Recieve Buffer Process */
+typedef struct TSendMsgPro {
+    uint32_t state;/*! send msg state */
+    uint32_t ptrMsgAddr; /*! pointer to msg */
+}TSendMsgPro;
+
+typedef struct T1722ForTmnlTable {
+    uint64_t Id1722;
+    uint16_t appAddr;
+    bool map;
+}T1722ForTmnlTable;
+
+#define TERMINAL_MSG_BUF_SIZE 256
+typedef struct TTmnlSendMsgElem {
+    uint8_t reNum;
+    uint32_t timeOut;
+    uint16_t msgLen;
+    uint8_t msgBuf[TERMINAL_MSG_BUF_SIZE]; /* including backup */
+}TTmnlSendMsgElem;
+
+#define TERMINAL_SEND_QSIZE 180
+
+typedef struct TTerminal_comPro {
+    TTerminalRcvMsg recvMsg;
+    TCharRingBuf *pRingBuf;
+    TTlRingMsgPro ringMsgPro;
+    TComQueue *pSendQe; /*! send queue */
+    TSendMsgPro sendPro;
+}TTerminal_comPro;
+/*$ char ring buffer size */
+#define TERMINAL_RING_BUF_SIZE 180
+/*$ ALLOT CMD queue size */
+#define TALLOTCMD_QSIZE 32
+/*! local function decralation */
+static void Terminal_charMsgPro(void);
+static void Terminal_sendMsgPro(void);
+static void Terminal_appDataPro(void);
+/*$ story pointer */
+static uint32_t l_allotCmdElem[TALLOTCMD_QSIZE] = {
+    0U
+};
+/*$ terminal allot command task queue */
+static TComQueue l_allotCmdQueue = {
+    0U, 0U, 0U, TALLOTCMD_QSIZE, &l_allotCmdElem[0]
+};
+/*! local terminal recv buffer----------------------------------------------*/
+static uint8_t l_recvBuf[TERMINAL_RING_BUF_SIZE];
+/*$ local terminal ring buffer */
+static TCharRingBuf l_terminalRingBuf = {
+    1, &l_recvBuf[0], 0U, 0U, TERMINAL_RING_BUF_SIZE
+};
+static uint16_t l_lastAllotAddr = 0xffff;
+
+static T1722ForTmnlTable l_table[SYSTEM_TMNL_MAX_NUM] = {
+    {0U, 0xffff, 0},
+};
+/* store pointer */
+static uint32_t l_sendQeBuf[TERMINAL_SEND_QSIZE];
+
+static TComQueue l_sendQueue = {
+    0U, 0U, 0U, TERMINAL_SEND_QSIZE, &l_sendQeBuf[0]
+};
+
+static TTerminal_comPro l_terminalPro;
+
+T1722ForTmnlTable *T_Tab = &l_table[0];
+
+volatile bool gAllotFinish = true;
+volatile bool l_allotFinish = true;
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 volatile bool gvregister_recved = false;// 单个终端注册完成的标志
+
+bool T1722ForTmnlTable_updateAppAddr(uint64_t id, uint16_t app) {
+    T1722ForTmnlTable *p = &l_table[0];
+    int mapIndex;
+    int i;
+    bool found = false;
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        if (id == p[i].Id1722) {
+            p[i].appAddr = app;
+            if (!p[i].map) {
+                p[i].map = true;
+            }
+            return true;
+        }
+
+        if ((!p[i].map)
+              && (!found))
+        {
+            mapIndex = i;
+            found = true;
+        }
+    }
+
+    /* not found, add to end of table */
+    p[mapIndex].Id1722 = id;
+    p[mapIndex].map = true;
+    p[mapIndex].appAddr = app;
+    
+    return true;
+}
+
+bool T1722ForTmnlTable_foundById(uint64_t id) {
+    T1722ForTmnlTable *p = &l_table[0];
+    int i;
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        if (id == p[i].Id1722) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void T1722ForTmnlTable_clearMap(void) {
+    T1722ForTmnlTable *p = &l_table[0];
+    int i;
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        p[i].map = false;
+        p[i].Id1722 = 0U;
+        p[i].appAddr = 0xffff;
+    }
+}
+
+bool T1722ForTmnlTable_foundByAppAddr(uint16_t addr, uint64_t *outId) {
+    T1722ForTmnlTable *p = &l_table[0];
+    int i;
+    for (i = 0; i < SYSTEM_TMNL_MAX_NUM; i++) {
+        if ((p[i].map)
+               && (addr == p[i].appAddr))
+        {
+            *outId = p[i].Id1722;
+            return true;
+        }
+    }
+    return false;
+}
 
 /*****************************************************************
 *Writer:YasirLiang
@@ -156,25 +313,6 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 	if( (tmnl_num > 0) && (tmnl_num <= SYSTEM_TMNL_MAX_NUM ))
 	{
 		// read the file data and  count the crc of the data
-#if 0
-		while( !feof( fd ) )
-		{
-		
-			uint8_t byte = 0;
-			int ret = 0;
-			
-			ret = Fread( fd, &byte, sizeof(byte), 1 );
-			if( ferror( fd ) ) // 读取错误
-			{	
-				return -1;
-			}
-
-			if( ret != 0 ) // 不是文件末尾
-			{
-				count_crc += byte;
-			}
-		}
-#else
 		uint16_t rount_num = 0;
 		uint16_t real_num = Fread( fd, temp_addr_list, sizeof(terminal_address_list), tmnl_num );
 		if( real_num != tmnl_num )
@@ -189,7 +327,6 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 			count_crc +=p[rount_num];
 		}
 		
-#endif
 		if( count_crc == read_crc )
 			is_crc_right = true;
 	}
@@ -199,30 +336,8 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 	int tmnl_counts = 0;
 	if( is_crc_right )
 	{
-#if 0
-		if( Fseek( fd, 4, SEEK_SET ) == -1 ) // 从文件的终端地址信息开始的地方读
-			return -1;
-		
-		while( !feof( fd ) )
-		{
-			terminal_address_list addr_tmp;
-			int ret = Fread( fd, &addr_tmp, sizeof(addr_tmp), 1 ); // read one terminal address info every time
-			if( ferror( fd ) ) // 读取错误,return 
-			{
-				return -1;
-			}
-			
-			if( ret != 0 ) // not end of file
-			{
-				ptmnl_addr[tmnl_counts].addr = addr_tmp.addr;
-				ptmnl_addr[tmnl_counts].tmn_type = addr_tmp.tmn_type;
-				tmnl_counts++;
-			}
-		}
-#else
 		tmnl_counts = tmnl_num;
 		memcpy( ptmnl_addr, temp_addr_list, tmnl_counts*sizeof(terminal_address_list) );
-#endif
 	}
 	else
 	{
@@ -236,6 +351,7 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 // send terminal conference deal message in 1722 frame payload by pipe
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data )
 {
+#if 1
 	int send_len = 0;
 	int cnf_data_len = 0;
 	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
@@ -267,34 +383,89 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
 	system_raw_packet_tx( send_frame.dest_address.value, send_frame.payload, send_len, RUNINFLIGHT, TRANSMIT_TYPE_AECP, is_resp_data );
 	
 	return (uint16_t)send_len;
+#else
+    int sendLen = -1;
+    /* not send system queue */
+    TTmnlSendMsgElem *pMsg;
+    struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
+    pMsg = (TTmnlSendMsgElem*)malloc(sizeof(TTmnlSendMsgElem));
+    if (pMsg != (TTmnlSendMsgElem *)0) {
+        if (is_resp_data) {
+            pMsg->reNum = 0;
+            pMsg->timeOut = 0;
+        }
+        else {
+            pMsg->reNum = 3;
+            pMsg->timeOut =
+                get_host_endstation_command_timeout(\
+                    data_buf->cchdr.command_control);
+        }
+        /* send buffer */
+        uint8_t *p = &pMsg->msgBuf[0];
+        uint8_t crc = 0;
+        int i = 0;
+        memset(p, 0, TERMINAL_MSG_BUF_SIZE);
+        p[0] = data_buf->cchdr.byte_guide;
+        p[1] = data_buf->cchdr.command_control;
+        p[2] = (uint8_t)(data_buf->cchdr.address & 0x00ff);
+        p[3] = (uint8_t)((data_buf->cchdr.address & 0xff00) >> 8);
+        p[4] = data_buf->data_len;
+        if (data_buf->data_len > 0) {
+            memcpy(&p[5], data_buf->data, data_buf->data_len);
+        }
+        
+        pMsg->msgLen = 5 + data_buf->data_len;
+        for (i = 0; i < pMsg->msgLen; i++) {
+            crc ^= p[i];
+        }
+        p[pMsg->msgLen] = crc;
+        pMsg->msgLen += 1; /* including crc */
+        memcpy(&p[pMsg->msgLen], p, pMsg->msgLen);
+        pMsg->msgLen += pMsg->msgLen;
+        sendLen = pMsg->msgLen;
+        /* push to send message queue */
+        if (!QueueCom_postFiFo(l_terminalPro.pSendQe, (void *)pMsg)) {
+            free(pMsg);
+            pMsg = NULL;
+        }
+    }
+    return sendLen;
+#endif    
 }
 
 // proccess recv conference deal message from raw network
+extern terminal_address_list_pro allot_addr_pro;
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 {
     assert( NULL != conference_frame );
     uint16_t frame_len = conference_frame->payload_len/2;
-    uint8_t *p_right_data = NULL;
+    uint8_t *pRight = NULL;
     uint8_t data_buf[MAX_FUNC_MSG_LEN] = { 0 };
     tmnl_pdblist tmnl_list_station = NULL;
 
     // check the crc of the both data backups,if crc is wrong,return directory
     if( check_conferece_deal_data_crc( frame_len, conference_frame->payload, ZERO_OFFSET_IN_PAYLOAD))
     {	
-        p_right_data = conference_frame->payload;
+        pRight = conference_frame->payload;
     }
     else
     {
         if( check_conferece_deal_data_crc( frame_len, conference_frame->payload + frame_len, ZERO_OFFSET_IN_PAYLOAD))
-            p_right_data = conference_frame->payload + frame_len;
+            pRight = conference_frame->payload + frame_len;
         else	
             return;
     }
-
-    memcpy( data_buf, p_right_data, frame_len );
+#ifdef TERMINAL_COM_PRO_LATER
+    /* save to ring buffer */
+    int pos = 0;
+    while (pos < frame_len) {
+        RingBuffer_saveChar(l_terminalPro.pRingBuf, pRight[pos]);
+        pos++;
+    }
+#endif
+    memcpy( data_buf, pRight, frame_len );
     ttmnl_recv_msg recv_data;
     ssize_t ret = 0;
-
     DEBUG_RECV( data_buf, frame_len, "Recv Right Conference Data====>>>>>" );
     ret = conference_end_to_host_deal_recv_msg_read( &recv_data, data_buf, ZERO_OFFSET_IN_PAYLOAD, sizeof(ttmnl_recv_msg), frame_len);
     if( ret < 0 )
@@ -309,19 +480,16 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
     }
 
     // 查看系统是否存在此实体，若存在继续处理;不存在新建节点后插入链表
-    uint64_t target_id = convert_eui64_to_uint64_return(conference_frame->aecpdu_aem_header.aecpdu_header.header.target_entity_id.value);
-    if( NULL == search_endtity_node_endpoint_dblist( endpoint_list, target_id )) // 注意:这里也用到了链表
-    {
-        DEBUG_INFO( "no such endpoint list node 0x%016llx", target_id );
-        return;
-    }
-
+    uint64_t target_id;
+    uint8_t *ptr;
+    ptr = conference_frame->aecpdu_aem_header.aecpdu_header.header.target_entity_id.value;
+    target_id = convert_eui64_to_uint64_return(ptr);
     tmnl_list_station = search_terminal_dblist_entity_id_node(target_id, dev_terminal_list_guard);
     if( NULL == tmnl_list_station )
     {
         bool foud_by_addr = false;
 
-        if ((recv_data.cchdr.command_control & COMMAND_TMN_MASK) != REALLOCATION)
+        if ((recv_data.cchdr.command_control & COMMAND_TMN_MASK) != ALLOCATION)
             foud_by_addr = true;
 
         if (foud_by_addr)
@@ -354,7 +522,15 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
             insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
         }
     }
-	
+    /* update table */
+    if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == QUERY_END)
+          && (!(recv_data.cchdr.address & BROADCAST_FLAG))) {
+        DEBUG_INFO("update addr = 0x%04x",
+            recv_data.cchdr.address & TMN_ADDR_MASK);
+        T1722ForTmnlTable_updateAppAddr(target_id,
+            recv_data.cchdr.address & TMN_ADDR_MASK);
+    }
+#ifndef TERMINAL_COM_PRO_LATER
     if( NULL != tmnl_list_station )
     {
     	if( recv_data.cchdr.command_control & COMMAND_TMN_REPLY ) // proccess response data
@@ -380,11 +556,91 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
     	{
             terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
     	}
-    	else // 处理其它命令
+  #if 0
+        else if ((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION) {
+
+            if (!(recv_data.cchdr.command_control & COMMAND_TMN_REPLY)) {
+                uint32_t pos, addr;
+                TAllotAddrBuf *ptr = (TAllotAddrBuf *)0;
+                bool found = false;
+                if ((l_lastAllotAddr == recv_data.cchdr.address)
+                      && (recv_data.data[0] == 1))
+                {
+                    /* current allot success */
+                    terminal_func_allot_address(0, data_buf, frame_len);
+                    l_allotFinish = true;
+                    return;
+                }
+                /* if queue node has no allocation command, push to queue, otherwise
+                     update lastest time for this allocation command */
+                queue_for_each(&l_allotCmdQueue, pos, addr) {
+                    ptr = (TAllotAddrBuf *)addr;
+                    if (ptr != 0) {
+                        uint16_t addr_ = *(((uint16_t *)&ptr->buf[2]));
+                        if (addr_ == recv_data.cchdr.address)
+                        {/* address equal? */
+                            userTimerStart(50, &ptr->timer);
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                ptr = (TAllotAddrBuf *)0;
+                if (!found) {
+                    /* add to queue */
+                    ptr = (TAllotAddrBuf *)malloc(sizeof(TAllotAddrBuf));
+                    if (ptr != (TAllotAddrBuf *)0) {
+                        ptr->buf[0] = recv_data.cchdr.byte_guide;
+                        ptr->buf[1] = recv_data.cchdr.command_control;
+                        ptr->buf[2] = (uint8_t)(recv_data.cchdr.address & 0x00ff);
+                        ptr->buf[3] = (uint8_t)((recv_data.cchdr.address & 0xff00) >> 8);
+                        ptr->buf[4] = recv_data.data[0];
+                        userTimerStart(50, &ptr->timer); /* exist value time */
+                        QueueCom_postFiFo(&l_allotCmdQueue, (void *)ptr);
+                    }
+                }
+            }
+            else {
+                /* current allot success */
+                terminal_func_allot_address(0, data_buf, frame_len);
+                l_allotFinish = true;
+            }           
+        }
+#endif        
+        else // 处理其它命令
     	{
+#if 0    	
+    	    static uint16_t l_lastAllotAddr = 0xffff;
+    	    if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
+                    && (!gAllotFinish)
+                    && (!(recv_data.cchdr.command_control & COMMAND_TMN_REPLY))
+                    && (l_lastAllotAddr != recv_data.cchdr.address & TMN_ADDR_MASK))
+            {
+                DEBUG_LINE();
+                return;
+            }
+            else if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
+                        && (recv_data.cchdr.command_control & COMMAND_TMN_REPLY))
+            {
+            DEBUG_LINE();
+                gAllotFinish = true;
+            }
+            else if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
+                    && (gAllotFinish))
+            {
+                DEBUG_INFO("addr (%d-%d)", l_lastAllotAddr,
+                    recv_data.cchdr.address & TMN_ADDR_MASK);
+                l_lastAllotAddr = recv_data.cchdr.address & TMN_ADDR_MASK;
+                gAllotFinish = false;
+            }
+            else {
+                /* do nothing */
+            }            
+#endif
             find_func_command_link( TERMINAL_USE, recv_data.cchdr.command_control & COMMAND_TMN_MASK, 0, data_buf, frame_len );
     	}
     }
+#endif    
 }
 
 void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint16_t data_len )
@@ -406,7 +662,6 @@ void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint
 	ternminal_send( &askbuf, asklen, target_zero, true );
 }
 
-extern volatile ttmnl_register_proccess gregister_tmnl_pro; 					// 终端报到处理
 void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  target_id )
 {
 	tmnl_pdblist tmnl_list_station = search_terminal_dblist_entity_id_node( target_id, dev_terminal_list_guard );
@@ -425,7 +680,311 @@ void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  tar
 		host_timer_stop( &tmnl_list_station->tmnl_dev.spk_timeout );
 		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
 	}
+}
 
-	//terminal_begin_register();
+void Terminal_allotPro(void) {
+    TAllotAddrBuf *workNode;
+    uint32_t addr = 0;
+    if (l_allotFinish) {
+        if (QueueCom_popFiFo(&l_allotCmdQueue, &addr)) {
+            workNode = (TAllotAddrBuf *)addr;
+            assert(workNode != (TAllotAddrBuf *)0);
+            bool timeout = userTimerTimeout(&workNode->timer);
+            if (!timeout) {
+                l_lastAllotAddr = *((uint16_t *)&workNode->buf[2]);
+                terminal_func_allot_address(0, workNode->buf, 5);
+                l_allotFinish = false;
+                over_time_set(ALLOT_ADDRESS_TIMEOUT, 100);
+                /* free malloc space */
+                QueueCom_itemFree((void *)workNode);
+            }
+            else {
+                QueueCom_itemFree((void *)workNode);
+            }
+        }
+    }
+}
+
+static void Terminal_sendMsgPro(void) {
+    uint32_t *pSendState = &l_terminalPro.sendPro.state;
+    uint32_t addr;
+    if ((*pSendState == TMNL_SEND_IDLE)
+          && (QueueCom_popFiFo(l_terminalPro.pSendQe, &addr)))
+    {
+        /* format data and send */
+        struct jdksavdecc_frame frame;
+        struct jdksavdecc_aecpdu_aem aemdu;
+        TTmnlSendMsgElem *sendMsg = (TTmnlSendMsgElem *)addr;
+        uint16_t tmnlAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+        uint64_t target_id = 0U;
+        struct jdksavdecc_eui64 uid;
+        struct jdksavdecc_eui48 send_dest;
+        int sendLen = 0;
+        l_terminalPro.sendPro.ptrMsgAddr = addr;
+        if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
+            convert_uint64_to_eui64(uid.value, target_id);
+            convert_entity_id_to_eui48_mac_address(target_id,
+                send_dest.value);
+        }
+        else {
+            memcpy(&send_dest,
+                &jdksavdecc_multicast_adp_acmp,
+                sizeof(struct jdksavdecc_eui48));
+        }
+
+        sendLen = Conference_1722DataFormat(&frame, &aemdu,
+                send_dest,
+                uid,
+                sendMsg->msgLen,
+                sendMsg->msgBuf);
+        if (sendLen >= 0) {
+            uint8_t ethertype[2] = {0x22, 0xf0};
+            int frameLen = sendLen + ETHER_HDR_SIZE;
+            memcpy(frame.payload, send_dest.value, 6);
+            memcpy(frame.payload+6, net.m_my_mac, 6);
+            memcpy(frame.payload+12, ethertype, 2);
+            controller_machine_1722_network_send(gp_controller_machine,
+                frame.payload, frameLen);
+            *pSendState = TMNL_SENDING;
+        }
+        else { /* error send len */
+            QueueCom_itemFree(
+                (void *)l_terminalPro.sendPro.ptrMsgAddr);
+            l_terminalPro.sendPro.ptrMsgAddr = 0U;
+        }
+    }
+
+    if (*pSendState == TMNL_SENDING) {
+        if (l_terminalPro.sendPro.ptrMsgAddr != 0) {
+            TTmnlSendMsgElem *sendMsg =
+                (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
+            if (sendMsg->timeOut) {
+                over_time_set(TMNL_WAITASK_TIMEOUT, sendMsg->timeOut);
+                *pSendState = TMNL_WAITASK;
+            }
+            else {
+                QueueCom_itemFree(
+                    (void *)l_terminalPro.sendPro.ptrMsgAddr);
+                l_terminalPro.sendPro.ptrMsgAddr = 0U;
+                *pSendState = TMNL_SEND_IDLE;
+            }
+        }
+    }
+    else if ((*pSendState == TMNL_WAITASK)
+        && (over_time_listen(TMNL_WAITASK_TIMEOUT)))
+    {
+        TTmnlSendMsgElem *sendMsg =
+            (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
+        if (sendMsg->reNum > 0) {
+            sendMsg->reNum--;
+            /* send data */
+            {
+                /* format data and send */
+                struct jdksavdecc_frame frame;
+                struct jdksavdecc_aecpdu_aem aemdu;
+                uint16_t tmnlAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+                uint64_t target_id = 0U;
+                struct jdksavdecc_eui64 uid;
+                struct jdksavdecc_eui48 send_dest;
+                int sendLen = 0;
+                if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
+                    convert_uint64_to_eui64(uid.value, target_id);
+                    convert_entity_id_to_eui48_mac_address(target_id,
+                        send_dest.value);
+                }
+                else {
+                    memcpy(&send_dest,
+                        &jdksavdecc_multicast_adp_acmp,
+                        sizeof(struct jdksavdecc_eui48));
+                }
+                
+                sendLen = Conference_1722DataFormat(&frame, &aemdu,
+                        send_dest,
+                        uid,
+                        sendMsg->msgLen,
+                        sendMsg->msgBuf);
+                if (sendLen > 0) {
+                    uint8_t ethertype[2] = {0x22, 0xf0};
+                    int frameLen = sendLen + ETHER_HDR_SIZE;
+                    memcpy(frame.payload, send_dest.value, 6);
+                    memcpy(frame.payload+6, net.m_my_mac, 6);
+                    memcpy(frame.payload+12, ethertype, 2);
+                    controller_machine_1722_network_send(
+                        gp_controller_machine,
+                        frame.payload, frameLen);
+                    *pSendState = TMNL_SENDING;
+                }
+                else { /* error send len */
+                    QueueCom_itemFree(
+                        (void *)l_terminalPro.sendPro.ptrMsgAddr);
+                    l_terminalPro.sendPro.ptrMsgAddr = 0U;
+                    *pSendState = TMNL_SEND_IDLE;
+                }
+            }
+        }
+        else {
+            QueueCom_itemFree(
+                (void *)l_terminalPro.sendPro.ptrMsgAddr);
+            l_terminalPro.sendPro.ptrMsgAddr = 0U;
+            *pSendState = TMNL_SEND_IDLE;
+        }
+    }
+    else {
+        /* do nothing */
+    }
+}
+
+static void Terminal_appDataPro(void) {
+    TTerminalRcvMsg *pMsgPro = &l_terminalPro.recvMsg;
+    uint16_t tmnlAddr = pMsgPro->addr & TMN_ADDR_MASK;
+    uint8_t cmd = pMsgPro->cmd & COMMAND_TMN_MASK; /* only cmd */
+    bool isChairMan = (pMsgPro->cmd&COMMAND_TMN_CHAIRMAN)?true:false;
+    uint64_t target_id;
+
+    if (pMsgPro->cmd & COMMAND_TMN_REPLY) {/* proccess response data */
+        if (l_terminalPro.sendPro.state != TMNL_SEND_IDLE) {
+            TTmnlSendMsgElem *sendMsg =
+                (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
+            if (cmd != (sendMsg->msgBuf[1] & COMMAND_TMN_MASK)) {
+                return;
+            }
+            uint16_t seAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+            if ((!(pMsgPro->addr & BROADCAST_FLAG))
+                  && (tmnlAddr != seAddr)) {
+                return;
+            }
+            l_terminalPro.sendPro.state = TMNL_SEND_IDLE;
+            QueueCom_itemFree(
+                        (void *)l_terminalPro.sendPro.ptrMsgAddr);
+            l_terminalPro.sendPro.ptrMsgAddr = 0U;
+            if (cmd == QUERY_END) {
+                /* looking target id */
+                if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
+                    tmnl_pdblist tmnl_list_station;
+                    tmnl_list_station = search_terminal_dblist_entity_id_node(target_id,
+                        dev_terminal_list_guard);
+                    if (NULL != tmnl_list_station) {
+                        terminal_register(tmnlAddr, pMsgPro->buf[0], tmnl_list_station);
+                        // 注册完成
+                        gvregister_recved = true;
+                    }
+                }
+            }
+            else if (cmd == SET_END_STATUS) {
+                terminal_type_save(tmnlAddr, pMsgPro->buf[0], isChairMan);
+            }
+            else if (cmd == CHECK_END_RESULT) {
+                terminal_query_vote_ask(tmnlAddr, pMsgPro->buf[0]);
+            }
+        }
+    }
+        
+    if (cmd == TRANSIT_END_MSG) {
+        terminal_trasmint_message(tmnlAddr, pMsgPro->buf, pMsgPro->data);
+    }
+    else {
+        /* not including specical cmd like 'TRANSIT_END_MSG' and include crc*/
+        find_func_command_link(TERMINAL_USE, cmd,
+            0, (uint8_t *)pMsgPro, 6);
+    }
+}
+
+static void Terminal_charMsgPro(void) {
+    TTerminalRcvMsg *pMsgPro;
+    TTlRingMsgPro *pRingPro;
+    uint8_t ch; /* char store */
+    pRingPro = &l_terminalPro.ringMsgPro;
+    if (pRingPro->recvOver) {
+        userTimerStart(12, &pRingPro->itvTimer);
+        if (userTimerTimeout(&pRingPro->smTimer)) {
+            /* process app data  here */
+            Terminal_appDataPro();
+            /* stop sm timer */
+            userTimerStop(&pRingPro->smTimer);
+            pRingPro->msgLen = 0;
+            pRingPro->recvOver = (bool)0;
+        }
+    }
+    /* get ring char in buffer */
+    pMsgPro = &l_terminalPro.recvMsg;
+    while (RingBuffer_getChar(l_terminalPro.pRingBuf, &ch)) {
+        userTimerStart(12, &pRingPro->itvTimer);
+        pRingPro->recvOver = (bool)0;
+        if ((pRingPro->msgLen == 0)
+              && (ch == CONFERENCE_TYPE))
+        {
+            pMsgPro->head = CONFERENCE_TYPE;
+            pRingPro->msgLen = 1;
+        }
+        else if (pRingPro->msgLen == 1) {
+            pMsgPro->cmd = ch;
+            pRingPro->msgLen = 2;
+        }
+        else if (pRingPro->msgLen == 2) {
+            /* '=' will clear  data stored last time, must be */
+            pMsgPro->addr = (((uint16_t)ch) & 0x00ff);
+            pRingPro->msgLen = 3;
+        }
+        else if (pRingPro->msgLen == 3) {
+            /* '|=' must be */
+            pMsgPro->addr |= ((((uint16_t)ch) << 8) & 0xff00);
+            pRingPro->msgLen = 4;
+        }
+        else if (pRingPro->msgLen == 4) {
+            pMsgPro->data = ch;
+            pRingPro->msgLen = 5;
+            if ((pMsgPro->cmd & COMMAND_TMN_MASK )== TRANSIT_END_MSG) {
+                pRingPro->traceMsgCnt = ch + 1; /* contain crc */
+                if (pMsgPro->data > TERMINAL_MESSAGE_MAX_LEN) {
+                    pRingPro->msgLen = 0;
+                }
+            }
+            else {
+                pRingPro->traceMsgCnt = 1;
+            }
+        }
+        else if (pRingPro->msgLen >= 5) {
+            if (pRingPro->traceMsgCnt > 0) {
+                pMsgPro->buf[pRingPro->msgLen - 5] = ch;
+                pRingPro->msgLen++;
+                pRingPro->traceMsgCnt--;
+            }
+            if (pRingPro->traceMsgCnt == 0) {
+                if (check_conferece_deal_data_crc(pRingPro->msgLen,
+                    pMsgPro, 0))
+                {
+                    pRingPro->recvOver = (bool)1;
+                    userTimerStart(10, &pRingPro->smTimer);
+                    break;
+                }
+                else {
+                    pRingPro->msgLen = 0;
+                }
+            }
+        }
+        else {
+            /* never come this else */
+        }
+    }
+    if (userTimerTimeout(&pRingPro->itvTimer)) {
+        pRingPro->msgLen = 0;
+    }
+}
+
+void Terminal_comPro(void) {
+    Terminal_charMsgPro();
+    Terminal_sendMsgPro();
+}
+
+void Terminal_comInitial(void) {
+    l_terminalPro.pRingBuf = &l_terminalRingBuf;
+    userTimerStop(&l_terminalPro.ringMsgPro.smTimer);
+    userTimerStop(&l_terminalPro.ringMsgPro.itvTimer);
+    l_terminalPro.ringMsgPro.recvOver = (bool)1;
+    l_terminalPro.ringMsgPro.msgLen = 0;
+    l_terminalPro.ringMsgPro.traceMsgCnt = 0;
+    l_terminalPro.pSendQe = &l_sendQueue;
+    l_terminalPro.sendPro.state = TMNL_SEND_IDLE;
+    l_terminalPro.sendPro.ptrMsgAddr = 0U;
 }
 

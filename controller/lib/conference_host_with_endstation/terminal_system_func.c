@@ -46,5 +46,7 @@ void terminal_system_reallot_addr( void )
 	//terminal_register_init();
 
 	terminal_reallot_address();
+
+        T1722ForTmnlTable_clearMap();
 }
 

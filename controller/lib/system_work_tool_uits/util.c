@@ -337,7 +337,7 @@ uint32_t get_host_endstation_command_timeout( uint32_t cmd_value )
 		p++;
 	}
 
-	return (uint32_t)0xffff;
+	return (uint32_t)0;
 }
 
 TCmdCorrespTmt udp_upper_cmpt_command_and_timeout_table[] =

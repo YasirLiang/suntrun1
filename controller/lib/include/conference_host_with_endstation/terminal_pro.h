@@ -89,10 +89,17 @@ typedef struct _type_over_time_speak_pro
 	tmnl_pdblist speak_node;
 }tover_time_speak_pro;
 
+typedef struct _type_over_time_firstApply
+{
+	bool running;
+	tmnl_pdblist speak_node;
+}tover_time_firstApply_pro;
+
 typedef struct _tsystem_discuccess
 {
 	ttmnl_discuss_mode edis_mode;	// 讨论模式
 	tover_time_speak_pro over_speak;// 延时发言
+	tover_time_firstApply_pro overApply;// 延时打开首位申请
 	uint8_t    limit_num;     			//受限的发言人上限
 	uint8_t    speak_limit_num;		//受限的发言人数
 	uint8_t    currect_first_index;		//申请中优先发言的索引
@@ -222,6 +229,8 @@ int terminal_speak_track( uint16_t addr, bool track_en );// 摄像跟踪接口
 void terminal_apply_list_first_speak( tmnl_pdblist const first_speak );
 void terminal_over_time_speak_node_set( tmnl_pdblist speak_node );// 设置延时发言处理节点
 void terminal_over_time_speak_pro(void);// 延时发言处理
+void terminal_over_time_firstapply_node_set( tmnl_pdblist speak_node );
+void terminal_over_time_firstapply_pro(void);
 tmnl_pdblist found_terminal_dblist_node_by_endtity_id(const uint64_t tarker_id);
 uint16_t terminal_speak_num_count(void);
 void terminal_chman_vip_control_common_mic(void);

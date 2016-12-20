@@ -25,7 +25,7 @@
 
 #ifndef __DEBUG__
 /*! Macro Debug Switch */
-#define __DEBUG__
+/*#define __DEBUG__*/
 #ifdef __DEBUG__/*! Debug information printf */
 #include <assert.h>	/*! Enable assert program */
 /*! Debug line */

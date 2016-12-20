@@ -77,6 +77,7 @@ void init_system(void) {
     aecp_controller_init(endpoint_list, descptor_guard, command_send_guard);
     /* initial arcs */
     ArcsCommon_initial(command_send_guard);
+    Terminal_comInitial();
     
     /* system profile init */
     init_profile_system_file();

@@ -73,3 +73,4 @@ bool QueueCom_popFiFo(TComQueue * const queue,
 void QueueCom_itemFree(void *p) {
     free(p);
 }
+

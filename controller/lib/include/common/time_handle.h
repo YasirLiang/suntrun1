@@ -43,6 +43,9 @@ typedef enum enum_overtime_handle
 	MIC_SET_AFTER,// —” ±…Ë÷√mic
 	SIG_TMNL_REGISTER,
 	QUEUE_REGISTER_TIMEOUT,// ¬÷—Ø◊¢≤·
+	ALLOT_ADDRESS_TIMEOUT, /* MAX TIMEOUT FOR ALLOT ADDR */
+	TMNL_WAITASK_TIMEOUT, /* terminal send msg timeout */
+	DISCUSS_MODE_APPLY_AFTER,// ∑¢—‘
 	OVER_TIME_ITEMS_NUM
 }enum_overtime_handle;
 

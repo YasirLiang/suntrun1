@@ -42,6 +42,12 @@ bool conference_host_to_end_address_device_set(uint16_t *endaddr, uint16_t *seta
 bool conference_host_to_end_address_allbroadcast_set(uint16_t *endaddr,	uint16_t type_broadcast,bool resp,uint8_t num, uint8_t windflag);
 void  conference_host_to_end_data_set(uint8_t *datum, uint8_t tmpdat[]);
 int conference_1722_control_form_info( struct jdksavdecc_frame *frame, struct jdksavdecc_aecpdu_aem *aemdu, struct jdksavdecc_eui48 destination_mac, struct jdksavdecc_eui64 target_entity_id,uint16_t cfc_dlgh );
+int Conference_1722DataFormat( struct jdksavdecc_frame *frame,
+    struct jdksavdecc_aecpdu_aem *aemdu,
+    struct jdksavdecc_eui48 destination_mac,
+    struct jdksavdecc_eui64 target_entity_id,
+    uint16_t cfcLen,
+    uint8_t const * const pIn);
 
 #endif
 

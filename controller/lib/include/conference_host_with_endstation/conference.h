@@ -225,6 +225,14 @@ typedef struct _tterminal_recv_msg // 会讨命令
 	uint8_t data_len; // 数据区的长度
 }ttmnl_recv_msg;
 
+typedef struct {
+    uint8_t head;
+    uint8_t cmd;
+    uint16_t addr;
+    uint8_t data;
+    uint8_t buf[TERMINAL_MESSAGE_MAX_LEN];
+}__attribute__((packed)) TTerminalRcvMsg;
+
 #endif
 
 
