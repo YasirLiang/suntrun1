@@ -93,6 +93,7 @@ bool ccu_recv_model_talker_connected_listener_id_index( uint64_t  talker_id, uin
 extern void central_control_recieve_uinit_destroy(void);
 extern uint8_t central_control_recieve_get_input_num(void);
 extern void central_control_recieve_uinit_free_connect_node(uint64_t id);
+extern void CCRU_inputUpate(void);
 
 // *****************************************//
 

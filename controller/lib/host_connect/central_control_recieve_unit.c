@@ -20,6 +20,10 @@
 #define CCU_RECV_PROTECT_TIMEOUT (2*1000)
 #endif
 
+/*! input stream update timer */
+#define CCRU_UPDATE_TIMEOUT (3000)
+static TUserTimer l_timer;
+
 tchannel_allot_pro gchannel_allot_pro;// 全局通道分配处理
 TccuRModel gccu_recieve_model_list[CCU_TR_MODEL_MAX_NUM];// 全局中央未连接连接表
 uint16_t gccu_acmp_sequeue_id;
@@ -643,5 +647,38 @@ void central_control_recieve_uinit_free_connect_node(uint64_t id)
 	}
 }
 
-
+void CCRU_inputUpate(void) {
+    if (userTimerTimeout(&l_timer)) {
+        int i;
+        for (i = 0; i < CCU_TR_MODEL_MAX_NUM; i++)
+        {
+            if (gccu_recieve_model_list[i].model_state ==
+                CCU_RECIEVE_MODEL_UNINIT)
+            {
+                continue;
+            }
+            
+            T_pInChannel p = NULL;
+            list_for_each_entry(p,
+                &gccu_recieve_model_list[i].connect_channel_head.list,
+                list)
+            {
+                DEBUG_INFO("CCRU update 0x%016llx-%d",
+                    p->listener_id, p->listener_index);
+                acmp_rx_state_avail(p->listener_id, p->listener_index);
+            }
+            
+            list_for_each_entry(p,
+                &gccu_recieve_model_list[i].unconnect_channel_head.list,
+                list)
+            {
+                DEBUG_INFO("CCRU update 0x%016llx-%d",
+                    p->listener_id, p->listener_index);
+                acmp_rx_state_avail(p->listener_id, p->listener_index);
+            }
+	}
+        /* update timer */        
+        userTimerStart(CCRU_UPDATE_TIMEOUT, &l_timer);
+    }
+}
 

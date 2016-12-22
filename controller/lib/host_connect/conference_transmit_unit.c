@@ -450,8 +450,18 @@ void trans_model_unit_update_get_tx_state_pro_by_status(const int resp_status,
 
 	if (taker_index == CONFERENCE_OUTPUT_INDEX)
 	{
-		if(NULL == p_temp_node->confenrence_node)
-			return;
+		if(NULL == p_temp_node->confenrence_node) {
+                    /* found conference node and set */
+                    tmnl_pdblist p = NULL;
+                    p = found_terminal_dblist_node_by_endtity_id(tarker_id);
+                    if (p != NULL) {
+                        /* set CTU conference node */
+                       p_temp_node->confenrence_node = p;
+                    }
+                    else {
+                        return; /* do nothing with NULL conference node */
+                    }
+                }
 		
 		if (trans_model_unit_is_connected(tarker_id))
 		{
@@ -1005,6 +1015,32 @@ void conference_transmit_model_init( void )
 	init_observer( &gconference_trans_observer, trans_model_unit_update );
 	// 加入观察者到被观察者
 	attach_observer( &gconnector_subjector, &gconference_trans_observer );
+}
+/*$ conference transmit unit conferenc output stream update.................*/
+void CTU_cOsUptate(void) {
+    tconference_trans_pmodel pos = NULL, n = NULL;
+    T_pOutChannel pos1 = NULL, n1 = NULL;
+    TUserTimer l_timer = {
+        true, false, 0U, 0U
+    };	
+    if (userTimerTimeout(&l_timer)) {
+        list_for_each_entry_safe(pos,
+            n,
+            &gconference_model_guard.list,
+            list)
+        {
+            list_for_each_entry_safe(pos1, n1,&pos->out_ch.list, list) {
+                /* only conference OS index */
+                if (pos1->tarker_index == CONFERENCE_OUTPUT_INDEX) {
+                    acmp_tx_state_avail(pos->tarker_id,
+                        CONFERENCE_OUTPUT_INDEX);
+                    break;
+                }
+            }
+        }
+        /* update timer */
+        userTimerStart(5000, &l_timer);
+    }
 }
 
 uint16_t conference_transmit_unit_allcount_cnnts(uint64_t id) {

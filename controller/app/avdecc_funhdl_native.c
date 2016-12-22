@@ -36,6 +36,8 @@
 #include "func_proccess.h"
 #include "avdecc_funhdl_native.h"
 #include "arcs_common.h" /*$ for arcs interface */
+#include "central_control_recieve_unit.h"
+#include "conference_transmit_unit.h"
 
 /*Macro INPUT_MSG_LEN for control surface message len-----------------------*/
 #define INPUT_MSG_LEN	6
@@ -189,6 +191,12 @@ int pthread_recv_data_fn(void *pgm) {
             terminal_vote_proccess();
             /* query the result of sign and vote */
             terminal_query_sign_vote_pro();
+#if 0            
+            /* update ccru input stream */
+            CCRU_inputUpate();
+            /* update conference output stream */
+            CTU_cOsUptate();
+#endif            
 /* enable arm version when __ARM_BACK_TRACE__ is defined */
 #ifdef __ARM_BACK_TRACE__
             /*proccessing the menu display according to the data recieving from*/
