@@ -23,9 +23,7 @@
 #include <error.h>
 #include "jdksavdecc_world.h"
 
-#ifndef __DEBUG__
 /*! Macro Debug Switch */
-/*#define __DEBUG__*/
 #ifdef __DEBUG__/*! Debug information printf */
 #include <assert.h>	/*! Enable assert program */
 /*! Debug line */
@@ -102,6 +100,5 @@
 /*! cond DABORT */
 #define DABORT(cond)
 #endif /* __DEBUG__ */
-#endif /*__DEBUG__*/
 #endif /* __HOST_CONTROLLER_DEBUG_H__ */
 

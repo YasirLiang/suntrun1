@@ -7,8 +7,7 @@ BIN=avdecc_ctl
 all:$(CUR_OBJS) BIN
 
 $(CUR_OBJS):%.o:%.c
-	@echo "\033[32m$(CC) -o $@ $< \033[0m"
-	@$(CC) $(CFGS) $(CFG_INC) -c  -o $@ $<
+	$(CC) $(CFG_INC) $(CFGS) -c -o $@ $<
 
 BIN:$(CUR_OBJS)
 ifeq ($(BIN), $(wildcard $(BIN)))
