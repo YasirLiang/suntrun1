@@ -205,8 +205,10 @@ int pthread_recv_data_fn(void *pgm) {
                 gcontrol_sur_msg_len = 0;
             }
 #endif
+#ifndef DISABLE_MUTI
             /* muticast connect table manager */
             muticast_connect_manger_timeout_event_image();
+#endif
         }
         /* avdecc discover terminal managing */
         avdecc_manage_discover_proccess();

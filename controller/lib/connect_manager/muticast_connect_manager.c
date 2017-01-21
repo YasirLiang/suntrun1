@@ -12,7 +12,6 @@
 //并新增了数据库的广播配置的
 //管理功能
 /********************************************/
-
 #include "muticast_connect_manager.h"
 #include "system_database.h"
 #include "host_timer.h"
@@ -699,4 +698,3 @@ void muticast_muticast_connect_manger_pro_start(void)
 {
 	gmuticast_manager_pro.running = true;
 }
-

@@ -40,6 +40,8 @@
 #define conference_uint_transmit_uint_ouput 0
 /*! software version Macro*/
 #define software_version "DCS6000_HC_V1.0.0"
+/*! DISABLE MUTICASTOR*/
+#define DISABLE_MUTI
 
 #endif
 

@@ -18,6 +18,7 @@
 #define __MUTICAST_CONNECT_MANAGER_H__
 
 #include "jdksavdecc_world.h"
+#include "global.h"
 
 struct list_head;
 
