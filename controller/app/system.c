@@ -223,7 +223,7 @@ void system_close(struct threads_info *p_threads) {
     pthread_cond_signal(&net_send_queue.control.cond);
 
     /* save system profile */
-    profile_system_close();// ¡À¡ê¡ä????????t¦Ì?D??¡é
+    profile_system_close();
     /* camera information destroy */
     camera_pro_system_close();
     /* camera control surface destroy */
