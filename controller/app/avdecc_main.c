@@ -55,8 +55,8 @@ ucontext_t gsegv_ptr;                               /* context of signation */
 #define  debug_printf(format, args...) \
     do {\
         memset(gmain_buf, 0, sizeof(gmain_buf));\
-        snprintf( gmain_buf,  100,  format, ##args );\
-	w_printf( gmain_buf );\
+        snprintf(gmain_buf,  100,  format, ##args);\
+	w_printf(gmain_buf);\
     }while(0)
 /*enable arm version if __ARM_BACK_TRACE__ is defined-----------------------*/
 #ifdef __ARM_BACK_TRACE__
@@ -66,7 +66,7 @@ ucontext_t gsegv_ptr;                               /* context of signation */
           && (gdump_core_fd != -1))\
     {\
         write(gdump_core_fd, pt_str, strlen(pt_str));\
-	printf( "%s", pt_str);\
+	printf("%s", pt_str);\
     }
 /*Local function delaration-------------------------------------------------*/
 static int backtrace_arm(int **buffer,  int size);
@@ -87,7 +87,9 @@ static int backtrace_arm(int ** buffer, int size) {
     pushing stack in Stack Frame(address is down growth)*/
     __asm__("mov %0, fp\n" : "=r"(fp) );
     /* get the subroutine return address at all level */
-    while ((i < size) && (fp != NULL)) {
+    while ((i < size)
+                && (fp != NULL))
+    {
         /* get current sub-program return address */
         buffer[i++] = (int *)(*(fp - 1));
         /* printf backstrace level */
@@ -313,7 +315,8 @@ int main(int argc, char *argv[]) {
             /* set raw fd */
             net_fd.raw_fd = raw_user_obj->rawsock;
             /*set muticastor dest mac address*/
-            memcpy(net.m_default_dest_mac,jdksavdecc_multicast_adp_acmp.value, 6);
+            memcpy(net.m_default_dest_mac,
+                jdksavdecc_multicast_adp_acmp.value, 6);
         }
         else {/* exit proccess*/
             printf("1722_user_obj Info Error,Exit!\n");

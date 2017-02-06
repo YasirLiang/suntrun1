@@ -44,7 +44,7 @@ void adp_entity_time_stop(solid_pdblist new_adp_node);
 /*! adp_entity_time_update()------------------------------------------------*/
 void adp_entity_time_update(timetype timeout, solid_pdblist new_adp_node);
 /*! adp_entity_timeout()----------------------------------------------------*/
-void adp_entity_timeout( solid_pdblist adp_node );
+void adp_entity_timeout(solid_pdblist adp_node );
 /*! adp_entity_avail()------------------------------------------------------*/
 void adp_entity_avail(struct jdksavdecc_eui64 discover_entity_id,
     uint16_t msg_type);

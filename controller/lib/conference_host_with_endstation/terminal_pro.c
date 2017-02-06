@@ -597,10 +597,6 @@ void system_register_terminal_pro(void) {
     if (over_time_listen(WAIT_TMN_RESTART)
          && (RGST_WAIT == regState))
     {
-        #if 0
-        /* send muticast query comand */
-        terminal_query_endstation(0x8000, (uint64_t)0);
-        #endif
         gregister_tmnl_pro.rgs_state = RGST_QUERY;
         /* set register handle timeout */
         over_time_set(TRGST_OTIME_HANDLE, 15000);

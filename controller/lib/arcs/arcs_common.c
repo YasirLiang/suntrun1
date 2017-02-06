@@ -160,7 +160,7 @@ int ArcsCommon_sendPacket(uint8_t *frame, uint16_t frameLen,
             return -1;
         }        
         /**/
-        proType = ptCmd = ((TProtocalQt *)frame)->head;
+        proType = ((TProtocalQt *)frame)->head;
         if (PROTOCAL_QT_TYPE != proType) {
             if (NULL != gp_log_imp) {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,

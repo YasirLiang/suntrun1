@@ -191,15 +191,10 @@ int pthread_recv_data_fn(void *pgm) {
             terminal_vote_proccess();
             /* query the result of sign and vote */
             terminal_query_sign_vote_pro();
-#if 0            
-            /* update ccru input stream */
-            CCRU_inputUpate();
-            /* update conference output stream */
-            CTU_cOsUptate();
-#endif            
+            
 /* enable arm version when __ARM_BACK_TRACE__ is defined */
 #ifdef __ARM_BACK_TRACE__
-            /*proccessing the menu display according to the data recieving from*/
+/*proccessing the menu display according to the data recieving from*/
             if (gcontrol_sur_msg_len > 0) {
                 input_recv_pro(gcontrol_sur_recv_buf, gcontrol_sur_msg_len);
                 gcontrol_sur_msg_len = 0;

@@ -38,7 +38,7 @@ void adp_entity_state_avail(solid_pdblist guard, solid_pdblist exist_node,
 
 inline void adp_entity_post_timeout_msr(solid_pdblist target) {
     if ((!target->solid.connect_flag)
-        && target->solid.time.elapsed)
+        && (target->solid.time.elapsed))
     {
         if (NULL != gp_log_imp) {
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
@@ -64,18 +64,8 @@ void adp_entity_time_tick(solid_pdblist guard) {
         if (!ptr->solid.time.elapsed) {
             adp_entity_timeout(ptr);
             if (ptr->solid.time.elapsed) {
-            ptr->solid.connect_flag = DISCONNECT;
-            adp_entity_post_timeout_msr(ptr);
-#if 0 /* no need register list anymore */
-            assert(dev_terminal_list_guard != NULL);
-            tmnl_pdblist p;
-            p = search_terminal_dblist_entity_id_node(ptr->solid.entity_id,
-                dev_terminal_list_guard);
-            if (p != NULL) {
-                p->tmnl_dev.tmnl_status.is_rgst = false;
-                terminal_delect_register_addr(p->tmnl_dev.address.addr);
-            }
-#endif /* 0 */                
+                ptr->solid.connect_flag = DISCONNECT;
+                adp_entity_post_timeout_msr(ptr);              
             }
         }
     }
@@ -100,7 +90,7 @@ void adp_entity_time_update(timetype timeout, solid_pdblist new_adp_node) {
 	new_adp_node->solid.time.start_time = get_current_time();
 }
 
-void  adp_entity_timeout(solid_pdblist adp_node) {
+void adp_entity_timeout(solid_pdblist adp_node) {
     if ((adp_node->solid.time.running)
         && (!adp_node->solid.time.elapsed))
     {
@@ -279,7 +269,7 @@ void adp_entity_avail(struct jdksavdecc_eui64 discover_entity_id,
     jdksavdecc_frame_init(&frame);
     memcpy(frame.src_address.value, net.m_my_mac, 6U);
 
-    if (adp_form_msg(&frame, &adpdu, msg_type, discover_entity_id ) == 0) {
+    if (adp_form_msg(&frame, &adpdu, msg_type, discover_entity_id) == 0) {
         system_raw_packet_tx(frame.dest_address.value, frame.payload,
             frame.length, RUNINFLIGHT, TRANSMIT_TYPE_ADP, true);
     }
