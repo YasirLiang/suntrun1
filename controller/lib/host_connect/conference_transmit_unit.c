@@ -246,7 +246,7 @@ static bool trans_model_unit_isopt_timeout_by_output_channel_index(const tconfer
 	if (conference_transmit_unit_found_output_channel_by_index(talker_index, p_trans_model, &p_Outnode))
 	{
 		assert(p_Outnode);
-		if ( (get_current_time() - p_Outnode->operate_timetimp) > OUTPUT_CHANNEL_OPT_PROTECT_TIME)
+		if ( (get_current_time() - p_Outnode->operate_timetimp) > OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL)
 			bret = true;
 	}
 	
@@ -263,7 +263,7 @@ static bool trans_model_unit_disconnect_isopt_timeout(const tconference_trans_pm
 	{
 		assert(p_Outnode);
 		if ( (get_current_time() - p_Outnode->operate_timetimp) >
-                        (OUTPUT_CHANNEL_OPT_PROTECT_TIME))
+                        (OUTPUT_CHANNEL_OPT_DISCONNECT_INTERVAL))
 			bret = true;
 	}
 	

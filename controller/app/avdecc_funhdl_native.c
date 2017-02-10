@@ -107,7 +107,7 @@ int thread_func_fn(void * pgm) {
                 p_msg_wnode = NULL;/*make NULL*/
             }
             /* before continue must unlock the mutex */
-            pthread_mutex_unlock( &p_func_wq->control.mutex);
+            pthread_mutex_unlock(&p_func_wq->control.mutex);
             continue;/* get data length */
         }
         /* copy function data */
