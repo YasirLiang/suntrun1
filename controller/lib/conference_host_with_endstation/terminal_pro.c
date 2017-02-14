@@ -4552,6 +4552,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
         		if( cc_state == MIC_FIRST_APPLY_STATUS || cc_state == MIC_OTHER_APPLY_STATUS )
         		{
         			addr_queue_delect_by_value( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr );
+                                speak_node->tmnl_dev.tmnl_status.mic_state = MIC_COLSE_STATUS;
         			//terminal_mic_state_set(MIC_COLSE_STATUS, speak_node->tmnl_dev.address.addr, speak_node->tmnl_dev.entity_id, true, speak_node);
         			if( gdisc_flags.apply_num > 0 && current_addr == addr )// 置下一个申请为首位申请状态
         			{
