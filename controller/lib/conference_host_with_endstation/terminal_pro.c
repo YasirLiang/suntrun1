@@ -4563,7 +4563,7 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
         				        #if 0
         					terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, first_apply->tmnl_dev.address.addr, first_apply->tmnl_dev.entity_id, true, first_apply );
                                                 #else
-                                                DEBUG_INFO("set first apply(0x%04x)", first_apply->tmnl_dev.address);
+                                                DEBUG_INFO("set first apply(0x%04x)", first_apply->tmnl_dev.address.addr);
                                                 terminal_over_time_firstapply_node_set(first_apply);
                                                 #endif
                                         }
