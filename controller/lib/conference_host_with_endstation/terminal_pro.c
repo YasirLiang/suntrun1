@@ -1351,7 +1351,9 @@ int terminal_main_state_send(uint16_t cmd, void *data, uint32_t data_len) {
 }
 
 /*terminal_lcd_display_num_send.............................................*/
-int terminal_lcd_display_num_send(uint16_t addr, uint8_t display_opt, uint8_t display_num) {
+int terminal_lcd_display_num_send(uint16_t addr, uint8_t display_opt,
+    uint8_t display_num)
+{
     tmnl_send_end_lcd_display lcd_dis;
     lcd_dis.opt = display_opt;
     lcd_dis.num = display_num;
@@ -1655,139 +1657,153 @@ int termianal_camera_track_set(uint16_t cmd, void *data, uint32_t data_len) {
     return 0;
 }
 /*$ Terminal command function ending--------------------------------------@}*/
-/*===================================================
-{@终端处理流程
-=====================================================*/
-int terminal_socroll_synch(void )
-{
-	terminal_option_endpoint( BRDCST_1722_ALL, CONFERENCE_BROADCAST_ADDRESS, OPT_TMNL_LED_DISPLAY_ROLL_SYNC );
 
-	return 0;
+/*$ terminal_socroll_synch()................................................*/
+int terminal_socroll_synch(void) {
+    terminal_option_endpoint(BRDCST_1722_ALL,
+            CONFERENCE_BROADCAST_ADDRESS,
+            OPT_TMNL_LED_DISPLAY_ROLL_SYNC);
+    /* return value */
+    return 0;
 }
-
-void terminal_remove_unregitster( void ) // 这里没有清除终端地址文件以及内存终端列表里相应的内容
-{
-	tmnl_pdblist p_loop_node = dev_terminal_list_guard->next;
-	tmnl_pdblist p_tmp_node = NULL;
+/*$ terminal_remove_unregitster()...........................................*/
+void terminal_remove_unregitster(void) {
+    tmnl_pdblist pStore = (tmnl_pdblist)0;
+    tmnl_pdblist pLoop = (tmnl_pdblist)0;
 
 #ifdef __DEBUG__
-	show_terminal_dblist(dev_terminal_list_guard);
+    show_terminal_dblist(dev_terminal_list_guard);
 #endif
 
-	for( ; p_loop_node != dev_terminal_list_guard; p_loop_node = p_tmp_node )
-	{
-		uint64_t id = p_loop_node->tmnl_dev.entity_id;
-		p_tmp_node = p_loop_node->next;
-		if(  p_loop_node->tmnl_dev.address.addr == 0xffff || !p_loop_node->tmnl_dev.tmnl_status.is_rgst )
-		{
-			delect_terminal_dblist_node( &p_loop_node );
-			conference_transmit_model_node_destroy( id );
-		}
-	}
+    pLoop = dev_terminal_list_guard->next;
+    for (; pLoop != dev_terminal_list_guard; pLoop = pStore) {
+        uint64_t id = pLoop->tmnl_dev.entity_id;
+        pStore = pLoop->next;
+        if ((pLoop->tmnl_dev.address.addr == 0xffff)
+            || (!pLoop->tmnl_dev.tmnl_status.is_rgst))
+        {
+            delect_terminal_dblist_node(&pLoop);
+            conference_transmit_model_node_destroy(id);
+        }
+    }
 
 #ifdef __DEBUG__
-	show_terminal_dblist(dev_terminal_list_guard);
+    show_terminal_dblist(dev_terminal_list_guard);
 #endif
 }
-
-// 需上报，且不是主席插话，才保存麦克风状态
-void terminal_mic_state_set( uint8_t mic_status, uint16_t addr, uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node )
+/*$ terminal_mic_state_set()................................................*/
+void terminal_mic_state_set(uint8_t mic_status, uint16_t addr,
+    uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node)
 {
-	assert( tmnl_node );
-	terminal_pro_debug( "===========mic state = %d ============",  mic_status );
+    assert(tmnl_node != (tmnl_pdblist)0);
+    if  ((tmnl_node == (tmnl_pdblist)0)
+          && (!(addr & BROADCAST_FLAG)))
+    {
+        terminal_pro_debug("nothing to send to set mic status!");
+        return;
+    }
 
-	if( (tmnl_node == NULL) && !(addr & BROADCAST_FLAG) )
-	{
-		terminal_pro_debug( "nothing to send to set mic status!");
-		return;
-	}
-
-	terminal_set_mic_status( mic_status, addr, tarker_id );
-	if( tmnl_node != NULL )
-	{
-		if(tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE &&\
-			mic_status ==MIC_CHM_INTERPOSE_STATUS)
-			upper_cmpt_report_mic_state( MIC_OPEN_STATUS, tmnl_node->tmnl_dev.address.addr );
-		else
-			upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
-		
-		if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) )
-		{
-			tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
-		}
-	}
-}
-
-void	terminal_mic_state_set_send_terminal( bool send_tmnl,uint8_t mic_status, uint16_t addr, uint64_t tarker_id, bool is_report_cmpt, tmnl_pdblist tmnl_node )
-{
-        assert( tmnl_node );
-	terminal_pro_debug( "===========mic state = %d ============",  mic_status );
-
-	if( (tmnl_node == NULL) && !(addr & BROADCAST_FLAG) )
-	{
-		terminal_pro_debug( "nothing to send to set mic status!");
-		return;
-	}
-
-        if (send_tmnl)
-	    terminal_set_mic_status( mic_status, addr, tarker_id );
+    /* set terminal microphone status */
+    terminal_set_mic_status(mic_status, addr, tarker_id);
+    
+    if (tmnl_node != NULL) {
+        if ((tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE)
+              && (mic_status == MIC_CHM_INTERPOSE_STATUS))
+        {
+            upper_cmpt_report_mic_state(MIC_OPEN_STATUS,
+                tmnl_node->tmnl_dev.address.addr);
+        }
+        else {
+            upper_cmpt_report_mic_state(mic_status,
+                tmnl_node->tmnl_dev.address.addr);
+        }
         
-	if( tmnl_node != NULL )
-	{
-		if(tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE &&\
-			mic_status ==MIC_CHM_INTERPOSE_STATUS)
-			upper_cmpt_report_mic_state( MIC_OPEN_STATUS, tmnl_node->tmnl_dev.address.addr );
-		else
-			upper_cmpt_report_mic_state( mic_status, tmnl_node->tmnl_dev.address.addr );
-		
-		if( is_report_cmpt && (mic_status != MIC_CHM_INTERPOSE_STATUS) )
-		{
-			tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
-		}
-	}       
+        if ((is_report_cmpt)
+              && (mic_status != MIC_CHM_INTERPOSE_STATUS))
+        {
+            tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
+        }
+    }
 }
-
-/*********************************************************
-*writer:YasirLiang
-*Date:2016/4/26
-*Name:terminal_speak_limit_timeout_set
-*Param:
-*	p_tmnl_node:set timeout terminal node
-*Retern Value:
-*	None
-*state:根据系统设置设置超时时间
-***********************************************************/ 
-int terminal_speak_limit_timeout_set( tmnl_pdblist p_tmnl_node )
+/*$ terminal_mic_state_set_send_terminal()..................................*/
+void	terminal_mic_state_set_send_terminal(bool send_tmnl,
+        uint8_t mic_status, uint16_t addr, uint64_t tarker_id,
+        bool is_report_cmpt, tmnl_pdblist tmnl_node)
 {
-	uint8_t spk_limit_time = gset_sys.speak_limit;
-	bool vip_time_limit = gset_sys.vip_limitime?true:false;
-	bool chm_time_limit = gset_sys.chman_limitime?true:false;
-	int ret = -1;
-	
-	if( (p_tmnl_node != NULL) && (!spk_limit_time) )// 发言限时?
-	{
-		if( p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_COMMON_RPRST	)// 普通代表?
-		{
-			host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
-		}
-		else if( p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_VIP)
-		{
-			if( vip_time_limit )
-				host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
-		}
-		else if( (p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_COMMON)||\
-			(p_tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE) )
-		{
-			if( chm_time_limit )
-				host_timer_start( spk_limit_time*60*1000, &p_tmnl_node->tmnl_dev.spk_timeout );//  单位是分钟
-		}
+    assert(tmnl_node != (tmnl_pdblist)0);
+    if ((tmnl_node == NULL)
+          && (!(addr & BROADCAST_FLAG)))
+    {
+        terminal_pro_debug("nothing to send to set mic status!");
+        return;
+    }
 
-		ret = 0;
-	}
+    if (send_tmnl) {
+        terminal_set_mic_status(mic_status, addr, tarker_id);
+    }
 
-	return ret;
+    if (tmnl_node != NULL) {
+        if ((tmnl_node->tmnl_dev.address.tmn_type == TMNL_TYPE_CHM_EXCUTE)
+            && (mic_status ==MIC_CHM_INTERPOSE_STATUS))
+        {
+            upper_cmpt_report_mic_state(MIC_OPEN_STATUS,
+                tmnl_node->tmnl_dev.address.addr);
+        }
+        else {
+            upper_cmpt_report_mic_state(mic_status,
+                tmnl_node->tmnl_dev.address.addr);
+        }
+        if ((is_report_cmpt)
+              && (mic_status != MIC_CHM_INTERPOSE_STATUS))
+        {
+            tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
+        }
+    }       
 }
+/*$ terminal_speak_limit_timeout_set()......................................*/
+int terminal_speak_limit_timeout_set(tmnl_pdblist p_tmnl_node) {
+    uint8_t spk_limit_time = gset_sys.speak_limit;
+    bool vip_time_limit = gset_sys.vip_limitime ? true : false;
+    bool chm_time_limit = gset_sys.chman_limitime ? true : false;
+    int ret = -1;
 
+    /* Limit speak? */
+    if ((p_tmnl_node != NULL)
+        && (!spk_limit_time))
+    {
+        if (p_tmnl_node->tmnl_dev.address.tmn_type
+             == TMNL_TYPE_COMMON_RPRST)
+        {
+            host_timer_start(spk_limit_time*60*1000,
+                &p_tmnl_node->tmnl_dev.spk_timeout );
+        }
+        else if (p_tmnl_node->tmnl_dev.address.tmn_type
+                    == TMNL_TYPE_VIP)
+        {
+            if (vip_time_limit) {
+                host_timer_start(spk_limit_time*60*1000,
+                &p_tmnl_node->tmnl_dev.spk_timeout);
+            }
+        }
+        else if ((p_tmnl_node->tmnl_dev.address.tmn_type
+                        == TMNL_TYPE_CHM_COMMON)
+                     || (p_tmnl_node->tmnl_dev.address.tmn_type
+                            == TMNL_TYPE_CHM_EXCUTE))
+        {
+            if(chm_time_limit) {
+                host_timer_start(spk_limit_time*60*1000,
+                &p_tmnl_node->tmnl_dev.spk_timeout);
+            }
+        }
+        else {
+            /* never come this case */
+        }
+
+        ret = 0;
+    }
+
+    return ret;
+}
 /*${Terminal::isMicQueueEmpty}..............................................*/
 /*${Terminal::isMicQueueEmpty}*/
 static bool Terminal_isMicQueueEmpty(Terminal_micQueue * const queue) {
@@ -1816,7 +1832,7 @@ static bool Terminal_postMicFiFo(Terminal_micQueue * const queue,
 /*${Terminal::popMicFiFo}..................................................*/
 /*${Terminal::popMicFiFo}*/
 static bool Terminal_popMicFiFo(Terminal_micQueue* const queue,
-                                     Terminal_mic *node) 
+                                     Terminal_mic *node)
 {
     assert(queue != NULL);
     if (!Terminal_isMicQueueEmpty(queue)) {
