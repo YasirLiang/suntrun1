@@ -121,15 +121,7 @@ int ArcsCommon_send(TProtocalQt *pMsg, bool isResp, int msgLen) {
                   TRANSMIT_TYPE_ARCS_CTRL,
                   isResp,
                   (uint8_t const *)0,
-                  (void const *)0);
-#if 0        
-        int n;
-        printf("Arcs sendLen = %d\n", sendLen);                           
-        for (n = 0; n < sendLen; n++){
-        printf("%02x ", l_sendBuf[n]);
-        }
-        printf("\n\n");
-#endif        
+                  (void const *)0);       
     }
     /* -1 is error */
     return sendLen;
@@ -241,7 +233,7 @@ int ArcsCommon_recvPacketPro(void) {
           && (gregister_tmnl_pro.rgs_state == RGST_IDLE))
     {/* save to ring buffer */
         pos = 0;
-        while(pos < reLen) {
+        while (pos < reLen) {
             RingBuffer_saveChar(&l_arcsPro.ringBuf,
                 l_recvBuf[pos++]);
         }
@@ -487,6 +479,7 @@ static void ArcsCommon_appDataPro(void) {
         else {
             l_lastSeq = pMsgPro->seq;
         }
+        
         switch (pMsgPro->cmd) {
             case QT_QUEUE_ID: {
                 ArcsCmd_queryId(0, pMsgPro,
