@@ -438,6 +438,7 @@ typedef struct  _tterminal_send_end_lcd_display
 #define TLED_ON     3
 
 /*#define TERMINAL_COM_PRO_LATER*/
+#define ALLOT_IN_NEW_QE
 
 typedef struct _tterminal_led_lamp_set
 {
@@ -462,8 +463,13 @@ typedef struct _type_recv_cmpt_pro
 	uint16_t data_len;
 }trecv_cmpt_pro;
 
+#define ALLOT_MAX_SIZE 64
 typedef struct TAllotAddrBuf {
-    uint8_t buf[5]; /* terminal allot command protocol data */
+    /* allot funtion */
+    int (*vptr)(uint16_t, void *, uint32_t);
+    uint8_t buf[ALLOT_MAX_SIZE]; /* terminal allot command protocol data */
+    uint16_t len;
+    bool renew;
     TUserTimer timer; /* timer */
 }TAllotAddrBuf;
 

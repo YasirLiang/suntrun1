@@ -63,12 +63,17 @@ typedef struct TTerminal_comPro {
 }TTerminal_comPro;
 /*$ char ring buffer size */
 #define TERMINAL_RING_BUF_SIZE 180
-/*$ ALLOT CMD queue size */
-#define TALLOTCMD_QSIZE 32
+
 /*! local function decralation */
 static void Terminal_charMsgPro(void);
 static void Terminal_sendMsgPro(void);
 static void Terminal_appDataPro(void);
+
+#ifdef ALLOT_IN_NEW_QE
+/*$ ALLOT CMD queue size */
+#define TALLOTCMD_QSIZE 32
+/* current allot command queue element */
+static TAllotAddrBuf *l_caQe = (TAllotAddrBuf *)0;
 /*$ story pointer */
 static uint32_t l_allotCmdElem[TALLOTCMD_QSIZE] = {
     0U
@@ -77,13 +82,16 @@ static uint32_t l_allotCmdElem[TALLOTCMD_QSIZE] = {
 static TComQueue l_allotCmdQueue = {
     0U, 0U, 0U, TALLOTCMD_QSIZE, &l_allotCmdElem[0]
 };
+/*$ lock mutex */
+pthread_mutex_t l_allotMutex;
+#endif /* ALLOT_IN_NEW_QE */
+
 /*! local terminal recv buffer----------------------------------------------*/
 static uint8_t l_recvBuf[TERMINAL_RING_BUF_SIZE];
 /*$ local terminal ring buffer */
 static TCharRingBuf l_terminalRingBuf = {
     1, &l_recvBuf[0], 0U, 0U, TERMINAL_RING_BUF_SIZE
 };
-static uint16_t l_lastAllotAddr = 0xffff;
 
 static T1722ForTmnlTable l_table[SYSTEM_TMNL_MAX_NUM] = {
     {0U, 0xffff, 0},
@@ -98,9 +106,6 @@ static TComQueue l_sendQueue = {
 static TTerminal_comPro l_terminalPro;
 
 T1722ForTmnlTable *T_Tab = &l_table[0];
-
-volatile bool gAllotFinish = true;
-volatile bool l_allotFinish = true;
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
@@ -351,7 +356,7 @@ int terminal_address_list_read_file( FILE* fd,  terminal_address_list* ptmnl_add
 // send terminal conference deal message in 1722 frame payload by pipe
 uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, bool is_resp_data )
 {
-#if 1
+#ifndef TERMINAL_COM_PRO_LATER
 	int send_len = 0;
 	int cnf_data_len = 0;
 	struct host_to_endstation *data_buf = (struct host_to_endstation*)buf;
@@ -395,11 +400,12 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
             pMsg->timeOut = 0;
         }
         else {
-            pMsg->reNum = 3;
+            pMsg->reNum = 2;
             pMsg->timeOut =
                 get_host_endstation_command_timeout(\
-                    data_buf->cchdr.command_control);
+                    data_buf->cchdr.command_control & COMMAND_TMN_MASK);
         }
+        
         /* send buffer */
         uint8_t *p = &pMsg->msgBuf[0];
         uint8_t crc = 0;
@@ -425,9 +431,13 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
         sendLen = pMsg->msgLen;
         /* push to send message queue */
         if (!QueueCom_postFiFo(l_terminalPro.pSendQe, (void *)pMsg)) {
+            DEBUG_INFO("[Post terminal send command to queue failed]");
             free(pMsg);
             pMsg = NULL;
+            return -1;
         }
+
+        DEBUG_INFO("[Post terminal send command to queue Success]");
     }
     return sendLen;
 #endif    
@@ -556,87 +566,114 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
     	{
             terminal_trasmint_message( recv_data.cchdr.address, recv_data.data, recv_data.data_len );
     	}
-  #if 0
+#ifdef ALLOT_IN_NEW_QE
         else if ((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION) {
-
+            pthread_mutex_lock(&l_allotMutex);
             if (!(recv_data.cchdr.command_control & COMMAND_TMN_REPLY)) {
                 uint32_t pos, addr;
                 TAllotAddrBuf *ptr = (TAllotAddrBuf *)0;
                 bool found = false;
-                if ((l_lastAllotAddr == recv_data.cchdr.address)
-                      && (recv_data.data[0] == 1))
-                {
-                    /* current allot success */
-                    terminal_func_allot_address(0, data_buf, frame_len);
-                    l_allotFinish = true;
-                    return;
-                }
+
                 /* if queue node has no allocation command, push to queue, otherwise
                      update lastest time for this allocation command */
                 queue_for_each(&l_allotCmdQueue, pos, addr) {
                     ptr = (TAllotAddrBuf *)addr;
                     if (ptr != 0) {
-                        uint16_t addr_ = *(((uint16_t *)&ptr->buf[2]));
-                        if (addr_ == recv_data.cchdr.address)
-                        {/* address equal? */
-                            userTimerStart(50, &ptr->timer);
+                        ttmnl_recv_msg data;
+                        uint16_t addr_;
+                        ssize_t ret = 0;
+                        
+                        ret = conference_end_to_host_deal_recv_msg_read(&data,
+                            ptr->buf, 0,
+                            sizeof(ttmnl_recv_msg), ptr->len);
+                        if (ret < 0) {
+                            continue;
+                        }
+                        
+                        addr_ = data.cchdr.address;
+                        if (addr_ == recv_data.cchdr.address) {
+                            /* address equal? */
+                            userTimerStart(100, &ptr->timer);
                             found = true;
+                            DEBUG_INFO("[Post allot command to"
+                                " Queue update(0x%04x)]", addr_);
                             break;
                         }
                     }
                 }
+                
                 ptr = (TAllotAddrBuf *)0;
+                /* get current allot address */
+                if (l_caQe != NULL) {
+                    ttmnl_recv_msg data_;
+                    ssize_t ret = 0;
+                    ret = conference_end_to_host_deal_recv_msg_read(&data_,
+                        l_caQe->buf, 0,
+                        sizeof(ttmnl_recv_msg), l_caQe->len);
+                    if (data_.cchdr.address == recv_data.cchdr.address) {
+                        found = true;
+                    }
+                }
+                
                 if (!found) {
+                    if (frame_len > ALLOT_MAX_SIZE) {
+                        pthread_mutex_unlock(&l_allotMutex);
+                        return;
+                    }
+                    
                     /* add to queue */
                     ptr = (TAllotAddrBuf *)malloc(sizeof(TAllotAddrBuf));
                     if (ptr != (TAllotAddrBuf *)0) {
-                        ptr->buf[0] = recv_data.cchdr.byte_guide;
-                        ptr->buf[1] = recv_data.cchdr.command_control;
-                        ptr->buf[2] = (uint8_t)(recv_data.cchdr.address & 0x00ff);
-                        ptr->buf[3] = (uint8_t)((recv_data.cchdr.address & 0xff00) >> 8);
-                        ptr->buf[4] = recv_data.data[0];
-                        userTimerStart(50, &ptr->timer); /* exist value time */
+                        ptr->vptr = terminal_func_allot_address;
+                        ptr->len = frame_len;
+                        memcpy(ptr->buf, data_buf, frame_len);
+                        userTimerStart(100, &ptr->timer); /* exist value time */
+                        ptr->renew = false;
                         QueueCom_postFiFo(&l_allotCmdQueue, (void *)ptr);
+                        DEBUG_INFO("[Post allot command to"
+                            " Queue new(0x%04x)]", recv_data.cchdr.address);
                     }
+                }
+                else {
+                    /* abandon packet */
                 }
             }
             else {
-                /* current allot success */
-                terminal_func_allot_address(0, data_buf, frame_len);
-                l_allotFinish = true;
-            }           
+                /* no current allot task? */
+                if (l_caQe == (TAllotAddrBuf *)0) {
+                    pthread_mutex_unlock(&l_allotMutex);
+                    return;
+                }
+                
+                ttmnl_recv_msg data;
+                ssize_t ret = 0;
+                ret = conference_end_to_host_deal_recv_msg_read(&data,
+                    l_caQe->buf, 0,
+                    ALLOT_MAX_SIZE, l_caQe->len);
+                if (ret < 0) {
+                    pthread_mutex_unlock(&l_allotMutex);
+                    return;
+                }
+                
+                DEBUG_INFO("[allot command last renew (0x%04x-0x%04x)]",
+                    data.cchdr.address, recv_data.cchdr.address);
+                if (data.cchdr.address == recv_data.cchdr.address) {
+                    /* write new data */
+                    l_caQe->len = frame_len;
+                    memcpy(l_caQe->buf, data_buf, frame_len);
+                    l_caQe->renew = true;
+                    userTimerStart(100, &l_caQe->timer); /* exist value time */
+                }
+                else {
+                    /* do nothing */
+                }
+            }
+
+            pthread_mutex_unlock(&l_allotMutex);
         }
-#endif        
+#endif /* ALLOT_IN_NEW_QE */  
         else // 处理其它命令
     	{
-#if 0    	
-    	    static uint16_t l_lastAllotAddr = 0xffff;
-    	    if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
-                    && (!gAllotFinish)
-                    && (!(recv_data.cchdr.command_control & COMMAND_TMN_REPLY))
-                    && (l_lastAllotAddr != recv_data.cchdr.address & TMN_ADDR_MASK))
-            {
-                DEBUG_LINE();
-                return;
-            }
-            else if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
-                        && (recv_data.cchdr.command_control & COMMAND_TMN_REPLY))
-            {
-            DEBUG_LINE();
-                gAllotFinish = true;
-            }
-            else if (((recv_data.cchdr.command_control & COMMAND_TMN_MASK) == ALLOCATION)
-                    && (gAllotFinish))
-            {
-                DEBUG_INFO("addr (%d-%d)", l_lastAllotAddr,
-                    recv_data.cchdr.address & TMN_ADDR_MASK);
-                l_lastAllotAddr = recv_data.cchdr.address & TMN_ADDR_MASK;
-                gAllotFinish = false;
-            }
-            else {
-                /* do nothing */
-            }            
-#endif
             find_func_command_link( TERMINAL_USE, recv_data.cchdr.command_control & COMMAND_TMN_MASK, 0, data_buf, frame_len );
     	}
     }
@@ -681,36 +718,62 @@ void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  tar
 		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
 	}
 }
-
+#ifdef ALLOT_IN_NEW_QE
+extern terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];
 void Terminal_allotPro(void) {
-    TAllotAddrBuf *workNode;
     uint32_t addr = 0;
-    if (l_allotFinish) {
+    TAllotAddrBuf **ppCaQe = &l_caQe; /*! current allot command queue element */
+    if (*ppCaQe == (TAllotAddrBuf *)0) {
         if (QueueCom_popFiFo(&l_allotCmdQueue, &addr)) {
-            workNode = (TAllotAddrBuf *)addr;
-            assert(workNode != (TAllotAddrBuf *)0);
-            bool timeout = userTimerTimeout(&workNode->timer);
+            *ppCaQe = (TAllotAddrBuf *)addr;
+            bool timeout = userTimerTimeout(&(*ppCaQe)->timer);
             if (!timeout) {
-                l_lastAllotAddr = *((uint16_t *)&workNode->buf[2]);
-                terminal_func_allot_address(0, workNode->buf, 5);
-                l_allotFinish = false;
-                over_time_set(ALLOT_ADDRESS_TIMEOUT, 100);
-                /* free malloc space */
-                QueueCom_itemFree((void *)workNode);
+                DEBUG_INFO("[Excute allot command begin]");
+                (*ppCaQe)->vptr(0, (*ppCaQe)->buf, (*ppCaQe)->len);
+                userTimerStart(100, &(*ppCaQe)->timer);
             }
             else {
-                QueueCom_itemFree((void *)workNode);
+                QueueCom_itemFree((void *)(*ppCaQe));
+                *ppCaQe = (TAllotAddrBuf *)0;
             }
         }
     }
-}
+    else {
+        if (((*ppCaQe)->renew)
+            && (!userTimerTimeout(&(*ppCaQe)->timer)))
+        {
+            DEBUG_INFO("[Excute allot command Finish]");
+            (*ppCaQe)->vptr(0, (*ppCaQe)->buf,(*ppCaQe)->len);
+            QueueCom_itemFree((void *)(*ppCaQe));
+            *ppCaQe = (TAllotAddrBuf *)0;
+        }
+        else if (userTimerTimeout(&(*ppCaQe)->timer)) {
+            /* this timer must start */
+            DEBUG_INFO("[Excute allot command Falied]");
+            QueueCom_itemFree((void *)(*ppCaQe));
+            *ppCaQe = (TAllotAddrBuf *)0;
 
+            /* release current allotted address */
+            terminal_address_list_pro* pAllot = &allot_addr_pro;
+            if (!pAllot->renew_flag) {
+                uint16_t *pA = &tmnl_addr_list[pAllot->index].addr;
+                if (!found_terminal_dblist_node_by_addr(*pA)) {
+                    *pA = 0xffff;
+                }
+            }
+        }
+        else {
+            /* do nothing */
+        }
+    }
+}
+#endif
 static void Terminal_sendMsgPro(void) {
     uint32_t *pSendState = &l_terminalPro.sendPro.state;
     uint32_t addr;
     if ((*pSendState == TMNL_SEND_IDLE)
           && (QueueCom_popFiFo(l_terminalPro.pSendQe, &addr)))
-    {
+    {  
         /* format data and send */
         struct jdksavdecc_frame frame;
         struct jdksavdecc_aecpdu_aem aemdu;
@@ -720,7 +783,9 @@ static void Terminal_sendMsgPro(void) {
         struct jdksavdecc_eui64 uid;
         struct jdksavdecc_eui48 send_dest;
         int sendLen = 0;
+        
         l_terminalPro.sendPro.ptrMsgAddr = addr;
+        
         if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
             convert_uint64_to_eui64(uid.value, target_id);
             convert_entity_id_to_eui48_mac_address(target_id,
@@ -746,8 +811,10 @@ static void Terminal_sendMsgPro(void) {
             controller_machine_1722_network_send(gp_controller_machine,
                 frame.payload, frameLen);
             *pSendState = TMNL_SENDING;
+            DEBUG_INFO("[ IDLE Send App Data Success ]");
         }
         else { /* error send len */
+            DEBUG_INFO("[ IDLE Send App Data Failed(Format data error) ]");
             QueueCom_itemFree(
                 (void *)l_terminalPro.sendPro.ptrMsgAddr);
             l_terminalPro.sendPro.ptrMsgAddr = 0U;
@@ -760,6 +827,8 @@ static void Terminal_sendMsgPro(void) {
                 (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
             if (sendMsg->timeOut) {
                 over_time_set(TMNL_WAITASK_TIMEOUT, sendMsg->timeOut);
+                DEBUG_INFO("[ Send State Machine Change to WaitAsk"
+                    "(Timeout = %d) ]", sendMsg->timeOut);
                 *pSendState = TMNL_WAITASK;
             }
             else {
@@ -775,54 +844,55 @@ static void Terminal_sendMsgPro(void) {
     {
         TTmnlSendMsgElem *sendMsg =
             (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
-        if (sendMsg->reNum > 0) {
-            sendMsg->reNum--;
-            /* send data */
-            {
-                /* format data and send */
-                struct jdksavdecc_frame frame;
-                struct jdksavdecc_aecpdu_aem aemdu;
-                uint16_t tmnlAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
-                uint64_t target_id = 0U;
-                struct jdksavdecc_eui64 uid;
-                struct jdksavdecc_eui48 send_dest;
-                int sendLen = 0;
-                if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
-                    convert_uint64_to_eui64(uid.value, target_id);
-                    convert_entity_id_to_eui48_mac_address(target_id,
-                        send_dest.value);
-                }
-                else {
-                    memcpy(&send_dest,
-                        &jdksavdecc_multicast_adp_acmp,
-                        sizeof(struct jdksavdecc_eui48));
-                }
-                
-                sendLen = Conference_1722DataFormat(&frame, &aemdu,
-                        send_dest,
-                        uid,
-                        sendMsg->msgLen,
-                        sendMsg->msgBuf);
-                if (sendLen > 0) {
-                    uint8_t ethertype[2] = {0x22, 0xf0};
-                    int frameLen = sendLen + ETHER_HDR_SIZE;
-                    memcpy(frame.payload, send_dest.value, 6);
-                    memcpy(frame.payload+6, net.m_my_mac, 6);
-                    memcpy(frame.payload+12, ethertype, 2);
-                    controller_machine_1722_network_send(
-                        gp_controller_machine,
-                        frame.payload, frameLen);
-                    *pSendState = TMNL_SENDING;
-                }
-                else { /* error send len */
-                    QueueCom_itemFree(
-                        (void *)l_terminalPro.sendPro.ptrMsgAddr);
-                    l_terminalPro.sendPro.ptrMsgAddr = 0U;
-                    *pSendState = TMNL_SEND_IDLE;
-                }
+        if (sendMsg->reNum > 0) {   
+            /* format data and send */
+            struct jdksavdecc_frame frame;
+            struct jdksavdecc_aecpdu_aem aemdu;
+            uint16_t tmnlAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+            uint64_t target_id = 0U;
+            struct jdksavdecc_eui64 uid;
+            struct jdksavdecc_eui48 send_dest;
+            int sendLen = 0;
+            
+            if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
+                convert_uint64_to_eui64(uid.value, target_id);
+                convert_entity_id_to_eui48_mac_address(target_id,
+                    send_dest.value);
+            }
+            else {
+                memcpy(&send_dest,
+                    &jdksavdecc_multicast_adp_acmp,
+                    sizeof(struct jdksavdecc_eui48));
+            }
+            
+            sendLen = Conference_1722DataFormat(&frame, &aemdu,
+                    send_dest,
+                    uid,
+                    sendMsg->msgLen,
+                    sendMsg->msgBuf);
+            if (sendLen > 0) {
+                uint8_t ethertype[2] = {0x22, 0xf0};
+                int frameLen = sendLen + ETHER_HDR_SIZE;
+                memcpy(frame.payload, send_dest.value, 6);
+                memcpy(frame.payload+6, net.m_my_mac, 6);
+                memcpy(frame.payload+12, ethertype, 2);
+                controller_machine_1722_network_send(
+                    gp_controller_machine,
+                    frame.payload, frameLen);
+                *pSendState = TMNL_SENDING;
+                /* send data */
+                sendMsg->reNum--;
+                DEBUG_INFO("[ ReSend App Data Success ]");
+            }
+            else { /* error send len */
+                QueueCom_itemFree(
+                    (void *)l_terminalPro.sendPro.ptrMsgAddr);
+                l_terminalPro.sendPro.ptrMsgAddr = 0U;
+                *pSendState = TMNL_SEND_IDLE;
             }
         }
         else {
+            DEBUG_INFO("[ ReSend App Data Done ]");
             QueueCom_itemFree(
                 (void *)l_terminalPro.sendPro.ptrMsgAddr);
             l_terminalPro.sendPro.ptrMsgAddr = 0U;
@@ -841,22 +911,54 @@ static void Terminal_appDataPro(void) {
     bool isChairMan = (pMsgPro->cmd&COMMAND_TMN_CHAIRMAN)?true:false;
     uint64_t target_id;
 
+    /* not a terminal command */
+    if (!(pMsgPro->cmd & COMMAND_FROM_TMN)) {
+        DEBUG_INFO("[ Proccess App Data Failed->not"
+        "Terminal comand ]");
+        return;
+    }
+    
     if (pMsgPro->cmd & COMMAND_TMN_REPLY) {/* proccess response data */
         if (l_terminalPro.sendPro.state != TMNL_SEND_IDLE) {
-            TTmnlSendMsgElem *sendMsg =
-                (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
-            if (cmd != (sendMsg->msgBuf[1] & COMMAND_TMN_MASK)) {
+            uint16_t preAddr;
+            uint16_t preCmd;
+            TTmnlSendMsgElem *sendMsg;
+            
+            sendMsg = (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
+            if (sendMsg == (TTmnlSendMsgElem *)0) {
+                DEBUG_INFO("[ Proccess App Data Failed->"
+                    "no data in current task node ]");
                 return;
             }
-            uint16_t seAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+            
+            preAddr = *((uint16_t *)&sendMsg->msgBuf[2]);
+            preCmd = *(&sendMsg->msgBuf[1]);
+
+            /* check command */
+            if ((preCmd & COMMAND_TMN_MASK) != cmd) {
+                DEBUG_INFO("[ Proccess App Data Failed->no"
+                    "match Current send Cmd ]");
+                return;
+            }
+            
+            /* check address */
             if ((!(pMsgPro->addr & BROADCAST_FLAG))
-                  && (tmnlAddr != seAddr)) {
+                  && (tmnlAddr != (preAddr &TMN_ADDR_MASK)))
+            {
+                DEBUG_INFO("[ Proccess App Data Failed->no"
+                    "match Current send Addr ]");
                 return;
             }
-            l_terminalPro.sendPro.state = TMNL_SEND_IDLE;
+
+            /* free node */
             QueueCom_itemFree(
                         (void *)l_terminalPro.sendPro.ptrMsgAddr);
             l_terminalPro.sendPro.ptrMsgAddr = 0U;
+
+            /* change send-state machine state */
+            DEBUG_INFO("[Send State Machine Change to IDLE]");
+            l_terminalPro.sendPro.state = TMNL_SEND_IDLE;
+            
             if (cmd == QUERY_END) {
                 /* looking target id */
                 if (T1722ForTmnlTable_foundByAppAddr(tmnlAddr, &target_id)) {
@@ -864,6 +966,7 @@ static void Terminal_appDataPro(void) {
                     tmnl_list_station = search_terminal_dblist_entity_id_node(target_id,
                         dev_terminal_list_guard);
                     if (NULL != tmnl_list_station) {
+                        DEBUG_INFO("[ Process register command begin ]");
                         terminal_register(tmnlAddr, pMsgPro->buf[0], tmnl_list_station);
                         // 注册完成
                         gvregister_recved = true;
@@ -871,17 +974,130 @@ static void Terminal_appDataPro(void) {
                 }
             }
             else if (cmd == SET_END_STATUS) {
+                DEBUG_INFO("[ Process SET_END command begin ]");
                 terminal_type_save(tmnlAddr, pMsgPro->buf[0], isChairMan);
             }
             else if (cmd == CHECK_END_RESULT) {
+                DEBUG_INFO("[ Process CHECK_END_RESULT command begin ]");
                 terminal_query_vote_ask(tmnlAddr, pMsgPro->buf[0]);
             }
         }
     }
         
     if (cmd == TRANSIT_END_MSG) {
+        DEBUG_INFO("[ Process TRANSIT_END_MSG command begin ]");
         terminal_trasmint_message(tmnlAddr, pMsgPro->buf, pMsgPro->data);
     }
+#ifdef ALLOT_IN_NEW_QE    
+    else if (cmd == ALLOCATION) {
+        uint32_t frame_len = l_terminalPro.ringMsgPro.msgLen;
+        
+        pthread_mutex_lock(&l_allotMutex);
+                
+        if (!(pMsgPro->cmd & COMMAND_TMN_REPLY)) {
+            uint32_t pos, addr;
+            TAllotAddrBuf *ptr = (TAllotAddrBuf *)0;
+            bool found = false;
+
+            /* if queue node has no allocation command, push to queue, otherwise
+                 update lastest time for this allocation command */
+            queue_for_each(&l_allotCmdQueue, pos, addr) {
+                ptr = (TAllotAddrBuf *)addr;
+                if (ptr != 0) {
+                    ttmnl_recv_msg data;
+                    uint16_t addr_;
+                    ssize_t ret = 0;
+                    
+                    ret = conference_end_to_host_deal_recv_msg_read(&data,
+                        ptr->buf, 0,
+                        sizeof(ttmnl_recv_msg), ptr->len);
+                    if (ret < 0) {
+                        continue;
+                    }
+                    
+                    addr_ = data.cchdr.address;
+                    if (addr_ == pMsgPro->addr) {
+                        /* address equal? */
+                        userTimerStart(100, &ptr->timer);
+                        found = true;
+                        DEBUG_INFO("[Post allot command to"
+                            " Queue update(0x%04x)]", addr_);
+                        break;
+                    }
+                }
+            }
+            
+            ptr = (TAllotAddrBuf *)0;
+            /* get current allot address */
+            if (l_caQe != NULL) {
+                ttmnl_recv_msg data_;
+                ssize_t ret = 0;
+                
+                ret = conference_end_to_host_deal_recv_msg_read(&data_,
+                    l_caQe->buf, 0,
+                    sizeof(ttmnl_recv_msg), l_caQe->len);
+                if (data_.cchdr.address == pMsgPro->addr) {
+                    found = true;
+                }
+            }
+            
+            if (!found) {
+                if (frame_len > ALLOT_MAX_SIZE) {
+                    pthread_mutex_unlock(&l_allotMutex);
+                    return;
+                }
+                
+                /* add to queue */
+                ptr = (TAllotAddrBuf *)malloc(sizeof(TAllotAddrBuf));
+                if (ptr != (TAllotAddrBuf *)0) {
+                    ptr->vptr = terminal_func_allot_address;
+                    ptr->len = frame_len;
+                    memcpy(ptr->buf, (uint8_t *)pMsgPro, frame_len);
+                    userTimerStart(100, &ptr->timer); /* exist value time */
+                    ptr->renew = false;
+                    QueueCom_postFiFo(&l_allotCmdQueue, (void *)ptr);
+                    DEBUG_INFO("[Post allot command to"
+                        " Queue new(0x%04x)]", pMsgPro->addr);
+                }
+            }
+            else {
+                /* abandon packet */
+            }
+        }
+        else {
+            /* no current allot task? */
+            if (l_caQe == (TAllotAddrBuf *)0) {
+                pthread_mutex_unlock(&l_allotMutex);
+                return;
+            }
+            
+            ttmnl_recv_msg data;
+            ssize_t ret = 0;
+            ret = conference_end_to_host_deal_recv_msg_read(&data,
+                l_caQe->buf, 0,
+                ALLOT_MAX_SIZE, l_caQe->len);
+            if (ret < 0) {
+                pthread_mutex_unlock(&l_allotMutex);
+                return;
+            }
+            
+            DEBUG_INFO("[allot command last renew (0x%04x-0x%04x)]",
+                data.cchdr.address, pMsgPro->addr);
+            if (data.cchdr.address == pMsgPro->addr) {
+                /* write new data */
+                l_caQe->len = frame_len;
+                memcpy(l_caQe->buf, (uint8_t *)pMsgPro, frame_len);
+                l_caQe->renew = true;
+                userTimerStart(100, &l_caQe->timer); /* exist value time */
+            }
+            else {
+                /* do nothing */
+            }
+        }
+
+        pthread_mutex_unlock(&l_allotMutex);
+    } 
+#endif /* ALLOT_IN_NEW_QE */
     else {
         /* not including specical cmd like 'TRANSIT_END_MSG' and include crc*/
         find_func_command_link(TERMINAL_USE, cmd,
@@ -898,6 +1114,7 @@ static void Terminal_charMsgPro(void) {
         userTimerStart(12, &pRingPro->itvTimer);
         if (userTimerTimeout(&pRingPro->smTimer)) {
             /* process app data  here */
+            DEBUG_INFO("[ proccess App Data Begin ]");
             Terminal_appDataPro();
             /* stop sm timer */
             userTimerStop(&pRingPro->smTimer);
@@ -954,7 +1171,8 @@ static void Terminal_charMsgPro(void) {
                     pMsgPro, 0))
                 {
                     pRingPro->recvOver = (bool)1;
-                    userTimerStart(10, &pRingPro->smTimer);
+                    userTimerStart(2, &pRingPro->smTimer);
+                    DEBUG_INFO("[ Parser char Message Done ]");
                     break;
                 }
                 else {
@@ -974,6 +1192,11 @@ static void Terminal_charMsgPro(void) {
 void Terminal_comPro(void) {
     Terminal_charMsgPro();
     Terminal_sendMsgPro();
+#ifdef ALLOT_IN_NEW_QE    
+    pthread_mutex_lock(&l_allotMutex);
+    Terminal_allotPro();
+    pthread_mutex_unlock(&l_allotMutex);
+#endif /* ALLOT_IN_NEW_QE */
 }
 
 void Terminal_comInitial(void) {
@@ -986,5 +1209,8 @@ void Terminal_comInitial(void) {
     l_terminalPro.pSendQe = &l_sendQueue;
     l_terminalPro.sendPro.state = TMNL_SEND_IDLE;
     l_terminalPro.sendPro.ptrMsgAddr = 0U;
+#ifdef ALLOT_IN_NEW_QE
+    pthread_mutex_init(&l_allotMutex, NULL);
+#endif /* ALLOT_IN_NEW_QE */
 }
 

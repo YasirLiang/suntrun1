@@ -175,25 +175,6 @@ bool conference_end_to_host_crc_is_right(const struct endstation_to_host pend/* 
 // 读取会议数据之前的数据校验
 bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos)
 {
-#if 0
-	assert( data );
-	
-	uint8_t *p = (( uint8_t * )data) + pos; 
-	uint8_t recv_crc = p[lng - 1];
-	uint8_t calculate_crc = p[0];
-	int i = 0;
-
-	// 校验为除了校验位的数据的异或(主机与终端的通信协议)
-	for( i = 1; i < lng -1 ; i++ )
-	{
-		calculate_crc ^= p[i] ;
-	}
-
-	if( recv_crc == calculate_crc )
-		return true;
-	else
-		return false;
-#else
 	uint8_t crc = 0;
 	int i = 0;
 	uint8_t *p = NULL; 
@@ -209,6 +190,5 @@ bool check_conferece_deal_data_crc(uint16_t lng, const void *data, int pos)
 		return true;
 
 	return false;
-#endif
 }
 

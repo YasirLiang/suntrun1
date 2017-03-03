@@ -211,11 +211,12 @@ struct endstation_to_host_special			// 终端特殊命令格式
 	uint8_t deal_backups[DATAMAXLENGTH + HOST_COMMON_TO_END_EXDATA_LEN];	// 协议的备份
 };
 
+#define DEAL_PAYLOAD_MAX_SIZE ((TERMINAL_MESSAGE_MAX_LEN + 4) * 2)
 struct terminal_deal_frame // aecp data conference data frame
 {
 	struct jdksavdecc_aecpdu_aem aecpdu_aem_header;
 	uint16_t payload_len;
-	uint8_t payload[(TERMINAL_MESSAGE_MAX_LEN + HOST_COMMON_TO_END_EXDATA_LEN)*2]; // 协议备份
+	uint8_t payload[DEAL_PAYLOAD_MAX_SIZE]; // 协议备份
 };
 
 typedef struct _tterminal_recv_msg // 会讨命令

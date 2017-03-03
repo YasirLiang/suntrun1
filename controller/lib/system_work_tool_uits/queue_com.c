@@ -29,17 +29,11 @@ uint32_t QueueCom_count(TComQueue * const queue) {
 /*${QueueCom::isEmpty}......................................................*/
 /*${QueueCom::isEmpty}*/
 bool QueueCom_isEmpty(TComQueue * const queue) {
-    if (queue == (TComQueue * const)0) {
-        return (bool)1;
-    }
     return queue->head == queue->trail;
 }
 /*${QueueCom::isFull}.......................................................*/
 /*${QueueCom::isFull}*/
 bool QueueCom_isFull(TComQueue * const queue) {
-    if (queue == (TComQueue * const)0) {
-        return (bool)1;
-    }
     return (queue->trail + 1) % queue->size == queue->head;
 }
 /*${QueueCom::postFiFo}.....................................................*/

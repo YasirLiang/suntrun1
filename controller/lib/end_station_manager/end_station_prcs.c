@@ -14,57 +14,46 @@
 #include "jdksavdecc_pdu.h"
 #include "central_control_recieve_unit.h"
 #include "conference_transmit_unit.h"
-//#include "muticast_connector.h"
 #include "conference_recieve_unit.h"
 #include "log_machine.h"
 #include "central_control_transmit_unit.h"
 
-void proc_aecp_message_type_vendor_unique_command_conference( const uint8_t *frame, size_t frame_len, int *status )
+void proc_aecp_message_type_vendor_unique_command_conference(
+    const uint8_t *frame, size_t frame_len, int *status)
 {
-	assert( frame && status );
-	uint32_t msg_type;
-	struct terminal_deal_frame conference_frame;
-	uint16_t connference_len = jdksavdecc_aecpdu_aem_get_command_type( frame, ZERO_OFFSET_IN_PAYLOAD );
-	bool crc_right = false;
+    uint32_t msg_type;
+    struct terminal_deal_frame conference_frame;
+    uint16_t connference_len;
 
-	// 协议数据至少12位,包括备份
-	if (connference_len < END_TO_HOST_CMD_LEN*2)
-	{
-		return;
-	}
-	
-	memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
-	conference_frame.payload_len = connference_len;
-	jdksavdecc_aecpdu_aem_read( &conference_frame.aecpdu_aem_header, frame, 0, JDKSAVDECC_COMMON_CONTROL_HEADER_LEN + 12);
-	memcpy( conference_frame.payload, frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,  connference_len );
-	msg_type = conference_frame.aecpdu_aem_header.aecpdu_header.header.message_type;
-	
-	// check the crc of the both data backups,if crc is wrong,return directory
-	if( check_conferece_deal_data_crc( connference_len/2, conference_frame.payload, ZERO_OFFSET_IN_PAYLOAD))
-	{	
-		crc_right = true;
-	}
-	else
-	{
-		if( check_conferece_deal_data_crc( connference_len/2, conference_frame.payload + connference_len/2, ZERO_OFFSET_IN_PAYLOAD))
-			crc_right = true;
-		else	
-			return;
-	}
-	
-	if( crc_right )
-	{
-		// if command is response conference command,update aecp inflight command in the controller system
-		if( is_terminal_command( (void*)frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET ) )
-		{
-			if(is_terminal_response(  (void*)frame, CONFERENCE_DATA_IN_CONTROLDATA_OFFSET ) )
-			{	
-				aecp_update_inflight_for_vendor_unique_message( msg_type, frame, frame_len, status );
-			}
+    memset(&conference_frame, 0 , sizeof(struct terminal_deal_frame));
+    jdksavdecc_aecpdu_aem_read(&conference_frame.aecpdu_aem_header, frame,
+        0, JDKSAVDECC_COMMON_CONTROL_HEADER_LEN + 12);
+    
+    /* get user data length */
+    connference_len = conference_frame.aecpdu_aem_header.command_type;
+    DEBUG_INFO("[Recv conference len = %d]", connference_len);
+    /* Check data not outof range */
+    if (connference_len > DEAL_PAYLOAD_MAX_SIZE) {
+        return;
+    }
+    
+    /* set user data */
+    conference_frame.payload_len = connference_len;
+    memcpy(conference_frame.payload,
+        frame + CONFERENCE_DATA_IN_CONTROLDATA_OFFSET,
+        connference_len);
 
-			terminal_recv_message_pro( &conference_frame );
-		}
-	}
+    /* terminal response data? */
+    if(is_terminal_response((void*)frame,
+        CONFERENCE_DATA_IN_CONTROLDATA_OFFSET))
+    {
+        msg_type = conference_frame.aecpdu_aem_header.\
+                                aecpdu_header.header.message_type;
+        aecp_update_inflight_for_vendor_unique_message(msg_type,
+            frame, frame_len, status);
+    }
+
+    terminal_recv_message_pro(&conference_frame);
 }
 
 int proc_rcvd_acmp_resp( uint32_t msg, const uint8_t *frame, size_t frame_len, int *status  )
