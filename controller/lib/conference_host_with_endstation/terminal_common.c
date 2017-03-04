@@ -13,6 +13,7 @@
 #include "time_handle.h"
 #include "ring_buffer.h"
 #include "controller_machine.h"
+#include "log_machine.h"
 
 /*$ terminal Recieve Buffer Process */
 typedef struct TTlRingMsgPro {
@@ -72,7 +73,8 @@ static void Terminal_appDataPro(void);
 #ifdef ALLOT_IN_NEW_QE
 /*$ ALLOT CMD queue size */
 #define TALLOTCMD_QSIZE 32
-/* current allot command queue element */
+#define ALLOT_CMD_TIMEOUT 50
+/*$ current allot command queue element */
 static TAllotAddrBuf *l_caQe = (TAllotAddrBuf *)0;
 /*$ story pointer */
 static uint32_t l_allotCmdElem[TALLOTCMD_QSIZE] = {
@@ -410,6 +412,7 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
         uint8_t *p = &pMsg->msgBuf[0];
         uint8_t crc = 0;
         int i = 0;
+        
         memset(p, 0, TERMINAL_MSG_BUF_SIZE);
         p[0] = data_buf->cchdr.byte_guide;
         p[1] = data_buf->cchdr.command_control;
@@ -424,21 +427,34 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
         for (i = 0; i < pMsg->msgLen; i++) {
             crc ^= p[i];
         }
+        
         p[pMsg->msgLen] = crc;
         pMsg->msgLen += 1; /* including crc */
         memcpy(&p[pMsg->msgLen], p, pMsg->msgLen);
         pMsg->msgLen += pMsg->msgLen;
-        sendLen = pMsg->msgLen;
+        
         /* push to send message queue */
         if (!QueueCom_postFiFo(l_terminalPro.pSendQe, (void *)pMsg)) {
-            DEBUG_INFO("[Post terminal send command to queue failed]");
             free(pMsg);
             pMsg = NULL;
-            return -1;
+            
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Can't Post terminal send command to"
+                "queue(%d):Queue full]",
+                (uint32_t)l_terminalPro.pSendQe);
         }
-
-        DEBUG_INFO("[Post terminal send command to queue Success]");
+        else {
+            sendLen = pMsg->msgLen;
+            
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[Post terminal send command"
+                    " to queue(%d) Success]",
+                    (uint32_t)l_terminalPro.pSendQe);
+        }
     }
+    
     return sendLen;
 #endif    
 }
@@ -593,10 +609,15 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
                         addr_ = data.cchdr.address;
                         if (addr_ == recv_data.cchdr.address) {
                             /* address equal? */
-                            userTimerStart(100, &ptr->timer);
+                            userTimerStart(ALLOT_CMD_TIMEOUT, &ptr->timer);
                             found = true;
-                            DEBUG_INFO("[Post allot command to"
-                                " Queue update(0x%04x)]", addr_);
+                            
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                LOGGING_LEVEL_DEBUG,
+                                "[Update allot command to"
+                                " Queue(%d) addr = 0x%04x]",
+                                (uint32_t)&l_allotCmdQueue,
+                                addr_);
                             break;
                         }
                     }
@@ -620,18 +641,37 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
                         pthread_mutex_unlock(&l_allotMutex);
                         return;
                     }
-                    
+                        
                     /* add to queue */
                     ptr = (TAllotAddrBuf *)malloc(sizeof(TAllotAddrBuf));
                     if (ptr != (TAllotAddrBuf *)0) {
                         ptr->vptr = terminal_func_allot_address;
                         ptr->len = frame_len;
                         memcpy(ptr->buf, data_buf, frame_len);
-                        userTimerStart(100, &ptr->timer); /* exist value time */
+                        /* exist value time */
+                        userTimerStart(ALLOT_CMD_TIMEOUT, &ptr->timer);
                         ptr->renew = false;
-                        QueueCom_postFiFo(&l_allotCmdQueue, (void *)ptr);
-                        DEBUG_INFO("[Post allot command to"
-                            " Queue new(0x%04x)]", recv_data.cchdr.address);
+                        
+                        if (QueueCom_postFiFo(&l_allotCmdQueue,
+                                                (void *)ptr))
+                        {
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                LOGGING_LEVEL_DEBUG,
+                                "[Post New allot command to"
+                                " Queue(%d) Taddr = 0x%04x Success]",
+                                (uint32_t)&l_allotCmdQueue,
+                                recv_data.cchdr.address);
+                       }
+                       else {
+                            free(ptr);
+                            ptr = (TAllotAddrBuf *)0;
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                LOGGING_LEVEL_ERROR,
+                                "[Can't Post New allot command to Queue(%d) "
+                                "Taddr = 0x%04x, No space]",
+                                (uint32_t)&l_allotCmdQueue,
+                                recv_data.cchdr.address);
+                        }
                     }
                 }
                 else {
@@ -639,14 +679,15 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
                 }
             }
             else {
+                ttmnl_recv_msg data;
+                ssize_t ret = -1;
+                
                 /* no current allot task? */
                 if (l_caQe == (TAllotAddrBuf *)0) {
                     pthread_mutex_unlock(&l_allotMutex);
                     return;
                 }
                 
-                ttmnl_recv_msg data;
-                ssize_t ret = 0;
                 ret = conference_end_to_host_deal_recv_msg_read(&data,
                     l_caQe->buf, 0,
                     ALLOT_MAX_SIZE, l_caQe->len);
@@ -655,14 +696,13 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
                     return;
                 }
                 
-                DEBUG_INFO("[allot command last renew (0x%04x-0x%04x)]",
-                    data.cchdr.address, recv_data.cchdr.address);
                 if (data.cchdr.address == recv_data.cchdr.address) {
                     /* write new data */
                     l_caQe->len = frame_len;
                     memcpy(l_caQe->buf, data_buf, frame_len);
                     l_caQe->renew = true;
-                    userTimerStart(100, &l_caQe->timer); /* exist value time */
+                    /* exist value time */
+                    userTimerStart(ALLOT_CMD_TIMEOUT, &l_caQe->timer);
                 }
                 else {
                     /* do nothing */
@@ -680,43 +720,47 @@ void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
 #endif    
 }
 
-void host_reply_terminal( uint8_t cmd, uint16_t address, uint8_t *data_pay, uint16_t data_len )
+void host_reply_terminal(uint8_t cmd, uint16_t address,
+    uint8_t *data_pay, uint16_t data_len)
 {
-	struct host_to_endstation askbuf; 
-	uint16_t  asklen = 0;
-	uint64_t  target_zero = 0;
-	
-	askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
-	askbuf.cchdr.command_control = cmd |COMMAND_TMN_REPLY;
-	askbuf.cchdr.address = address; 
-	askbuf.data_len = data_len;
+    struct host_to_endstation askbuf; 
+    uint16_t  asklen = 0;
+    uint64_t  target_zero = 0;
 
-	if( data_pay != NULL && data_len != 0 )
-	{
-		memcpy( askbuf.data, data_pay, data_len );
-	}
+    askbuf.cchdr.byte_guide = CONFERENCE_TYPE;
+    askbuf.cchdr.command_control = cmd |COMMAND_TMN_REPLY;
+    askbuf.cchdr.address = address; 
+    askbuf.data_len = data_len;
 
-	ternminal_send( &askbuf, asklen, target_zero, true );
+    if ((data_pay != NULL)
+        && (data_len != 0))
+    {
+        memcpy( askbuf.data, data_pay, data_len );
+    }
+
+    ternminal_send(&askbuf, asklen, target_zero, true);
 }
 
-void terminal_common_create_node_by_adp_discover_can_regist( const uint64_t  target_id )
+void terminal_common_create_node_by_adp_discover_can_regist(
+    const uint64_t  target_id )
 {
-	tmnl_pdblist tmnl_list_station = search_terminal_dblist_entity_id_node( target_id, dev_terminal_list_guard );
-	if( NULL == tmnl_list_station )
-	{
-		DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id );
-		tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station );
-		if( NULL == tmnl_list_station )
-		{
-			DEBUG_INFO( "create new terminal dblist node failed!" );
-			return;
-		}
+    tmnl_pdblist tmnl_list_station =
+        search_terminal_dblist_entity_id_node(target_id,
+            dev_terminal_list_guard);
+    if (NULL == tmnl_list_station) {
+        DEBUG_INFO( "create new tmnl list node[ 0x%016llx ] ", target_id);
+        tmnl_list_station = create_terminal_dblist_node( &tmnl_list_station);
+        if (NULL == tmnl_list_station) {
+            DEBUG_INFO("create new terminal dblist node failed!");
+            return;
+        }
 
-		init_terminal_dblist_node_info( tmnl_list_station );
-		tmnl_list_station->tmnl_dev.entity_id = target_id;
-		host_timer_stop( &tmnl_list_station->tmnl_dev.spk_timeout );
-		insert_terminal_dblist_trail( dev_terminal_list_guard, tmnl_list_station );
-	}
+        init_terminal_dblist_node_info(tmnl_list_station);
+        tmnl_list_station->tmnl_dev.entity_id = target_id;
+        host_timer_stop( &tmnl_list_station->tmnl_dev.spk_timeout);
+        insert_terminal_dblist_trail(dev_terminal_list_guard,
+            tmnl_list_station);
+    }
 }
 #ifdef ALLOT_IN_NEW_QE
 extern terminal_address_list tmnl_addr_list[SYSTEM_TMNL_MAX_NUM];
@@ -728,9 +772,13 @@ void Terminal_allotPro(void) {
             *ppCaQe = (TAllotAddrBuf *)addr;
             bool timeout = userTimerTimeout(&(*ppCaQe)->timer);
             if (!timeout) {
-                DEBUG_INFO("[Excute allot command begin]");
                 (*ppCaQe)->vptr(0, (*ppCaQe)->buf, (*ppCaQe)->len);
-                userTimerStart(100, &(*ppCaQe)->timer);
+                userTimerStart(ALLOT_CMD_TIMEOUT, &(*ppCaQe)->timer);
+
+                /* log information */
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[Excute allot command begin]");
             }
             else {
                 QueueCom_itemFree((void *)(*ppCaQe));
@@ -742,18 +790,25 @@ void Terminal_allotPro(void) {
         if (((*ppCaQe)->renew)
             && (!userTimerTimeout(&(*ppCaQe)->timer)))
         {
-            DEBUG_INFO("[Excute allot command Finish]");
             (*ppCaQe)->vptr(0, (*ppCaQe)->buf,(*ppCaQe)->len);
             QueueCom_itemFree((void *)(*ppCaQe));
             *ppCaQe = (TAllotAddrBuf *)0;
+
+            /* log information */
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[Excute allot command Finish]");
         }
         else if (userTimerTimeout(&(*ppCaQe)->timer)) {
             /* this timer must start */
-            DEBUG_INFO("[Excute allot command Falied]");
             QueueCom_itemFree((void *)(*ppCaQe));
             *ppCaQe = (TAllotAddrBuf *)0;
-
-            /* release current allotted address */
+            /* log allot current address failed */
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[Excute allot command Falied, Timeout]");
+            
+            /* release current allotted(but not use) address */
             terminal_address_list_pro* pAllot = &allot_addr_pro;
             if (!pAllot->renew_flag) {
                 uint16_t *pA = &tmnl_addr_list[pAllot->index].addr;
@@ -1018,7 +1073,7 @@ static void Terminal_appDataPro(void) {
                     addr_ = data.cchdr.address;
                     if (addr_ == pMsgPro->addr) {
                         /* address equal? */
-                        userTimerStart(100, &ptr->timer);
+                        userTimerStart(ALLOT_CMD_TIMEOUT, &ptr->timer);
                         found = true;
                         DEBUG_INFO("[Post allot command to"
                             " Queue update(0x%04x)]", addr_);
@@ -1053,7 +1108,8 @@ static void Terminal_appDataPro(void) {
                     ptr->vptr = terminal_func_allot_address;
                     ptr->len = frame_len;
                     memcpy(ptr->buf, (uint8_t *)pMsgPro, frame_len);
-                    userTimerStart(100, &ptr->timer); /* exist value time */
+                    /* exist value time */
+                    userTimerStart(ALLOT_CMD_TIMEOUT, &ptr->timer);
                     ptr->renew = false;
                     QueueCom_postFiFo(&l_allotCmdQueue, (void *)ptr);
                     DEBUG_INFO("[Post allot command to"
@@ -1088,7 +1144,8 @@ static void Terminal_appDataPro(void) {
                 l_caQe->len = frame_len;
                 memcpy(l_caQe->buf, (uint8_t *)pMsgPro, frame_len);
                 l_caQe->renew = true;
-                userTimerStart(100, &l_caQe->timer); /* exist value time */
+                /* exist value time */
+                userTimerStart(ALLOT_CMD_TIMEOUT, &l_caQe->timer);
             }
             else {
                 /* do nothing */

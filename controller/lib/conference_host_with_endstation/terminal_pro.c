@@ -710,7 +710,7 @@ void system_register_terminal_pro(void) {
                         registing = true;
                         /* terminal register log debug */
                         if (NULL != gp_log_imp) {
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                 LOGGING_LEVEL_DEBUG,
                                 "[Terminal (0x%016llx-%04x) Registing ]",
                                 (uint64_t)0,
