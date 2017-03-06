@@ -58,9 +58,6 @@ $(SUBDIRS):ECHO
 
 APP_SUB:ECHO
 	make -C controller
-#	$(OBJDUMP) -alD avdecc_ctl > avdecc_ctl.ald
-#	$(OBJDUMP) -S -d avdecc_ctl > avdecc_ctl.d
-#	$(OBJDUMP) -D -l avdecc_ctl > avdecc_ctlDump
 
 ECHO:
 	@echo $(SUBDIRS)
