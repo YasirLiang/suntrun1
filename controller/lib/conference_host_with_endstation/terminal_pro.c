@@ -224,6 +224,16 @@ void init_terminal_proccess_system(void) {/*initial terminal proccess sytem*/
     terminal_register_init();
     /* initial terminal double list accroding to address file */
     init_terminal_device_double_list();
+    
+    /* initial terminal allot proccessing */
+    init_terminal_allot_address();
+    /* initial terminal discuss param */
+    init_terminal_discuss_param();
+    /* initial speak track proccessing */
+    terminal_speak_track_pro_init();
+    /* initial query the result of voting proccessing */
+    terminal_query_proccess_init();
+
     /* initial terminal proccess fd */
     init_terminal_proccess_fd(&addr_file_fd);
     if (NULL == addr_file_fd) {/* Error initial file fd? */
@@ -261,14 +271,6 @@ void init_terminal_proccess_system(void) {/*initial terminal proccess sytem*/
             terminal_pro_debug("insert register node is Err!");
         }
     }
-    /* initial terminal allot proccessing */
-    init_terminal_allot_address();
-    /* initial terminal discuss param */
-    init_terminal_discuss_param();
-    /* initial speak track proccessing */
-    terminal_speak_track_pro_init();
-    /* initial query the result of voting proccessing */
-    terminal_query_proccess_init();
 }
 
 /*$ terminal_proccess_system_close..........................................*/

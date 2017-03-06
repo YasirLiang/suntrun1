@@ -343,8 +343,10 @@ int main(int argc, char *argv[]) {
 
     /* initial system */
     init_system();
+    /* init network card */
+    AvdeccNet_init(NETWORT_INTERFACE);
     /* system build socket */
-    build_socket(&net_fd, &net, NETWORT_INTERFACE, &udp_net);
+    AvdeccNet_buildSocket(&net_fd, &net, NETWORT_INTERFACE, &udp_net);
 
     /* I/O complicating thread create */
     threads.pthread_nums = 0;/* reset thread num to zero */

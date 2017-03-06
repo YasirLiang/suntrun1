@@ -50,6 +50,10 @@ extern unsigned char gcontrol_sur_recv_buf[INPUT_MSG_LEN];
 /*Extern Global varialable delaration-----------------------------------------*/
 extern volatile unsigned char gcontrol_sur_msg_len;
 extern volatile bool m_isRunning;
+
+/*$ function declaration----------------------------------------------------*/
+void log_link(bool upFlag);
+void avdecc_check_link(void);
 /*$ command function thread proccess........................................*/
 int thread_func_fn(void * pgm) {
     /* pointer to function working queue */
@@ -219,6 +223,9 @@ int pthread_recv_data_fn(void *pgm) {
         Terminal_micCallbackPro();
         Terminal_comPro();
         terminal_over_time_firstapply_pro();
+
+        /* check link */
+        avdecc_check_link();
     }	
     /* exit pthread */
     return 0;
@@ -233,5 +240,59 @@ int pthread_proccess_recv_data_create(pthread_t *pid, void * pgm) {
         assert(rc == 0);
     }
     return 0;
+}
+/*$ */
+void log_link(bool upFlag) {
+    char buf[2048] = {0};
+    
+    FILE* ffd = Fopen("linkSta.log", "ab+");
+    if (ffd != NULL) {
+        time_t tem = time(NULL);
+        struct tm *t = (struct tm*)localtime(&tem);/* get local time */
+        
+        /* first reset buffer */
+        memset(buf, 0, sizeof(buf));
+        /* format new line information */
+        sprintf(buf, "[%d-%d-%d %d:%d:%d LOG]  %s\n",
+                t->tm_year+1900, t->tm_mon+1, t->tm_mday, t->tm_hour,
+                t->tm_min, t->tm_sec,
+                upFlag ? "[ Link is Up ]" : "[ Link is Down]");
+        
+        fputs(buf, ffd);/* write to file */
+        Fflush(ffd); /* flush buffer to file */
+    }
+    
+    if (ffd != NULL) {
+        Fclose(ffd);
+    }
+}
+/*$ */
+extern int check_ifrPhyLinkStatus(char *nicName);
+void avdecc_check_link(void) {
+    static bool l_up = 0; /* true are up */ 
+    static TUserTimer l_tm = {
+        (bool)1, (bool)0, 1000, (Timestamp)0
+    }; /* begin timer */
+
+    if (userTimerTimeout(&l_tm)) {
+        int flag = check_ifrPhyLinkStatus(NETWORT_INTERFACE);
+        if (flag == 0) {
+            /* change to up */
+            if (!l_up) {
+                l_up = (bool)1;
+                log_link(l_up);
+            }
+        }
+        else {
+            if (l_up) {
+                /* change to down */
+                l_up = (bool)0;
+                log_link(l_up);
+            }
+        }
+
+        /* update timer */
+        userTimerStart(1000, &l_tm);
+    }
 }
 
