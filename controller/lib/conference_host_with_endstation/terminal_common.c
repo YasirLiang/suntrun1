@@ -456,9 +456,8 @@ uint16_t ternminal_send( void *buf, uint16_t length, uint64_t uint64_target_id, 
     }
     
     return sendLen;
-#endif    
+#endif /*TERMINAL_COM_PRO_LATER*/
 }
-
 // proccess recv conference deal message from raw network
 extern terminal_address_list_pro allot_addr_pro;
 void terminal_recv_message_pro( struct terminal_deal_frame *conference_frame )
@@ -866,13 +865,18 @@ static void Terminal_sendMsgPro(void) {
             controller_machine_1722_network_send(gp_controller_machine,
                 frame.payload, frameLen);
             *pSendState = TMNL_SENDING;
-            DEBUG_INFO("[ IDLE Send App Data Success ]");
+            
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ IDLE Send App Data Success ]");
         }
         else { /* error send len */
-            DEBUG_INFO("[ IDLE Send App Data Failed(Format data error) ]");
             QueueCom_itemFree(
                 (void *)l_terminalPro.sendPro.ptrMsgAddr);
             l_terminalPro.sendPro.ptrMsgAddr = 0U;
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[ IDLE Send App Data Failed(Format data error) ]");
         }
     }
 
@@ -882,9 +886,12 @@ static void Terminal_sendMsgPro(void) {
                 (TTmnlSendMsgElem *)l_terminalPro.sendPro.ptrMsgAddr;
             if (sendMsg->timeOut) {
                 over_time_set(TMNL_WAITASK_TIMEOUT, sendMsg->timeOut);
-                DEBUG_INFO("[ Send State Machine Change to WaitAsk"
-                    "(Timeout = %d) ]", sendMsg->timeOut);
                 *pSendState = TMNL_WAITASK;
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ Send State Machine Change to WaitAsk"
+                    "(Timeout = %d) ]", sendMsg->timeOut);
             }
             else {
                 QueueCom_itemFree(
@@ -937,7 +944,10 @@ static void Terminal_sendMsgPro(void) {
                 *pSendState = TMNL_SENDING;
                 /* send data */
                 sendMsg->reNum--;
-                DEBUG_INFO("[ ReSend App Data Success ]");
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ ReSend App Data Success ]");
             }
             else { /* error send len */
                 QueueCom_itemFree(
@@ -947,11 +957,13 @@ static void Terminal_sendMsgPro(void) {
             }
         }
         else {
-            DEBUG_INFO("[ ReSend App Data Done ]");
             QueueCom_itemFree(
                 (void *)l_terminalPro.sendPro.ptrMsgAddr);
             l_terminalPro.sendPro.ptrMsgAddr = 0U;
             *pSendState = TMNL_SEND_IDLE;
+             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ ReSend App Data Done ]");
         }
     }
     else {
@@ -1168,7 +1180,7 @@ static void Terminal_charMsgPro(void) {
     uint8_t ch; /* char store */
     pRingPro = &l_terminalPro.ringMsgPro;
     if (pRingPro->recvOver) {
-        userTimerStart(12, &pRingPro->itvTimer);
+        userTimerStart(10, &pRingPro->itvTimer);
         if (userTimerTimeout(&pRingPro->smTimer)) {
             /* process app data  here */
             DEBUG_INFO("[ proccess App Data Begin ]");
@@ -1182,7 +1194,7 @@ static void Terminal_charMsgPro(void) {
     /* get ring char in buffer */
     pMsgPro = &l_terminalPro.recvMsg;
     while (RingBuffer_getChar(l_terminalPro.pRingBuf, &ch)) {
-        userTimerStart(12, &pRingPro->itvTimer);
+        userTimerStart(10, &pRingPro->itvTimer);
         pRingPro->recvOver = (bool)0;
         if ((pRingPro->msgLen == 0)
               && (ch == CONFERENCE_TYPE))
@@ -1207,7 +1219,8 @@ static void Terminal_charMsgPro(void) {
         else if (pRingPro->msgLen == 4) {
             pMsgPro->data = ch;
             pRingPro->msgLen = 5;
-            if ((pMsgPro->cmd & COMMAND_TMN_MASK )== TRANSIT_END_MSG) {
+            
+            if ((pMsgPro->cmd & COMMAND_TMN_MASK) == TRANSIT_END_MSG) {
                 pRingPro->traceMsgCnt = ch + 1; /* contain crc */
                 if (pMsgPro->data > TERMINAL_MESSAGE_MAX_LEN) {
                     pRingPro->msgLen = 0;
@@ -1223,6 +1236,7 @@ static void Terminal_charMsgPro(void) {
                 pRingPro->msgLen++;
                 pRingPro->traceMsgCnt--;
             }
+            
             if (pRingPro->traceMsgCnt == 0) {
                 if (check_conferece_deal_data_crc(pRingPro->msgLen,
                     pMsgPro, 0))
@@ -1241,6 +1255,7 @@ static void Terminal_charMsgPro(void) {
             /* never come this else */
         }
     }
+    
     if (userTimerTimeout(&pRingPro->itvTimer)) {
         pRingPro->msgLen = 0;
     }

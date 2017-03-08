@@ -335,7 +335,11 @@ typedef  struct tmnl_list_node		// 终端链表节点
 {
 	conference_terminal_device tmnl_dev;
 	struct tmnl_list_node *next,*prior;
-}tmnl_dblist, *tmnl_pdblist; 
+}tmnl_dblist, *tmnl_pdblist;
+
+/*$ list terminal double link list */
+#define list_for_terminal_link_list_each(pos, head) \
+    for (pos = (head)->next; pos != (head); pos = pos->next)
 
 typedef struct _tterminal_state_set // 终端状态的设置
 {

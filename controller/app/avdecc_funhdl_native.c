@@ -28,7 +28,6 @@
 #include "avdecc_manage.h"/* discover and remove terminal */
 #include "send_common.h" /* Including SEND_DOUBLE_QUEUE_EABLE*/
 #include "camera_pro.h"
-#include "system_1722_recv_handle.h"
 #include "terminal_pro.h"
 #include "muticast_connect_manager.h"
 #include "global.h"
@@ -146,52 +145,53 @@ int pthread_handle_cmd_func(pthread_t *pid,
 int pthread_recv_data_fn(void *pgm) {
     static int static_buf_num = 0;/*for change buffer*/
     while(m_isRunning) {
-        unsigned long us_per_ms = 1000;
-        unsigned long interval_ms = 0;
+        unsigned long us_per_ms = 1000U;
+        unsigned long interval_ms = 1U;
         struct timeval tempval;
 
-        tempval.tv_sec = interval_ms/1000;  
-        tempval.tv_usec = (interval_ms%1000)*us_per_ms;
-        select( 0, NULL, NULL, NULL, &tempval );/*wait for a time*/
+        tempval.tv_sec = interval_ms / 1000U;
+        tempval.tv_usec = (interval_ms % 1000U) * us_per_ms;
+        select(0, NULL, NULL, NULL, &tempval); /*wait for a time*/
 
         if (static_buf_num >= SYS_BUF_RECV_COUNT) {
             static_buf_num = 0;
         }
 
         switch ((static_buf_num++) % SYS_BUF_RECV_COUNT) {
-            case 0: {/* switch to buffer 1 for proccessing recieve data */
+            case 0: /* switch to buffer 1 for proccessing recieve data */
+            case 1: /* switch to buffer 2 for proccessing recieve data */
+            case 2: {  /* arcs */
+                /* matrix process */
+                control_matrix_common_recv_message_pro();
+                
                 if (gregister_tmnl_pro.rgs_state == RGST_IDLE) {
                     pthread_mutex_lock(&ginflight_pro.mutex);
                     /* proccessing the data from upper computer */
                     upper_computer_recv_message_get_pro();
                     pthread_mutex_unlock(&ginflight_pro.mutex);
-                }
-                break;
-            }
-            case 1: {/* switch to buffer 2 for proccessing recieve data */
-                control_matrix_common_recv_message_pro();
-                break;
-            }
-            case 2: { /* arcs */
-                if (gregister_tmnl_pro.rgs_state == RGST_IDLE) {
+                    
                     /* for arcs process */
                     ArcsCommon_process();
                 }
+                
                 break;
             }
             default: {/* will never come this case */
                 break;
             }
         }
+
+        /* stop pthread? */
         if (!m_isRunning) {
             break;
         }
+        
         /* proccess termianl point register */
         system_register_terminal_pro();
         if (gregister_tmnl_pro.rgs_state == RGST_IDLE) {
-            /* proccess terminal of not signing success */
+            /* process terminal of not signing success */
             terminal_sign_in_pro();
-            /* proccess voting */
+            /* process voting */
             terminal_vote_proccess();
             /* query the result of sign and vote */
             terminal_query_sign_vote_pro();

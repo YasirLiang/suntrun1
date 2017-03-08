@@ -393,9 +393,13 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
+				        uint64_t tempTalkerId;
+                                        uint16_t tempTalkerIndex;
 					__list_del_entry(&p_temp_chNode->list);
 					input_channel_list_add_trail( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list );
 					p_temp_chNode->status = INCHANNEL_FREE;
+                                        tempTalkerId = p_temp_chNode->tarker_id;
+                                        tempTalkerIndex = p_temp_chNode->tarker_index;
 					p_temp_chNode->tarker_id = 0;
 					p_temp_chNode->tarker_index = 0xffff;
 					gccu_recieve_model_list[i].chanel_connect_num--;
@@ -406,13 +410,16 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 
 					if (NULL != gp_log_imp)
                         		        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
-                                	                LOGGING_LEVEL_DEBUG, "[CCU DISCONNECT Success!(tarker 0x%016llx:%d-model cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)]", 
-        						p_temp_chNode->tarker_id,
-        						p_temp_chNode->tarker_index,
+                                	                LOGGING_LEVEL_DEBUG,
+                                	                "[CCU DISCONNECT Success!"
+                                	                "(tarker 0x%016llx:%d-model"
+                                	                " cnnt num = %d)-(0x%016llx:%d)-(sum cnnt num = %d)]", 
+        						tempTalkerId,
+        						tempTalkerIndex,
         						gccu_recieve_model_list[i].chanel_connect_num,
         						connect_info.listener_id, 
         						connect_info.listener_index,
-        						gchannel_allot_pro.cnnt_num );
+        						gchannel_allot_pro.cnnt_num);
 					return;
 				}
 			}

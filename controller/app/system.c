@@ -48,7 +48,6 @@
 #include "lcd192x64.h"
 #include "menu_f.h"
 #include "central_control_transmit_unit.h"
-#include "system_1722_recv_handle.h"
 #include "controller_machine.h"
 #include "arcs_common.h" /*! for arcs process */
 #include "arcs_extern_port.h"
@@ -103,8 +102,6 @@ void init_system(void) {
     init_sem_wait_can();
     /* sending working queue */
     init_network_send_queue();
-    /* 1722 recv data handle proccesss */
-    system_1722_recv_handle_init();
     /* extern data interval time */
     send_interval_init();
     /* inflight command args init */
@@ -182,8 +179,6 @@ void system_close(struct threads_info *p_threads) {
     lcd192x64_close();
      /* system controller machine */
     controller_machine_destroy(&gp_controller_machine);
-    /* 1722 handle recv model destroy */
-    system_1722_recv_handle_destroy();
     /* CCU recieve unit destroy */
     central_control_recieve_uinit_destroy();
     /* CCU transmit unit destroy */
