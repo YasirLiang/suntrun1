@@ -47,6 +47,9 @@ extern bool QueueCom_isFull(TComQueue * const queue);
 /*! QueueCom_postFiFo-------------------------------------------------------*/
 extern bool QueueCom_postFiFo(TComQueue * const queue,
                                      void **node);
+/*! QueueCom_postLiFo-------------------------------------------------------*/
+extern bool QueueCom_postLiFo(TComQueue * const queue,
+                                     void **node);
 /*! QueueCom_popFiFo--------------------------------------------------------*/
 extern bool QueueCom_popFiFo(TComQueue * const queue,
                                      uint32_t *addr);

@@ -8,11 +8,13 @@
 #include "profile_system.h"
 #include "upper_computer_common.h"
 #include "host_timer.h"
+#include "global.h"
 
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 
-#define MAX_LIMIT_SPK_NUM 6
-#define MAX_LIMIT_APPLY_NUM 10
+#define INTERRUPT_LOCK(lock) while (lock);\
+    lock = 1;
+#define INTERRUPT_UNLOCK(lock) lock = 0;
 
 extern tmnl_pdblist dev_terminal_list_guard; // 终端链表表头结点
 
@@ -226,7 +228,7 @@ void terminal_type_save( uint16_t address, uint8_t tmnl_type, bool is_chman );
 void terminal_trasmint_message( uint16_t address, uint8_t *p_data, uint16_t msg_len );
 void terminal_key_preset( uint8_t tmnl_type, uint16_t tmnl_addr, uint8_t tmnl_state, uint8_t key_num, uint8_t key_value );
 int terminal_speak_track( uint16_t addr, bool track_en );// 摄像跟踪接口
-void terminal_apply_list_first_speak( tmnl_pdblist const first_speak );
+void terminal_apply_list_first_speak(void);
 void terminal_over_time_speak_node_set( tmnl_pdblist speak_node );// 设置延时发言处理节点
 void terminal_over_time_speak_pro(void);// 延时发言处理
 void terminal_over_time_firstapply_node_set( tmnl_pdblist speak_node );
@@ -245,6 +247,8 @@ bool terminal_clear_from_unregister_addr_list( uint16_t unregister_addr_delect )
 bool terminal_delect_register_addr( uint16_t addr_delect );
 /*{@*/
 void terminal_vote_proccess( void );
+void terminal_speakInterposeOffPro(void);
+void terminal_firstApplySpkingPro(uint32_t sysTick);
 /*@}*/
 void terminal_query_proccess_init( void );
 void terminal_query_sign_vote_pro( void );

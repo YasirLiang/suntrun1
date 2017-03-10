@@ -13,8 +13,8 @@
 #include "host_timer.h"
 #include <netinet/in.h>// struct sockaddr_in/socklen_t
 #include "usertimer.h"
+#include "global.h"
 
-#define SYSTEM_TMNL_MAX_NUM 1024	// 系统中终端最大的数量
 #define INIT_ADDRESS 0xffff
 #define BRDCST_1722_ALL 0 // 
 
@@ -488,7 +488,7 @@ int upper_computer_common_recv_messsage_save( int fd, struct sockaddr_in *sin_in
 void upper_computer_recv_message_get_pro( void );
 bool upper_computer_comm_recv_msg_pro( thost_upper_cmpt_msg *pmsg, uint8_t save_char );
 void upper_computer_common_init( void );
-void Terminal_comPro(void);
+void Terminal_comPro(uint32_t sysTick);
 void Terminal_comInitial(void);
 
 bool T1722ForTmnlTable_updateAppAddr(uint64_t id, uint16_t app);

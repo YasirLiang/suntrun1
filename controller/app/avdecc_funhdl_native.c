@@ -37,6 +37,25 @@
 #include "arcs_common.h" /*$ for arcs interface */
 #include "central_control_recieve_unit.h"
 #include "conference_transmit_unit.h"
+#include "queue_com.h"
+
+#define KEY_ACT_QUEUE_ENABLE
+#ifdef KEY_ACT_QUEUE_ENABLE
+struct keyData {
+    uint16_t func_index;
+    uint16_t func_cmd;
+    uint32_t data_len;
+    TUserTimer timer;
+    uint8_t func_data[SUB_DATA_TYPE_SIZE];
+};
+#define KEY_ACT_QSIZE 32
+static uint32_t l_keyQueueBuf[KEY_ACT_QSIZE] = {0};
+static TComQueue l_keyActQueue = {
+    0U, 0U, 0U, KEY_ACT_QSIZE, l_keyQueueBuf
+};
+#endif
+
+static uint32_t l_sysTick;
 
 /*Macro INPUT_MSG_LEN for control surface message len-----------------------*/
 #define INPUT_MSG_LEN	6
@@ -53,6 +72,35 @@ extern volatile bool m_isRunning;
 /*$ function declaration----------------------------------------------------*/
 void log_link(bool upFlag);
 void avdecc_check_link(void);
+
+#ifdef KEY_ACT_QUEUE_ENABLE
+void keyActProcess(void);
+
+/*$ keyActProcess().........................................................*/
+void keyActProcess(void) {
+    static uint32_t l_lastTick;
+    if ((l_sysTick - l_lastTick) > 100U) { /* 100 ms*/
+        uint32_t addr;
+        struct keyData *ptr;
+        
+        if (QueueCom_popFiFo(&l_keyActQueue, &addr)) {
+            ptr = (struct keyData *)addr;
+            if (ptr != NULL) {
+                if (!userTimerTimeout(&ptr->timer)) {
+                    proccess_func_link_tables[ptr->func_index].cmd_proccess(
+                        ptr->func_cmd, ptr->func_data, ptr->data_len);
+
+                    l_lastTick = l_sysTick;
+                }
+
+                free(ptr);
+                ptr = NULL;
+            }
+        }
+    }
+}
+#endif
+
 /*$ command function thread proccess........................................*/
 int thread_func_fn(void * pgm) {
     /* pointer to function working queue */
@@ -81,7 +129,7 @@ int thread_func_fn(void * pgm) {
 
         if (!p_func_wq->control.active) {
             /* unlock queue because the queue not active */
-            pthread_mutex_unlock( &p_func_wq->control.mutex);
+            pthread_mutex_unlock(&p_func_wq->control.mutex);
             break;
         }
         /* get queue node from queue */
@@ -119,11 +167,34 @@ int thread_func_fn(void * pgm) {
             free( p_msg_wnode );
             p_msg_wnode = NULL;
         }
+        
         /* before run command  must unlock the mutex for other thread can save
             comand function node to this queue in the meantime */
-        pthread_mutex_unlock( &p_func_wq->control.mutex );
+        pthread_mutex_unlock(&p_func_wq->control.mutex);
+        
+#ifdef KEY_ACT_QUEUE_ENABLE        
+        if (func_index == FUNC_TMNL_KEY_ACTION) {
+            struct keyData * ptr;
+            ptr = (struct keyData *)malloc(sizeof(struct keyData));
+            if (ptr != NULL) {
+                ptr->func_index = func_index;
+                ptr->func_cmd = func_cmd;
+                ptr->data_len = data_len;
+                memcpy(ptr->func_data, func_data, data_len);
+                userTimerStart(200U, &ptr->timer);
+
+                if (!QueueCom_postFiFo(&l_keyActQueue, (void *)ptr)) {
+                    free(ptr);
+                }
+            }
+
+            continue;
+        }
+#endif
+
         /* run function command */
-        p_func_items[func_index].cmd_proccess(func_cmd, func_data, data_len);
+        p_func_items[func_index].cmd_proccess(func_cmd,
+            func_data, data_len);
     }
     
     return 0;
@@ -153,10 +224,11 @@ int pthread_recv_data_fn(void *pgm) {
         tempval.tv_usec = (interval_ms % 1000U) * us_per_ms;
         select(0, NULL, NULL, NULL, &tempval); /*wait for a time*/
 
+        l_sysTick++;
+
         if (static_buf_num >= SYS_BUF_RECV_COUNT) {
             static_buf_num = 0;
         }
-
         switch ((static_buf_num++) % SYS_BUF_RECV_COUNT) {
             case 0: /* switch to buffer 1 for proccessing recieve data */
             case 1: /* switch to buffer 2 for proccessing recieve data */
@@ -209,23 +281,36 @@ int pthread_recv_data_fn(void *pgm) {
             muticast_connect_manger_timeout_event_image();
 #endif
         }
+        
         /* avdecc discover terminal managing */
         avdecc_manage_discover_proccess();
+        
         /* check send queue is empty? */
         send_common_check_squeue();
+        
         /* camera proccessing */
         camera_pro();
+        
         /* speaking timeout proccessing */
         terminal_over_time_speak_pro();
+        
         /* microphone state set later */
         terminal_after_time_mic_state_pro();
+        
         /*mic state set callback proccessing */
         Terminal_micCallbackPro();
-        Terminal_comPro();
+        
+        Terminal_comPro(l_sysTick);
+        
         terminal_over_time_firstapply_pro();
 
         /* check link */
         avdecc_check_link();
+        
+#ifdef KEY_ACT_QUEUE_ENABLE
+        /* process key active */
+        keyActProcess();
+#endif /* KEY_ACT_QUEUE_ENABLE */
     }	
     /* exit pthread */
     return 0;

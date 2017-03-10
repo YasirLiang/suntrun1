@@ -49,6 +49,36 @@ bool QueueCom_postFiFo(TComQueue * const queue,
     }
     return (bool)0;
 }
+/*${QueueCom::postLiFo}.....................................................*/
+/*${QueueCom::postLiFo}*/
+bool QueueCom_postLiFo(TComQueue * const queue,
+                                     void **node)
+{
+    if (!QueueCom_isFull(queue)) {
+        if (!QueueCom_isEmpty(queue)) {
+            /* get head of queue */
+            if (queue->head == 0U) {
+                /* end of buf */
+                queue->head = (queue->size - 1U);
+            }
+            else {
+                queue->head--;
+                queue->head %= queue->size;
+            }
+        }
+        else {
+            /* remove trail */
+            queue->trail = (queue->trail + 1U) % queue->size;
+        }
+
+        /* insert to head */
+        queue->pBuf[queue->head] = (uint32_t)node;
+        queue->count++;
+        return (bool)1;
+    }
+    
+    return (bool)0;
+}
 /*${QueueCom::popFiFo}......................................................*/
 /*${QueueCom::popFiFo}*/
 bool QueueCom_popFiFo(TComQueue * const queue,

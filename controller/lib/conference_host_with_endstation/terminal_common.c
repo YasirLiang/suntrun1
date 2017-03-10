@@ -1261,7 +1261,7 @@ static void Terminal_charMsgPro(void) {
     }
 }
 
-void Terminal_comPro(void) {
+void Terminal_comPro(uint32_t sysTick) {
     Terminal_charMsgPro();
     Terminal_sendMsgPro();
 #ifdef ALLOT_IN_NEW_QE    
@@ -1269,6 +1269,10 @@ void Terminal_comPro(void) {
     Terminal_allotPro();
     pthread_mutex_unlock(&l_allotMutex);
 #endif /* ALLOT_IN_NEW_QE */
+    terminal_speakInterposeOffPro();
+
+    /* process firt apply */
+    terminal_firstApplySpkingPro(sysTick);
 }
 
 void Terminal_comInitial(void) {

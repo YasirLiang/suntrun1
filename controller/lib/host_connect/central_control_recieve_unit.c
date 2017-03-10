@@ -30,6 +30,8 @@ uint16_t gccu_acmp_sequeue_id;
 
 observer_t gccu_recv_observer;// 用于更新ucc 接收模块的连接状态
 
+static pthread_mutex_t l_ccru_mutex;
+
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 extern desc_pdblist descptor_guard;	// 系统中描述符链表哨兵节点
 
@@ -75,8 +77,25 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 			if( (gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_OK) ||\
 				(gccu_recieve_model_list[i].model_state == CCU_RECIEVE_MODEL_ALL_CHANNEL_INIT))
 			{
+			        bool hasChannel = false;
+                                struct list_head *ptrList;
+
+                                ptrList = &gccu_recieve_model_list[i].unconnect_channel_head.list;
+                                if (!list_empty(ptrList)) {
+                                    hasChannel = true;
+                                }
+                                
+		                if (NULL != gp_log_imp) {
+                                    gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                                        LOGGING_LEVEL_DEBUG,
+                                        "[ Has channel in unconnect list?%s  "
+                                        "chanel_connect_num = %d ]",
+                                        hasChannel?"YES":"NO",
+                                        gccu_recieve_model_list[i].chanel_connect_num);
+                                }
+                            
 				if( (gccu_recieve_model_list[i].chanel_connect_num < PER_CCU_CONNECT_MAX_NUM) &&\
-					(gccu_recieve_model_list[i].unconnect_channel_head.list.next != gccu_recieve_model_list[i].unconnect_channel_head.list.prev))
+					(hasChannel))
 				{// 从头结点开始赋值，因为当无可用通道是未连接通道表是没有值的
 					/*
 					  *寻找通道空闲超时的，且连接次数最少的
@@ -86,6 +105,17 @@ static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InCha
 					{// 通道操作保护时间未到
 						continue;
 					}
+
+        		                if (NULL != gp_log_imp) {
+                                            gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                                                LOGGING_LEVEL_DEBUG,
+                                                "[ Inchanel processing finish? %s]",
+                                                (p_temp_inchannel->pro_status == INCHANNEL_PRO_FINISH)?"YES":"NO");
+                                        }
+
+                                        if (p_temp_inchannel->pro_status != INCHANNEL_PRO_FINISH) {
+                                            continue;
+                                        }
 
 					gccu_recieve_model_list[i].model_last_time = cur_time;
 					if ((NULL != p_temp_inchannel) && (NULL == p_lestest_cnnt_inchannel))
@@ -129,16 +159,39 @@ static bool central_control_found_available_channel( void )//(unfinish 2016-3-11
 	
 	if( gchannel_allot_pro.elem_num == 0 )
 	{
-		gchannel_allot_pro.p_current_input_channel = NULL;
+	    gchannel_allot_pro.p_current_input_channel = NULL;
+            if (NULL != gp_log_imp) {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                LOGGING_LEVEL_ERROR,
+                "[central_control_found_available_channel()"
+                " No enough channel num = %d]",
+                gchannel_allot_pro.elem_num);
+            }	
 	}
 	else if( gchannel_allot_pro.cnnt_num < CHANNEL_MUX_NUM )
 	{
 		if(central_control_search_connect_by_arithmetic( &gchannel_allot_pro.p_current_input_channel ))
 			bret = true;
+                
+                if ((NULL != gp_log_imp)
+                    && (!bret)) {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                        LOGGING_LEVEL_ERROR,
+                        "[central_control_found_available_channel():"
+                        "central_control_search_connect_by_arithmetic found error]",
+                        gchannel_allot_pro.cnnt_num);
+                }
 	}
 	else if( gchannel_allot_pro.cnnt_num >= CHANNEL_MUX_NUM )
 	{// 若超出了系统的连接数，则断开其中一个连接,连接时间最长的
 		bret = false;
+                if (NULL != gp_log_imp) {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
+                        LOGGING_LEVEL_ERROR,
+                        "[central_control_found_available_channel()"
+                        " out of connect num = %d]",
+                        gchannel_allot_pro.cnnt_num);
+                }
 	}
 	
 	return bret;
@@ -337,21 +390,21 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 	const bool cnnt_flag = connect_info.connect_flag;
 	T_pInChannel p_temp_chNode = NULL;
 	int i = 0;
+        bool finish = true;
 	
 	if( (connect_info.ctrl_msg.data_type != JDKSAVDECC_SUBTYPE_ACMP) ||
 		((connect_info.ctrl_msg.msg_type != JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE) &&\
 		(connect_info.ctrl_msg.msg_type != JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE)))
 		return ;
-
+    
+        pthread_mutex_lock(&l_ccru_mutex);
+        
 	for( i = 0; i < CCU_TR_MODEL_MAX_NUM; i++ )
 	{
 		if( cnnt_flag )// connect success?
 		{
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].unconnect_channel_head.list, list )
-			{
-				if( p_temp_chNode->pro_status == INCHANNEL_PRO_HANDLING )
-					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
-				
+			{				
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
@@ -368,6 +421,7 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					gccu_recieve_model_list[i].model_last_time = p_temp_chNode->timetimp;// current time
 					gchannel_allot_pro.cnnt_num++;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
+                                        p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 
 					if (NULL != gp_log_imp)
                         		        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
@@ -379,17 +433,15 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
         						connect_info.listener_id, 
         						connect_info.listener_index,
         						gchannel_allot_pro.cnnt_num);
-					return;
+                                        finish = true;
+                                        break;
 				}
 			}
 		}
 		else
 		{
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
-			{
-				if( p_temp_chNode->pro_status == INCHANNEL_PRO_HANDLING )
-					p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
-				
+			{					
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
 					(connect_info.listener_index == p_temp_chNode->listener_index))
 				{// cut from unconnect list and add to connect list
@@ -407,6 +459,7 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 					p_temp_chNode->operate_timp =gccu_recieve_model_list[i].model_last_time;
 					gchannel_allot_pro.cnnt_num--;
 					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
+                                        p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
 
 					if (NULL != gp_log_imp)
                         		        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
@@ -420,11 +473,18 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
         						connect_info.listener_id, 
         						connect_info.listener_index,
         						gchannel_allot_pro.cnnt_num);
-					return;
+					finish = true;
+                                        break;
 				}
 			}
 		}
+
+                if (finish) {
+                    break;
+                }
 	}
+
+        pthread_mutex_unlock(&l_ccru_mutex);
 }
 
 bool ccu_recv_model_talker_connected( uint64_t  talker_id, uint16_t talker_index )
@@ -501,8 +561,10 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 		assert( gchannel_allot_pro.p_current_input_channel != NULL );
 		if( gchannel_allot_pro.p_current_input_channel != NULL )
 		{
+		        pthread_mutex_lock(&l_ccru_mutex);
+                
 			if( gchannel_allot_pro.p_current_input_channel->status == INCHANNEL_FREE )
-			{
+			{                
 				conference_recieve_model_discut_self( talker_id );// 断开本机
 				
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
@@ -515,11 +577,19 @@ int ccu_recv_model_talk( uint64_t  talker_id, uint16_t talker_index )
 								3, ++gccu_acmp_sequeue_id );
 				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
 				ret = 0;
+
+                                
 			}
+
+                        gchannel_allot_pro.p_current_input_channel = NULL;
+                        
+                        pthread_mutex_unlock(&l_ccru_mutex);
 		}
 	}
 	else 
 	{
+	        gchannel_allot_pro.p_current_input_channel = NULL;
+            
 		if (NULL != gp_log_imp)
                         gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
                                 LOGGING_LEVEL_ERROR,
@@ -547,9 +617,10 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 			if( (p_temp_chNode->tarker_id == talker_id) &&\
 				(p_temp_chNode->tarker_index == talker_index) )
 			{
+			        pthread_mutex_lock(&l_ccru_mutex);
 				conference_recieve_model_connect_self( talker_id );// 重连本机
 				
-				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_PRIMED;
+				p_temp_chNode->pro_status = INCHANNEL_PRO_PRIMED;
 				convert_uint64_to_eui64( talker_entity_id.value, talker_id );
 				convert_uint64_to_eui64( listener_entity_id.value, p_temp_chNode->listener_id );
 				acmp_disconnect_avail( talker_entity_id.value, 
@@ -557,7 +628,8 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
 							listener_entity_id.value, 
 							p_temp_chNode->listener_index, 
 							3, ++gccu_acmp_sequeue_id );
-				gchannel_allot_pro.p_current_input_channel->pro_status = INCHANNEL_PRO_HANDLING;
+                                p_temp_chNode->pro_status = INCHANNEL_PRO_HANDLING;
+                                pthread_mutex_unlock(&l_ccru_mutex);
 
 				return 0;
 			}
@@ -590,6 +662,8 @@ void central_control_recieve_uinit_init_list( void )
 	init_observer( &gccu_recv_observer, central_control_recieve_ccu_model_state_update );
 	// 加入观察者到被观察者
 	attach_observer( &gconnector_subjector, &gccu_recv_observer );
+
+        pthread_mutex_init(&l_ccru_mutex, NULL);
 }
 
 void central_control_recieve_uinit_destroy(void)
