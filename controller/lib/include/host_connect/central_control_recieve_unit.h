@@ -78,6 +78,8 @@ typedef struct _type_channel_alloction_proccess// 通道分配处理结构
 	enum channel_pro_stype pro_stype;
 }tchannel_allot_pro;
 
+extern uint16_t CCRU_canUsedInStreams;
+
 // *****************************************//
 
 // *****************************************

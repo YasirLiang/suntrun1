@@ -72,5 +72,8 @@
 /*! Sytem Max Apply Number */
 #define MAX_LIMIT_APPLY_NUM                     (6)
 
-#endif
+/*$ MICPHONE priority manger macro define-----------------------------------*/
+#define MIC_PRIOR_MANEGER_ENABLE
+
+#endif /* __GLOBAL_H__ */
 

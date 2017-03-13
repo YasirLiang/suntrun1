@@ -367,8 +367,7 @@ int Ctrans_disLongest(uint64_t *pId, tmnl_pdblist* ppC) {
     pL = NULL;  /* make longest node invalue */
     pT = NULL;/* make terminal point invalue */
     curtime = get_current_time(); /* get current time */
-    list_for_each_entry(p, &gconference_model_guard.list, list)
-    {
+    list_for_each_entry(p, &gconference_model_guard.list, list) {
         if (!p->model_speak_time.running) { /* not speaking terminal */
             continue;
         }
@@ -729,102 +728,6 @@ static void trans_model_unit_update_by_disconnect_rx_state(const uint64_t tarker
 
 void trans_model_unit_update( subject_data_elem connect_info )// ¸üĞÂ´«ÊäÄ£¿éµÄÁ¬½Ó×´Ì¬, ²¢·¢ËÍÍ¨Öª»áÒéÏµÍ³Ğ­ÒéµÄÏûÏ¢
 {
-#if 0
-	const bool cnnt_flag = connect_info.connect_flag;
-	tconference_trans_pmodel p_temp_node = NULL;
-
-	if( connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_RX_STATE_RESPONSE ||
-		connect_info.ctrl_msg.msg_type == JDKSAVDECC_ACMP_MESSAGE_TYPE_GET_TX_STATE_RESPONSE )
-		return ;
-
-	if( !cnnt_flag )// connferenc Mic close
-	{
-		list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
-		{
-			if( p_temp_node->tarker_id == connect_info.tarker_id )
-			{
-				T_pOutChannel p_Outnode = NULL;
-								
-				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
-				{
-					if( p_Outnode->tarker_index == connect_info.tarker_index )
-					{
-						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
-						{// Í£Ö¹·¢ÑÔ¼ÆÊ±
-							host_timer_stop(&p_temp_node->model_speak_time);
-							if( NULL != p_temp_node->confenrence_node)
-								terminal_mic_status_set_callback( false, p_temp_node->confenrence_node );
-						}
-
-						// ¸üĞÂÊä³öÍ¨µÀ±£»¤Ê±¼ä´Á
-						p_Outnode->operate_timetimp = get_current_time();
-						
-						Input_pChannel Input_pnode = NULL;
-						list_for_each_entry( Input_pnode, &p_Outnode->input_head.list, list )
-						{
-							if(  Input_pnode->listener_id == connect_info.listener_id&& \
-								(Input_pnode->listen_index== connect_info.listener_index))// found?
-							{
-								__list_del_entry(&Input_pnode->list);// delect connect input node
-								if( Input_pnode != NULL )
-								{
-									free(Input_pnode);
-									Input_pnode = NULL;	
-								}
-								conference_transmit_unit_debug( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)--(listen :index)(0x%016llx:%d)",\
-										connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
-								return;
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	else// connferenc Mic open
-	{
-		list_for_each_entry( p_temp_node, &gconference_model_guard.list, list )
-		{
-			if( p_temp_node->tarker_id == connect_info.tarker_id )
-			{
-				T_pOutChannel p_Outnode = NULL;				
-				list_for_each_entry(p_Outnode, &p_temp_node->out_ch.list, list)
-				{
-					if( p_Outnode->tarker_index == connect_info.tarker_index )
-					{
-					
-						if (p_Outnode->tarker_index == CONFERENCE_OUTPUT_INDEX)
-						{// ¿ªÊ¼·¢ÑÔ¼ÆÊ±
-							host_timer_start( 1000,&p_temp_node->model_speak_time);
-							if( NULL != p_temp_node->confenrence_node)
-								terminal_mic_status_set_callback( true, p_temp_node->confenrence_node );
-						}
-
-						// ¸üĞÂÊä³öÍ¨µÀ±£»¤Ê±¼ä´Á
-						p_Outnode->operate_timetimp = get_current_time();
-						
-						Input_pChannel Input_pnode = NULL;
-						Input_pnode = input_connect_node_create();
-						if( Input_pnode == NULL )
-						{
-							conference_transmit_unit_debug( "connect info not save Success!!!" );
-							return;
-						}
-
-						input_connect_node_init_by_index( Input_pnode, connect_info.listener_id, connect_info.listener_index );
-						input_connect_node_insert_node_to_list( &p_Outnode->input_head.list, Input_pnode );
-						
-						conference_transmit_unit_debug( "conference unit tranmist  model update.......Success!(tarker :index)(0x%016llx:%d)-- (listen :index)(0x%016llx:%d)",\
-							connect_info.tarker_id, connect_info.tarker_index, connect_info.listener_id, connect_info.listener_index );
-						return;
-					}
-				}
-
-				break;// if found and updata failed, return, not search again;
-			}
-		}
-	}
-#else
 	uint16_t data_type = connect_info.ctrl_msg.data_type;
 	uint16_t msg_type = connect_info.ctrl_msg.msg_type;
 	int repson_status = connect_info.ctrl_msg.msg_resp_status;
@@ -872,8 +775,6 @@ void trans_model_unit_update( subject_data_elem connect_info )// ¸üĞÂ´«ÊäÄ£¿éµÄÁ
 			conference_transmit_unit_debug("update cfc transmit model msg type(0x%02x) info err!", msg_type);
 			break;
 	}
-
-#endif
 }
 
 int conference_transmit_model_node_destroy( uint64_t tarker_id )

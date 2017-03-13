@@ -35,6 +35,9 @@ static pthread_mutex_t l_ccru_mutex;
 extern solid_pdblist endpoint_list;			// 系统中终端链表哨兵节点
 extern desc_pdblist descptor_guard;	// 系统中描述符链表哨兵节点
 
+/* ccru total streams used */
+uint16_t CCRU_canUsedInStreams = 0;
+
 // 通过优先算法查找连接节点
 static bool central_control_search_connect_by_arithmetic( T_pInChannel* pp_InChannel )//(unfinish 2016-3-11)
 {
@@ -361,6 +364,8 @@ int init_central_control_recieve_unit_by_entity_id( const uint8_t *frame, int po
         				if (gccu_recieve_model_list[insert_index].channel_num <= PER_CCU_CONNECT_MAX_NUM)
         					gchannel_allot_pro.elem_can_use_num++;
 
+                                        CCRU_canUsedInStreams = gchannel_allot_pro.elem_can_use_num;
+
         				gchannel_allot_pro.elem_num++;
         				if (NULL != gp_log_imp)
                         		        gp_log_imp->log.post_log_msg(&gp_log_imp->log, 
@@ -614,9 +619,13 @@ int ccu_recv_model_untalk( const uint64_t  talker_id, const uint16_t talker_inde
                     
 		list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 		{
-			if( (p_temp_chNode->tarker_id == talker_id) &&\
-				(p_temp_chNode->tarker_index == talker_index) )
+			if ((p_temp_chNode->tarker_id == talker_id)
+                            && (p_temp_chNode->tarker_index == talker_index))
 			{
+			        if (p_temp_chNode->pro_status != INCHANNEL_PRO_FINISH) {
+                                    return -1;
+                                }
+                    
 			        pthread_mutex_lock(&l_ccru_mutex);
 				conference_recieve_model_connect_self( talker_id );// 重连本机
 				
