@@ -5,7 +5,7 @@
 * @cond
 ******************************************************************************
 * Last updated for version 1.0.0
-* Last updated on  2016-09-27
+* Last updated on  2016-03-13
 *
 *                    Moltanisk Liang
 *                    ---------------------------
@@ -114,6 +114,10 @@ bool Terminal_firstApplyRequestConnect(tmnl_pdblist const spk,
     TComQueue * const pRestQueue, int * const locker, int failureTimes);
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
+
+#define COMMON_SPK_PERMISSION \
+    (SIGN_STATE | DISCUSS_STATE | VOTE_STATE | GRADE_STATE | ELECT_STATE)
+
 /*$ callback fuction locker-------------------------------------------------------*/
 static volatile int l_callBackLocker = 0;
 #endif /* MIC_PRIOR_MANEGER_ENABLE */
@@ -4501,7 +4505,7 @@ uint16_t terminal_speak_num_count(void)
 /*$\ define callback function after request connect finish */
 /*$ Terminal_chairmanOpenMicCallback()......................................*/
 int Terminal_chairmanOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -4513,18 +4517,6 @@ int Terminal_chairmanOpenMicCallback(bool isSuccess,
         return 0;
     }
     
-    /* open mic failed? */
-    if (!isSuccess) {
-        /* error discuss mode */
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[Chairman Terminal(0x%04x) Speak Failed: Out of"
-            "connect times]",
-            user->tmnl_dev.address.addr);
-
-        return -1;
-    }
-    
     /* for muti pthread access global data,
         must lock */
     INTERRUPT_LOCK(l_callBackLocker);
@@ -4534,11 +4526,39 @@ int Terminal_chairmanOpenMicCallback(bool isSuccess,
     sysState = get_sys_state();
     entityId = user->tmnl_dev.entity_id;
     tAddr = user->tmnl_dev.address.addr;
-    
-    if (sysState != INTERPOSE_STATE) {
-        /* set mic state to open */
-        terminal_mic_state_set(MIC_OPEN_STATUS,
-                            tAddr, entityId, true, user);
+
+    /* open mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Chairman Terminal(0x%04x) Speak Failed: Out of"
+                "connect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Chairman Terminal(0x%04x) Speak Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+            LOGGING_LEVEL_DEBUG,
+            "[Chairman Terminal(0x%04x) Speak Success]",
+            user->tmnl_dev.address.addr);
+                
+        if (sysState != INTERPOSE_STATE) {
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, true);
     }
 
     /* for muti pthread access global data,
@@ -4550,7 +4570,7 @@ int Terminal_chairmanOpenMicCallback(bool isSuccess,
 
 /*$ Terminal_vipOpenMicCallback()...........................................*/
 int Terminal_vipOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -4562,18 +4582,6 @@ int Terminal_vipOpenMicCallback(bool isSuccess,
         return 0;
     }
     
-    /* open mic failed? */
-    if (!isSuccess) {
-        /* error discuss mode */
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[VIP Terminal(0x%04x) Speak Failed: Out of"
-            "connect times]",
-            user->tmnl_dev.address.addr);
-
-        return -1;
-    }
-    
     /* for muti pthread access global data,
         must lock */
     INTERRUPT_LOCK(l_callBackLocker);
@@ -4583,11 +4591,39 @@ int Terminal_vipOpenMicCallback(bool isSuccess,
     sysState = get_sys_state();
     entityId = user->tmnl_dev.entity_id;
     tAddr = user->tmnl_dev.address.addr;
-    
-    if (sysState != INTERPOSE_STATE) {
-        /* set mic state to open */
-        terminal_mic_state_set(MIC_OPEN_STATUS,
-                            tAddr, entityId, true, user);
+
+    /* open mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[VIP Terminal(0x%04x) Speak Failed: Out of"
+                "connect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[VIP Terminal(0x%04x) Speak Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Vip Terminal(0x%04x) Speak Success]",
+                user->tmnl_dev.address.addr);
+                
+        if (sysState != INTERPOSE_STATE) {
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, true);
     }
 
     /* for muti pthread access global data,
@@ -4599,25 +4635,70 @@ int Terminal_vipOpenMicCallback(bool isSuccess,
 
 /*$ Terminal_commonOpenMicCallback()........................................*/
 int Terminal_commonOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
-    /* open mic failed? */
-    if (!isSuccess) {
-        /* error discuss mode */
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[Common Terminal(0x%04x) Speak Failed: Out of"
-            "connect times]",
-            user->tmnl_dev.address.addr);
+    uint8_t micState;
+    uint8_t disMode;
+    uint8_t sysState;
+    uint64_t entityId;
+    uint16_t tAddr;
+    uint8_t cLimitSpkNum;
 
-        return -1;
+    if (user == (tmnl_pdblist)0) {
+        return 0;
     }
-
+    
     /* for muti pthread access global data,
         must lock */
     INTERRUPT_LOCK(l_callBackLocker);
 
+    micState = user->tmnl_dev.tmnl_status.mic_state;
+    disMode = gdisc_flags.edis_mode;
+    sysState = get_sys_state();
+    entityId = user->tmnl_dev.entity_id;
+    tAddr = user->tmnl_dev.address.addr;
+    cLimitSpkNum = gdisc_flags.speak_limit_num;
+
     /* set mic state */
+    /* open mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Common Terminal(0x%04x) Speak Failed: Out of"
+                "connect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Common Terminal(0x%04x) Speak Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Common Terminal(0x%04x) Speak Success]",
+                user->tmnl_dev.address.addr);
+        
+        if (sysState != INTERPOSE_STATE) {
+            /* set conference
+                parameter */
+            gdisc_flags.speak_addr_list[cLimitSpkNum] = tAddr;
+            gdisc_flags.speak_limit_num++;
+            gdisc_flags.speak_limit_num %= MAX_LIMIT_SPK_NUM;
+
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, true);
+    }
 
     /* for muti pthread access global data,
         must unlock */
@@ -4626,30 +4707,80 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
     return 0;
 }
 
+/*$ Terminal_limitModeApplyTSpeak().........................................*/
+void Terminal_limitModeApplyTSpeak(void) {
+    uint16_t curFirstAlyAddr;
+    uint8_t curFirstApplyIndex;
+    uint16_t cSpkNum;
+    tmnl_pdblist firstSpkNode;
+    uint8_t applyNum;
+
+    applyNum = gdisc_flags.apply_num;
+    cSpkNum = terminal_speak_num_count();
+    curFirstApplyIndex = gdisc_flags.currect_first_index;
+    curFirstAlyAddr = gdisc_flags.apply_addr_list[curFirstApplyIndex];
+    
+    /* if connector queue has no element,
+        open apply first and other to first apply */
+    if (!Terminal_hasTaskInQueue(CONNECTOR)) {
+        if ((cSpkNum < CCRU_canUsedInStreams)
+             && (applyNum > 0))
+        {
+            if(addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+                    &gdisc_flags.apply_num,
+                    gdisc_flags.currect_first_index))
+            {
+                firstSpkNode =
+                  found_terminal_dblist_node_by_addr(curFirstAlyAddr);
+                if (firstSpkNode != (tmnl_pdblist)0) {
+                    /* request connections */
+                    if (Terminal_requestConnect(firstSpkNode,
+                            COMMON_PRIOR,
+                            MAX_FAILURE_TIMES,
+                            COMMON_SPK_PERMISSION))
+                    {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[Limit First Aplly(0x04x) Request "
+                            "connections success ]", curFirstAlyAddr);
+                        
+                        terminal_apply_list_first_speak();
+                    }
+                    else {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[Limit First Aplly(0x04x) Request "
+                            "connections Failed ]", curFirstAlyAddr);
+                    }
+                }
+            }
+
+            /* send main state */
+            terminal_main_state_send(0, (void *)0, 0);
+        }
+    }  
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+            LOGGING_LEVEL_ERROR,
+            "[Terminal_hasTaskInQueue are True: No"
+            "request connection for first "
+            "apply terminal(0x%04x) ]", curFirstAlyAddr);
+    }
+}
+
 /*$ Terminal_chairmanCloseMicCallback().....................................*/
 int Terminal_chairmanCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
     uint8_t sysState;
     uint64_t entityId;
     uint16_t tAddr;
+    uint8_t cLimitSpkNum;
 
     if (user == (tmnl_pdblist)0) {
         return 0;
-    }
-    
-    /* open mic failed? */
-    if (!isSuccess) {
-        /* error discuss mode */
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[VIP Terminal(0x%04x) close Failed: Out of"
-            "disconnect times]",
-            user->tmnl_dev.address.addr);
-
-        return -1;
     }
     
     /* for muti pthread access global data,
@@ -4661,11 +4792,50 @@ int Terminal_chairmanCloseMicCallback(bool isSuccess,
     sysState = get_sys_state();
     entityId = user->tmnl_dev.entity_id;
     tAddr = user->tmnl_dev.address.addr;
-    
-    if (sysState != INTERPOSE_STATE) {
-        /* set mic state to open */
-        terminal_mic_state_set(MIC_COLSE_STATUS,
-                            tAddr, entityId, true, user);
+    cLimitSpkNum = gdisc_flags.speak_limit_num;
+
+    /* Close mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Chairman Terminal(0x%04x) Mic Close Failed: Out of"
+                "disconnect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Chairman Terminal(0x%04x) Mic Close Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Chairman Terminal(0x%04x) Mic Close Success]",
+                user->tmnl_dev.address.addr);
+        
+        if (sysState != INTERPOSE_STATE) {
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, false);
+        
+        /* decrement for all discuss mode */
+        if (cLimitSpkNum > 0) {
+            addr_queue_delect_by_value(gdisc_flags.speak_addr_list,
+                &gdisc_flags.speak_limit_num, tAddr);
+        }
+        
+        if (disMode == LIMIT_MODE) {
+            Terminal_limitModeApplyTSpeak();
+        }
     }
 
     /* for muti pthread access global data,
@@ -4677,28 +4847,17 @@ int Terminal_chairmanCloseMicCallback(bool isSuccess,
 
 /*$ Terminal_vipCloseMicCallback()..........................................*/
 int Terminal_vipCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
     uint8_t sysState;
     uint64_t entityId;
     uint16_t tAddr;
+    uint8_t cLimitSpkNum;
 
     if (user == (tmnl_pdblist)0) {
         return 0;
-    }
-    
-    /* open mic failed? */
-    if (!isSuccess) {
-        /* error discuss mode */
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[VIP Terminal(0x%04x) Close Failed: Out of"
-            "disconnect times]",
-            user->tmnl_dev.address.addr);
-
-        return -1;
     }
     
     /* for muti pthread access global data,
@@ -4710,11 +4869,50 @@ int Terminal_vipCloseMicCallback(bool isSuccess,
     sysState = get_sys_state();
     entityId = user->tmnl_dev.entity_id;
     tAddr = user->tmnl_dev.address.addr;
+    cLimitSpkNum = gdisc_flags.speak_limit_num;
     
-    if (sysState != INTERPOSE_STATE) {
-        /* set mic state to open */
-        terminal_mic_state_set(MIC_COLSE_STATUS,
-                            tAddr, entityId, true, user);
+    /* Close mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Vip Terminal(0x%04x) Mic Close Failed: Out of"
+                "disconnect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Vip Terminal(0x%04x) Mic Close Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Vip Terminal(0x%04x) Mic Close Success]",
+                user->tmnl_dev.address.addr);
+        
+        if (sysState != INTERPOSE_STATE) {
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, false);
+
+        /* decrement for all discuss mode */
+        if (cLimitSpkNum > 0) {
+            addr_queue_delect_by_value(gdisc_flags.speak_addr_list,
+                &gdisc_flags.speak_limit_num, tAddr);
+        }
+        
+        if (disMode == LIMIT_MODE) {
+            Terminal_limitModeApplyTSpeak();
+        }
     }
 
     /* for muti pthread access global data,
@@ -4726,11 +4924,73 @@ int Terminal_vipCloseMicCallback(bool isSuccess,
 
 /*$ Terminal_commonCloseMicCallback().......................................*/
 int Terminal_commonCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user)
+    tmnl_pdblist user, uint32_t permissions)
 {
+    uint8_t micState;
+    uint8_t disMode;
+    uint8_t sysState;
+    uint64_t entityId;
+    uint16_t tAddr;
+    uint8_t cLimitSpkNum;
+
+    if (user == (tmnl_pdblist)0) {
+        return 0;
+    }
+    
     /* for muti pthread access global data,
         must lock */
     INTERRUPT_LOCK(l_callBackLocker);
+    
+    micState = user->tmnl_dev.tmnl_status.mic_state;
+    disMode = gdisc_flags.edis_mode;
+    sysState = get_sys_state();
+    entityId = user->tmnl_dev.entity_id;
+    tAddr = user->tmnl_dev.address.addr;
+    cLimitSpkNum = gdisc_flags.speak_limit_num;
+    
+    /* Close mic failed? */
+    if (!isSuccess) {
+        /* error discuss mode */
+        if (sysState & permissions) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Common Terminal(0x%04x) Mic Close Failed: Out of"
+                "disconnect times]",
+                user->tmnl_dev.address.addr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Common Terminal(0x%04x) Mic Close Failed: No"
+                "Executable permissions]",
+                user->tmnl_dev.address.addr);
+        }
+    }
+    else {
+        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Common Terminal(0x%04x) Mic Close Success]",
+                user->tmnl_dev.address.addr);
+        
+        if (sysState != INTERPOSE_STATE) {
+            /* set mic state to open */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
+                                tAddr, entityId, true, user);
+        }
+
+        /* track camera */
+        terminal_speak_track(tAddr, false);
+
+        /* decrement for all discuss mode */
+        if (cLimitSpkNum > 0) {
+            addr_queue_delect_by_value(gdisc_flags.speak_addr_list,
+                &gdisc_flags.speak_limit_num, tAddr);
+        }
+        
+        if (disMode == LIMIT_MODE) {
+            Terminal_limitModeApplyTSpeak();
+        }
+    }
 
     /* for muti pthread access global data,
         must unlock */
@@ -4804,7 +5064,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
             }
             else {
                 reSuccess = Terminal_requestConnect(dis_node,
-                    COMMON_PRIOR, MAX_FAILURE_TIMES);
+                    COMMON_PRIOR, MAX_FAILURE_TIMES,
+                    COMMON_SPK_PERMISSION);
                 if (reSuccess) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -4823,7 +5084,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
         else if (disMode == LIMIT_MODE) { /* limit mode */
             if (cSpkNum < CCRU_canUsedInStreams) {
                 reSuccess = Terminal_requestConnect(dis_node,
-                        COMMON_PRIOR, MAX_FAILURE_TIMES);
+                        COMMON_PRIOR, MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION);
                 if (reSuccess) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -4879,7 +5141,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                     tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
                     if (tn != (tmnl_pdblist)0) {
                         reSuccess = Terminal_requestDisConnect(tn,
-                                COMMON_PRIOR, MAX_FAILURE_TIMES);
+                                COMMON_PRIOR, MAX_FAILURE_TIMES,
+                                COMMON_SPK_PERMISSION);
                         if (reSuccess) {
                             fifoReqConnect = (bool)1;
                             
@@ -4905,7 +5168,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
             if (fifoReqConnect) {
                 /* request */
                 reSuccess = Terminal_requestConnect(dis_node,
-                        COMMON_PRIOR, MAX_FAILURE_TIMES);
+                        COMMON_PRIOR, MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION);
                 if (reSuccess) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -5037,7 +5301,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
         }
         else {
             reSuccess = Terminal_requestDisConnect(dis_node,
-                    COMMON_PRIOR, MAX_FAILURE_TIMES);
+                    COMMON_PRIOR, MAX_FAILURE_TIMES,
+                    COMMON_SPK_PERMISSION);
             if (reSuccess) {                
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_DEBUG,
@@ -5106,7 +5371,8 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
             tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
             if (tn != (tmnl_pdblist)0) {
                 reSuccess = Terminal_requestDisConnect(tn,
-                        VIP_PRIOR, MAX_FAILURE_TIMES);
+                        VIP_PRIOR, MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION);
                 if (reSuccess) {
                     reqConnect = (bool)1;
                     
@@ -5132,7 +5398,8 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
     if (reqConnect) {
         /* request connection */
         reSuccess = Terminal_requestConnect(dis_node,
-            CHAIRMAN_PRIOR, MAX_FAILURE_TIMES);
+            CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+            COMMON_SPK_PERMISSION);
         if (reSuccess) {
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_DEBUG,
@@ -5204,7 +5471,8 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
             tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
             if (tn != (tmnl_pdblist)0) {
                 reSuccess = Terminal_requestDisConnect(tn,
-                        CHAIRMAN_PRIOR, MAX_FAILURE_TIMES);
+                        CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION);
                 if (reSuccess) {
                     reqConnect = (bool)1;
                     
@@ -5230,7 +5498,8 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
     if (reqConnect) {
         /* request connection */
         reSuccess = Terminal_requestConnect(dis_node,
-            CHAIRMAN_PRIOR, MAX_FAILURE_TIMES);
+            CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+            COMMON_SPK_PERMISSION);
         if (reSuccess) {
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_DEBUG,

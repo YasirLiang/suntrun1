@@ -6,7 +6,7 @@
 ******************************************************************************
 * Build Date on  2017-3-12
 * Last updated for version 1.0.0
-* Last updated on  2017-3-11
+* Last updated on  2017-3-13
 *
 *                    Moltanisk Liang
 *                    ---------------------------
@@ -45,6 +45,7 @@ typedef struct {
 typedef struct {
     TQEvt supper;              /*! signal of mic event */
     tmnl_pdblist spkNode;      /*! terminal node */
+    uint32_t permissions;      /*!Event execute permissions */
     uint8_t failureTimes;      /*! failure times */
 }TMicEvent;
 
@@ -77,7 +78,7 @@ enum {
 };
 
 /*! pointer request to callback function------------------------------------*/
-typedef int (*TPRequestCallback)(bool, tmnl_pdblist);
+typedef int (*TPRequestCallback)(bool, tmnl_pdblist, uint32_t);
 
 /*$ Queue Manager priority--------------------------------------------------*/
 typedef enum TEReqQePrior {
@@ -108,6 +109,9 @@ extern bool Terminal_delRegisterCallback(TEReqQePrior prior, int owner);
 
 /*$ Terminal_managerDisConnectTask()...............................................*/
 extern int Terminal_micManagerTask(uint32_t sysTick);
+
+/*$ Terminal_hasTaskInQueue()...............................................*/
+bool Terminal_hasTaskInQueue(uint8_t manager);
 
 /*$ Terminal_postAcmpEvent()................................................*/
 extern bool Terminal_postAcmpEvent(TQEvt const * const e);
