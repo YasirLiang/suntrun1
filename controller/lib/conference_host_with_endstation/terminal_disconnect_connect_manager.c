@@ -6,7 +6,7 @@
 ******************************************************************************
 * Build Date on  2017-3-12
 * Last updated for version 1.0.0
-* Last updated on  2017-3-11
+* Last updated on  2017-3-14
 *
 *                    Moltanisk Liang
 *                    ---------------------------
@@ -829,6 +829,11 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     /* get acmp event */
     TQEvt *e = (TQEvt *)0;
     uint32_t qAddr;
+    
+    /* 100ms must be for 'A8' */
+    if ((sysTick - l_lastTick) < 100U) {
+        return 0;
+    }
 
     INTERRUPT_LOCK(l_acmpQueueLocker);
  

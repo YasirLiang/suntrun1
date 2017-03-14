@@ -5,7 +5,7 @@
 * @cond
 ******************************************************************************
 * Last updated for version 1.0.0
-* Last updated on  2016-03-13
+* Last updated on  2016-03-14
 *
 *                    Moltanisk Liang
 *                    ---------------------------
@@ -4705,8 +4705,7 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
     tAddr = user->tmnl_dev.address.addr;
     cLimitSpkNum = gdisc_flags.speak_limit_num;
     applyNum = gdisc_flags.apply_num;
-    applyMaxNum = gdisc_flags.apply_limit;
-    
+    applyMaxNum = gdisc_flags.apply_limit;   
 
     /* set mic state */
     /* open mic failed? */
@@ -5478,7 +5477,7 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
         if (reqConnect) {
             /* request connection */
             reSuccess = Terminal_requestConnect(dis_node,
-                CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+                VIP_PRIOR, MAX_FAILURE_TIMES,
                 COMMON_SPK_PERMISSION);
             if (reSuccess) {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
@@ -5508,7 +5507,7 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
         if (trans_model_unit_is_connected(entityId)) {
             /* request connection */
             reSuccess = Terminal_requestDisConnect(dis_node,
-                CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+                VIP_PRIOR, MAX_FAILURE_TIMES,
                 COMMON_SPK_PERMISSION);
             if (reSuccess) {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
