@@ -15,6 +15,10 @@
 #include "controller_machine.h"
 #include "log_machine.h"
 
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#include "terminal_disconnect_connect_manager.h"
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
 /*$ terminal Recieve Buffer Process */
 typedef struct TTlRingMsgPro {
     /*! state switch and interval timer */
@@ -1273,6 +1277,10 @@ void Terminal_comPro(uint32_t sysTick) {
 
     /* process firt apply */
     terminal_firstApplySpkingPro(sysTick);
+
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+    Terminal_micManagerTask(sysTick);
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
 }
 
 void Terminal_comInitial(void) {

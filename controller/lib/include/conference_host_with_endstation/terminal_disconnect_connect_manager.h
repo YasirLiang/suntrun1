@@ -94,11 +94,11 @@ typedef enum TEReqQePrior {
 /*$ Extern function declaration---------------------------------------------*/
 /*$ Terminal_requestConnect()...............................................*/
 extern bool Terminal_requestConnect(tmnl_pdblist const spk,
-                    TEReqQePrior prior, int failureTimes);
+                    TEReqQePrior prior, int failureTimes, uint32_t permissions);
 
 /*$ Terminal_requestDisConnect()............................................*/
 extern bool Terminal_requestDisConnect(tmnl_pdblist const spk,
-                        TEReqQePrior prior, int failureTimes);
+                        TEReqQePrior prior, int failureTimes, uint32_t permissions);
 
 /*$ Terminal_registerCallBack().............................................*/
 extern bool Terminal_registerCallBack(TEReqQePrior prior,

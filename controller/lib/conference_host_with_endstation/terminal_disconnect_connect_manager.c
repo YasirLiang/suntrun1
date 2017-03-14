@@ -23,6 +23,7 @@
 #include "terminal_disconnect_connect_manager.h"
 #include "conference_transmit_unit.h"
 #include "log_machine.h"
+#include "terminal_system.h"
 
 /*! define Queue Buffer Size------------------------------------------------*/
 /*! Allow max speak or number in the queue */
@@ -34,10 +35,10 @@ static volatile int l_queueLockers[MANAGER_NUM][PRIOR_PUB_NUM] = {
 };
 
 /*$ connector locker--------------------------------------------------------*/
-static int *l_connectorLocker = l_queueLockers[CONNECTOR];
+static volatile int *l_connectorLocker = l_queueLockers[CONNECTOR];
 
 /*$ disconnector locker-----------------------------------------------------*/
-static int *l_disconnectorLocker = l_queueLockers[DISCONNECTOR];
+static volatile int *l_disconnectorLocker = l_queueLockers[DISCONNECTOR];
 
 /*$ Queues' Buffer----------------------------------------------------------*/
 static uint32_t l_qesBuf[MANAGER_NUM][PRIOR_PUB_NUM][REQ_QUEUE_BUF_SIZE];
@@ -129,10 +130,10 @@ static volatile int l_acmpQueueLocker = 0;
 static void Terminal_eventGc(TQEvt **e);
 
 static void Terminal_connectorCallback(uint8_t prior,
-                bool connectFlag, tmnl_pdblist user);
+                bool connectFlag, tmnl_pdblist user, uint32_t permissions);
 
 static void Terminal_disconnectorCallback(uint8_t prior,
-                bool connectFlag, tmnl_pdblist user);
+                bool connectFlag, tmnl_pdblist user, uint32_t permissions);
 
 static TQState Terminal_disconnectorDispatch(TQEvt * const e);
 
@@ -197,37 +198,48 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
 
                     /* check permissions */
                     micEvtPermissions = (uint32_t)get_sys_state();
-                    if (micEvtPermissions & micEvt->permissions) { /* frequently ?*/
+                    /* frequently ?*/
+                    if (micEvtPermissions & micEvt->permissions) {
                         tAddr = micEvt->spkNode->tmnl_dev.address.addr;
-                        id = micEvt->spkNode->tmnl_dev.entity_id;
-                        ret = trans_model_unit_connect(id, micEvt->spkNode);
-                        if (ret == 0) {
-                            /*decrement failure times
-                                connect failed increment */
-                            --micEvt->failureTimes;
-                            
-                            /* connect success, wait connection response */
-                            l_connectorState = CONNECT_WAIT;
-                            status_ = EVT_UNHANDLED;
+                        id = micEvt->spkNode->tmnl_dev.entity_id;     
 
-                            /* log message */
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                    LOGGING_LEVEL_DEBUG,
-                                    "[CONNECT_FINISH(connect times = %d)"
-                                    " Open Mic(0x%llx-0x%x):"
-                                    "Waiting for connection response]",
-                                    MAX_FAILURE_TIMES -micEvt->failureTimes,
-                                    id, tAddr);
+                        if (trans_model_unit_is_connected(id)) {
+                            micEvt->failureTimes = 0;
+                            /* this event  has being handled */
+                            status_ = EVT_HANDLED;
                         }
-                        else {
-                            failerTimes = micEvt->failureTimes;
-                            if (failerTimes == 0) {
-                                failerTimes = --micEvt->failureTimes;
-                                /* current open signal finish */
-                                status_ = EVT_HANDLED;
+                        else {                       
+                            ret = trans_model_unit_connect(id,
+                                    micEvt->spkNode);
+                            if (ret == 0) {
+                                /*decrement failure times
+                                    connect failed increment */
+                                --micEvt->failureTimes;
+                                
+                                /* connect success, wait connection response */
+                                l_connectorState = CONNECT_WAIT;
+                                status_ = EVT_UNHANDLED;
+
+                                /* log message */
+                                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                        LOGGING_LEVEL_DEBUG,
+                                        "[CONNECT_FINISH(connect times = %d)"
+                                        " Open Mic(0x%llx-0x%x):"
+                                        "Waiting for connection response]",
+                                        MAX_FAILURE_TIMES -
+                                            micEvt->failureTimes,
+                                        id, tAddr);
                             }
                             else {
-                                status_ = EVT_UNHANDLED;
+                                failerTimes = micEvt->failureTimes;
+                                if (failerTimes > 0) {
+                                    --micEvt->failureTimes;
+                                    status_ = EVT_UNHANDLED;
+                                }
+                                else {
+                                    /* current open signal finish */
+                                    status_ = EVT_HANDLED;
+                                }
                             }
                         }
                     }
@@ -267,6 +279,12 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         l_connectorState = CONNECT_FAILED;
                     }
                     
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[CONNECT_WAIT state recieve "
+                        "CONNECT_RX_RESPONSE_SIG,Change to "
+                        "state(%d)", l_connectorState);
+                    
                     status_ = EVT_HANDLED;
                     break;
                 }
@@ -277,18 +295,27 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         change to failed status */
                     l_connectorState = CONNECT_FAILED;
                     status_ = EVT_HANDLED;
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[CONNECT_WAIT state recieve "
+                        "CONNECT_TIMEOUT_SIG,Change to "
+                        "state(%d)", l_connectorState);
+                    
                     break;
                 }
                 case MIC_OPEN_SIG: {
                     /* connect wait status
                         can't process open mic signal */
                     status_ = EVT_UNHANDLED;
+                    break;
                 }
                 default: {
                     status_ = EVT_SUPPER;
                     break;
                 }
             }
+            
             break;
         }
 
@@ -301,13 +328,24 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         change to connect finish state */
                     l_connectorState = CONNECT_FINISH;
                     status_ = EVT_HANDLED;
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[CONNECT_SUCCESS state recieve "
+                        "MIC_OPEN_SIG,Change to "
+                        "state(%d)", l_connectorState);
+                    
+                    break;
                 }
                 default: {
                     /* handle signal by
                         supper state machine */
                     status_ = EVT_SUPPER;
+                    break;
                 }
-            }    
+            }  
+
+            break;
         }
 
         /* connect failed status */
@@ -323,38 +361,47 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                     if (micEvtPermissions & micEvt->permissions) {
                         tAddr = micEvt->spkNode->tmnl_dev.address.addr;
                         id = micEvt->spkNode->tmnl_dev.entity_id;
-                        ret = trans_model_unit_connect(id, micEvt->spkNode);
-                        if (ret == 0) {
-                            /*decrement failure times
-                                connect failed increment */
-                            --micEvt->failureTimes;
-                            
-                            /* connect success, wait connection response */
-                            l_connectorState = CONNECT_WAIT;
-                            status_ = EVT_UNHANDLED;
-
-                            /* log message */
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                    LOGGING_LEVEL_DEBUG,
-                                    "[CONNECT_FAILED(connect times = %d)"
-                                    " Open Mic(0x%llx-0x%x):"
-                                    "Waiting for connection response]",
-                                    MAX_FAILURE_TIMES -micEvt->failureTimes,
-                                    id, tAddr);
+                        if (trans_model_unit_is_connected(id)) {
+                            micEvt->failureTimes = 0;
+                            /* this event  has being handled */
+                            status_ = EVT_HANDLED;
                         }
-                        else {
-                            failerTimes = micEvt->failureTimes;
-                            if (failerTimes == 0) {
-                                /* decrement failure times */
+                        else {        
+                            ret = trans_model_unit_connect(id,
+                                    micEvt->spkNode);
+                            if (ret == 0) {
+                                /*decrement failure times
+                                    connect failed increment */
                                 --micEvt->failureTimes;
                                 
-                                /* current open signal finish
-                                    change to state of connect finish */
-                                l_connectorState = CONNECT_FINISH;
-                                status_ = EVT_HANDLED;
+                                /* connect success, wait connection response */
+                                l_connectorState = CONNECT_WAIT;
+                                status_ = EVT_UNHANDLED;
+
+                                /* log message */
+                                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                        LOGGING_LEVEL_DEBUG,
+                                        "[CONNECT_FAILED(connect times = %d)"
+                                        " Open Mic(0x%llx-0x%x):"
+                                        "Waiting for connection response]",
+                                        MAX_FAILURE_TIMES -
+                                            micEvt->failureTimes,
+                                        id, tAddr);
                             }
                             else {
-                                status_ = EVT_UNHANDLED;
+                                failerTimes = micEvt->failureTimes;
+                                if (failerTimes == 0) {
+                                    /* current open signal finish
+                                        change to state of connect finish */
+                                    l_connectorState = CONNECT_FINISH;
+                                    status_ = EVT_HANDLED;
+                                }
+                                else {
+                                    /* decrement failure times */
+                                    --micEvt->failureTimes;
+                                    
+                                    status_ = EVT_UNHANDLED;
+                                }
                             }
                         }
                     }
@@ -372,8 +419,12 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                     /* handle signal by
                         supper state machine */
                     status_ = EVT_SUPPER;
+
+                    break;
                 }
             }
+
+            break;
         }
         
         default: {
@@ -423,7 +474,8 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                                 connect failed increment */
                             --micEvt->failureTimes;
                             
-                            /* connect success, wait connection response */
+                            /* disconnect success,
+                                wait disconnection response */
                             l_disconnectorState = DISCONNECT_WAIT;
                             status_ = EVT_UNHANDLED;
 
@@ -431,25 +483,25 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                     LOGGING_LEVEL_DEBUG,
                                     "[DISCONNECT_FINISH(disconnect times = %d)"
-                                    " Open Mic(0x%llx-0x%x):"
-                                    "Waiting for connection response]",
+                                    " Close Mic(0x%llx-0x%x):"
+                                    "Waiting for disconnection response]",
                                     MAX_FAILURE_TIMES -micEvt->failureTimes,
                                     id, tAddr);
                         }
                         else {
                             failerTimes = micEvt->failureTimes;
                             if (failerTimes == 0) {
-                                failerTimes = --micEvt->failureTimes;
                                 /* current open signal finish */
                                 status_ = EVT_HANDLED;
                             }
                             else {
+                                --micEvt->failureTimes;
                                 status_ = EVT_UNHANDLED;
                             }
                         }
                     }
                     else { /* no executable permissions */
-                        /* make sure no connect again */
+                        /* make sure no disconnect again */
                         micEvt->failureTimes = 0;
 
                         /* this event  has being handled */
@@ -463,6 +515,7 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                     break;
                 }
             }
+            
             break;
         }
 
@@ -483,7 +536,15 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                             change to failed status */
                         l_disconnectorState = DISCONNECT_FAILED;
                     }
+                    
                     status_ = EVT_HANDLED;
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[DISCONNECT_WAIT state recieve "
+                        "DISCONNECT_RX_RESPONSE_SIG, Change to "
+                        "state(%d)", l_disconnectorState);
+                    
                     break;
                 }
                 case DISCONNECT_TIMEOUT_SIG: {
@@ -493,18 +554,27 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                         change to failed status */
                     l_disconnectorState = DISCONNECT_FAILED;
                     status_ = EVT_HANDLED;
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[DISCONNECT_WAIT state recieve "
+                        "DISCONNECT_TIMEOUT_SIG, Change to "
+                        "state(%d)", l_disconnectorState);
+                    
                     break;
                 }
                 case MIC_CLOSE_SIG: {
                     /* disconnect wait status
                         can't process open mic signal */
                     status_ = EVT_UNHANDLED;
+                    break;
                 }
                 default: {
                     status_ = EVT_SUPPER;
                     break;
                 }
             }
+            
             break;
         }
 
@@ -515,15 +585,26 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                     /* current mic close
                         signal process successfully,
                         change to disconnect finish state */
-                    l_disconnectorState = CONNECT_FINISH;
+                    l_disconnectorState = DISCONNECT_FINISH;
                     status_ = EVT_HANDLED;
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[DISCONNECT_WAIT state recieve "
+                        "MIC_CLOSE_SIG, Change to "
+                        "state(%d)", l_disconnectorState);
+
+                    break;
                 }
                 default: {
                     /* handle signal by
                         supper state machine */
                     status_ = EVT_SUPPER;
+                    break;
                 }
-            }    
+            }  
+
+            break;
         }
 
         /* disconnect failed status */
@@ -553,29 +634,29 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                     LOGGING_LEVEL_DEBUG,
                                     "[DISCONNECT_FAILED(disconnect times = %d)"
-                                    " Open Mic(0x%llx-0x%x):"
-                                    "Waiting for connection response]",
+                                    " Close Mic(0x%llx-0x%x):"
+                                    "Waiting for disconnection response]",
                                     MAX_FAILURE_TIMES -micEvt->failureTimes,
                                     id, tAddr);
                         }
                         else {
                             failerTimes = micEvt->failureTimes;
                             if (failerTimes == 0) {
-                                /* decrement failure times */
-                                --micEvt->failureTimes;
-                                
                                 /* current open signal finish
                                     change to state of disconnect finish */
                                 l_disconnectorState = DISCONNECT_FINISH;
                                 status_ = EVT_HANDLED;
                             }
                             else {
+                                /* decrement failure times */
+                                --micEvt->failureTimes;
+                                
                                 status_ = EVT_UNHANDLED;
                             }
                         }
                     }
                     else { /* no executable permissions */
-                        /* make sure no connect again */
+                        /* make sure no disconnect again */
                         micEvt->failureTimes = 0;
 
                         /* this event  has being handled */
@@ -588,8 +669,11 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                     /* handle signal by
                         supper state machine */
                     status_ = EVT_SUPPER;
+                    break;
                 }
             }
+
+            break;
         }
         
         default: {
@@ -640,6 +724,10 @@ bool Terminal_requestConnect(tmnl_pdblist const spk, TEReqQePrior prior,
         if (QueueCom_postFiFo(&l_connectorQe[prior], (void *)qElem)) {
             reqOk = (bool)1;
         }
+        else {
+            free(qElem);
+            qElem = (TMicEvent *)0;
+        }
     }
 
     /* unlock queue */
@@ -681,6 +769,10 @@ bool Terminal_requestDisConnect(tmnl_pdblist const spk,
         /* post to queue */
         if (QueueCom_postFiFo(&l_disconnectorQe[prior], (void *)qElem)) {
             reqOk = (bool)1;
+        }
+        else {
+            free(qElem);
+            qElem = (TMicEvent *)0;
         }
     }
 
@@ -726,23 +818,25 @@ bool Terminal_delRegisterCallback(TEReqQePrior prior, int owner) {
 int Terminal_micManagerTask(uint32_t sysTick) {
 /*\ manager mic open and close task */
     int i = 0;
-    TQState status_;            /*! state machine */
+    TQState status_;                    /*! state machine */
     uint8_t remainCTimes;       /*! remain connection times */
-    uint8_t remainDTimes;       /*! remain disconnection times */
-    static uint32_t l_lastTick; /*! last tick */
-    uint64_t id;                /*! 1722 id */
-    uint16_t tAddr;             /*! terminal application address */
-
+    uint8_t remainDTimes;               /*! remain disconnection times */
+    static uint32_t l_lastTick;         /*! last tick */
+    uint64_t id;                        /*! 1722 id */
+    uint16_t tAddr;                     /*! terminal application address */
+    static uint8_t l_curConnectorQe; /*! */
+    static uint8_t l_curDisConnectorQe; /*! */
     /* get acmp event */
     TQEvt *e = (TQEvt *)0;
     uint32_t qAddr;
 
     INTERRUPT_LOCK(l_acmpQueueLocker);
+ 
     if (QueueCom_popFiFo(&l_acmpQueue, &qAddr)) {
         e = (TQEvt *)qAddr;
     }
-    else if ((sysTick - l_lastTick) < 300U) {
-        /* 300 ms */
+    else if ((sysTick - l_lastTick) < 300U) { /* 300 ms */
+        INTERRUPT_UNLOCK(l_acmpQueueLocker);
         return 0;
     }
     else {
@@ -750,7 +844,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
         l_lastTick = sysTick;
     }
 
-    INTERRUPT_LOCK(l_acmpQueueLocker);
+    INTERRUPT_UNLOCK(l_acmpQueueLocker);
 
     /* Task procsess  acmp event */
     if (e != (TQEvt *)0) {
@@ -762,7 +856,8 @@ int Terminal_micManagerTask(uint32_t sysTick) {
 
     /* Task process events in the
         priority disconnector queues */
-    for (i = 0; i < PRIOR_PUB_NUM; i++) {
+    for (i = l_curDisConnectorQe; i < PRIOR_PUB_NUM; i++) {
+        
         /* lock the queue */
         INTERRUPT_LOCK(l_disconnectorLocker[i]);
         
@@ -773,25 +868,22 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                 if ((status_ == EVT_HANDLED)
                     && (e->sig == MIC_CLOSE_SIG))
                 {
+                    /* unlock make sure 
+                        that callback fucntion can 
+                        request connections or diconnections */
+                    INTERRUPT_UNLOCK(l_disconnectorLocker[i]);
+                
                     /* get remain disconnections times */
                     remainDTimes = ((TMicEvent *)e)->failureTimes;
                     id = ((TMicEvent *)e)->spkNode->tmnl_dev.entity_id;
                     tAddr = ((TMicEvent *)e)->spkNode->tmnl_dev.address.addr;
                     if (remainDTimes > 0) {
-                        /* unlock make sure 
-                            that callback fucntion can 
-                            request connections or diconnections */
-                        INTERRUPT_UNLOCK(l_disconnectorLocker[i]);
-                        
                         /* disconnect successfully
                             because of disconnecting successfully in
                             'failureTimes' times, callback function */
                         Terminal_disconnectorCallback((uint8_t)i,
                                 (bool)1, ((TMicEvent *)e)->spkNode,
                                 ((TMicEvent *)e)->permissions);
-
-                        /* must lock */
-                        INTERRUPT_LOCK(l_disconnectorLocker[i]);
 
                         /* log mic close success */
                         gp_log_imp->log.post_log_msg(&gp_log_imp->log,
@@ -801,21 +893,13 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                                 MAX_FAILURE_TIMES - remainDTimes,
                                 id, tAddr);
                     }
-                    else {
-                        /* unlock make sure 
-                            that callback fucntion can 
-                            request connections or diconnections */
-                        INTERRUPT_UNLOCK(l_disconnectorLocker[i]);
-                        
+                    else {                        
                         /* disconnect failed 
                             because of disconnecting failed in
                             'failureTimes' times, callback function */
                         Terminal_disconnectorCallback((uint8_t)i,
                                 (bool)0, ((TMicEvent *)e)->spkNode,
                                 ((TMicEvent *)e)->permissions);
-
-                        /* must lock */
-                        INTERRUPT_LOCK(l_disconnectorLocker[i]);
 
                         /* log mic close failed close */
                         gp_log_imp->log.post_log_msg(&gp_log_imp->log,
@@ -830,9 +914,10 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                     /* release event */
                     Terminal_eventGc(&e);
 
-                    /* must check next event
-                        begin the highest prior queue */
-                    i = CHAIRMAN_PRIOR;
+                    /* process highest priority queue for next time */
+                    l_curDisConnectorQe = 0;
+
+                    break;
                 }
                 else if ((status_ == EVT_UNHANDLED)
                               && (e->sig == MIC_CLOSE_SIG))
@@ -843,6 +928,9 @@ int Terminal_micManagerTask(uint32_t sysTick) {
 
                     /* must unlock the queue before 'break' */
                     INTERRUPT_UNLOCK(l_disconnectorLocker[i]);
+                    
+                    /* next loop from current queue */
+                    l_curDisConnectorQe = i;
                     
                     break; /* break 'for' loop */
                 }
@@ -860,7 +948,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     /* Task process events in the
         priority connector queues, process next open signal event
         only when last connection finish */
-    for (i = 0; i < PRIOR_PUB_NUM; i++) {
+    for (i = l_curConnectorQe; i < PRIOR_PUB_NUM; i++) {        
         /* lock the queue */
         INTERRUPT_LOCK(l_connectorLocker[i]);
         
@@ -871,16 +959,16 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                 if ((status_ == EVT_HANDLED)
                     && (e->sig == MIC_OPEN_SIG))
                 {
+                    /* unlock make sure 
+                        that callback fucntion can 
+                        request connections or diconnections */
+                   INTERRUPT_UNLOCK(l_connectorLocker[i]);
+                
                     /* get remain connections times */
                     remainCTimes = ((TMicEvent *)e)->failureTimes;
                     id = ((TMicEvent *)e)->spkNode->tmnl_dev.entity_id;
                     tAddr = ((TMicEvent *)e)->spkNode->tmnl_dev.address.addr;
                     if (remainCTimes > 0) {
-                        /* unlock make sure 
-                            that callback fucntion can 
-                            request connections or diconnections */
-                       INTERRUPT_UNLOCK(l_connectorLocker[i]);
-                        
                         /* connect successfully
                             because of connecting successfully in
                             'failureTimes' times, callback function */
@@ -888,48 +976,38 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                                 (bool)1, ((TMicEvent *)e)->spkNode,
                                 ((TMicEvent *)e)->permissions);
 
-                        /* lock again */
-                        INTERRUPT_LOCK(l_connectorLocker[i]);
-
                         /* log mic open success */
                         gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                 LOGGING_LEVEL_DEBUG,
-                                "[ MIC CLOSE (connect times = %d"
+                                "[ MIC Open (connect times = %d"
                                 " terminal(0x%016llx-0x%04x) SUCCESS ]",
-                                MAX_FAILURE_TIMES -remainDTimes,
+                                MAX_FAILURE_TIMES -remainCTimes,
                                 id, tAddr);
                     }
                     else {
-                        /* unlock make sure 
-                            that callback fucntion can 
-                            request connections or diconnections */
-                       INTERRUPT_UNLOCK(l_connectorLocker[i]);
-                        
                         /* connect failed 
                             because of connecting failed in
                             'failureTimes' times, callback function */
                         Terminal_connectorCallback((uint8_t)i,
                                 (bool)0, ((TMicEvent *)e)->spkNode,
                                 ((TMicEvent *)e)->permissions);
-
-                        INTERRUPT_LOCK(l_connectorLocker[i]);
-
                         
                         /* log mic open success */
                         gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                 LOGGING_LEVEL_DEBUG,
-                                "[ MIC Open (connect times = %d"
+                                "[ MIC Open.1 (connect times = %d"
                                 " terminal(0x%016llx-0x%04x) Failed ]",
-                                MAX_FAILURE_TIMES -remainDTimes,
+                                MAX_FAILURE_TIMES -remainCTimes,
                                 id, tAddr);
                     }
 
                     /* release handled event */
                     Terminal_eventGc(&e);
 
-                    /* must check next event
-                        begin the highest prior queue */
-                    i = CHAIRMAN_PRIOR;
+                    /* process highest priority queue for next time */
+                    l_curConnectorQe = 0;
+
+                    break;
                 }
                 else if ((status_ == EVT_UNHANDLED)
                              && (e->sig == MIC_OPEN_SIG))
@@ -940,6 +1018,9 @@ int Terminal_micManagerTask(uint32_t sysTick) {
 
                     /* unlock the queue */
                     INTERRUPT_UNLOCK(l_connectorLocker[i]);
+                    
+                    /* next loop from current queue */
+                    l_curConnectorQe = i;
                     
                     break; /* break 'for' loop */
                 }
@@ -969,7 +1050,7 @@ bool Terminal_hasTaskInQueue(uint8_t manager) {
 
     noEmpty = false;
     for (i = 0; i < PRIOR_PUB_NUM;i++) {
-        if (!QueueCom_isEmpty(l_reqQueues[manager][i])) {
+        if (!QueueCom_isEmpty(&l_reqQueues[manager][i])) {
             noEmpty = true;
             break;
         }

@@ -17,6 +17,10 @@
 #include "terminal_pro.h"
 #include "acmp_controller_machine.h"
 
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#include "terminal_disconnect_connect_manager.h"
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
 #ifdef __DEBUG__
 #define __CONFERENCE_TRANSMIT_DEBUG__
 #endif
@@ -535,8 +539,25 @@ void trans_model_unit_update_connect_rx_state_pro_by_status(const int resp_statu
 		{
 			if (trans_model_unit_is_connected(tarker_id))
 			{
-				if(NULL != p_temp_node->confenrence_node)
-					terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
+				if (NULL != p_temp_node->confenrence_node) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = CONNECT_TIMEOUT_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status;
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
+                                    terminal_mic_status_set_callback(true,
+                                            p_temp_node->confenrence_node);
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+                                }
 			}	
 		}
 	}
@@ -546,8 +567,23 @@ void trans_model_unit_update_connect_rx_state_pro_by_status(const int resp_statu
 		{
 			if( NULL != p_temp_node->confenrence_node)
 			{
-				terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
-			}
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = CONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status;
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
+                                terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+                        }
 
 			host_timer_start( 1000,&p_temp_node->model_speak_time);
 		}
@@ -576,9 +612,41 @@ void trans_model_unit_update_connect_rx_state_pro_by_status(const int resp_statu
 		{
 			if (trans_model_unit_is_connected(tarker_id))
 			{
-				if( NULL != p_temp_node->confenrence_node)
+				if( NULL != p_temp_node->confenrence_node) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = CONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = 0; /* connect success */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
 					terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
-			}	
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+                                }
+                        }	
+                        else {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = CONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status; /* connect  failed */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_CONNECT_RX_RESPONSE;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#endif
+                        }
 		}
 	}
 }
@@ -632,12 +700,45 @@ void trans_model_unit_update_disconnect_rx_state_pro_by_status(const int resp_st
 
 			if (exist && trans_model_unit_is_connected(tarker_id))
 			{
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = DISCONNECT_TIMEOUT_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status; /* has connections */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
+			
 				terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
-			}
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+                        }
 			else if (exist)
 			{
 				if( p_temp_node->confenrence_node->tmnl_dev.tmnl_status.mic_state != 0)// mic not close?
+                                {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = DISCONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status; /* has no connections */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
 					terminal_mic_status_set_callback(false, p_temp_node->confenrence_node);
+#endif
+                                }
 			}
 		}
 	}
@@ -646,9 +747,25 @@ void trans_model_unit_update_disconnect_rx_state_pro_by_status(const int resp_st
 		if (taker_index == CONFERENCE_OUTPUT_INDEX)
 		{
 			host_timer_stop(&p_temp_node->model_speak_time);
-			if (NULL != p_temp_node->confenrence_node)
-				terminal_mic_status_set_callback(false, p_temp_node->confenrence_node);
-		}
+			if (NULL != p_temp_node->confenrence_node) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = DISCONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status; /* has no connections */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_RESPONSE;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
+                            terminal_mic_status_set_callback(false, p_temp_node->confenrence_node);
+#endif
+                        }
+                }
 
 		// 更新输出通道保护时间戳
 		p_Outnode->operate_timetimp = get_current_time();
@@ -682,13 +799,43 @@ void trans_model_unit_update_disconnect_rx_state_pro_by_status(const int resp_st
 
 			if (exist && trans_model_unit_is_connected(tarker_id))
 			{
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = DISCONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = resp_status; /* has connections */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else
 				terminal_mic_status_set_callback( true, p_temp_node->confenrence_node);
-			}
+#endif
+                        }
 			else if (exist)
 			{
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                                    TAcmpEvt *pE = (TAcmpEvt *)malloc(sizeof(TAcmpEvt));
+                                    if (pE != (TAcmpEvt *)0) {
+                                        pE->supper.sig = DISCONNECT_RX_RESPONSE_SIG;
+                                        pE->listenerId = listen_id;
+                                        pE->listenerIndex = listen_index;
+                                        pE->status = 0; /* disconnections success */
+                                        pE->subMsg = JDKSAVDECC_ACMP_MESSAGE_TYPE_DISCONNECT_RX_COMMAND;
+                                        pE->talkerId = tarker_id;
+                                        pE->talkerIndex = taker_index;
+                                        /* post acmp message */
+                                        Terminal_postAcmpEvent((TQEvt *)pE);
+                                    }
+#else			
 				if(p_temp_node->confenrence_node->tmnl_dev.tmnl_status.mic_state != 0)// mic not close?
 					terminal_mic_status_set_callback(false, p_temp_node->confenrence_node);
-			}
+#endif
+                        }
 		}
 	}
 }
