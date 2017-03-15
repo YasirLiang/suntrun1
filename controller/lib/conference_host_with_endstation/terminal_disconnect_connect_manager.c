@@ -126,6 +126,13 @@ static volatile int l_acmpQueueLocker = 0;
 /*! disconnector connect failed state machine */
 #define DISCONNECT_FAILED       (3)
 
+/*! disconnect state machine */
+static uint8_t l_disconnectorState = DISCONNECT_FINISH;
+
+/*! connector state machine */
+static uint8_t l_connectorState = CONNECT_FINISH;
+
+
 /*! Local function declaration----------------------------------------------*/
 static void Terminal_eventGc(TQEvt **e);
 
@@ -176,8 +183,6 @@ static void Terminal_disconnectorCallback(uint8_t prior,
 
 /*$ Terminal_connectorDispatch()............................................*/
 static TQState Terminal_connectorDispatch(TQEvt * const e) {
-    /*$ connector state machine */
-    static uint8_t l_connectorState = CONNECT_FINISH;
     TQState status_;
     int ret = -1;
     uint64_t id;
@@ -443,8 +448,6 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
 
 /*$ Terminal_disconnectorDispatch().........................................*/
 static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
-/* disconnect state machine */
-    static uint8_t l_disconnectorState = DISCONNECT_FINISH;
     TQState status_;
     int ret = -1;
     uint64_t id;
@@ -829,18 +832,15 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     /* get acmp event */
     TQEvt *e = (TQEvt *)0;
     uint32_t qAddr;
-    
-    /* 100ms must be for 'A8' */
-    if ((sysTick - l_lastTick) < 100U) {
-        return 0;
-    }
+    bool connected = (bool)0;
+    bool disconnected = (bool)0;
 
     INTERRUPT_LOCK(l_acmpQueueLocker);
  
     if (QueueCom_popFiFo(&l_acmpQueue, &qAddr)) {
         e = (TQEvt *)qAddr;
     }
-    else if ((sysTick - l_lastTick) < 300U) { /* 300 ms */
+    else if ((sysTick - l_lastTick) < 300U) { /* 100 ms */
         INTERRUPT_UNLOCK(l_acmpQueueLocker);
         return 0;
     }
@@ -866,7 +866,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
         /* lock the queue */
         INTERRUPT_LOCK(l_disconnectorLocker[i]);
         
-        if (QueueCom_popFiFo(&l_disconnectorQe[i], &qAddr)) {
+        if (QueueCom_popFiFo(&l_disconnectorQe[i], &qAddr)) {            
             e = (TQEvt *)qAddr;
             if (e != (TQEvt *)0) {
                 status_ = Terminal_disconnectorDispatch(e);
@@ -898,29 +898,40 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                                 MAX_FAILURE_TIMES - remainDTimes,
                                 id, tAddr);
                     }
-                    else {                        
-                        /* disconnect failed 
+                    else {
+                        /* disconnect failed(after checking)
                             because of disconnecting failed in
                             'failureTimes' times, callback function */
-                        Terminal_disconnectorCallback((uint8_t)i,
-                                (bool)0, ((TMicEvent *)e)->spkNode,
-                                ((TMicEvent *)e)->permissions);
 
-                        /* log mic close failed close */
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                LOGGING_LEVEL_ERROR,
-                                "[ MIC CLOSE (disconnect times = %d)"
-                                " terminal(0x%016llx-0x%04x) Failed ]"
-                                "Waiting for connection response]",
-                                MAX_FAILURE_TIMES -remainDTimes,
-                                id, tAddr);
+                        /* check is disconnect? */
+                        disconnected = (bool)1;
+                        if (trans_model_unit_is_connected(
+                            ((TMicEvent *)e)->spkNode->tmnl_dev.entity_id))
+                        {
+                            disconnected = (bool)0;
+                        }
+                        
+                        Terminal_disconnectorCallback((uint8_t)i,
+                                disconnected, ((TMicEvent *)e)->spkNode,
+                                ((TMicEvent *)e)->permissions);
+                        
+                        /* log mic close failed */
+                        if (!disconnected) {
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                    LOGGING_LEVEL_ERROR,
+                                    "[ MIC CLOSE (disconnect times = %d)"
+                                    " terminal(0x%016llx-0x%04x) Failed ]"
+                                    "Waiting for connection response]",
+                                    MAX_FAILURE_TIMES -remainDTimes,
+                                    id, tAddr);
+                        }
                     }
 
                     /* release event */
                     Terminal_eventGc(&e);
 
                     /* process highest priority queue for next time */
-                    l_curDisConnectorQe = 0;
+                    l_curDisConnectorQe = CHAIRMAN_PRIOR;
 
                     break;
                 }
@@ -933,11 +944,21 @@ int Terminal_micManagerTask(uint32_t sysTick) {
 
                     /* must unlock the queue before 'break' */
                     INTERRUPT_UNLOCK(l_disconnectorLocker[i]);
-                    
-                    /* next loop from current queue */
-                    l_curDisConnectorQe = i;
-                    
-                    break; /* break 'for' loop */
+
+                    /* update next excutable priority */
+                    if (l_disconnectorState != DISCONNECT_WAIT) {
+                        /* process highest priority queue for next time */
+                        l_curDisConnectorQe = CHAIRMAN_PRIOR;
+
+                        l_disconnectorState = DISCONNECT_FINISH;
+                    }
+                    else {
+                        /* next loop from current queue */
+                        l_curDisConnectorQe = i;
+                    }
+
+                    /* break 'for' loop */
+                    break; 
                 }
                 else {
                     /* release event */
@@ -990,11 +1011,20 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                                 id, tAddr);
                     }
                     else {
-                        /* connect failed 
+                        /* connect failed (after checking)
                             because of connecting failed in
                             'failureTimes' times, callback function */
+
+                        /* check connectted ? */
+                        connected = (bool)0;
+                        if (trans_model_unit_is_connected(
+                            ((TMicEvent *)e)->spkNode->tmnl_dev.entity_id))
+                        {
+                            connected = (bool)1;
+                        }
+                        
                         Terminal_connectorCallback((uint8_t)i,
-                                (bool)0, ((TMicEvent *)e)->spkNode,
+                                connected, ((TMicEvent *)e)->spkNode,
                                 ((TMicEvent *)e)->permissions);
                         
                         /* log mic open success */
@@ -1010,7 +1040,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                     Terminal_eventGc(&e);
 
                     /* process highest priority queue for next time */
-                    l_curConnectorQe = 0;
+                    l_curConnectorQe = CHAIRMAN_PRIOR;
 
                     break;
                 }
@@ -1024,10 +1054,20 @@ int Terminal_micManagerTask(uint32_t sysTick) {
                     /* unlock the queue */
                     INTERRUPT_UNLOCK(l_connectorLocker[i]);
                     
-                    /* next loop from current queue */
-                    l_curConnectorQe = i;
-                    
-                    break; /* break 'for' loop */
+                    /* update next excutable priority */
+                    if (l_connectorState != CONNECT_WAIT) {
+                        /* process highest priority queue for next time */
+                        l_curConnectorQe = CHAIRMAN_PRIOR;
+
+                        l_connectorState = CONNECT_FINISH;
+                    }
+                    else {
+                        /* next loop from current queue */
+                        l_curConnectorQe = i;
+                    }
+
+                    /* break 'for' loop */
+                    break; 
                 }
                 else {
                     /* release event */
@@ -1044,7 +1084,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     return 0;
 }
 
-/*$ Terminal_hasNoConnectTask().............................................*/
+/*$ Terminal_hasTaskInQueue()...............................................*/
 bool Terminal_hasTaskInQueue(uint8_t manager) {
     int i = 0;
     bool noEmpty;
@@ -1063,6 +1103,85 @@ bool Terminal_hasTaskInQueue(uint8_t manager) {
 
     /* return no empty */
     return noEmpty;
+}
+
+/*$ Terminal_hasTask()......................................................*/
+bool Terminal_hasTask(TEReqQePrior prior, uint16_t user) {
+    int i = 0;
+    bool has;
+    uint32_t qAddr, pos;
+    TMicEvent *mitEvt;
+
+    if (prior >= PRIOR_PUB_NUM) {
+        return (bool)0;
+    }
+
+    has = false;
+    for (i = 0; i < MANAGER_NUM; i++) {
+        /* lock queue */
+        INTERRUPT_LOCK(l_queueLockers[i][prior]);
+        
+        queue_for_each(&l_reqQueues[i][prior], pos, qAddr) {
+            mitEvt = (TMicEvent *)qAddr;
+            if (mitEvt != (TMicEvent *)0) {
+                if (user == mitEvt->spkNode->tmnl_dev.address.addr) {
+                    has = (bool)1;
+                    break; /* break for queue_for_each() */
+                }
+            }
+        }
+
+        /* lock queue */
+        INTERRUPT_UNLOCK(l_queueLockers[i][prior]);
+
+        /* found? */
+        if (has) {
+            break;
+        }
+    }
+    
+    /* return has? */
+    return has;
+}
+
+/*$ Terminal_cancelTask()...................................................*/
+bool Terminal_cancelTask(uint8_t manager,
+        TEReqQePrior prior, uint16_t user)
+{
+    bool foundCancel;
+    uint32_t qAddr, pos;
+    TMicEvent *mitEvt;
+
+    if ((prior >= PRIOR_PUB_NUM)
+          || (manager >= MANAGER_NUM))
+    {
+        return (bool)0;
+    }
+
+    foundCancel = false;
+    /* lock queue */
+    INTERRUPT_LOCK(l_queueLockers[manager][prior]);
+    
+    queue_for_each(&l_reqQueues[manager][prior], pos, qAddr) {
+        mitEvt = (TMicEvent *)qAddr;
+        if (mitEvt != (TMicEvent *)0) {
+            if (user == mitEvt->spkNode->tmnl_dev.address.addr) {
+                foundCancel = (bool)1;
+                break; /* break for queue_for_each() */
+            }
+        }
+    }
+
+    /* found? */
+    if (foundCancel) {
+        mitEvt->permissions = 0U; /* set to no excutable perssions */
+    }
+
+    /* lock queue */
+    INTERRUPT_UNLOCK(l_queueLockers[manager][prior]);
+    
+    /* return has? */
+    return foundCancel;
 }
 
 /*$ Terminal_postAcmpEvent()................................................*/

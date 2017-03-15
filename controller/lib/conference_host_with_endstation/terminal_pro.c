@@ -84,33 +84,33 @@ static Terminal_micQueue l_micQueue = {
 };
 
 /*$ {@ First apply speaking QUEUE-------------------------------------------*/
-/*$ Enable first apply speak queue Macro------------------------------------*/
-#define FIRST_APPLY_SPEAK_QUEUE_ENABLE
+/*$ Enable first speak queue Macro------------------------------------------*/
+#define FIRST_SPEAK_QUEUE_ENABLE
 
-#ifdef FIRST_APPLY_SPEAK_QUEUE_ENABLE
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
 
-/*$ Queue size */
-#define FAS_QUEUE_SIZE MAX_LIMIT_APPLY_NUM
+/*$ first speak Queue size */
+#define FS_QUEUE_SIZE (MAX_LIMIT_APPLY_NUM * 5)
 
-/*$ Local first apply speak queue Buf---------------------------------------*/
-static uint32_t l_fasQueueBuf[FAS_QUEUE_SIZE] = {
+/*$ Local first speak queue Buf---------------------------------------------*/
+static uint32_t l_fSpkQueueBuf[FS_QUEUE_SIZE] = {
     0U
 };
 
-/*$ Local first apply speak Queue-------------------------------------------*/
-static TComQueue l_FASpkQueue = {
-    0U, 0U, 0U, FAS_QUEUE_SIZE, l_fasQueueBuf
+/*$ Local first speak Queue-------------------------------------------------*/
+static TComQueue l_FSpkQueue = {
+    0U, 0U, 0U, FS_QUEUE_SIZE, l_fSpkQueueBuf
 };
 
 /*$ Queue Locker------------------------------------------------------------*/
-static int l_faSpkLocker = 0;
+static int l_FSpkLocker = 0;
 
-#endif /* FIRST_APPLY_SPEAK_QUEUE_ENABLE */
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
 
-/*$ First apply speaking QUEUE @}-------------------------------------------*/
+/*$ First speaking QUEUE @}-------------------------------------------------*/
 
 /*$ function declaration----------------------------------------------------*/
-bool Terminal_firstApplyRequestConnect(tmnl_pdblist const spk,
+bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
     TComQueue * const pRestQueue, int * const locker, int failureTimes);
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
@@ -266,7 +266,9 @@ int init_terminal_discuss_param(void) {
     gdisc_flags.apply_num = 0;                              /* apply number */
     gdisc_flags.speak_limit_num = 0;                  /* speak limit number */
     gdisc_flags.edis_mode = (ttmnl_discuss_mode)set_sys.discuss_mode;
+    gdisc_flags.vipSpkNum = 0;
     memset(gdisc_flags.speak_addr_list, 0xffff, MAX_LIMIT_SPK_NUM);
+    memset(gdisc_flags.vipSpeakList, 0xffff, MAX_LIMIT_SPK_NUM);
     memset(gdisc_flags.apply_addr_list, 0xffff, MAX_LIMIT_APPLY_NUM);
     return 0; /* default return value */
 }
@@ -4502,9 +4504,9 @@ void terminal_chman_vip_control_common_mic(void) {
         {
             first_speak = found_terminal_dblist_node_by_addr(current_addr);
             if (first_speak != (tmnl_pdblist)0) {
-#ifdef FIRST_APPLY_SPEAK_QUEUE_ENABLE
-            if (Terminal_firstApplyRequestConnect(first_speak, &l_FASpkQueue,
-                            &l_faSpkLocker, MAX_CONNECT_FAILURE_TIMES))
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+            if (Terminal_firstSpkRequestConnect(first_speak, &l_FSpkQueue,
+                            &l_FSpkLocker, MAX_CONNECT_FAILURE_TIMES))
             {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_DEBUG,
@@ -4667,6 +4669,11 @@ int Terminal_vipOpenMicCallback(bool isSuccess,
 
         /* track camera */
         terminal_speak_track(tAddr, true);
+
+        /* set to vip speaking list */
+        gdisc_flags.vipSpeakList[gdisc_flags.vipSpkNum] = tAddr;
+        gdisc_flags.vipSpkNum++;
+        gdisc_flags.vipSpkNum %= MAX_LIMIT_SPK_NUM;
     }
 
     /* for muti pthread access global data,
@@ -4685,6 +4692,7 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
     uint8_t sysState;
     uint64_t entityId;
     uint16_t tAddr;
+    uint16_t cSpkNum;
     uint8_t cLimitSpkNum;
     uint8_t applyNum;
     uint8_t applyMaxNum;
@@ -4703,6 +4711,7 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
     sysState = get_sys_state();
     entityId = user->tmnl_dev.entity_id;
     tAddr = user->tmnl_dev.address.addr;
+    cSpkNum = terminal_speak_num_count();
     cLimitSpkNum = gdisc_flags.speak_limit_num;
     applyNum = gdisc_flags.apply_num;
     applyMaxNum = gdisc_flags.apply_limit;   
@@ -4723,7 +4732,9 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
                 this terminal is the first for
                 appling  speaking */
             if (disMode == LIMIT_MODE) {
-                if (applyNum < applyMaxNum) {
+                if ((cSpkNum >= CCRU_canUsedInStreams)
+                      && (applyNum < applyMaxNum))
+                {
                     micTempState = MIC_OTHER_APPLY_STATUS;
                     if (applyNum == 0) {
                         gdisc_flags.currect_first_index = 0;
@@ -4796,51 +4807,60 @@ static void Terminal_limitModeApplyTSpeak(void) {
     curFirstApplyIndex = gdisc_flags.currect_first_index;
     curFirstAlyAddr = gdisc_flags.apply_addr_list[curFirstApplyIndex];
     
-    /* if connector queue has no element,
-        open apply first and other to first apply */
-    if (!Terminal_hasTaskInQueue(CONNECTOR)) {
-        if ((cSpkNum < CCRU_canUsedInStreams)
-             && (applyNum > 0))
+    if ((cSpkNum < CCRU_canUsedInStreams)
+         && (applyNum > 0))
+    {
+        if(addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+                &gdisc_flags.apply_num,
+                gdisc_flags.currect_first_index))
         {
-            if(addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
-                    &gdisc_flags.apply_num,
-                    gdisc_flags.currect_first_index))
-            {
-                firstSpkNode =
-                  found_terminal_dblist_node_by_addr(curFirstAlyAddr);
-                if (firstSpkNode != (tmnl_pdblist)0) {
-                    /* request connections */
-                    if (Terminal_requestConnect(firstSpkNode,
-                            COMMON_PRIOR,
-                            MAX_FAILURE_TIMES,
-                            COMMON_SPK_PERMISSION))
-                    {
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                            LOGGING_LEVEL_ERROR,
-                            "[Limit First Aplly(0x04x) Request "
-                            "connections success ]", curFirstAlyAddr);
-                        
-                        terminal_apply_list_first_speak();
-                    }
-                    else {
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                            LOGGING_LEVEL_ERROR,
-                            "[Limit First Aplly(0x04x) Request "
-                            "connections Failed ]", curFirstAlyAddr);
-                    }
+            firstSpkNode =
+              found_terminal_dblist_node_by_addr(curFirstAlyAddr);
+            if (firstSpkNode != (tmnl_pdblist)0) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                if (Terminal_firstSpkRequestConnect(firstSpkNode,
+                        &l_FSpkQueue, &l_FSpkLocker,
+                        MAX_CONNECT_FAILURE_TIMES))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ Limit(1) Mode Speak Post First apply]"
+                        " speaking node(address = 0x%x) to Queue Success ]",
+                        firstSpkNode->tmnl_dev.address.addr);
                 }
-            }
-
-            /* send main state */
-            terminal_main_state_send(0, (void *)0, 0);
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ Limit(1) Mode Speak Post First apply]"
+                        " speaking node(address = 0x%x)to Queue Failed ]",
+                        firstSpkNode->tmnl_dev.address.addr);
+                }
+#else
+                /* request connections */
+                if (Terminal_requestConnect(firstSpkNode,
+                        COMMON_PRIOR,
+                        MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Limit First Aplly(0x04x) Request "
+                        "connections success ]", curFirstAlyAddr);
+                    
+                    terminal_apply_list_first_speak();
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Limit First Aplly(0x04x) Request "
+                        "connections Failed ]", curFirstAlyAddr);
+                }
+#endif 
+            }               
         }
-    }  
-    else {
-        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-            LOGGING_LEVEL_ERROR,
-            "[Terminal_hasTaskInQueue are True: No"
-            "request connection for first "
-            "apply terminal(0x%04x) ]", curFirstAlyAddr);
+
+        /* send main state */
+        terminal_main_state_send(0, (void *)0, 0);
     }
 }
 
@@ -4979,6 +4999,12 @@ int Terminal_vipCloseMicCallback(bool isSuccess,
             addr_queue_delect_by_value(gdisc_flags.speak_addr_list,
                 &gdisc_flags.speak_limit_num, tAddr);
         }
+
+        /* delect vip address */
+        if (gdisc_flags.vipSpkNum > 0) {
+            addr_queue_delect_by_value(gdisc_flags.vipSpeakList,
+                &gdisc_flags.vipSpkNum, tAddr);
+        }
         
         if (disMode == LIMIT_MODE) {
             Terminal_limitModeApplyTSpeak();
@@ -5106,10 +5132,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
     if (key_down) {
         isConnect = trans_model_unit_is_connected(entityId);
         if (isConnect) {
-            if (micState != MIC_OPEN_STATUS) {
-                terminal_mic_state_set(MIC_OPEN_STATUS,
-                            tAddr, entityId, true, dis_node);
-            }
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                        tAddr, entityId, true, dis_node);
 
             /* for muti pthread access global data,
                 must unlock before return */
@@ -5118,7 +5142,7 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
             /* process finish, return */
             return;
         }
-        
+
         if (disMode == PPT_MODE) { /* ppt mode */
             if (cSpkNum >= CCRU_canUsedInStreams) {
                 /* error discuss mode */
@@ -5168,6 +5192,43 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                 }
             }
             else {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE                
+                /* set mic for apply state */
+                if ((applyNum < applyMaxNum)
+                      && (QueueCom_isEmpty(&l_FSpkQueue)))
+                {
+                    micTempState = MIC_OTHER_APPLY_STATUS;
+                    if (applyNum == 0) {
+                        gdisc_flags.currect_first_index = 0;
+                        micTempState = MIC_FIRST_APPLY_STATUS;
+                    }
+
+                    /* post to apply list */
+                    gdisc_flags.apply_addr_list[applyNum] = tAddr;
+                    gdisc_flags.apply_num++;
+
+                    /* set and report mic state */
+                    terminal_mic_state_set(micTempState,
+                        tAddr, entityId, true, dis_node);
+                    
+                    terminal_main_state_send(0, (void *)0, 0);
+
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[Common Terminal(0x%04x) Speak(LIMIT) "
+                        " Appling ]", tAddr);
+                }
+                else if (applyNum < applyMaxNum) {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Common Terminal(0x%04x) Speak(LIMIT) "
+                        " Apply Failed: first apply queue has"
+                        "speaking task]", tAddr);
+                }
+                else {
+                    /* do nothing */
+                }
+#else
                 /* set mic for apply state */
                 if (applyNum < applyMaxNum) {
                     micTempState = MIC_OTHER_APPLY_STATUS;
@@ -5191,6 +5252,7 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                         "[Common Terminal(0x%04x) Speak(LIMIT) "
                         " Appling ]", tAddr);
                 }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
             }
         }
         else if (disMode == FIFO_MODE) { /* Fifo mode */
@@ -5233,6 +5295,27 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
             }
 
             if (fifoReqConnect) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                if (Terminal_firstSpkRequestConnect(dis_node,
+                        &l_FSpkQueue, &l_FSpkLocker,
+                        MAX_CONNECT_FAILURE_TIMES))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ FIFO(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        " to Queue Success ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ FIFO(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        "to Queue Failed ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+#else        
                 /* request */
                 reSuccess = Terminal_requestConnect(dis_node,
                         COMMON_PRIOR, MAX_FAILURE_TIMES,
@@ -5250,6 +5333,7 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                         "[Common Terminal(0x%04x) Speak(FIFO) "
                         " Request connection Faied]", firstLimitSpk);
                 }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE  */
             }
             else {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
@@ -5300,11 +5384,9 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
         /* chek whether connected? */
         isConnect = trans_model_unit_is_connected(entityId);
         if (!isConnect) {
-            if (micState != MIC_COLSE_STATUS) {
-                /* set current addr to close */
-                terminal_mic_state_set(MIC_COLSE_STATUS,
+            /* set current addr to close */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
                             tAddr, entityId, true, dis_node);
-            }
             
             /* special process in apply mode */
             if (disMode == APPLY_MODE) {
@@ -5391,7 +5473,7 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
             }
         }
     }
-
+    
     /* for muti pthread access global data,
         must unlock */
     INTERRUPT_UNLOCK(l_callBackLocker);
@@ -5470,7 +5552,11 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
                 }
             }      
         }
-        else {
+        else {/* has connected */
+            /* open mic */
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                        tAddr, entityId, true, dis_node);
+            
             reqConnect = (bool)0;
         }
 
@@ -5512,16 +5598,21 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
             if (reSuccess) {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_DEBUG,
-                    "[Chairman Terminal(0x%04x) Close "
+                    "[VIP Terminal(0x%04x) Close "
                     " Request disconnection success: Waitting for"
-                    "disConnection...]", tAddr);
+                    " disConnection...]", tAddr);
             }
             else {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_ERROR,
-                    "[Chairman Terminal(0x%04x) Close "
+                    "[VIP Terminal(0x%04x) Close "
                     " Request disconnection Faied]", tAddr);
             }
+        }
+        else {/* has not connected */
+            /* close mic */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
+                        tAddr, entityId, true, dis_node);
         }
     }
 
@@ -5545,6 +5636,8 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
     uint16_t firstLimitSpk;
     tmnl_pdblist tn; /* temp node */
     bool reqConnect = (bool)0;
+    uint16_t *spkList[2];
+    int i;
 
     /* for muti pthread access global data, must lock */
     INTERRUPT_LOCK(l_callBackLocker);
@@ -5573,36 +5666,47 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
             && (!trans_model_unit_is_connected(entityId)))
         {
             /* check speaking list */
-            firstLimitSpk = gdisc_flags.speak_addr_list[0];
-            if (firstLimitSpk != 0xffff) {
-                /* First in First out */
-                tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
-                if (tn != (tmnl_pdblist)0) {
-                    reSuccess = Terminal_requestDisConnect(tn,
-                            CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
-                            COMMON_SPK_PERMISSION);
-                    if (reSuccess) {
-                        reqConnect = (bool)1;
-                        
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                            LOGGING_LEVEL_DEBUG,
-                            "[Chairman Terminal(0x%04x) Speak "
-                            " Request disconnection success]",
-                            firstLimitSpk);
-                    }
-                    else {
-                        reqConnect = (bool)0;
-                        
-                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                            LOGGING_LEVEL_ERROR,
-                            "[Chairman Terminal(0x%04x) Speak "
-                            " Request disconnection failed]",
-                            firstLimitSpk);
+            spkList[0] = gdisc_flags.speak_addr_list;
+            spkList[1] = gdisc_flags.vipSpeakList;
+            for (i = 0; i < 2; i++) {
+                firstLimitSpk = spkList[i][0];
+                if (firstLimitSpk != 0xffff) {
+                    /* First in First out */
+                    tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
+                    if (tn != (tmnl_pdblist)0) {
+                        reSuccess = Terminal_requestDisConnect(tn,
+                                (i == 0) ? COMMON_PRIOR : VIP_PRIOR,
+                                MAX_FAILURE_TIMES,
+                                COMMON_SPK_PERMISSION);
+                        if (reSuccess) {
+                            reqConnect = (bool)1;
+                            
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                LOGGING_LEVEL_DEBUG,
+                                "[Chairman Terminal(0x%04x) Speak "
+                                " Request disconnection success]",
+                                firstLimitSpk);
+
+                            break; /* found */
+                        }
+                        else {
+                            reqConnect = (bool)0;
+                            
+                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                LOGGING_LEVEL_ERROR,
+                                "[Chairman Terminal(0x%04x) Speak "
+                                " Request disconnection failed]",
+                                firstLimitSpk);
+                        }
                     }
                 }
-            }              
+            }
         }
-        else {
+        else {/* has connected */
+            /* open mic */
+            terminal_mic_state_set(MIC_OPEN_STATUS,
+                        tAddr, entityId, true, dis_node);
+            
             reqConnect = (bool)0;
         }
 
@@ -5655,6 +5759,11 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
                     " Request disconnection Faied]", tAddr);
             }
         }
+        else {/* has not connected */
+            /* close mic */
+            terminal_mic_state_set(MIC_COLSE_STATUS,
+                        tAddr, entityId, true, dis_node);
+        }
     }
     
     /* for muti pthread access global data, must lock */
@@ -5666,19 +5775,25 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
 {
     uint32_t cur_time, lastTime;
     uint8_t tType; /* terminal type */
+    uint8_t user;
+    TEReqQePrior prior;
+    uint16_t tAddr;
+    bool rightType, isConnect, willCancel;
+    uint64_t entityId;
 
     if (!dis_node->tmnl_dev.tmnl_status.is_rgst) {
         return false;
     }
     
     /* reply same message for all dismode and terminal */
-    terminal_key_action_host_special_num1_reply(recv_msg,
-        MIC_COLSE_STATUS, dis_node);
+    terminal_key_action_host_common_reply(recv_msg, dis_node);
 
     cur_time = get_current_time();
     lastTime = dis_node->tmnl_dev.spk_operate_timp;
     dis_node->tmnl_dev.spk_operate_timp = cur_time;
-    if ((cur_time - lastTime) < SPK_KEY_OPT_TIME) {        
+    if (((cur_time - lastTime) < SPK_KEY_OPT_TIME)
+          && (gdisc_flags.edis_mode != PPT_MODE))
+    {
         gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_ERROR,
                 "[Terminal speak failed: key operation too fast]");
@@ -5686,7 +5801,83 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
         return false;
     }
 
+    entityId = dis_node->tmnl_dev.entity_id;
+    tAddr = dis_node->tmnl_dev.address.addr;
     tType = dis_node->tmnl_dev.address.tmn_type;
+    
+    rightType = (bool)1;
+    if (tType == TMNL_TYPE_COMMON_RPRST) {
+        prior = COMMON_PRIOR;
+    }
+    else if (tType == TMNL_TYPE_VIP) {
+        prior = VIP_PRIOR;
+    }
+    else if ((tType == TMNL_TYPE_CHM_EXCUTE)
+                  || (tType == TMNL_TYPE_CHM_COMMON))
+    {
+        prior = CHAIRMAN_PRIOR;
+    }
+    else {
+        /* error type */
+        rightType = (bool)0;
+    }
+
+    /* if no task in the queue(connector or disconnector)
+        process, otherwise discard this key command */
+    if ((!rightType)
+          || (Terminal_hasTask(prior, tAddr)))
+    {
+        if (rightType) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Terminal(0x%04x) has Task in"
+                "  prior(%d) Queue ]", tAddr, prior);
+
+            isConnect = trans_model_unit_is_connected(entityId);
+            
+            /* cancel task? */
+            willCancel = (bool)0;
+            if (key_down) {
+                /* canecl disconnect task */
+                user = DISCONNECTOR;
+
+                if (isConnect) {
+                    willCancel = (bool)1;
+                }
+            }
+            else {
+                /* canecl connect task */
+                user = CONNECTOR;
+                
+                if (!isConnect) {
+                    willCancel = (bool)1;
+                }
+            }
+
+            if (willCancel) {
+                if (Terminal_cancelTask(user, prior, tAddr)) {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Terminal(0x%04x) cancel user(%d) Task"
+                        "  prior(%d) Queue success ]", tAddr, user, prior);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Terminal(0x%04x) cancel user(%d) Task"
+                        "  prior(%d) Queue Error ]", tAddr, user, prior);
+                }
+            }
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[ No Right Type ]");
+        }
+        
+        return false;
+    }
+    
     switch (tType) {
         /* common preset terminal frequency operation */
         case TMNL_TYPE_COMMON_RPRST: {
@@ -6020,15 +6211,91 @@ void terminal_apply_list_first_speak(void) {
     }
 }
 
-#ifdef FIRST_APPLY_SPEAK_QUEUE_ENABLE
-void terminal_firstApplySpkingPro(uint32_t sysTick) { /* 1ms */
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+void terminal_firstSpkingPro(uint32_t sysTick) { /* 1ms */
+    static uint32_t l_lastTick;
+    uint32_t qAddr;
+    TSpkQueueElem *qElem;
+    tmnl_pdblist spk;
+    uint64_t id;
+    uint16_t tAddr;
+    uint8_t failureTimes;
+    
+    if ((sysTick - l_lastTick) > 200U) {
+        INTERRUPT_LOCK(l_FSpkLocker);
+
+        if (!Terminal_hasTaskInQueue(DISCONNECTOR)) {
+            if (QueueCom_popFiFo(&l_FSpkQueue, &qAddr)) {
+                qElem = (TSpkQueueElem *)qAddr;
+                if (qElem == (TSpkQueueElem *)0) {
+                    free(qElem);
+                    INTERRUPT_UNLOCK(l_FSpkLocker);
+                    return;
+                }
+
+                failureTimes = qElem->failureTimes;
+                spk = qElem->spkNode;
+                if (spk == (tmnl_pdblist)0) {
+                    free(qElem);
+                    
+                    INTERRUPT_UNLOCK(l_FSpkLocker);
+                    return;
+                }
+                
+                id = spk->tmnl_dev.entity_id;
+                tAddr = spk->tmnl_dev.address.addr;
+                /* request connections */
+                if (Terminal_requestConnect(spk,
+                        COMMON_PRIOR,
+                        MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[ First Aplly(0x%04x) in queue Request "
+                        "connections success,waiting connection.... ]",
+                        tAddr);
+
+                    /* for limit mode */
+                    if (gdisc_flags.edis_mode == LIMIT_MODE) {
+                        terminal_apply_list_first_speak();
+                    }
+                }
+                else {
+                    terminal_mic_state_set(MIC_COLSE_STATUS,
+                        spk->tmnl_dev.address.addr,
+                        spk->tmnl_dev.entity_id, true, spk);
+                    
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[First Aplly(0x%04x) in queue Request "
+                        "connections Failed ]", tAddr);
+                }
+
+                free(qElem);
+            }
+        }
+
+        l_lastTick = sysTick;
+        INTERRUPT_UNLOCK(l_FSpkLocker);
+    }
+}
+#else
+void terminal_firstSpkingPro(uint32_t sysTick) {
+    (void)sysTick;
+}
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
+#else
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+void terminal_firstSpkingPro(uint32_t sysTick) { /* 1ms */
     static uint32_t l_lastTick;
     uint32_t qAddr;
     
     if ((sysTick - l_lastTick) > 300U) {
-        INTERRUPT_LOCK(l_faSpkLocker);
+        INTERRUPT_LOCK(l_FSpkLocker);
         
-        if (QueueCom_popFiFo(&l_FASpkQueue, &qAddr)) {
+        if (QueueCom_popFiFo(&l_FSpkQueue, &qAddr)) {
             TSpkQueueElem *qElem;
             tmnl_pdblist spk;
             int ret;
@@ -6038,12 +6305,16 @@ void terminal_firstApplySpkingPro(uint32_t sysTick) { /* 1ms */
             
             qElem = (TSpkQueueElem *)qAddr;
             if (qElem == (TSpkQueueElem *)0) {
+                free(qElem);
+                INTERRUPT_UNLOCK(l_FSpkLocker);
                 return;
             }
 
             failureTimes = qElem->failureTimes;
             spk = qElem->spkNode;
             if (spk == (tmnl_pdblist)0) {
+                free(qElem);
+                INTERRUPT_UNLOCK(l_FSpkLocker);
                 return;
             }
             
@@ -6071,10 +6342,11 @@ void terminal_firstApplySpkingPro(uint32_t sysTick) { /* 1ms */
                     /* release space */
                     free(qElem);
                     qElem = (TSpkQueueElem *)0;
+                    INTERRUPT_UNLOCK(l_faSpkLocker);
                     return;
                 }
                 
-                if (QueueCom_postLiFo(&l_FASpkQueue, (void *)qElem)) {
+                if (QueueCom_postLiFo(&l_FSpkQueue, (void *)qElem)) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
                         "[ First Apply terminal(addr = 0x%x)"
@@ -6091,17 +6363,19 @@ void terminal_firstApplySpkingPro(uint32_t sysTick) { /* 1ms */
         }
 
         l_lastTick = sysTick;
-        INTERRUPT_UNLOCK(l_faSpkLocker);
+        INTERRUPT_UNLOCK(l_FSpkLocker);
     }
 }
 #else
-void terminal_firstApplySpkingPro(uint32_t sysTick) {
+void terminal_firstSpkingPro(uint32_t sysTick) {
     (void)sysTick;
 }
-#endif /* FIRST_APPLY_SPEAK_QUEUE_ENABLE */
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
 
-/*$ Terminal_firstApplyRequestConnect().....................................*/
-bool Terminal_firstApplyRequestConnect(tmnl_pdblist const spk,
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
+/*$ Terminal_firstSpkRequestConnect().......................................*/
+bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
     TComQueue * const pRestQueue, int * const locker, int failureTimes)
 {
 /*\ connections request by terminal
@@ -6129,7 +6403,7 @@ bool Terminal_firstApplyRequestConnect(tmnl_pdblist const spk,
 
     INTERRUPT_UNLOCK(*locker);
 
-    return (bool)1;
+    return (bool)bRet;
 }
 
 // ÒÑ²âÊÔ(2016-3-16)
@@ -6272,9 +6546,9 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
         					tmnl_pdblist first_speak = found_terminal_dblist_node_by_addr( current_addr );
         					if( first_speak != NULL )
         					{
-#ifdef FIRST_APPLY_SPEAK_QUEUE_ENABLE
-                                                    if (Terminal_firstApplyRequestConnect(first_speak,
-                                                        &l_FASpkQueue, &l_faSpkLocker,
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                                                    if (Terminal_firstSpkRequestConnect(first_speak,
+                                                        &l_FSpkQueue, &l_FSpkLocker,
                                                         MAX_CONNECT_FAILURE_TIMES))
                                                     {
                                                             gp_log_imp->log.post_log_msg(&gp_log_imp->log,

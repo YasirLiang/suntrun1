@@ -107,7 +107,9 @@ typedef struct _tsystem_discuccess
 	uint8_t    currect_first_index;		//申请中优先发言的索引
 	uint8_t    apply_limit; 			// 申请发言的限制人数
 	uint8_t    apply_num;			// 申请人数
+	uint8_t    vipSpkNum;		// speaking number of vip
 	uint16_t   speak_addr_list[MAX_LIMIT_SPK_NUM];	// 发言地址表
+	uint16_t vipSpeakList[MAX_LIMIT_SPK_NUM]; /* vip speak list */
 	uint16_t   apply_addr_list[MAX_LIMIT_APPLY_NUM];	 // 申请地址表
 }tsys_discuss_pro;
 
@@ -248,7 +250,7 @@ bool terminal_delect_register_addr( uint16_t addr_delect );
 /*{@*/
 void terminal_vote_proccess( void );
 void terminal_speakInterposeOffPro(void);
-void terminal_firstApplySpkingPro(uint32_t sysTick);
+void terminal_firstSpkingPro(uint32_t sysTick);
 /*@}*/
 void terminal_query_proccess_init( void );
 void terminal_query_sign_vote_pro( void );

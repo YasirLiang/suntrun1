@@ -94,15 +94,15 @@ typedef enum TEReqQePrior {
 /*$ Extern function declaration---------------------------------------------*/
 /*$ Terminal_requestConnect()...............................................*/
 extern bool Terminal_requestConnect(tmnl_pdblist const spk,
-                    TEReqQePrior prior, int failureTimes, uint32_t permissions);
+        TEReqQePrior prior, int failureTimes, uint32_t permissions);
 
 /*$ Terminal_requestDisConnect()............................................*/
 extern bool Terminal_requestDisConnect(tmnl_pdblist const spk,
-                        TEReqQePrior prior, int failureTimes, uint32_t permissions);
+        TEReqQePrior prior, int failureTimes, uint32_t permissions);
 
 /*$ Terminal_registerCallBack().............................................*/
 extern bool Terminal_registerCallBack(TEReqQePrior prior,
-     int owner, TPRequestCallback callBack);
+         int owner, TPRequestCallback callBack);
 
 /*$ Terminal_delRegisterCallback()...................................*/
 extern bool Terminal_delRegisterCallback(TEReqQePrior prior, int owner);
@@ -111,7 +111,14 @@ extern bool Terminal_delRegisterCallback(TEReqQePrior prior, int owner);
 extern int Terminal_micManagerTask(uint32_t sysTick);
 
 /*$ Terminal_hasTaskInQueue()...............................................*/
-bool Terminal_hasTaskInQueue(uint8_t manager);
+extern bool Terminal_hasTaskInQueue(uint8_t manager);
+
+/*$ Terminal_hasTask()......................................................*/
+extern bool Terminal_hasTask(TEReqQePrior prior, uint16_t user);
+
+/*$ Terminal_cancelTask()...................................................*/
+extern bool Terminal_cancelTask(uint8_t manager,
+        TEReqQePrior prior, uint16_t user);
 
 /*$ Terminal_postAcmpEvent()................................................*/
 extern bool Terminal_postAcmpEvent(TQEvt const * const e);

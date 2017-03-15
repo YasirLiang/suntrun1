@@ -1276,7 +1276,7 @@ void Terminal_comPro(uint32_t sysTick) {
     terminal_speakInterposeOffPro();
 
     /* process firt apply */
-    terminal_firstApplySpkingPro(sysTick);
+    terminal_firstSpkingPro(sysTick);
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
     Terminal_micManagerTask(sysTick);

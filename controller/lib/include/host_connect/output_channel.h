@@ -15,8 +15,14 @@
 
 #include "jdksavdecc_world.h"
 #include "list.h"
+#include "global.h"
+
 /* CONNECT INTERVAL */
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#define OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL    (2200)
+#else
 #define OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL    (2000)
+#endif
 /* DISCONNECT INTERVAL */
 #define OUTPUT_CHANNEL_OPT_DISCONNECT_INTERVAL (0)
 #define OUTPUT_CHANNEL_OPT_PROTECT_TIME        (1000) // 输出通道操作保护时间

@@ -39,7 +39,7 @@
 #include "conference_transmit_unit.h"
 #include "queue_com.h"
 
-#define KEY_ACT_QUEUE_ENABLE
+//#define KEY_ACT_QUEUE_ENABLE
 #ifdef KEY_ACT_QUEUE_ENABLE
 struct keyData {
     uint16_t func_index;
