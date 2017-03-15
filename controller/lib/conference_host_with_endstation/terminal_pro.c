@@ -2986,127 +2986,167 @@ void terminal_after_time_mic_state_pro(void)
         }
 }
 
-bool terminal_examine_apply( enum_apply_pro apply_value )// be tested in 02-3-2016,passed
-{
-	uint16_t addr = 0;
-	tmnl_pdblist apply_first = NULL;
-	bool ret = false;
-	thost_system_set set_sys; // 系统配置文件的格式
-	memcpy( &set_sys, &gset_sys, sizeof(thost_system_set));
-	
-	if((gdisc_flags.edis_mode != APPLY_MODE) && (gdisc_flags.edis_mode != LIMIT_MODE))
-	{
-		return false;
-	}
+bool terminal_examine_apply(enum_apply_pro applyOpt) {
+    bool ret = false;
+    uint16_t addr = 0;
+    thost_system_set set_sys;
+    ttmnl_discuss_mode disMode;
+    tmnl_pdblist applyFirst = (tmnl_pdblist)0;
+    uint8_t cFirstIndex;
 
-	switch( apply_value )
-	{
-		case REFUSE_APPLY:// be tested in 02-3-2016,passed
-			addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-			if( addr_queue_delect_by_value(gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, addr) )
-			{// delect success
-				apply_first = found_terminal_dblist_node_by_addr( addr );
-				if( apply_first != NULL )
-				{
-					//terminal_pro_debug( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
-					terminal_mic_state_set( MIC_COLSE_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
-					if( gdisc_flags.apply_num > 0 )
-					{
-						gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-						apply_first = found_terminal_dblist_node_by_addr( gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
-						if( apply_first != NULL )
-						{
-							//terminal_pro_debug( "set FIRST apply addr = 0x%04x", apply_first->tmnl_dev.address.addr );
-							//terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
-                                                        terminal_after_time_mic_state_node_set(apply_first, MIC_FIRST_APPLY_STATUS, true);
-                                                }
-					}
-					else 
-					{
-						gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
-					}
-				}
+    disMode = gdisc_flags.edis_mode;
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
 
-				terminal_main_state_send( 0, NULL, 0 );
-				ret = true;
-			}
-			else
-			{
-				terminal_pro_debug( "delect apply add = 0x%04x failed: no such address", addr );
-			}
-			break;
-		case NEXT_APPLY: // be tested in 02-3-2016,passed
-			if( gdisc_flags.apply_num > 1 )
-			{
-				addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-				apply_first = found_terminal_dblist_node_by_addr( addr );
-				if( apply_first != NULL )
-				{
-					//terminal_pro_debug( "set apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
-					terminal_mic_state_set( MIC_OTHER_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
+    if ((disMode != APPLY_MODE)
+        && (disMode != LIMIT_MODE))
+    {
+        return false;
+    }
 
-					gdisc_flags.currect_first_index++;
-					gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-					addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-					apply_first = found_terminal_dblist_node_by_addr( addr );
-					if( apply_first != NULL )
-					{
-						//terminal_pro_debug( "set FIRST apply addr = 0x%04x----0x%04x", apply_first->tmnl_dev.address.addr, addr );
-						//terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
-                                                terminal_after_time_mic_state_node_set(apply_first, MIC_FIRST_APPLY_STATUS, true);
-                                        }
-					else
-					{
-						terminal_pro_debug( "no found first apply node!" );
-					}
-				}
-				else
-				{
-					terminal_pro_debug( "no found first apply node!" );
-				}
+    switch (applyOpt) {
+        case REFUSE_APPLY: {
+            cFirstIndex = gdisc_flags.currect_first_index;
+            addr = gdisc_flags.apply_addr_list[cFirstIndex];
+            
+            if (addr_queue_delect_by_value(gdisc_flags.apply_addr_list,
+                                    &gdisc_flags.apply_num, addr))
+            {
+                applyFirst = found_terminal_dblist_node_by_addr(addr);
+                if (applyFirst != (tmnl_pdblist)0) {
+                    terminal_mic_state_set(MIC_COLSE_STATUS,
+                        applyFirst->tmnl_dev.address.addr,
+                        applyFirst->tmnl_dev.entity_id,
+                        true, applyFirst);
+                    
+                    if (gdisc_flags.apply_num > 0) {
+                        gdisc_flags.currect_first_index %=
+                            gdisc_flags.apply_num;
+                        cFirstIndex = gdisc_flags.currect_first_index;
+                        
+                        applyFirst = found_terminal_dblist_node_by_addr(
+                                gdisc_flags.apply_addr_list[cFirstIndex]);
+                        if (applyFirst != (tmnl_pdblist)0) {
+                            terminal_after_time_mic_state_node_set(applyFirst,
+                                MIC_FIRST_APPLY_STATUS, true);
+                        }
+                    }
+                    else {
+                        gdisc_flags.currect_first_index = MAX_LIMIT_APPLY_NUM;
+                    }
+                }
 
-				terminal_main_state_send( 0, NULL, 0 );
-				ret = true;
-			}
-			break;
-		case APPROVE_APPLY:// be tested in 02-3-2016,passed
-			if( gdisc_flags.currect_first_index < gdisc_flags.apply_num )
-			{
-				addr = gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index];
-				apply_first = found_terminal_dblist_node_by_addr( addr ); // 打开第一个申请的麦克风
-				if( apply_first != NULL )
-				{
-					if (0 == trans_model_unit_connect( apply_first->tmnl_dev.entity_id, apply_first ))
-					{// 连接成功
-						terminal_speak_track(apply_first->tmnl_dev.address.addr, true );
-						addr_queue_delete_by_index( gdisc_flags.apply_addr_list, &gdisc_flags.apply_num, gdisc_flags.currect_first_index );
-						if( gdisc_flags.apply_num > 0 )
-						{
-							gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
-							apply_first = found_terminal_dblist_node_by_addr(gdisc_flags.apply_addr_list[gdisc_flags.currect_first_index]);
-							if( apply_first != NULL )
-							{
-								//terminal_mic_state_set( MIC_FIRST_APPLY_STATUS, apply_first->tmnl_dev.address.addr, apply_first->tmnl_dev.entity_id, true, apply_first );
-								terminal_after_time_mic_state_node_set(apply_first, MIC_FIRST_APPLY_STATUS, true);
+                terminal_main_state_send(0, (void *)0, 0);
+                ret = true;
+            }
+            else {
+                terminal_pro_debug("delect apply add"
+                    " = 0x%04x failed: no such address",
+                    addr);
+            }
 
-							}
-						}
-						else
-						{
-							gdisc_flags.currect_first_index = gdisc_flags.apply_limit;
-						}
+            break;
+        }
+        case NEXT_APPLY: {
+            if (gdisc_flags.apply_num > 1) {
+                cFirstIndex = gdisc_flags.currect_first_index;
+                addr = gdisc_flags.apply_addr_list[cFirstIndex];
+                
+                applyFirst = found_terminal_dblist_node_by_addr(addr);
+                if (applyFirst != (tmnl_pdblist)0) {
+                    terminal_mic_state_set(MIC_OTHER_APPLY_STATUS,
+                        applyFirst->tmnl_dev.address.addr,
+                        applyFirst->tmnl_dev.entity_id,
+                        true, applyFirst );
 
-						terminal_main_state_send( 0, NULL, 0 );
-						ret = true;
-					}
-				}
-			}
-			break;
-		default:
-			break;
-	}
+                    gdisc_flags.currect_first_index++;
+                    gdisc_flags.currect_first_index %= gdisc_flags.apply_num;
+                    cFirstIndex = gdisc_flags.currect_first_index;
+                    addr = gdisc_flags.apply_addr_list[cFirstIndex];
+                    
+                    applyFirst = found_terminal_dblist_node_by_addr(addr);
+                    if (applyFirst != (tmnl_pdblist)0) {
+                        terminal_after_time_mic_state_node_set(applyFirst,
+                            MIC_FIRST_APPLY_STATUS, true);
+                    }
+                    else {
+                        terminal_pro_debug("no found first apply node!");
+                    }
+                }
+                else {
+                    terminal_pro_debug("no found first apply node!");
+                }
 
-	return ret;
+                terminal_main_state_send(0, (void *)0, 0);
+                ret = true;
+            }
+            
+            break;
+        }
+        case APPROVE_APPLY: {
+            if (gdisc_flags.currect_first_index < gdisc_flags.apply_num) {
+                cFirstIndex = gdisc_flags.currect_first_index;
+                addr = gdisc_flags.apply_addr_list[cFirstIndex];
+                applyFirst = found_terminal_dblist_node_by_addr(addr);
+                if (applyFirst != (tmnl_pdblist)0) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+                    /* request for connections */
+                    if (Terminal_requestConnect(applyFirst, COMMON_PRIOR,
+                            MAX_FAILURE_TIMES, COMMON_SPK_PERMISSION)) {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[ Chairman APPROVE_APPLY(0x04x) Request "
+                            "connections success:waiting for connection ]",
+                            applyFirst->tmnl_dev.address.addr);
+                    }
+                    else {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[ Chairman APPROVE_APPLY(0x04x) Request "
+                            "connections Failed. ]",
+                            applyFirst->tmnl_dev.address.addr);
+                    }
+#else
+                    if (0 == trans_model_unit_connect(applyFirst->tmnl_dev.entity_id,
+                            applyFirst))
+                    {
+                        terminal_speak_track(
+                            applyFirst->tmnl_dev.address.addr, true);
+                        
+                        addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+                            &gdisc_flags.apply_num,
+                            gdisc_flags.currect_first_index);
+                        
+                        if (gdisc_flags.apply_num > 0) {
+                            gdisc_flags.currect_first_index %=
+                                gdisc_flags.apply_num;
+                            cFirstIndex = gdisc_flags.currect_first_index;
+                            
+                            applyFirst = found_terminal_dblist_node_by_addr(
+                                gdisc_flags.apply_addr_list[cFirstIndex]);
+                            if (applyFirst != (tmnl_pdblist)0) {
+                                terminal_after_time_mic_state_node_set(
+                                    applyFirst, MIC_FIRST_APPLY_STATUS, true);
+                            }
+                        }
+                        else {
+                            gdisc_flags.currect_first_index =
+                                gdisc_flags.apply_limit;
+                        }
+
+                        terminal_main_state_send(0, (void *), 0);
+                        ret = true;
+                    }
+#endif                    
+                }
+            }
+            break;
+        }
+        default: {
+            break;
+        }
+    }
+
+    return ret;
 }
 
 void terminal_type_set(tcmpt_data_meeting_authority tmnl_type) {
@@ -4697,6 +4737,8 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
     uint8_t applyNum;
     uint8_t applyMaxNum;
     uint8_t micTempState;
+    uint8_t cFirstApplyIndex;
+    tmnl_pdblist applyFirst;
 
     if (user == (tmnl_pdblist)0) {
         return 0;
@@ -4784,6 +4826,32 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
             gdisc_flags.speak_addr_list[cLimitSpkNum] = tAddr;
             gdisc_flags.speak_limit_num++;
             gdisc_flags.speak_limit_num %= MAX_LIMIT_SPK_NUM;
+        }
+
+        /* process for apply mode */
+        if (disMode == APPLY_MODE) {
+            addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+                &gdisc_flags.apply_num, gdisc_flags.currect_first_index);
+            
+            if (gdisc_flags.apply_num > 0) {
+                gdisc_flags.currect_first_index %=
+                    gdisc_flags.apply_num;
+                cFirstApplyIndex = gdisc_flags.currect_first_index;
+                
+                applyFirst = found_terminal_dblist_node_by_addr(
+                    gdisc_flags.apply_addr_list[cFirstApplyIndex]);
+                if (applyFirst != (tmnl_pdblist)0) {
+                    terminal_after_time_mic_state_node_set(
+                        applyFirst, MIC_FIRST_APPLY_STATUS, true);
+                }
+            }
+            else {
+                gdisc_flags.currect_first_index =
+                    gdisc_flags.apply_limit;
+            }
+
+            /* set main state */
+            terminal_main_state_send(0, (void *)0, 0);
         }
     }
 
