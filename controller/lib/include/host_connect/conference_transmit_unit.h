@@ -54,6 +54,8 @@ uint8_t trans_model_unit_get_system_input_num(void);
 uint16_t conference_transmit_unit_allcount_cnnts(uint64_t id);
 extern void CTU_cOsUptate(void);
 
+extern bool trans_model_unit_connect_timeout(uint64_t tarker_id);
+
 // *************************************************//
 
 #endif

@@ -45,8 +45,10 @@ bool QueueCom_postFiFo(TComQueue * const queue,
         queue->pBuf[queue->trail] = (uint32_t)node;
         queue->trail = (queue->trail + 1U) % queue->size;
         queue->count++;
+        
         return (bool)1;
     }
+    
     return (bool)0;
 }
 /*${QueueCom::postLiFo}.....................................................*/
@@ -74,6 +76,7 @@ bool QueueCom_postLiFo(TComQueue * const queue,
         /* insert to head */
         queue->pBuf[queue->head] = (uint32_t)node;
         queue->count++;
+        
         return (bool)1;
     }
     
@@ -88,8 +91,10 @@ bool QueueCom_popFiFo(TComQueue * const queue,
         *node = queue->pBuf[queue->head];
         queue->head = (queue->head + 1U) % queue->size;
         queue->count--;
+        
         return (bool)1;
     }
+    
     return (bool)0;
 }
 /*${QueueCom::itemFree}......................................................*/

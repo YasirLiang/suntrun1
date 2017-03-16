@@ -371,7 +371,7 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                             /* this event  has being handled */
                             status_ = EVT_HANDLED;
                         }
-                        else {        
+                        else {
                             ret = trans_model_unit_connect(id,
                                     micEvt->spkNode);
                             if (ret == 0) {
@@ -840,7 +840,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     if (QueueCom_popFiFo(&l_acmpQueue, &qAddr)) {
         e = (TQEvt *)qAddr;
     }
-    else if ((sysTick - l_lastTick) < 300U) { /* 100 ms */
+    else if ((sysTick - l_lastTick) < 100U) { /* 100 ms */
         INTERRUPT_UNLOCK(l_acmpQueueLocker);
         return 0;
     }
@@ -1095,10 +1095,19 @@ bool Terminal_hasTaskInQueue(uint8_t manager) {
 
     noEmpty = false;
     for (i = 0; i < PRIOR_PUB_NUM;i++) {
+        /* Lock the queue */
+        INTERRUPT_LOCK(l_queueLockers[manager][i]);
+        
         if (!QueueCom_isEmpty(&l_reqQueues[manager][i])) {
+            /* unLock the queue, must be */
+            INTERRUPT_UNLOCK(l_queueLockers[manager][i]);
+            
             noEmpty = true;
             break;
         }
+
+        /* unLock the queue, must be */
+        INTERRUPT_UNLOCK(l_queueLockers[manager][i]);
     }
 
     /* return no empty */
@@ -1177,11 +1186,36 @@ bool Terminal_cancelTask(uint8_t manager,
         mitEvt->permissions = 0U; /* set to no excutable perssions */
     }
 
-    /* lock queue */
+    /* unlock queue */
     INTERRUPT_UNLOCK(l_queueLockers[manager][prior]);
     
     /* return has? */
     return foundCancel;
+}
+
+/*$ Terminal_cancelAllTask()................................................*/
+void Terminal_cancelAllTask(void) {
+    uint32_t qAddr, pos;
+    TMicEvent *mitEvt;
+    int prior;
+    int manager;
+
+    for (manager = 0; manager < MANAGER_NUM; manager++) {
+        for (prior = 0; prior < PRIOR_PUB_NUM; prior++) {
+            /* lock queue */
+            INTERRUPT_LOCK(l_queueLockers[manager][prior]);
+            
+            queue_for_each(&l_reqQueues[manager][prior], pos, qAddr) {
+                mitEvt = (TMicEvent *)qAddr;
+                if (mitEvt != (TMicEvent *)0) {
+                    mitEvt->permissions = 0U; /* cancel task */
+                }
+            }
+
+            /* unlock queue */
+            INTERRUPT_UNLOCK(l_queueLockers[manager][prior]);
+        }
+    }
 }
 
 /*$ Terminal_postAcmpEvent()................................................*/

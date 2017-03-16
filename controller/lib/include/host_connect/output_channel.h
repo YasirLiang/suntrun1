@@ -19,7 +19,7 @@
 
 /* CONNECT INTERVAL */
 #ifdef MIC_PRIOR_MANEGER_ENABLE
-#define OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL    (2200)
+#define OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL    (2500)
 #else
 #define OUTPUT_CHANNEL_OPT_CONNECT_INTERVAL    (2000)
 #endif
@@ -50,4 +50,5 @@ bool input_connect_node_init_by_index( Input_pChannel p_node, uint64_t  listen_i
 Input_pChannel input_connect_node_create( void );
 bool input_connect_node_delect_node_from_list( struct list_head *head, Input_pChannel *pp_node );
 
-#endif
+#endif /* __OUTPUT_CHANNEL_H__ */
+

@@ -49,6 +49,7 @@
 /*! TSpkQueueElem-----------------------------------------------------------*/
 typedef struct {
     tmnl_pdblist spkNode;
+    uint32_t permissions; /* excutable permission */
     uint8_t failureTimes; /*! connect failure times */
 }TSpkQueueElem;
 
@@ -89,8 +90,22 @@ static Terminal_micQueue l_micQueue = {
 
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
 
+/*$ function declaration----------------------------------------------------*/
+bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
+    TComQueue * const pRestQueue, int * const locker,
+    int failureTimes, uint32_t permissions);
+
+bool Terminal_changeFirstSpkTaskPer(uint16_t addr,
+    TComQueue * const pRestQueue, int * const locker, uint32_t permissions);
+
+#define COMMON_SPK_PERMISSION \
+    (SIGN_STATE | DISCUSS_STATE | VOTE_STATE | GRADE_STATE | ELECT_STATE)
+
+/*$ define queue number of speaking */
+#define FS_SPEAK_QUEUE_NUM  (3)
+
 /*$ first speak Queue size */
-#define FS_QUEUE_SIZE (MAX_LIMIT_APPLY_NUM * 5)
+#define FS_QUEUE_SIZE       (MAX_LIMIT_APPLY_NUM * 5)
 
 /*$ Local first speak queue Buf---------------------------------------------*/
 static uint32_t l_fSpkQueueBuf[FS_QUEUE_SIZE] = {
@@ -102,21 +117,34 @@ static TComQueue l_FSpkQueue = {
     0U, 0U, 0U, FS_QUEUE_SIZE, l_fSpkQueueBuf
 };
 
+/*$ Local first speak queue Buf(chairman)-----------------------------------*/
+static uint32_t l_chairmanFSpkQueueBuf[MAX_LIMIT_APPLY_NUM] = {
+    0U
+};
+
+/*$ Local first speak Queue(chairman)---------------------------------------*/
+static TComQueue l_chairmanFSpkQueue = {
+    0U, 0U, 0U, MAX_LIMIT_APPLY_NUM, l_chairmanFSpkQueueBuf
+};
+
+/*$ Local first speak queue Buf(vip)----------------------------------------*/
+static uint32_t l_vipFSpkQueueBuf[FS_QUEUE_SIZE] = {
+    0U
+};
+
+/*$ Local first speak Queue(vip)--------------------------------------------*/
+static TComQueue l_vipFSpkQueue = {
+    0U, 0U, 0U, FS_QUEUE_SIZE, l_vipFSpkQueueBuf
+};
+
 /*$ Queue Locker------------------------------------------------------------*/
 static int l_FSpkLocker = 0;
 
-#endif /* FIRST_SPEAK_QUEUE_ENABLE */
-
 /*$ First speaking QUEUE @}-------------------------------------------------*/
 
-/*$ function declaration----------------------------------------------------*/
-bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
-    TComQueue * const pRestQueue, int * const locker, int failureTimes);
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
-
-#define COMMON_SPK_PERMISSION \
-    (SIGN_STATE | DISCUSS_STATE | VOTE_STATE | GRADE_STATE | ELECT_STATE)
 
 /*$ callback fuction locker-------------------------------------------------------*/
 static volatile int l_callBackLocker = 0;
@@ -142,6 +170,11 @@ int Terminal_vipCloseMicCallback(bool isSuccess,
 
 int Terminal_commonCloseMicCallback(bool isSuccess,
     tmnl_pdblist user, uint32_t permissions);
+
+bool Terminal_chairmanInSpeakSuccess(uint16_t speakNum,
+    uint32_t permissions);
+
+void terminal_chairmanCancelAllTask(void);
 
 #endif /* MIC_PRIOR_MANEGER_ENABLE */
 
@@ -2027,7 +2060,7 @@ void Terminal_micCallbackPro(void) {
 void terminal_mic_status_set_callback(bool connect_flag,
     tmnl_pdblist p_tmnl_node)
 {
-    uint8_t mic_status;
+    uint8_t mic_status, micState;
     Terminal_mic micNode;
 
     assert(p_tmnl_node != NULL);
@@ -2036,11 +2069,10 @@ void terminal_mic_status_set_callback(bool connect_flag,
     }
 
     mic_status = connect_flag ? MIC_OPEN_STATUS : MIC_COLSE_STATUS;
+    micState = p_tmnl_node->tmnl_dev.address.tmn_type;
     if ((get_sys_state() == INTERPOSE_STATE)
-                && (p_tmnl_node->tmnl_dev.address.tmn_type
-                        != TMNL_TYPE_CHM_EXCUTE)
-                && (p_tmnl_node->tmnl_dev.address.tmn_type
-                        != TMNL_TYPE_CHM_COMMON))
+            && (micState != TMNL_TYPE_CHM_EXCUTE)
+            && (micState != TMNL_TYPE_CHM_COMMON))
     {
         /*interpose state should will save mic state if endpiont
         *is common and temp close is set.
@@ -3089,6 +3121,28 @@ bool terminal_examine_apply(enum_apply_pro applyOpt) {
                 applyFirst = found_terminal_dblist_node_by_addr(addr);
                 if (applyFirst != (tmnl_pdblist)0) {
 #ifdef MIC_PRIOR_MANEGER_ENABLE
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                if (Terminal_firstSpkRequestConnect(applyFirst,
+                        &l_FSpkQueue, &l_FSpkLocker,
+                        MAX_CONNECT_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ APPLY(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        " to Queue Success ]",
+                        applyFirst->tmnl_dev.address.addr);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ APPLY(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        "to Queue Failed ]",
+                        applyFirst->tmnl_dev.address.addr);
+                }
+#else  
                     /* request for connections */
                     if (Terminal_requestConnect(applyFirst, COMMON_PRIOR,
                             MAX_FAILURE_TIMES, COMMON_SPK_PERMISSION)) {
@@ -3105,6 +3159,7 @@ bool terminal_examine_apply(enum_apply_pro applyOpt) {
                             "connections Failed. ]",
                             applyFirst->tmnl_dev.address.addr);
                     }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */                    
 #else
                     if (0 == trans_model_unit_connect(applyFirst->tmnl_dev.entity_id,
                             applyFirst))
@@ -3133,7 +3188,7 @@ bool terminal_examine_apply(enum_apply_pro applyOpt) {
                                 gdisc_flags.apply_limit;
                         }
 
-                        terminal_main_state_send(0, (void *), 0);
+                        terminal_main_state_send(0, (void *)0, 0);
                         ret = true;
                     }
 #endif                    
@@ -4115,6 +4170,102 @@ void terminal_key_action_chman_interpose( uint16_t addr, uint8_t key_num, uint8_
 	}
 }
 /*$ terminal_chairman_interpose_success()...................................*/
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+
+void terminal_chairman_interpose_success(const tmnl_pdblist chman_node) {
+    uint64_t target_id;
+    uint16_t address;
+    thost_system_set set_sys;
+    tmnl_pdblist tmp_node;
+    tcmpt_data_mic_status mic_list[MAX_SPK_NUM*3];
+    uint16_t report_mic_num;
+    bool tmp_close;
+    bool reSuccess;
+    uint8_t tmnlType;
+
+    /* set other mic status */
+    terminal_mic_state_set(MIC_CHM_INTERPOSE_STATUS,
+        BRDCST_ALL, BRDCST_1722_ALL, true, (tmnl_pdblist)0);
+
+    /* \Note1: because of not finishing mute function,
+        whether temp closing or not, it will disconnect all
+        common connect channel */
+    memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
+    tmp_close = (set_sys.temp_close != 0) ? true : false;
+    report_mic_num = 0;
+    
+    list_for_terminal_link_list_each(tmp_node, dev_terminal_list_guard) {
+        tmnlType = tmp_node->tmnl_dev.address.tmn_type;
+        if (tmnlType == TMNL_TYPE_COMMON_RPRST) {
+            uint8_t mic_state;
+
+            /* open state */
+            target_id = tmp_node->tmnl_dev.entity_id;
+            address = tmp_node->tmnl_dev.address.addr;
+            if (trans_model_unit_is_connected(target_id)) {
+                TEReqQePrior prior;
+                if (tmnlType == TMNL_TYPE_VIP) {
+                    prior = VIP_PRIOR;
+                }
+                else {
+                    prior = COMMON_PRIOR;
+                }
+                
+                reSuccess = Terminal_requestDisConnect(tmp_node,
+                        prior, MAX_FAILURE_TIMES,
+                        INTERPOSE_STATE);
+                if (reSuccess) {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[Chairman interpose Terminal(0x%04x) Close "
+                        " Request disconnection success]",
+                        tmp_node->tmnl_dev.address.addr);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Chairman interpose Terminal(0x%04x) Close"
+                        " Request disconnection failed]",
+                        tmp_node->tmnl_dev.address.addr);
+                }
+            }
+
+            /* update apply or other apply state to close */
+            mic_state = tmp_node->tmnl_dev.tmnl_status.mic_state;
+            if ((mic_state != MIC_COLSE_STATUS)
+                  && (mic_state != MIC_OPEN_STATUS))
+            {
+                if (report_mic_num < (MAX_SPK_NUM * 3)) {
+                    mic_list[report_mic_num].addr.low_addr =
+                        (uint8_t)((address & 0x00ff) >> 0);
+                    mic_list[report_mic_num].addr.high_addr =
+                        (uint8_t)((address & 0xff00) >> 0);
+                    mic_list[report_mic_num].switch_flag =
+                        MIC_COLSE_STATUS;
+                    report_mic_num++;
+                }
+
+                /* set to close */
+                if (!tmp_close) {
+                    tmp_node->tmnl_dev.tmnl_status.mic_state =
+                        MIC_COLSE_STATUS;
+                }
+            }
+        }
+    }
+    
+    cmpt_miscrophone_status_list_from_set(mic_list,
+        report_mic_num);
+    
+    /* clear apply and speak list */
+    gdisc_flags.speak_limit_num = 0;
+    if (!tmp_close) {
+        gdisc_flags.apply_num = 0;
+    }
+
+    terminal_main_state_send(0, (void *)0, 0);
+}
+#else
 void terminal_chairman_interpose_success(const uint8_t recvdata,
     const tmnl_pdblist chman_node)
 {
@@ -4125,6 +4276,7 @@ void terminal_chairman_interpose_success(const uint8_t recvdata,
     tcmpt_data_mic_status mic_list[MAX_SPK_NUM*3];
     uint16_t report_mic_num;
     bool tmp_close;
+    uint8_t tmnlType;
     
     /* reply firstly */
     terminal_key_action_host_special_num1_reply(recvdata,
@@ -4138,16 +4290,16 @@ void terminal_chairman_interpose_success(const uint8_t recvdata,
     terminal_mic_state_set(MIC_CHM_INTERPOSE_STATUS,
         BRDCST_ALL, BRDCST_1722_ALL, true, (tmnl_pdblist)0);
 
-    /* \Note1: because of not finishing mute function,
-        whether temp closing or not, it will disconnect all
-        common connect channel */
     memcpy(&set_sys, &gset_sys, sizeof(thost_system_set));
     tmp_close = (set_sys.temp_close != 0) ? true : false;
     report_mic_num = 0;
+
+    /* \Note1: because of not finishing mute function,
+        whether temp closing or not, it will disconnect all
+        common connect channel */
     list_for_terminal_link_list_each(tmp_node, dev_terminal_list_guard) {
-        if (tmp_node->tmnl_dev.address.tmn_type
-            == TMNL_TYPE_COMMON_RPRST)
-        {
+        tmnlType = tmp_node->tmnl_dev.address.tmn_type;
+        if (tmnlType == TMNL_TYPE_COMMON_RPRST) {
             uint8_t mic_state;
 
             /* open state */
@@ -4193,6 +4345,8 @@ void terminal_chairman_interpose_success(const uint8_t recvdata,
 
     terminal_main_state_send(0, (void *)0, 0);
 }
+
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
 
 typedef struct {
     volatile bool occupation;
@@ -4304,15 +4458,112 @@ void terminal_speakInterposeOffPro(void) {
     
     INTERRUPT_UNLOCK(l_interposeLate.occupation);
 }
+
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+/*$  Terminal_chairmanInSpeakSuccess()......................................*/
+bool Terminal_chairmanInSpeakSuccess(uint16_t speakNum,
+            uint32_t permissions)
+{
+    int i;
+    tmnl_pdblist tn;
+    uint16_t *spkList[2];
+    uint16_t firstLimitSpk;
+    bool reqConnect;
+    bool reSuccess;
+    
+    if (speakNum >= CCRU_canUsedInStreams) {
+        /* check speaking list */
+        spkList[0] = gdisc_flags.speak_addr_list;
+        spkList[1] = gdisc_flags.vipSpeakList;
+        
+        for (i = 0; i < 2; i++) {
+            firstLimitSpk = spkList[i][0];
+            
+            if (firstLimitSpk != 0xffff) {
+                /* First in First out */
+                tn = found_terminal_dblist_node_by_addr(
+                            firstLimitSpk);
+                if (tn != (tmnl_pdblist)0) {
+                    reSuccess = Terminal_requestDisConnect(tn,
+                            (i == 0) ? COMMON_PRIOR : VIP_PRIOR,
+                            MAX_FAILURE_TIMES,
+                            permissions);
+                    if (reSuccess) {
+                        reqConnect = (bool)1;
+                        
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_DEBUG,
+                            "[Chairman interpose "
+                            "Terminal(0x%04x) Speak "
+                            " Request disconnection success]",
+                            firstLimitSpk);
+
+                        break; /* found */
+                    }
+                    else {
+                        reqConnect = (bool)0;
+                        
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[Chairman interpose "
+                            "Terminal(0x%04x) Speak "
+                            " Request disconnection failed]",
+                            firstLimitSpk);
+                    }
+                }
+            }
+        }
+    }
+    else {
+        reqConnect = (bool)1;
+    }
+
+    return reqConnect;
+}
+
+void terminal_chairmanCancelAllTask(void) {
+    int i = 0;
+    TSpkQueueElem *qElem;
+    uint32_t qAddr, pos;
+    /* cancel first speak task */
+    TComQueue * const l_queues[FS_SPEAK_QUEUE_NUM] ={
+        &l_chairmanFSpkQueue,
+        &l_vipFSpkQueue,
+        &l_FSpkQueue
+    };
+
+    /* lock */
+    INTERRUPT_LOCK(l_FSpkLocker);
+
+    for (i = 0; i < FS_SPEAK_QUEUE_NUM; i++) {
+        queue_for_each(l_queues[i], pos, qAddr) {
+            qElem = (TSpkQueueElem *)qAddr;
+            qElem->permissions = 0U;
+        }
+    }
+    
+    /* unlock */
+    INTERRUPT_UNLOCK(l_FSpkLocker);
+    
+    /* cancel manager task */
+    Terminal_cancelAllTask();
+}
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
 /*$ terminal_chairman_interpose()...........................................*/
 void terminal_chairman_interpose(uint16_t addr, bool key_down,
     tmnl_pdblist chman_node, const uint8_t recvdata)
 {
-    int disRet = -1;
     tmnl_pdblist end_node;
     uint64_t target_id;
     uint16_t chmAddr;
-    
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+    bool reSuccess;
+    uint16_t speakNum;
+#else
+    int disRet = -1;
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
     assert(chman_node != (tmnl_pdblist)0);
     if (chman_node == NULL) {
         return;
@@ -4331,6 +4582,17 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
         return;
     }
 
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+    /* lock */
+    INTERRUPT_LOCK(l_callBackLocker);
+
+    speakNum = terminal_speak_num_count();
+    
+    /* unlock */
+    INTERRUPT_UNLOCK(l_callBackLocker);
+
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
+
     if ((get_sys_state() != INTERPOSE_STATE)
           && (key_down))
     {
@@ -4341,6 +4603,83 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
         /* open mic, and don't save status */
         target_id = chman_node->tmnl_dev.entity_id;
         if (!trans_model_unit_is_connected(target_id)) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+            /* cannel all connections task */
+            terminal_chairmanCancelAllTask();
+
+            /* check has channel */
+            if (!Terminal_chairmanInSpeakSuccess(speakNum,
+                    INTERPOSE_STATE))
+            {
+                terminal_key_action_host_special_num1_reply(recvdata,
+                    MIC_COLSE_STATUS, chman_node);
+                return;
+            }
+            
+            /* only process in INTERPOSE_STATE */
+            if (Terminal_firstSpkRequestConnect(chman_node,
+                    &l_chairmanFSpkQueue, &l_FSpkLocker,
+                    MAX_CONNECT_FAILURE_TIMES,
+                    INTERPOSE_STATE))
+            {
+                /* reply firstly */
+                terminal_key_action_host_special_num1_reply(recvdata,
+                    MIC_CHM_INTERPOSE_STATUS, chman_node);
+            
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ chairman interpose Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    " to Queue Success ]",
+                    chman_node->tmnl_dev.address.addr);
+            }
+            else {
+                /* reply firstly */
+                terminal_key_action_host_special_num1_reply(recvdata,
+                    MIC_COLSE_STATUS, chman_node);
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[ chairman interpose Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    "to Queue Failed ]",
+                    chman_node->tmnl_dev.address.addr);
+            }
+#else
+            /* reply firstly */
+            terminal_key_action_host_special_num1_reply(recvdata,
+                MIC_CHM_INTERPOSE_STATUS, chman_node);
+
+            /* request connection */
+            reSuccess = Terminal_requestConnect(chman_node,
+                CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+                INTERPOSE_STATE);
+            if (reSuccess) {
+                /* reply firstly */
+                terminal_key_action_host_special_num1_reply(recvdata,
+                    MIC_CHM_INTERPOSE_STATUS, chman_node);
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[Chairman interpose Terminal(0x%04x) Speak "
+                    " Request connection success: Waitting for"
+                    "Connection...]",
+                    chman_node->tmnl_dev.address.addr);
+            }
+            else {
+                /* reply firstly */
+                terminal_key_action_host_special_num1_reply(recvdata,
+                    MIC_COLSE_STATUS, chman_node);
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[Chairman Terminal(0x%04x) Speak "
+                    " Request connection Faied]",
+                    chman_node->tmnl_dev.address.addr);
+            }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
+#else
             int ret = -1;
             ret = trans_model_unit_connect(target_id,
                     chman_node);
@@ -4369,16 +4708,21 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
                 terminal_key_action_host_special_num1_reply(recvdata,
                     MIC_COLSE_STATUS, chman_node);
             }
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
         }
         else { /* is connect? */
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+            terminal_chairman_interpose_success(chman_node);
+#else
             terminal_chairman_interpose_success(recvdata,
                 chman_node);
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
         }
     }
     else if (!key_down) {
         uint8_t chmMicStatus;
 
-        set_terminal_system_state(INTERPOSE_STATE, false);        
+        set_terminal_system_state(INTERPOSE_STATE, false);
         
         chmMicStatus = chman_node->tmnl_dev.tmnl_status.mic_state;
         terminal_key_action_host_special_num1_reply(recvdata,
@@ -4386,14 +4730,35 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
 
         target_id = chman_node->tmnl_dev.entity_id;
         chmAddr = chman_node->tmnl_dev.address.addr;
+
         if (trans_model_unit_is_connected(target_id)
              && (chmMicStatus == MIC_COLSE_STATUS))
         { /* has connect and not open */
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+            reSuccess = Terminal_requestDisConnect(chman_node,
+                    CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
+                    COMMON_SPK_PERMISSION);
+            if (reSuccess) {                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[Chairman interpose Terminal(0x%04x) Close "
+                    " Request disconnection success]",
+                    chmAddr);
+            }
+            else {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[Chairman interpose Terminal(0x%04x) Close"
+                    " Request disconnection failed]",
+                    chmAddr);
+            }
+#else
             disRet = trans_model_unit_disconnect(target_id,
                     chman_node);
             if (disRet == 0) { /* disconnect success */
                 terminal_speak_track(chmAddr, false);
             }
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
         }
 
         list_for_terminal_link_list_each(end_node, dev_terminal_list_guard) {
@@ -4402,7 +4767,11 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
             bool isRegist;
             uint8_t micState;
             uint8_t tmnlType;
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+            TComQueue *tQueue;
+#else
             uint8_t limitSpkNum;
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
 
             tempAddr = end_node->tmnl_dev.address.addr;
             id_ = end_node->tmnl_dev.entity_id;
@@ -4416,8 +4785,62 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
                           ||(tmnlType == TMNL_TYPE_VIP)))
             {
                 if (!trans_model_unit_is_connected(id_)) {
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                    if (tmnlType == TMNL_TYPE_VIP) {
+                        tQueue = &l_vipFSpkQueue;
+                    }
+                    else {
+                        tQueue = &l_FSpkQueue;
+                    }
+
+                    /* only process in INTERPOSE_STATE */
+                    if (Terminal_firstSpkRequestConnect(end_node,
+                            tQueue, &l_FSpkLocker,
+                            MAX_CONNECT_FAILURE_TIMES,
+                            COMMON_SPK_PERMISSION))
+                    {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_DEBUG,
+                            "[ chairman interpose Speak(Resume) Post First ]"
+                            " speaking node(address = 0x%x)"
+                            " to Queue Success ]",
+                            end_node->tmnl_dev.address.addr);
+                    }
+                    else {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[ chairman interpose Speak(Resume) Post First ]"
+                            " speaking node(address = 0x%x)"
+                            "to Queue Failed ]",
+                            end_node->tmnl_dev.address.addr);
+                    }
+#else
+                    /* request connection */
+                    reSuccess = Terminal_requestConnect(end_node,
+                        (tmnlType == TMNL_TYPE_VIP)?
+                            VIP_PRIOR:COMMON_PRIOR,
+                        MAX_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION);
+                    if (reSuccess) {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_DEBUG,
+                            "[Chairman interpose Terminal(0x%04x) Speak "
+                            " Request connection success: Waitting for"
+                            "Connection...]",
+                            end_node->tmnl_dev.address.addr);
+                    }
+                    else {
+                        gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                            LOGGING_LEVEL_ERROR,
+                            "[Chairman interpose Terminal(0x%04x) Speak "
+                            " Request connection Faied]",
+                            end_node->tmnl_dev.address.addr);
+                    }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
+#else                     
                     int ret;
-                    ret = trans_model_unit_connect(id_, chman_node);
+                    ret = trans_model_unit_connect(id_, end_node);
                     if (ret == 0) { /* connect success */
                         terminal_speak_track(tempAddr, true);
 
@@ -4461,6 +4884,7 @@ void terminal_chairman_interpose(uint16_t addr, bool key_down,
 
                         INTERRUPT_UNLOCK(l_interposeLate.occupation);
                     }
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
                 }
                 else {
                     terminal_mic_state_set(MIC_OPEN_STATUS,
@@ -4546,7 +4970,8 @@ void terminal_chman_vip_control_common_mic(void) {
             if (first_speak != (tmnl_pdblist)0) {
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
             if (Terminal_firstSpkRequestConnect(first_speak, &l_FSpkQueue,
-                            &l_FSpkLocker, MAX_CONNECT_FAILURE_TIMES))
+                            &l_FSpkLocker, MAX_CONNECT_FAILURE_TIMES,
+                            COMMON_SPK_PERMISSION))
             {
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_DEBUG,
@@ -4572,23 +4997,26 @@ void terminal_chman_vip_control_common_mic(void) {
     }
 }
 
-uint16_t terminal_speak_num_count(void)
-{
-	assert(dev_terminal_list_guard);
-	if( dev_terminal_list_guard == NULL )
-		return 0;
+/*$  terminal_speak_num_count().............................................*/
+uint16_t terminal_speak_num_count(void) {
+    tmnl_pdblist pos;
+    uint16_t speakNum;
+    uint8_t micState;
+    
+    assert(dev_terminal_list_guard != (tmnl_pdblist)0);
+    if (dev_terminal_list_guard == (tmnl_pdblist)0) {
+        return 0;
+    }
 
-	tmnl_pdblist end_node = dev_terminal_list_guard->next;
-	uint16_t speak_num = 0;
-	for ( ; end_node != dev_terminal_list_guard; end_node = end_node->next )
-	{
-		if (end_node->tmnl_dev.tmnl_status.mic_state == MIC_OPEN_STATUS)
-		{
-			speak_num++;
-		}
-	}
+    speakNum = 0;
+    list_for_terminal_link_list_each(pos, dev_terminal_list_guard) {
+        micState = pos->tmnl_dev.tmnl_status.mic_state;
+        if (micState == MIC_OPEN_STATUS) {
+            speakNum++;
+        }  
+    }
 
-	return speak_num;
+    return speakNum;
 }
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
@@ -4596,7 +5024,7 @@ uint16_t terminal_speak_num_count(void)
 /*$\ define callback function after request connect finish */
 /*$ Terminal_chairmanOpenMicCallback()......................................*/
 int Terminal_chairmanOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+                tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -4647,6 +5075,10 @@ int Terminal_chairmanOpenMicCallback(bool isSuccess,
 
         /* track camera */
         terminal_speak_track(tAddr, true);
+
+        if (sysState == INTERPOSE_STATE) {
+            terminal_chairman_interpose_success(user);
+       }
     }
 
     /* for muti pthread access global data,
@@ -4658,7 +5090,7 @@ int Terminal_chairmanOpenMicCallback(bool isSuccess,
 
 /*$ Terminal_vipOpenMicCallback()...........................................*/
 int Terminal_vipOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+                tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -4725,7 +5157,7 @@ int Terminal_vipOpenMicCallback(bool isSuccess,
 
 /*$ Terminal_commonOpenMicCallback()........................................*/
 int Terminal_commonOpenMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+                tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -4853,6 +5285,9 @@ int Terminal_commonOpenMicCallback(bool isSuccess,
             /* set main state */
             terminal_main_state_send(0, (void *)0, 0);
         }
+        else {
+            /* do noting */
+        }
     }
 
     /* for muti pthread access global data,
@@ -4878,7 +5313,7 @@ static void Terminal_limitModeApplyTSpeak(void) {
     if ((cSpkNum < CCRU_canUsedInStreams)
          && (applyNum > 0))
     {
-        if(addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
+        if (addr_queue_delete_by_index(gdisc_flags.apply_addr_list,
                 &gdisc_flags.apply_num,
                 gdisc_flags.currect_first_index))
         {
@@ -4888,7 +5323,8 @@ static void Terminal_limitModeApplyTSpeak(void) {
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
                 if (Terminal_firstSpkRequestConnect(firstSpkNode,
                         &l_FSpkQueue, &l_FSpkLocker,
-                        MAX_CONNECT_FAILURE_TIMES))
+                        MAX_CONNECT_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
                 {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -4897,12 +5333,21 @@ static void Terminal_limitModeApplyTSpeak(void) {
                         firstSpkNode->tmnl_dev.address.addr);
                 }
                 else {
+                    /* set close, because it not in apply list */
+                    terminal_mic_state_set(MIC_COLSE_STATUS,
+                        firstSpkNode->tmnl_dev.address.addr,
+                        firstSpkNode->tmnl_dev.entity_id, true, firstSpkNode);
+                    
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
                         "[ Limit(1) Mode Speak Post First apply]"
                         " speaking node(address = 0x%x)to Queue Failed ]",
                         firstSpkNode->tmnl_dev.address.addr);
                 }
+
+                /* set first apply whether current speak
+                    successfully or not */
+                terminal_apply_list_first_speak();
 #else
                 /* request connections */
                 if (Terminal_requestConnect(firstSpkNode,
@@ -4913,16 +5358,23 @@ static void Terminal_limitModeApplyTSpeak(void) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_ERROR,
                         "[Limit First Aplly(0x04x) Request "
-                        "connections success ]", curFirstAlyAddr);
-                    
-                    terminal_apply_list_first_speak();
+                        "connections success ]", curFirstAlyAddr);                    
                 }
                 else {
+                    /* set close, because it not in apply list */
+                    terminal_mic_state_set(MIC_COLSE_STATUS,
+                        firstSpkNode->tmnl_dev.address.addr,
+                        firstSpkNode->tmnl_dev.entity_id, true, firstSpkNode);
+                    
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_ERROR,
                         "[Limit First Aplly(0x04x) Request "
                         "connections Failed ]", curFirstAlyAddr);
                 }
+
+                /* set first apply whether current speak
+                    successfully or not */
+                terminal_apply_list_first_speak();
 #endif 
             }               
         }
@@ -4934,7 +5386,7 @@ static void Terminal_limitModeApplyTSpeak(void) {
 
 /*$ Terminal_chairmanCloseMicCallback().....................................*/
 int Terminal_chairmanCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+            tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -5008,7 +5460,7 @@ int Terminal_chairmanCloseMicCallback(bool isSuccess,
 
 /*$ Terminal_vipCloseMicCallback()..........................................*/
 int Terminal_vipCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+            tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -5088,7 +5540,7 @@ int Terminal_vipCloseMicCallback(bool isSuccess,
 
 /*$ Terminal_commonCloseMicCallback().......................................*/
 int Terminal_commonCloseMicCallback(bool isSuccess,
-    tmnl_pdblist user, uint32_t permissions)
+            tmnl_pdblist user, uint32_t permissions)
 {
     uint8_t micState;
     uint8_t disMode;
@@ -5222,6 +5674,28 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                     tAddr, CCRU_canUsedInStreams, cSpkNum);
             }
             else {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                if (Terminal_firstSpkRequestConnect(dis_node,
+                        &l_FSpkQueue, &l_FSpkLocker,
+                        MAX_CONNECT_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ PPT(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        " to Queue Success ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ PPT(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        "to Queue Failed ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+#else                
                 reSuccess = Terminal_requestConnect(dis_node,
                     COMMON_PRIOR, MAX_FAILURE_TIMES,
                     COMMON_SPK_PERMISSION);
@@ -5238,10 +5712,33 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                         "[Common Terminal(0x%04x) Speak(PPT) "
                         " Request connection Faied]");
                 }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
             }
         }
         else if (disMode == LIMIT_MODE) { /* limit mode */
             if (cSpkNum < CCRU_canUsedInStreams) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+                if (Terminal_firstSpkRequestConnect(dis_node,
+                        &l_FSpkQueue, &l_FSpkLocker,
+                        MAX_CONNECT_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ LIMIT(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        " to Queue Success ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_DEBUG,
+                        "[ LIMIT(1) Mode Speak Post First ]"
+                        " speaking node(address = 0x%x)"
+                        "to Queue Failed ]",
+                        dis_node->tmnl_dev.address.addr);
+                }
+#else        
                 reSuccess = Terminal_requestConnect(dis_node,
                         COMMON_PRIOR, MAX_FAILURE_TIMES,
                         COMMON_SPK_PERMISSION);
@@ -5258,12 +5755,15 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
                         "[Common Terminal(0x%04x) Speak(LIMIT) "
                         " Request connection Faied]", tAddr);
                 }
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
             }
             else {
 #ifdef FIRST_SPEAK_QUEUE_ENABLE                
                 /* set mic for apply state */
                 if ((applyNum < applyMaxNum)
-                      && (QueueCom_isEmpty(&l_FSpkQueue)))
+                      && (QueueCom_isEmpty(&l_FSpkQueue))
+                      && (QueueCom_isEmpty(&l_vipFSpkQueue))
+                      && (QueueCom_isEmpty(&l_chairmanFSpkQueue)))
                 {
                     micTempState = MIC_OTHER_APPLY_STATUS;
                     if (applyNum == 0) {
@@ -5366,7 +5866,8 @@ void terminal_common_speak(tmnl_pdblist dis_node, bool key_down) {
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
                 if (Terminal_firstSpkRequestConnect(dis_node,
                         &l_FSpkQueue, &l_FSpkLocker,
-                        MAX_CONNECT_FAILURE_TIMES))
+                        MAX_CONNECT_FAILURE_TIMES,
+                        COMMON_SPK_PERMISSION))
                 {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -5629,6 +6130,28 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
         }
 
         if (reqConnect) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+            if (Terminal_firstSpkRequestConnect(dis_node,
+                    &l_vipFSpkQueue, &l_FSpkLocker,
+                    MAX_CONNECT_FAILURE_TIMES,
+                    COMMON_SPK_PERMISSION))
+            {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ VIP(1) Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    " to Queue Success ]",
+                    dis_node->tmnl_dev.address.addr);
+            }
+            else {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[ VIP(1) Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    "to Queue Failed ]",
+                    dis_node->tmnl_dev.address.addr);
+            }
+#else
             /* request connection */
             reSuccess = Terminal_requestConnect(dis_node,
                 VIP_PRIOR, MAX_FAILURE_TIMES,
@@ -5646,6 +6169,7 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
                     "[VIP Terminal(0x%04x) Speak "
                     " Request connection Faied]", tAddr);
             }
+#endif            
         }
         else {
             /* error discuss mode */
@@ -5701,11 +6225,7 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
     uint16_t tAddr;
     uint8_t applyNum;
     uint8_t applyMaxNum;
-    uint16_t firstLimitSpk;
-    tmnl_pdblist tn; /* temp node */
     bool reqConnect = (bool)0;
-    uint16_t *spkList[2];
-    int i;
 
     /* for muti pthread access global data, must lock */
     INTERRUPT_LOCK(l_callBackLocker);
@@ -5725,50 +6245,10 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
     micState = dis_node->tmnl_dev.tmnl_status.mic_state;    
 
     if (key_down) {
-        if ((cSpkNum < CCRU_canUsedInStreams)
-            && (!trans_model_unit_is_connected(entityId)))
-        {
-            reqConnect = (bool)1;
-        }
-        else if ((cSpkNum >= CCRU_canUsedInStreams)
-            && (!trans_model_unit_is_connected(entityId)))
-        {
-            /* check speaking list */
-            spkList[0] = gdisc_flags.speak_addr_list;
-            spkList[1] = gdisc_flags.vipSpeakList;
-            for (i = 0; i < 2; i++) {
-                firstLimitSpk = spkList[i][0];
-                if (firstLimitSpk != 0xffff) {
-                    /* First in First out */
-                    tn = found_terminal_dblist_node_by_addr(firstLimitSpk);
-                    if (tn != (tmnl_pdblist)0) {
-                        reSuccess = Terminal_requestDisConnect(tn,
-                                (i == 0) ? COMMON_PRIOR : VIP_PRIOR,
-                                MAX_FAILURE_TIMES,
-                                COMMON_SPK_PERMISSION);
-                        if (reSuccess) {
-                            reqConnect = (bool)1;
-                            
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                LOGGING_LEVEL_DEBUG,
-                                "[Chairman Terminal(0x%04x) Speak "
-                                " Request disconnection success]",
-                                firstLimitSpk);
-
-                            break; /* found */
-                        }
-                        else {
-                            reqConnect = (bool)0;
-                            
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                LOGGING_LEVEL_ERROR,
-                                "[Chairman Terminal(0x%04x) Speak "
-                                " Request disconnection failed]",
-                                firstLimitSpk);
-                        }
-                    }
-                }
-            }
+        if (!trans_model_unit_is_connected(entityId)) {
+            /* check has channel */
+            reqConnect = Terminal_chairmanInSpeakSuccess(cSpkNum,
+                                    COMMON_SPK_PERMISSION);
         }
         else {/* has connected */
             /* open mic */
@@ -5779,6 +6259,28 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
         }
 
         if (reqConnect) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+            if (Terminal_firstSpkRequestConnect(dis_node,
+                    &l_chairmanFSpkQueue, &l_FSpkLocker,
+                    MAX_CONNECT_FAILURE_TIMES,
+                    COMMON_SPK_PERMISSION))
+            {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[ Chairman(1) Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    " to Queue Success ]",
+                    dis_node->tmnl_dev.address.addr);
+            }
+            else {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[ Chairman(1) Speak Post First ]"
+                    " speaking node(address = 0x%x)"
+                    "to Queue Failed ]",
+                    dis_node->tmnl_dev.address.addr);
+            }
+#else            
             /* request connection */
             reSuccess = Terminal_requestConnect(dis_node,
                 CHAIRMAN_PRIOR, MAX_FAILURE_TIMES,
@@ -5796,6 +6298,7 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
                     "[Chairman Terminal(0x%04x) Speak "
                     " Request connection Faied]", tAddr);
             }
+#endif            
         }
         else {
             /* error discuss mode */
@@ -5848,6 +6351,7 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
     uint16_t tAddr;
     bool rightType, isConnect, willCancel;
     uint64_t entityId;
+    TComQueue *pQueue;
 
     if (!dis_node->tmnl_dev.tmnl_status.is_rgst) {
         return false;
@@ -5876,14 +6380,17 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
     rightType = (bool)1;
     if (tType == TMNL_TYPE_COMMON_RPRST) {
         prior = COMMON_PRIOR;
+        pQueue = &l_FSpkQueue;
     }
     else if (tType == TMNL_TYPE_VIP) {
         prior = VIP_PRIOR;
+        pQueue = &l_vipFSpkQueue;
     }
     else if ((tType == TMNL_TYPE_CHM_EXCUTE)
                   || (tType == TMNL_TYPE_CHM_COMMON))
     {
         prior = CHAIRMAN_PRIOR;
+        pQueue = &l_chairmanFSpkQueue;
     }
     else {
         /* error type */
@@ -5893,8 +6400,12 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
     /* if no task in the queue(connector or disconnector)
         process, otherwise discard this key command */
     if ((!rightType)
-          || (Terminal_hasTask(prior, tAddr)))
+          || (Terminal_hasTask(prior, tAddr))
+          || (!QueueCom_isEmpty(pQueue)))
     {
+        /* cancel task? */
+        willCancel = (bool)0;
+        
         if (rightType) {
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_ERROR,
@@ -5903,8 +6414,6 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
 
             isConnect = trans_model_unit_is_connected(entityId);
             
-            /* cancel task? */
-            willCancel = (bool)0;
             if (key_down) {
                 /* canecl disconnect task */
                 user = DISCONNECTOR;
@@ -5935,6 +6444,22 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
                         "[Terminal(0x%04x) cancel user(%d) Task"
                         "  prior(%d) Queue Error ]", tAddr, user, prior);
                 }
+
+                /* cancel task, zero meaning cancel */
+                if (Terminal_changeFirstSpkTaskPer(tAddr,
+                        pQueue, &l_FSpkLocker, 0U))
+                {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Terminal(0x%04x) cancel connections Task"
+                        "  prior(%d) Queue success ]", tAddr, prior);
+                }
+                else {
+                    gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                        LOGGING_LEVEL_ERROR,
+                        "[Terminal(0x%04x) cancel connections Task"
+                        "  prior(%d) Queue Error ]", tAddr, prior);
+                }
             }
         }
         else {
@@ -5942,7 +6467,7 @@ bool terminal_key_speak_proccess(tmnl_pdblist dis_node,
                 LOGGING_LEVEL_ERROR,
                 "[ No Right Type ]");
         }
-        
+
         return false;
     }
     
@@ -6286,49 +6811,97 @@ void terminal_firstSpkingPro(uint32_t sysTick) { /* 1ms */
     uint32_t qAddr;
     TSpkQueueElem *qElem;
     tmnl_pdblist spk;
-    uint64_t id;
     uint16_t tAddr;
     uint8_t failureTimes;
+    uint64_t entityId;
+    int i, j;
+    bool hasHighTask;
+    /* terminal speaking queues */
+    static TComQueue * const l_queues[FS_SPEAK_QUEUE_NUM] ={
+        &l_chairmanFSpkQueue,
+        &l_vipFSpkQueue,
+        &l_FSpkQueue
+    };
+
+    if ((sysTick - l_lastTick) < 100U) { /* 100ms */
+        return;
+    }
+
+    /* update last tick */
+    l_lastTick = sysTick;
     
-    if ((sysTick - l_lastTick) > 200U) {
-        INTERRUPT_LOCK(l_FSpkLocker);
+    /* lock queue */
+    INTERRUPT_LOCK(l_FSpkLocker);
 
-        if (!Terminal_hasTaskInQueue(DISCONNECTOR)) {
-            if (QueueCom_popFiFo(&l_FSpkQueue, &qAddr)) {
-                qElem = (TSpkQueueElem *)qAddr;
-                if (qElem == (TSpkQueueElem *)0) {
-                    free(qElem);
-                    INTERRUPT_UNLOCK(l_FSpkLocker);
-                    return;
-                }
+    for (i = 0; i < FS_SPEAK_QUEUE_NUM; i++) {
+        /* check whether has higher tast */
+        hasHighTask = (bool)0;
+        for (j = 0; j < i; j++) {
+            if (!QueueCom_isEmpty(l_queues[j])) {
+                hasHighTask = (bool)1;
+                break;
+            }
+        }
 
-                failureTimes = qElem->failureTimes;
-                spk = qElem->spkNode;
-                if (spk == (tmnl_pdblist)0) {
-                    free(qElem);
-                    
-                    INTERRUPT_UNLOCK(l_FSpkLocker);
-                    return;
-                }
+        /* if has higher task, process later */
+        if (hasHighTask) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[ Current Aplly queue(%d)  has higher"
+                "task queue(%d):Breaking...... ]", i, j);
+
+            break;
+        }
+
+        /* initial to zero, must be*/
+        qAddr = 0U;
+        if (QueueCom_popFiFo(l_queues[i], &qAddr)) {
+            /* get information */
+            qElem = (TSpkQueueElem *)qAddr;
+            
+            spk = qElem->spkNode;            
+            if (spk == (tmnl_pdblist)0) {
+                QueueCom_itemFree(qElem);
                 
-                id = spk->tmnl_dev.entity_id;
-                tAddr = spk->tmnl_dev.address.addr;
+                continue; /* continue 'for' */
+            }
+
+            failureTimes = qElem->failureTimes;
+            entityId = qElem->spkNode->tmnl_dev.entity_id;
+            tAddr = spk->tmnl_dev.address.addr;
+
+            /* check permission */
+            if (!((qElem->permissions)
+                    & ((uint32_t)get_sys_state())))
+            {
+                /* release event */
+                QueueCom_itemFree(qElem);
+                
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[Terminal (0x04x)Request Connections Task "
+                    "in the First Aplly in queue  "
+                    "Cancel by User]", tAddr);
+
+                continue; /* continue 'for' */
+            }
+            
+            /* has timeout and no diconnect task\
+                process this task */
+            if (trans_model_unit_connect_timeout(entityId)
+                && (!Terminal_hasTaskInQueue(DISCONNECTOR)))
+            {
                 /* request connections */
                 if (Terminal_requestConnect(spk,
-                        COMMON_PRIOR,
+                        (TEReqQePrior)i,
                         MAX_FAILURE_TIMES,
-                        COMMON_SPK_PERMISSION))
+                        qElem->permissions))
                 {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_ERROR,
                         "[ First Aplly(0x%04x) in queue Request "
                         "connections success,waiting connection.... ]",
                         tAddr);
-
-                    /* for limit mode */
-                    if (gdisc_flags.edis_mode == LIMIT_MODE) {
-                        terminal_apply_list_first_speak();
-                    }
                 }
                 else {
                     terminal_mic_state_set(MIC_COLSE_STATUS,
@@ -6341,13 +6914,18 @@ void terminal_firstSpkingPro(uint32_t sysTick) { /* 1ms */
                         "connections Failed ]", tAddr);
                 }
 
-                free(qElem);
+                /* release event */
+                QueueCom_itemFree(qElem);
             }
-        }
+            else {
+                /* post to queue again */
+                QueueCom_postLiFo(l_queues[i], (void *)qElem);
+            }
+        }  
+    }    
 
-        l_lastTick = sysTick;
-        INTERRUPT_UNLOCK(l_FSpkLocker);
-    }
+    /* unlock queue */
+    INTERRUPT_UNLOCK(l_FSpkLocker);
 }
 #else
 void terminal_firstSpkingPro(uint32_t sysTick) {
@@ -6410,7 +6988,7 @@ void terminal_firstSpkingPro(uint32_t sysTick) { /* 1ms */
                     /* release space */
                     free(qElem);
                     qElem = (TSpkQueueElem *)0;
-                    INTERRUPT_UNLOCK(l_faSpkLocker);
+                    INTERRUPT_UNLOCK(l_FSpkLocker);
                     return;
                 }
                 
@@ -6442,9 +7020,11 @@ void terminal_firstSpkingPro(uint32_t sysTick) {
 
 #endif /* MIC_PRIOR_MANEGER_ENABLE */
 
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
 /*$ Terminal_firstSpkRequestConnect().......................................*/
 bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
-    TComQueue * const pRestQueue, int * const locker, int failureTimes)
+    TComQueue * const pRestQueue, int * const locker,
+    int failureTimes, uint32_t permissions)
 {
 /*\ connections request by terminal
     \ */
@@ -6464,6 +7044,7 @@ bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
     if (qElem != (TSpkQueueElem *)0) {
         qElem->spkNode = spk;
         qElem->failureTimes = failureTimes;
+        qElem->permissions = permissions;
         if (QueueCom_postFiFo(pRestQueue, (void *)qElem)) {
             bRet = (bool)1;
         }
@@ -6473,6 +7054,42 @@ bool Terminal_firstSpkRequestConnect(tmnl_pdblist const spk,
 
     return (bool)bRet;
 }
+
+/*$ Terminal_changeFirstSpkTaskPer()........................................*/
+bool Terminal_changeFirstSpkTaskPer(uint16_t addr,
+    TComQueue * const pRestQueue, int * const locker, uint32_t permissions)
+{
+/*\ connections change permission request by terminal
+    \ */
+    bool bRet;
+    TSpkQueueElem *qElem;
+    uint32_t pos, qAddr;
+    
+    if ((pRestQueue == (TComQueue * const)0)
+          || (locker == (int *)0))
+    {
+        return (bool)0;
+    }
+    
+    INTERRUPT_LOCK(*locker);
+
+    bRet = (bool)0;
+    queue_for_each(pRestQueue, pos, qAddr) {
+        qElem = (TSpkQueueElem *)qAddr;
+        
+        if (qElem->spkNode->tmnl_dev.address.addr == addr) {
+            qElem->permissions = permissions;
+            bRet = (bool)1;
+            break;
+        }
+    }
+
+    INTERRUPT_UNLOCK(*locker);
+
+    return (bool)bRet;
+}
+
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
 
 // ÒÑ²âÊÔ(2016-3-16)
 bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pdblist speak_node, uint8_t recv_msg )
@@ -6617,7 +7234,8 @@ bool terminal_limit_disccuss_mode_pro( bool key_down, uint8_t limit_time,tmnl_pd
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
                                                     if (Terminal_firstSpkRequestConnect(first_speak,
                                                         &l_FSpkQueue, &l_FSpkLocker,
-                                                        MAX_CONNECT_FAILURE_TIMES))
+                                                        MAX_CONNECT_FAILURE_TIMES,
+                                                        COMMON_SPK_PERMISSION))
                                                     {
                                                             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                                                                 LOGGING_LEVEL_DEBUG,

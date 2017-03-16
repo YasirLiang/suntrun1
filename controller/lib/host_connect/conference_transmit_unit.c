@@ -297,6 +297,27 @@ int trans_model_unit_connect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node
 	return -1;
 }
 
+bool trans_model_unit_connect_timeout(uint64_t tarker_id) {
+    bool timeout = (bool)0;
+    tconference_trans_pmodel p_trans_model = NULL;
+    
+    if (conference_transmit_unit_found_trams_model_by_entity_id(tarker_id,
+                    &p_trans_model))
+    {
+        if (NULL != p_trans_model) {
+            // found and operate timeout?
+            if (trans_model_unit_isopt_timeout_by_output_channel_index(
+                p_trans_model, CONFERENCE_OUTPUT_INDEX))
+            {
+                timeout = (bool)1;
+            }
+        }
+    }
+
+    /* return timeout */
+    return timeout;
+}
+
 /*return value: 0:nomal; -1:error,but not timeout; -2:err for timeout*/
 int trans_model_unit_disconnect( uint64_t tarker_id, const tmnl_pdblist p_tmnl_node ) // return -1 means talker not connect
 {

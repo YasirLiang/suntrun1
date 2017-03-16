@@ -120,6 +120,9 @@ extern bool Terminal_hasTask(TEReqQePrior prior, uint16_t user);
 extern bool Terminal_cancelTask(uint8_t manager,
         TEReqQePrior prior, uint16_t user);
 
+/*$ Terminal_cancelAllTask()................................................*/
+extern void Terminal_cancelAllTask(void);
+
 /*$ Terminal_postAcmpEvent()................................................*/
 extern bool Terminal_postAcmpEvent(TQEvt const * const e);
 
