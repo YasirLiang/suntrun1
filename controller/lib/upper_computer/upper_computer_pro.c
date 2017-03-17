@@ -165,7 +165,7 @@ int proccess_upper_cmpt_microphone_switch( uint16_t protocal_type, void *data, u
 	send_upper_computer_command( CMPT_MSG_TYPE_RESPONSE | CMPT_MSG_TYPE_SET, MISCROPHONE_SWITCH, NULL, 0 );
 
 	DEBUG_INFO( "mic sw addr = 0x%02x%02x, flag = %d ", mic_flag.addr.high_addr, mic_flag.addr.low_addr, mic_flag.switch_flag );
-	terminal_upper_computer_speak_proccess( mic_flag );
+	terminal_upper_computer_speak_process( mic_flag );
 	
 	return 0;
 }

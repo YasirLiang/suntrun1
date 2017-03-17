@@ -182,7 +182,7 @@ void terminal_state_set_base_type( uint16_t addr, tmnl_state_set tmnl_state );
 void terminal_chairman_apply_type_set( uint16_t addr );
 bool terminal_led_set_save( uint16_t addr, uint8_t led_id, uint8_t  led_state );
 void fterminal_led_set_send( uint16_t addr );
-int terminal_upper_computer_speak_proccess( tcmpt_data_mic_switch mic_flag );
+int terminal_upper_computer_speak_process( tcmpt_data_mic_switch mic_flag );
 extern bool terminal_read_profile_file( thost_system_set *set_sys );
 void terminal_free_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );
 bool terminal_limit_disccuss_mode_cmpt_pro( uint8_t mic_flag, uint8_t limit_time, tmnl_pdblist speak_node );

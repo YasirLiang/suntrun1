@@ -470,36 +470,46 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                     if (micEvtPermissions & micEvt->permissions) {
                         tAddr = micEvt->spkNode->tmnl_dev.address.addr;
                         id = micEvt->spkNode->tmnl_dev.entity_id;
-                        ret = trans_model_unit_disconnect(id,
-                                            micEvt->spkNode);
-                        if (ret == 0) {
-                            /*decrement failure times
-                                connect failed increment */
-                            --micEvt->failureTimes;
-                            
-                            /* disconnect success,
-                                wait disconnection response */
-                            l_disconnectorState = DISCONNECT_WAIT;
-                            status_ = EVT_UNHANDLED;
 
-                            /* log message */
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                    LOGGING_LEVEL_DEBUG,
-                                    "[DISCONNECT_FINISH(disconnect times = %d)"
-                                    " Close Mic(0x%llx-0x%x):"
-                                    "Waiting for disconnection response]",
-                                    MAX_FAILURE_TIMES -micEvt->failureTimes,
-                                    id, tAddr);
+                        if (!trans_model_unit_is_connected(id)) {
+                            micEvt->failureTimes = 0;
+                            /* this event  has being handled */
+                            status_ = EVT_HANDLED;
                         }
                         else {
-                            failerTimes = micEvt->failureTimes;
-                            if (failerTimes == 0) {
-                                /* current open signal finish */
-                                status_ = EVT_HANDLED;
+                            ret = trans_model_unit_disconnect(id,
+                                                micEvt->spkNode);
+                            if (ret == 0) {
+                                /*decrement failure times
+                                    connect failed increment */
+                                --micEvt->failureTimes;
+                                
+                                /* disconnect success,
+                                    wait disconnection response */
+                                l_disconnectorState = DISCONNECT_WAIT;
+                                status_ = EVT_UNHANDLED;
+
+                                /* log message */
+                                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                        LOGGING_LEVEL_DEBUG,
+                                        "[DISCONNECT_FINISH"
+                                        "(disconnect times = %d)"
+                                        " Close Mic(0x%llx-0x%x):"
+                                        "Waiting for disconnection response]",
+                                        MAX_FAILURE_TIMES -
+                                            micEvt->failureTimes,
+                                        id, tAddr);
                             }
                             else {
-                                --micEvt->failureTimes;
-                                status_ = EVT_UNHANDLED;
+                                failerTimes = micEvt->failureTimes;
+                                if (failerTimes == 0) {
+                                    /* current open signal finish */
+                                    status_ = EVT_HANDLED;
+                                }
+                                else {
+                                    --micEvt->failureTimes;
+                                    status_ = EVT_UNHANDLED;
+                                }
                             }
                         }
                     }
@@ -622,39 +632,49 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                     if (micEvtPermissions & micEvt->permissions) {
                         tAddr = micEvt->spkNode->tmnl_dev.address.addr;
                         id = micEvt->spkNode->tmnl_dev.entity_id;
-                        ret = trans_model_unit_disconnect(id,
-                                                micEvt->spkNode);
-                        if (ret == 0) {
-                            /*decrement failure times
-                                disconnect failed increment */
-                            --micEvt->failureTimes;
-                            
-                            /* disconnect success, wait connection response */
-                            l_disconnectorState = DISCONNECT_WAIT;
-                            status_ = EVT_UNHANDLED;
 
-                            /* log message */
-                            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
-                                    LOGGING_LEVEL_DEBUG,
-                                    "[DISCONNECT_FAILED(disconnect times = %d)"
-                                    " Close Mic(0x%llx-0x%x):"
-                                    "Waiting for disconnection response]",
-                                    MAX_FAILURE_TIMES -micEvt->failureTimes,
-                                    id, tAddr);
+                        if (!trans_model_unit_is_connected(id)) {
+                            micEvt->failureTimes = 0;
+                            /* this event  has being handled */
+                            status_ = EVT_HANDLED;
                         }
                         else {
-                            failerTimes = micEvt->failureTimes;
-                            if (failerTimes == 0) {
-                                /* current open signal finish
-                                    change to state of disconnect finish */
-                                l_disconnectorState = DISCONNECT_FINISH;
-                                status_ = EVT_HANDLED;
-                            }
-                            else {
-                                /* decrement failure times */
+                            ret = trans_model_unit_disconnect(id,
+                                                    micEvt->spkNode);
+                            if (ret == 0) {
+                                /*decrement failure times
+                                    disconnect failed increment */
                                 --micEvt->failureTimes;
                                 
+                                /* disconnect success, wait connection response */
+                                l_disconnectorState = DISCONNECT_WAIT;
                                 status_ = EVT_UNHANDLED;
+
+                                /* log message */
+                                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                                        LOGGING_LEVEL_DEBUG,
+                                        "[DISCONNECT_FAILED"
+                                        "(disconnect times = %d)"
+                                        " Close Mic(0x%llx-0x%x):"
+                                        "Waiting for disconnection response]",
+                                        MAX_FAILURE_TIMES -
+                                            micEvt->failureTimes,
+                                        id, tAddr);
+                            }
+                            else {
+                                failerTimes = micEvt->failureTimes;
+                                if (failerTimes == 0) {
+                                    /* current open signal finish
+                                        change to state of disconnect finish */
+                                    l_disconnectorState = DISCONNECT_FINISH;
+                                    status_ = EVT_HANDLED;
+                                }
+                                else {
+                                    /* decrement failure times */
+                                    --micEvt->failureTimes;
+                                    
+                                    status_ = EVT_UNHANDLED;
+                                }
                             }
                         }
                     }
@@ -697,7 +717,7 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
 bool Terminal_requestConnect(tmnl_pdblist const spk, TEReqQePrior prior,
                             int failureTimes, uint32_t permissions)
 {
-    /*\ request connection by terminal */
+    /*\ request connection by terminal, and See Note2 */
     bool reqOk = (bool)0;
     TMicEvent *qElem;
 
@@ -743,7 +763,7 @@ bool Terminal_requestConnect(tmnl_pdblist const spk, TEReqQePrior prior,
 bool Terminal_requestDisConnect(tmnl_pdblist const spk,
         TEReqQePrior prior, int failureTimes, uint32_t permissions)
 {
-    /*\ request connection by terminal */
+    /*\ request connection by terminal, and See Note1*/
     bool reqOk = (bool)0;
     TMicEvent *qElem;
 
@@ -1153,6 +1173,41 @@ bool Terminal_hasTask(TEReqQePrior prior, uint16_t user) {
     return has;
 }
 
+/*$ Terminal_hasEventTask().................................................*/
+bool Terminal_hasEventTask(uint8_t manager,
+    TEReqQePrior prior, uint16_t user)
+{
+    bool has;
+    uint32_t qAddr, pos;
+    TMicEvent *mitEvt;
+
+    if ((prior >= PRIOR_PUB_NUM)
+          || (manager >= MANAGER_NUM))
+    {
+        return (bool)0;
+    }
+    
+    /* lock queue */
+    INTERRUPT_LOCK(l_queueLockers[manager][prior]);
+
+    has = false;
+    queue_for_each(&l_reqQueues[manager][prior], pos, qAddr) {
+        mitEvt = (TMicEvent *)qAddr;
+        if (mitEvt != (TMicEvent *)0) {
+            if (user == mitEvt->spkNode->tmnl_dev.address.addr) {
+                has = (bool)1;
+                break; /* break for queue_for_each() */
+            }
+        }
+    }
+
+    /* lock queue */
+    INTERRUPT_UNLOCK(l_queueLockers[manager][prior]);
+    
+    /* return has? */
+    return has;
+}
+
 /*$ Terminal_cancelTask()...................................................*/
 bool Terminal_cancelTask(uint8_t manager,
         TEReqQePrior prior, uint16_t user)
@@ -1239,4 +1294,15 @@ bool Terminal_postAcmpEvent(TQEvt const * const e) {
 
     return bRet;
 }
+
+/*****************************************************************************
+Note1:
+    This interface be invoked only when conference
+transmit mode has not protecting disconnection time(ZERO) or has timeout.
+
+Note2:
+    This interface be invoked only when conference
+transmit mode has not protecting connection time(ZERO) or has timeout.
+   
+*****************************************************************************/
 

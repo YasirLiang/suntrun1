@@ -116,6 +116,10 @@ extern bool Terminal_hasTaskInQueue(uint8_t manager);
 /*$ Terminal_hasTask()......................................................*/
 extern bool Terminal_hasTask(TEReqQePrior prior, uint16_t user);
 
+/*$ Terminal_hasEventTask().................................................*/
+extern bool Terminal_hasEventTask(uint8_t manager,
+    TEReqQePrior prior, uint16_t user);
+
 /*$ Terminal_cancelTask()...................................................*/
 extern bool Terminal_cancelTask(uint8_t manager,
         TEReqQePrior prior, uint16_t user);

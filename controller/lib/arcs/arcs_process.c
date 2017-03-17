@@ -419,11 +419,11 @@ int ArcsCmd_optTmnl(uint16_t cmd, void *data, uint32_t data_len) {
                         *((uint16_t*)&mic.addr));
                     if (optCode == 0) {/* begin */
                         mic.switch_flag = 1;
-                        terminal_upper_computer_speak_proccess(mic);
+                        terminal_upper_computer_speak_process(mic);
                     }
                     else if (optCode == 3) {
                         mic.switch_flag = 0;
-                        terminal_upper_computer_speak_proccess(mic);
+                        terminal_upper_computer_speak_process(mic);
                     }
                     else {
                         /* error option code */
