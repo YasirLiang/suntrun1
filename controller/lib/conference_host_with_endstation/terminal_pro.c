@@ -859,6 +859,7 @@ void system_register_terminal_pro(void) {
             /* system discuss start, to close all mic */
             terminal_start_discuss(false);
             /* send main state of terminal */
+            usleep(1000); /* for set chairman state*/
             terminal_main_state_send(0, NULL, 0);
         }
     }
@@ -1183,8 +1184,14 @@ int terminal_func_key_action(uint16_t cmd, void *data, uint32_t data_len) {
         case GRADE_STATE:
         case ELECT_STATE: {
             terminal_vote(addr, key_num, key_value, tmnl_state, msg.data);
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+            /* proccess key to discuccess */
+            terminal_key_discuccess(addr, key_num, key_value,
+                                    tmnl_state, msg.data);
+#else
             terminal_key_speak(addr, key_num, key_value,
                                                         tmnl_state, msg.data);
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
             terminal_key_action_chman_interpose(addr, key_num,
                                              key_value, tmnl_state, msg.data);
             break;
