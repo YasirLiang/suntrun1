@@ -443,7 +443,7 @@ void terminal_cmd_set_state_proccess( const char*opt )
 		else if(input_flag == 2 )
 		{
 			memcpy( tmnl_state_str, first, copy_num );
-			convert_str_to_eui64( tmnl_state_str, array_state );
+			convert_str_to_eui32( tmnl_state_str, array_state );
 			memcpy(&tmnl_state, array_state, 4 );
 			p++;
 			input_flag++;

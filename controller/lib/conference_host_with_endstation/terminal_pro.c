@@ -6605,7 +6605,7 @@ void terminal_vip_speak(tmnl_pdblist dis_node, bool key_down) {
         }
     }
 
-    /* for muti pthread access global data, must lock */
+    /* for muti pthread access global data, must unlock */
     INTERRUPT_UNLOCK(l_callBackLocker);
 }
 
@@ -6734,7 +6734,7 @@ void terminal_chairman_speak(tmnl_pdblist dis_node, bool key_down) {
         }
     }
     
-    /* for muti pthread access global data, must lock */
+    /* for muti pthread access global data, must unlock */
     INTERRUPT_UNLOCK(l_callBackLocker);
 }
 

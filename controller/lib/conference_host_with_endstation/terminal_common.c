@@ -1268,7 +1268,7 @@ static void Terminal_charMsgPro(void) {
 void Terminal_comPro(uint32_t sysTick) {
     Terminal_charMsgPro();
     Terminal_sendMsgPro();
-#ifdef ALLOT_IN_NEW_QE    
+#ifdef ALLOT_IN_NEW_QE
     pthread_mutex_lock(&l_allotMutex);
     Terminal_allotPro();
     pthread_mutex_unlock(&l_allotMutex);
