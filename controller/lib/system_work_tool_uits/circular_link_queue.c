@@ -27,6 +27,12 @@ queue_node* queue_get( queue *root )
 			root->trail = NULL;
 	}
 
+// 此处防止队列为空时队尾不为空!但执行对队列操作正确即当队列为空时，必须执行队列为空的操作的前提下,此处可省略
+        if (is_queue_empty(root)) {
+  		if( root->trail != NULL )
+			root->trail = NULL;
+        }
+
 	return node_get;
 }
 
