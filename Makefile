@@ -12,9 +12,9 @@ ifeq ($(RELEASE), )
 endif
 
 ifeq ($(RELEASE), YES)
-	CFGS = -Wall
+	CFGS = -Wall 
 else
-	CFGS = -Wall -D__DEBUG__
+	CFGS = -Wall -g -D__DEBUG__
 endif
 
 CCFLAGS = -lavdecc-host -ljdksavdecc -lpthread -lrt -lreadline -lncurses -lsqlite3 -L$(ROOTPATH)/controller/lib -L$(ROOTPATH)/lib

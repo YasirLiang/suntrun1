@@ -62,6 +62,7 @@ uint64_t convert_stream_id_to_tarker_id( const uint64_t listern_stream_id );
 uint8_t get_conference_command_resend_count(const uint8_t cmd);
 const char *getArcsCmdString(uint32_t cmd_value);
 uint32_t getArcsCmdTimeout(uint32_t cmd_value);
+void convert_str_to_eui32( char *in, uint8_t output[4] );
 
 #endif
 

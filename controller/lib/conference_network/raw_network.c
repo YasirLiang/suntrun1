@@ -414,7 +414,7 @@ int raw_network_recv(void* frame, int recv_buf_Len, const void *user_obj)
 
 int raw_network_cleanup(void **user_obj)
 {
-	close(((raw_net_1722_user_info*)user_obj)->rawsock);
+	close(((raw_net_1722_user_info*)(*user_obj))->rawsock);
 	raw_network_user_object_destroy(user_obj);
 
 	return 0;

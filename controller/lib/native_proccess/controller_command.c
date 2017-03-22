@@ -1743,6 +1743,8 @@ static void sighandler(int sig) {
    also call exit(3). */
 static void cb_linehandler(char *line) {
     /* Can use ^D (stty eof) or `exit' to exit. */
+    char buf[1024] = {0};
+    
     if ((line == NULL)
           ||(strcmp(line, "quit") == 0))
     {
@@ -1758,51 +1760,54 @@ static void cb_linehandler(char *line) {
         system_close(&threads);
     }
     else {
+        memcpy(buf, line,strlen(line));
+        
         if (*line) {
             add_history (line);
         }
-        if ((strncmp(line, "list", 4) == 0)
-            || (strncmp(line, "ls", 2) == 0))
+        
+        if ((strncmp(buf, "list", 4) == 0)
+            || (strncmp(buf, "ls", 2) == 0))
         {
             cmd_list_proccess();
         }
-        else if (strncmp(line, "adp", 3) == 0) {
-            cmd_adp_proccess(line);
+        else if (strncmp(buf, "adp", 3) == 0) {
+            cmd_adp_proccess(buf);
         }
-        else if (strncmp(line, "clear", 5) == 0) {
+        else if (strncmp(buf, "clear", 5) == 0) {
             system("clear");
         }
-        else if (strncmp(line, "connect", 7) == 0) {
-            cmd_connect_and_disconnect_proccess(&line[8], true);
+        else if (strncmp(buf, "connect", 7) == 0) {
+            cmd_connect_and_disconnect_proccess(&buf[8], true);
         }
-        else if (strncmp(line, "disconnect", 10) == 0) {
-            cmd_connect_and_disconnect_proccess(&line[11], false);
+        else if (strncmp(buf, "disconnect", 10) == 0) {
+            cmd_connect_and_disconnect_proccess(&buf[11], false);
         }
-        else if (strncmp(line, "show", 4) == 0) {
+        else if (strncmp(buf, "show", 4) == 0) {
             cmd_show_proccess();
         }
-        else if (strncmp(line, "update", 6 ) == 0) {
+        else if (strncmp(buf, "update", 6 ) == 0) {
             cmd_update_proccess();
         }
-        else if (strncmp(line, "terminal", 8 ) == 0) {
-            cmd_terminal_proccess(line);
+        else if (strncmp(buf, "terminal", 8 ) == 0) {
+            cmd_terminal_proccess(buf);
         }
-        else if (strncmp(line, "hostFunc", 8 ) == 0) {
+        else if (strncmp(buf, "hostFunc", 8 ) == 0) {
             cmd_host_func_proccess();
         }
-        else if (strncmp(line, "udpClient", 9) == 0) {
+        else if (strncmp(buf, "udpClient", 9) == 0) {
             cmd_udp_client();
         }
-        else if (strncmp(line, "matrixControl", 13) == 0) {
+        else if (strncmp(buf, "matrixControl", 13) == 0) {
             cmd_matrix_control_proccess();
         }
-        else if (strncmp(line, "MenuTest", 8 ) == 0) {
+        else if (strncmp(buf, "MenuTest", 8 ) == 0) {
             cmd_menu_control_proccess();
         }
-        else if (strncmp(line, "reboot", 6 ) == 0){
-            cmd_reboot_proccess(line + 7);
+        else if (strncmp(buf, "reboot", 6 ) == 0){
+            cmd_reboot_proccess(buf + 7);
         }
-        else if (!isspace(line[0])) {
+        else if (!isspace(buf[0])) {
             MSGINFO( "\nadp\nclear\nconnect\ndisconnect\nhostFunc\nlist\n"
                 "update\nudpClient\nq\nquit\nshow\n"
                 "terminal\nmatrixControl\nMenuTest\n\n");
@@ -1811,7 +1816,7 @@ static void cb_linehandler(char *line) {
             /* no else case */
         }
 
-        printf ("input line: %s\n", line);
+        printf ("input line: %s\n", buf);
         free (line);
     }
 }
