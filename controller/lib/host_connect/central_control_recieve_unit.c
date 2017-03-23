@@ -445,6 +445,24 @@ void central_control_recieve_ccu_model_state_update( subject_data_elem connect_i
 		}
 		else
 		{
+		        /* if in the disconnect list,
+		            show that this message is connection
+		            failed message */
+			list_for_each_entry(p_temp_chNode,
+			    &gccu_recieve_model_list[i].unconnect_channel_head.list,
+			    list)
+			{					
+				if ((connect_info.listener_id == p_temp_chNode->listener_id)
+                                    && (connect_info.listener_index == p_temp_chNode->listener_index))
+				{/* set value for connection */
+					p_temp_chNode->status = INCHANNEL_FREE;
+					p_temp_chNode->tarker_id = 0;
+					p_temp_chNode->tarker_index = 0xffff;
+					gchannel_allot_pro.pro_eflags = CH_ALLOT_FINISH;
+                                        p_temp_chNode->pro_status = INCHANNEL_PRO_FINISH;
+				}
+			}
+                
 			list_for_each_entry( p_temp_chNode, &gccu_recieve_model_list[i].connect_channel_head.list, list )
 			{					
 				if( (connect_info.listener_id == p_temp_chNode->listener_id) &&\
