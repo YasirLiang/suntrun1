@@ -238,6 +238,9 @@ int ArcsCommon_recvPacketPro(void) {
                 l_recvBuf[pos++]);
         }
     }
+    else { /* error */
+        ExternPort_destroy(l_arcsPro.vptr);
+    }
     /* return recv len */
     return reLen;
 }

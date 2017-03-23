@@ -217,8 +217,6 @@ terminal_address_list_pro allot_addr_pro;
 /*the guard node of terminal double list....................................*/
 tmnl_pdblist dev_terminal_list_guard = NULL;
 tmnl_pdblist gcur_tmnl_list_node = NULL;
-/*The flag of reallot address...............................................*/
-volatile bool reallot_flag = false;					
 tmnl_state_set gtmnl_state_opt[TMNL_TYPE_NUM];
 /*the flag of system discuss proccessing....................................*/
 tsys_discuss_pro gdisc_flags;
@@ -278,8 +276,8 @@ int init_terminal_address_list_from_file(void) {
         terminal_pro_debug("init tmnl_addr_list from address file"
                                       "need to reallot terminal address\n\t\t"
                               "Please send reAllot command by command line!");
-        reallot_flag = true;/* set reallot flag */
     }
+    
     return ret;
 }
 /*$ init_terminal_address_list..............................................*/
@@ -297,7 +295,6 @@ inline void init_terminal_allot_address(void) {
     allot_addr_pro.addr_start = 0;
     allot_addr_pro.index = 0;
     allot_addr_pro.renew_flag= 0;
-    reallot_flag = false; /* disable reallot */
 }
 /*$ Inline function init_terminal_device_double_list........................*/
 inline void init_terminal_device_double_list(void) {
@@ -760,10 +757,6 @@ void system_register_terminal_pro(void) {
     uint16_t totalNum; /* all terminal num */
     uint16_t regNum;/* register num */
 
-    if (reallot_flag) {
-        return;/* reallot time, can't register, return */
-    }
-
     if (l_resetFlag) {
         l_resetFlag = false; /* make run once only */
         over_time_set(WAIT_TMN_RESTART, 10000);/*waiting timeout*/
@@ -839,13 +832,15 @@ void system_register_terminal_pro(void) {
             /* count while run times */
             count_num++;
         }
+
         /* get total num and the num of registered */
         totalNum = gregister_tmnl_pro.tmn_total;
         regNum = gregister_tmnl_pro.tmn_rgsted;
         if (((count_num >= SYSTEM_TMNL_MAX_NUM)
                 && (!registing)
                 && (totalNum <= regNum))
-             ||(over_time_listen(TRGST_OTIME_HANDLE)))
+             || (totalNum == 0U)
+             || (over_time_listen(TRGST_OTIME_HANDLE)))
         {/* register finished or register timeout */
             /* debug now */
             DEBUG_INFO( "total = %d, rgsted = %d",
