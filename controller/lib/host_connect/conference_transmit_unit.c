@@ -716,7 +716,7 @@ void trans_model_unit_update_disconnect_rx_state_pro_by_status(const int resp_st
 		if (taker_index == CONFERENCE_OUTPUT_INDEX)
 		{
 			bool exist = false;
-			if( NULL == p_temp_node->confenrence_node)
+			if( NULL != p_temp_node->confenrence_node)
 				exist = true;
 
 			if (exist && trans_model_unit_is_connected(tarker_id))
@@ -815,9 +815,9 @@ void trans_model_unit_update_disconnect_rx_state_pro_by_status(const int resp_st
 		if (taker_index == CONFERENCE_OUTPUT_INDEX)
 		{
 			bool exist = false;
-			if( NULL == p_temp_node->confenrence_node)
+			if( NULL != p_temp_node->confenrence_node)
 				exist = true;
-
+            
 			if (exist && trans_model_unit_is_connected(tarker_id))
 			{
 #ifdef MIC_PRIOR_MANEGER_ENABLE
