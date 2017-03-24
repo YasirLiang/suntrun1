@@ -36,6 +36,20 @@ typedef struct TProtocolStrVtbl {
     int (*setType)(int const);
 }TProtocolStrVtbl;
 
+/*$ ProtocolStruct_create().................................................*/
+int ProtocolStruct_create(TProtocolStrVtbl const * const vptr,
+    void const * const strElem, int const inLen,
+    void * const strResult, int const limitLen);
+
+/*$ ProtocolStruct_parser().................................................*/
+int ProtocolStruct_parser(TProtocolStrVtbl const * const vptr,
+    void const * const parserElem, int const inLen,
+    void * const parserResult, int const limitLen);
+
+/*$ ProtocolStruct_setType()................................................*/
+int ProtocolStruct_setType(TProtocolStrVtbl const * const vptr,
+    int const pVersion);
+
 #ifdef __cplusplus
 } /* end extern "C" */
 #endif /* __cplusplus */
