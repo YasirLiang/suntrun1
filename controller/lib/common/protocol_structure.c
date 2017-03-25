@@ -42,3 +42,4 @@ int ProtocolStruct_setType(TProtocolStrVtbl const * const vptr,
 {
     return vptr->setType(pVersion);
 }
+

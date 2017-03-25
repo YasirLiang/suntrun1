@@ -85,7 +85,8 @@ static int backtrace_arm(int ** buffer, int size) {
 
     /* get starting address of current sub-program information of
     pushing stack in Stack Frame(address is down growth)*/
-    __asm__("mov %0, fp\n" : "=r"(fp) );
+    __asm__("mov %0, fp\n" : "=r"(fp));
+    
     /* get the subroutine return address at all level */
     while ((i < size)
                 && (fp != NULL))
@@ -103,12 +104,14 @@ static int backtrace_arm(int ** buffer, int size) {
             break;
         }
     }
+    
     /* printf new line */
     debug_printf("\r\n");
     /* get stack deep level */
     if (i >= size) {
         i = size;
     }
+    
     /* printf stack deep level */
     debug_printf("Backstrace Deep = %d\r\n",  i);
     /* printf new line */
@@ -190,6 +193,7 @@ static void sigsegv_handler(int signum, siginfo_t *si_info, void *ptr) {
 /*$ catch_sigsegv-----------------------------------------------------------*/
 static void catch_sigsegv(void) {/* signal segv handle function register */
     struct sigaction sa_segv;
+    
     memset(&sa_segv, 0, sizeof(struct sigaction));
     sa_segv.sa_flags = SA_SIGINFO;
     sa_segv.sa_sigaction = sigsegv_handler;  /* signal segv handle function */
@@ -214,6 +218,7 @@ static void signal_handle_main(int signum) {
         exit(0); /*exit proccess*/
     }
 }
+
 /*$ catch_sigin ------------------------------------------------------------*/
 static void catch_sigin(void) {
     struct sigaction sa;
@@ -226,17 +231,19 @@ static void catch_sigin(void) {
         exit(-1);
     }
 }
+
 /*$ log_callback_func ------------------------------------------------------*/
 static void log_callback_func(void *user_obj, int32_t log_level,
                                        const char *msg, int32_t time_stamp_ms)
 {
     if( glog_file_fd == NULL ) {
         /* printf to screen */ 
-        printf( "[LOG] %s %s\n", logging_level_string_get(log_level), msg);
+        printf("[LOG] %s %s\n", logging_level_string_get(log_level), msg);
     }
     else { /* log to file */ 
         time_t tem = time(NULL);
         struct tm *t = (struct tm*)localtime(&tem);/* get local time */
+        
         /* first reset buffer */
         memset(gmain_buf, 0, sizeof(gmain_buf));
         /* format new line information */
@@ -255,11 +262,13 @@ int main(int argc, char *argv[]) {
     __asm__( "mov %0, fp\n" : "=r"(gmain_stack_fp));
 #endif /*__ARM_BACK_TRACE__*/
     int32_t log_level = LOGGING_LEVEL_ERROR;/* default level is error */
+
     fprintf(stdout, "Usage: ./programing 0/1/2/3/4/5(log level)"
                                           "file_name(none log to screen) \n");
     if (argc >= 2) {
         log_level = atoi(argv[1]);/* get log level */
     }
+    
     if (log_level >= TOTAL_NUM_OF_LOGGING_LEVELS) {/* out of blank? */
         log_level = LOGGING_LEVEL_ERROR;
     }
@@ -277,16 +286,19 @@ int main(int argc, char *argv[]) {
             glog_file_fd = NULL;
         }
     }
+    
     /* printf information of log level and whether log to file? */
     fprintf(stdout, "Will Usage: %s message can be logged,"
                                            "and only log to screen? %s\n\r\n",
                                          logging_level_string_get(log_level),
                                          (glog_file_name == NULL)?"YES":"NO");
+    
     /* log machine create */
     if (NULL == log_machine_create(log_callback_func, log_level, NULL)) {
         fprintf(stdout, "your system can't log massge,"
                                       "log machine class create is failed\n");
     }
+    
     /* controller machine create */
     gp_controller_machine = controller_machine_create();
     if (NULL != gp_controller_machine) {/* create success? */
@@ -294,6 +306,7 @@ int main(int argc, char *argv[]) {
         uint64_t t;         /* mac one bytes */
         void *p; /* user object void pointer */
         raw_net_1722_user_info* raw_user_obj;/* user object pointer */
+        
         controller_machine_init(gp_controller_machine, raw_network_init,
                      raw_network_send, raw_network_recv, raw_network_cleanup);
         /*get user object of 1722 network */
@@ -303,11 +316,13 @@ int main(int argc, char *argv[]) {
             raw_user_obj = (raw_net_1722_user_info*)p;
             /* copy index id */
             net.m_interface_id = raw_user_obj->ifindex;
+            
             /* copy mac address */
             for (i = 0; i < 6; ++i) {
                 t = (raw_user_obj->mac >> ((5-i)*8)) & 0x00000000000000ff;
                 net.m_my_mac[i] = (uint8_t)t;
             }
+            
             /* set network protocal type */
             net.m_ethertype = raw_user_obj->ethertype;
             /* set raw fd */
@@ -327,13 +342,16 @@ int main(int argc, char *argv[]) {
         printf("create_controller machine Error,Exit!\n");
         exit(-1);
     }
+    
     /*register signal of C-c*/
     catch_sigin();
+    
 /*enable arm version if __ARM_BACK_TRACE__ is defined-----------------------*/
 #ifdef __ARM_BACK_TRACE__
     /*register signal of sev*/
     catch_sigsegv();
 #endif/*__ARM_BACK_TRACE__*/
+
     struct udp_context udp_net;              /* udp context */
     pthread_t h_thread;          /* I/O complicating thread */
     pthread_t proccess_thread;/* recieve data handle thread */
