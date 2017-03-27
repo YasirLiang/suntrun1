@@ -35,26 +35,35 @@
 #include "util.h"
 #include "upper_computer_data_handle.h"
 #include "time_event.h"
+
 /*$ \*/
 struct epoll_priv;
+
 /*$ \*/
 typedef int (* handler_fn) (struct epoll_priv * priv);
+
 /*$ \*/
 struct epoll_priv {
     int fd;         /*! epoll register fd */
     handler_fn fn;  /*! handler function */
 };
+
 /*$ \*/
 int fn_netif_cb(struct epoll_priv *priv);
+
 /*$ \*/
 int udp_server_fn(struct epoll_priv *priv);
+
 /*$ \*/
 int udp_client_fn(struct epoll_priv *priv);
+
 /*$ \*/
 int prep_evt_desc(int fd,handler_fn fn,
     struct epoll_priv *priv,struct epoll_event *ev);
+
 /*$ \*/
 int thread_fn(void *pgm);
+
 /*$ \*/
 int pthread_handle_create(pthread_t *h_trd, struct fds *kfds);
 
