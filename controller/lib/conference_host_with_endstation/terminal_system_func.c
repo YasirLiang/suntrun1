@@ -6,6 +6,8 @@
 
 #include "terminal_system_func.h"
 #include "terminal_command.h"
+#include "log_machine.h"
+#include "camera_pro.h"
 
 /***************************************
 **Writer:YasirLiang
@@ -42,8 +44,18 @@ void terminal_system_reallot_addr( void )
 	/* 打开地址文件，并清除文件内容 */
 	terminal_open_addr_file_wt_wb();
 
-	/*清除注册处理*/
-	//terminal_register_init();
+        /* clear preset list */
+        if (Camera_clearPresetList() == 0) {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[Camera_clearPresetList() clear preset Success]");
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[Camera_clearPresetList() "
+                "clear preset Success]");
+        }
 
 	terminal_reallot_address();
 

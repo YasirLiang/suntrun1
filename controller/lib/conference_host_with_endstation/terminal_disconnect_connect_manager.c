@@ -288,7 +288,7 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         LOGGING_LEVEL_DEBUG,
                         "[CONNECT_WAIT state recieve "
                         "CONNECT_RX_RESPONSE_SIG,Change to "
-                        "state(%d)", l_connectorState);
+                        "state(%d)]", l_connectorState);
                     
                     status_ = EVT_HANDLED;
                     break;
@@ -305,7 +305,7 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         LOGGING_LEVEL_DEBUG,
                         "[CONNECT_WAIT state recieve "
                         "CONNECT_TIMEOUT_SIG,Change to "
-                        "state(%d)", l_connectorState);
+                        "state(%d)]", l_connectorState);
                     
                     break;
                 }
@@ -338,7 +338,7 @@ static TQState Terminal_connectorDispatch(TQEvt * const e) {
                         LOGGING_LEVEL_DEBUG,
                         "[CONNECT_SUCCESS state recieve "
                         "MIC_OPEN_SIG,Change to "
-                        "state(%d)", l_connectorState);
+                        "state(%d)]", l_connectorState);
                     
                     break;
                 }
@@ -572,7 +572,7 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                         LOGGING_LEVEL_DEBUG,
                         "[DISCONNECT_WAIT state recieve "
                         "DISCONNECT_TIMEOUT_SIG, Change to "
-                        "state(%d)", l_disconnectorState);
+                        "state(%d)]", l_disconnectorState);
                     
                     break;
                 }
@@ -605,7 +605,7 @@ static TQState Terminal_disconnectorDispatch(TQEvt * const e) {
                         LOGGING_LEVEL_DEBUG,
                         "[DISCONNECT_WAIT state recieve "
                         "MIC_CLOSE_SIG, Change to "
-                        "state(%d)", l_disconnectorState);
+                        "state(%d)]", l_disconnectorState);
 
                     break;
                 }
@@ -886,7 +886,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
         /* lock the queue */
         INTERRUPT_LOCK(l_disconnectorLocker[i]);
         
-        if (QueueCom_popFiFo(&l_disconnectorQe[i], &qAddr)) {            
+        if (QueueCom_popFiFo(&l_disconnectorQe[i], &qAddr)) { 
             e = (TQEvt *)qAddr;
             if (e != (TQEvt *)0) {
                 status_ = Terminal_disconnectorDispatch(e);
@@ -994,7 +994,7 @@ int Terminal_micManagerTask(uint32_t sysTick) {
     /* Task process events in the
         priority connector queues, process next open signal event
         only when last connection finish */
-    for (i = l_curConnectorQe; i < PRIOR_PUB_NUM; i++) {        
+    for (i = l_curConnectorQe; i < PRIOR_PUB_NUM; i++) {
         /* lock the queue */
         INTERRUPT_LOCK(l_connectorLocker[i]);
         

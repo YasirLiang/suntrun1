@@ -12,6 +12,9 @@
 
 #define ADDRESS_FILE "address.dat"	// 终端地址信息存放的文件
 
+/*$ Enable first speak queue Macro------------------------------------------*/
+#define FIRST_SPEAK_QUEUE_ENABLE
+
 #define INTERRUPT_LOCK(lock) while (lock);\
     lock = 1;
 #define INTERRUPT_UNLOCK(lock) lock = 0;
@@ -277,6 +280,14 @@ void terminal_pro_init_cur_terminal_node( void );
 void terminal_after_time_mic_state_pro(void);
 extern void Terminal_micCallbackPro(void);
 void Terminal_arcsStarSign(void);
+
+
+#ifdef MIC_PRIOR_MANEGER_ENABLE
+
+extern int Terminal_connect(uint16_t openAddr);
+extern int Terminal_disconnect(uint16_t closeAddr);
+
+#endif /* MIC_PRIOR_MANEGER_ENABLE */
 
 #endif
 

@@ -241,16 +241,19 @@ static void log_callback_func(void *user_obj, int32_t log_level,
         printf("[LOG] %s %s\n", logging_level_string_get(log_level), msg);
     }
     else { /* log to file */ 
+        /* get local time */
         time_t tem = time(NULL);
-        struct tm *t = (struct tm*)localtime(&tem);/* get local time */
+        struct tm *t = (struct tm*)localtime(&tem);
         
         /* first reset buffer */
         memset(gmain_buf, 0, sizeof(gmain_buf));
+        
         /* format new line information */
         sprintf(gmain_buf, "[%d-%d-%d %d:%d:%d LOG] %s  %s\n",
                 t->tm_year+1900, t->tm_mon+1, t->tm_mday, t->tm_hour,
                 t->tm_min, t->tm_sec,
                 logging_level_string_get(log_level), msg);
+
         fputs(gmain_buf, glog_file_fd);/* write to file */
         Fflush(glog_file_fd); /*flush buffer to file */
     }

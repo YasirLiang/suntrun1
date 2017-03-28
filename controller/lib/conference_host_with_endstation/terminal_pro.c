@@ -85,8 +85,6 @@ static Terminal_micQueue l_micQueue = {
 };
 
 /*$ {@ First apply speaking QUEUE-------------------------------------------*/
-/*$ Enable first speak queue Macro------------------------------------------*/
-#define FIRST_SPEAK_QUEUE_ENABLE
 
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
 
@@ -1622,7 +1620,7 @@ int terminal_system_discuss_mode_set(uint16_t cmd, void *data,
                 /* request connection */
                 reSuccess = Terminal_requestDisConnect(p,
                     prior, MAX_FAILURE_TIMES,
-                    COMMON_SPK_PERMISSION);
+                    get_sys_state());
                 if (reSuccess) {
                     gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                         LOGGING_LEVEL_DEBUG,
@@ -2194,7 +2192,7 @@ void Terminal_micCallbackPro(void) {
 void terminal_mic_status_set_callback(bool connect_flag,
     tmnl_pdblist p_tmnl_node)
 {
-    uint8_t mic_status, micState;
+    uint8_t mic_status, sysState, micType;
     Terminal_mic micNode;
 
     assert(p_tmnl_node != NULL);
@@ -2202,11 +2200,13 @@ void terminal_mic_status_set_callback(bool connect_flag,
         return;
     }
 
+    sysState = get_sys_state();
     mic_status = connect_flag ? MIC_OPEN_STATUS : MIC_COLSE_STATUS;
-    micState = p_tmnl_node->tmnl_dev.address.tmn_type;
-    if ((get_sys_state() == INTERPOSE_STATE)
-            && (micState != TMNL_TYPE_CHM_EXCUTE)
-            && (micState != TMNL_TYPE_CHM_COMMON))
+    micType = p_tmnl_node->tmnl_dev.address.tmn_type;
+    
+    if ((sysState == INTERPOSE_STATE)
+            && (micType != TMNL_TYPE_CHM_EXCUTE)
+            && (micType != TMNL_TYPE_CHM_COMMON))
     {
         /*interpose state should will save mic state if endpiont
         *is common and temp close is set.
@@ -2215,7 +2215,7 @@ void terminal_mic_status_set_callback(bool connect_flag,
             p_tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
         }
     }
-    else if (get_sys_state() != INTERPOSE_STATE) {
+    else if (sysState != INTERPOSE_STATE) {
         p_tmnl_node->tmnl_dev.tmnl_status.mic_state = mic_status;
     }
     else {
@@ -5403,6 +5403,164 @@ uint16_t terminal_speak_num_count(void) {
 }
 
 #ifdef MIC_PRIOR_MANEGER_ENABLE
+
+/*$ Terminal_connect()......................................................*/
+int Terminal_connect(uint16_t openAddr) {
+    uint8_t tType;
+    TComQueue *pQ;
+    tmnl_pdblist openNode;
+    uint64_t targetId;
+#ifndef FIRST_SPEAK_QUEUE_ENABLE
+    bool reSuccess;
+#endif /* FIRST_SPEAK_QUEUE_ENABLE */
+    TEReqQePrior prior;
+    int ret = -1;
+
+    if (openAddr == 0xffff) {
+        return -1;
+    }
+
+    openNode =
+        found_terminal_dblist_node_by_addr(openAddr);
+
+    /* no such address node */
+    if (openNode == (tmnl_pdblist)0) {
+            return -1;
+    }
+    
+    targetId = openNode->tmnl_dev.entity_id;
+    tType = openNode->tmnl_dev.address.tmn_type;
+    
+    if (tType == TMNL_TYPE_CHM_COMMON) {
+        prior = COMMON_PRIOR;
+        pQ = &l_FSpkQueue;
+    }
+    else if (tType == TMNL_TYPE_VIP) {
+        prior = VIP_PRIOR;
+        pQ = &l_vipFSpkQueue;
+    }
+    else if ((tType == TMNL_TYPE_CHM_COMMON)
+                || (tType == TMNL_TYPE_CHM_EXCUTE))
+    {
+        prior = CHAIRMAN_PRIOR;
+        pQ = &l_chairmanFSpkQueue;
+    }
+    else { /* error type */
+        return -1;
+    }
+
+    /* check whether terminal has connections */
+    if (!trans_model_unit_is_connected(targetId)) {
+#ifdef FIRST_SPEAK_QUEUE_ENABLE
+        if (Terminal_firstSpkRequestConnect(openNode,
+                pQ, &l_FSpkLocker,
+                MAX_CONNECT_FAILURE_TIMES,
+                get_sys_state()))
+        {
+            ret = 0;
+        
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_DEBUG,
+                "[ Terminal_connect() Speak Post First"
+                " speaking node(address = 0x%x)"
+                " to Queue Success ]",
+                openAddr);
+        }
+        else {            
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                LOGGING_LEVEL_ERROR,
+                "[ Terminal_connect() Speak Post First"
+                " speaking node(address = 0x%x)"
+                "to Queue Failed ]",
+                openAddr);
+        }
+#else            
+        /* request connection */
+        reSuccess = Terminal_requestConnect(openNode,
+            prior, MAX_FAILURE_TIMES,
+            get_sys_state());
+        if (reSuccess) {
+            ret = 0;
+            
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+            LOGGING_LEVEL_DEBUG,
+            "[Terminal_connect(), Terminal(0x%04x) Speak "
+            " Request connection success: Waitting for"
+            "Connection...]", openAddr);
+        }
+        else {
+            gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+            LOGGING_LEVEL_ERROR,
+            "[Terminal_connect(), Terminal(0x%04x) Speak "
+            " Request connection Faied]", openAddr);
+        }
+#endif
+    }                    
+
+    return ret;
+}
+
+/*$ Terminal_disconnect()...................................................*/
+int Terminal_disconnect(uint16_t closeAddr) {
+    uint8_t tType;
+    tmnl_pdblist closeNode;
+    uint64_t targetId;
+    bool reSuccess;
+    TEReqQePrior prior;
+    int ret = -1;
+
+    if (closeAddr == 0xffff) {
+        return -1;
+    }
+
+    closeNode =
+        found_terminal_dblist_node_by_addr(closeAddr);
+
+    /* no such address node */
+    if (closeNode == (tmnl_pdblist)0) {
+            return -1;
+    }
+    
+    targetId = closeNode->tmnl_dev.entity_id;
+    tType = closeNode->tmnl_dev.address.tmn_type;
+    
+    if (tType == TMNL_TYPE_CHM_COMMON) {
+        prior = COMMON_PRIOR;
+    }
+    else if (tType == TMNL_TYPE_VIP) {
+        prior = VIP_PRIOR;
+    }
+    else if ((tType == TMNL_TYPE_CHM_COMMON)
+                || (tType == TMNL_TYPE_CHM_EXCUTE))
+    {
+        prior = CHAIRMAN_PRIOR;
+    }
+    else { /* error type */
+        return -1;
+    }    
+    
+    /* check whether terminal has connections */
+    if (trans_model_unit_is_connected(targetId)) {
+        reSuccess = Terminal_requestDisConnect(closeNode,
+                prior, MAX_FAILURE_TIMES,
+                get_sys_state());
+            if (reSuccess) {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_DEBUG,
+                    "[[Terminal_disconnect() Terminal(0x%04x) Close "
+                    " Request disconnection success: Waitting for"
+                    " disConnection...]", closeAddr);
+            }
+            else {
+                gp_log_imp->log.post_log_msg(&gp_log_imp->log,
+                    LOGGING_LEVEL_ERROR,
+                    "[Terminal_disconnect() Terminal(0x%04x) Close "
+                    " Request disconnection Faied]", closeAddr);
+            }
+    }
+
+    return ret;
+}
 
 /*$\ define callback function after request connect finish */
 /*$ Terminal_chairmanOpenMicCallback()......................................*/

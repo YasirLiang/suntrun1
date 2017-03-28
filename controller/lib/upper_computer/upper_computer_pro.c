@@ -22,6 +22,7 @@
 #include "camera_output.h"
 #include "control_matrix_pro.h"
 #include "system_database.h"
+#include "terminal_system_func.h"
 
 int profile_system_file_dis_param_save( FILE* fd, tcmpt_discuss_parameter *set_dis_para )
 {
@@ -386,7 +387,7 @@ int proccess_upper_cmpt_endtation_allocation_address( uint16_t protocal_type, vo
 		switch( allot_flag.allot_type )
 		{
 			case REALLOT:
-				terminal_reallot_address();
+                                terminal_system_reallot_addr();
 				break;
 			case NEW_ALLOT:
 				terminal_allot_address();

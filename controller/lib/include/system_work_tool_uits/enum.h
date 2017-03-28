@@ -444,6 +444,14 @@ enum notifications /// Notifications for the AVDECC library implementation, not 
 	TOTAL_NUM_OF_NOTIFICATIONS = 6
 };
 
+/* red string---------------------------------------------------------------*/
+#define RED_STRING(string) \
+    "\e[31m"string"\e[0m"
+
+/* error string-------------------------------------------------------------*/
+#define ERROR_STRING(string) \
+    RED_STRING(string)
+    
 enum logging_levels
 {
 	LOGGING_LEVEL_ERROR   = 0,// 优先级最高的日志记录。为默认的日志级别记录
