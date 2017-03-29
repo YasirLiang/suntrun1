@@ -75,5 +75,8 @@
 /*$ MICPHONE priority manger macro define-----------------------------------*/
 #define MIC_PRIOR_MANEGER_ENABLE
 
+/*$ network initial enable--------------------------------------------------*/
+//#define NETWORK_INIT_ENABLE
+
 #endif /* __GLOBAL_H__ */
 

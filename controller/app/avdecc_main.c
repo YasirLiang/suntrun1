@@ -364,8 +364,12 @@ int main(int argc, char *argv[]) {
 
     /* initial system */
     init_system();
+    
+#ifdef NETWORK_INIT_ENABLE    
     /* init network card */
     AvdeccNet_init(NETWORT_INTERFACE);
+#endif
+
     /* system build socket */
     AvdeccNet_buildSocket(&net_fd, &net, NETWORT_INTERFACE, &udp_net);
 

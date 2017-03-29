@@ -5449,6 +5449,7 @@ int Terminal_connect(uint16_t openAddr) {
         return -1;
     }
 
+    ret = 0;
     /* check whether terminal has connections */
     if (!trans_model_unit_is_connected(targetId)) {
 #ifdef FIRST_SPEAK_QUEUE_ENABLE
@@ -5456,9 +5457,7 @@ int Terminal_connect(uint16_t openAddr) {
                 pQ, &l_FSpkLocker,
                 MAX_CONNECT_FAILURE_TIMES,
                 get_sys_state()))
-        {
-            ret = 0;
-        
+        {        
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_DEBUG,
                 "[ Terminal_connect() Speak Post First"
@@ -5466,7 +5465,10 @@ int Terminal_connect(uint16_t openAddr) {
                 " to Queue Success ]",
                 openAddr);
         }
-        else {            
+        else {
+            /* request connect failed */
+            ret = -1;
+            
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                 LOGGING_LEVEL_ERROR,
                 "[ Terminal_connect() Speak Post First"
@@ -5474,14 +5476,12 @@ int Terminal_connect(uint16_t openAddr) {
                 "to Queue Failed ]",
                 openAddr);
         }
-#else            
+#else
         /* request connection */
         reSuccess = Terminal_requestConnect(openNode,
             prior, MAX_FAILURE_TIMES,
             get_sys_state());
-        if (reSuccess) {
-            ret = 0;
-            
+        if (reSuccess) {            
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
             LOGGING_LEVEL_DEBUG,
             "[Terminal_connect(), Terminal(0x%04x) Speak "
@@ -5489,6 +5489,9 @@ int Terminal_connect(uint16_t openAddr) {
             "Connection...]", openAddr);
         }
         else {
+            /* request connect failed */
+            ret = -1;
+            
             gp_log_imp->log.post_log_msg(&gp_log_imp->log,
             LOGGING_LEVEL_ERROR,
             "[Terminal_connect(), Terminal(0x%04x) Speak "
@@ -5545,9 +5548,12 @@ int Terminal_disconnect(uint16_t closeAddr) {
                 prior, MAX_FAILURE_TIMES,
                 get_sys_state());
             if (reSuccess) {
+                /* request disconnect success */
+                ret = 0;
+                
                 gp_log_imp->log.post_log_msg(&gp_log_imp->log,
                     LOGGING_LEVEL_DEBUG,
-                    "[[Terminal_disconnect() Terminal(0x%04x) Close "
+                    "[Terminal_disconnect() Terminal(0x%04x) Close "
                     " Request disconnection success: Waitting for"
                     " disConnection...]", closeAddr);
             }
